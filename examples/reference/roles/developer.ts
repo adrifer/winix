@@ -1,11 +1,11 @@
 import { feature, type Fragment } from "winix";
 import { packages } from "winix/fragments";
-import { git } from "../tools/git";
-import { neovim } from "../tools/neovim";
-import { zsh } from "../shell/zsh";
-import { starship } from "../shell/starship";
-import { fzf } from "../shell/fzf";
-import { zoxide } from "../shell/zoxide";
+import { git } from "../features/git";
+import { neovim } from "../features/neovim";
+import { zsh } from "../features/zsh";
+import { starship } from "../features/starship";
+import { fzf } from "../features/fzf";
+import { zoxide } from "../features/zoxide";
 
 /**
  * @description Developer role: composes shell, tools, and common packages
