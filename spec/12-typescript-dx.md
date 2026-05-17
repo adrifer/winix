@@ -23,12 +23,13 @@ Specs should support safe automated edits:
 - stable resource IDs
 - explicit imports
 - small focused modules
-- plain object APIs
+- flat fragment composition (all fragments are the same shape)
 - deterministic formatting
 - no hidden mutation
 - no hidden global registries
 - source provenance in diagnostics
 - JSON inspection commands
+- auto-generated fragment registry for discoverability
 
 ## Resource metadata
 
