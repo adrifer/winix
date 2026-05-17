@@ -1,10 +1,8 @@
 import { feature } from "winix";
-import { nixos, darwin } from "./platforms";
-import { wsl } from "./wsl";
+import { wsl } from "../features/wsl";
 
 /**
- * @description Git configuration with difftool, user info, and conditional work email
- * @example git()
+ * @description Git with difftool, user info, conditional work email, and WSL credential helper
  * @category tool
  */
 export const git = feature("git", () => ({

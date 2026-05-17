@@ -1,12 +1,15 @@
 import { workspace, host } from "winix";
 import { inputs } from "./inputs";
-import { nixos, darwin } from "./fragments/platforms";
-import { user } from "./fragments/user";
-import { developer } from "./fragments/developer";
-import { wsl } from "./fragments/wsl";
-import { workSysctl } from "./fragments/work-sysctl";
-import { homebrew } from "./fragments/homebrew";
+import { nixos } from "./platforms/linux";
+import { darwin } from "./platforms/darwin";
+import { adrifer } from "./users/adrifer";
+import { developer } from "./roles/developer";
+import { wsl } from "./features/wsl";
+import { workSysctl } from "./features/work-sysctl";
+import { homebrew } from "./features/homebrew";
 import { packages } from "winix/fragments";
+
+const base = [adrifer(), developer()];
 
 export default workspace({
   inputs,
@@ -14,8 +17,7 @@ export default workspace({
   hosts: [
     host("wsl-work", [
       nixos({ stateVersion: "25.05" }),
-      user("adrifer"),
-      developer(),
+      ...base,
       wsl({ defaultUser: "adrifer" }),
       workSysctl(),
       packages(["socat", "bubblewrap"]),
@@ -23,8 +25,7 @@ export default workspace({
 
     host("macbook-pro", [
       darwin({ stateVersion: 6 }),
-      user("adrifer"),
-      developer(),
+      ...base,
       homebrew(),
     ]),
   ],

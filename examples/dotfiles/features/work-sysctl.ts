@@ -1,8 +1,7 @@
 import { feature } from "winix";
 
 /**
- * @description Kernel sysctl tuning for development workloads (inotify, unprivileged ports)
- * @example workSysctl()
+ * @description Kernel sysctl tuning for development workloads
  * @category system
  */
 export const workSysctl = feature("work-sysctl", () => ({

@@ -1,11 +1,9 @@
 import { feature } from "winix";
-import { nixos } from "./platforms";
-import { darwin } from "./platforms";
-import { wsl } from "./wsl";
+import { nixos } from "../platforms/linux";
+import { darwin } from "../platforms/darwin";
 
 /**
- * @description Zsh shell with vi-mode, autosuggestions, syntax highlighting, and platform-conditional aliases
- * @example zsh()
+ * @description Zsh with vi-mode, autosuggestions, syntax highlighting, and platform aliases
  * @category shell
  */
 export const zsh = feature("zsh", () => ({
@@ -30,8 +28,6 @@ export const zsh = feature("zsh", () => ({
           n: "nvim",
           "..": "cd ..",
           "...": "cd ../..",
-
-          // Platform-conditional aliases via .isActive
           ...(nixos.isActive && {
             i: "sudo nixos-rebuild switch --flake /etc/nixos",
             u: "nix flake update --flake /etc/nixos && sudo nixos-rebuild switch --flake /etc/nixos",

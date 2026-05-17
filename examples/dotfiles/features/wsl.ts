@@ -1,4 +1,4 @@
-import { feature, type Fragment } from "winix";
+import { feature } from "winix";
 import { inputs } from "../inputs";
 
 interface WslOpts {
@@ -7,7 +7,6 @@ interface WslOpts {
 
 /**
  * @description WSL integration with NixOS-WSL module, nix-ld, clipboard, and interop
- * @example wsl({ defaultUser: "adrifer" })
  * @category platform
  */
 export const wsl = feature("wsl", (opts?: WslOpts) => ({
