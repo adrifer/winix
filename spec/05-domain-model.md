@@ -23,6 +23,7 @@ Initial universal kinds:
 - file
 - directory
 - symlink
+- dotfile link (out-of-store symlink from repo path to XDG/config target)
 - environment variable
 - PATH entry
 - shell alias
@@ -53,6 +54,32 @@ Nix-specific kinds:
 - Home Manager module
 - Nix package
 - activation script
+
+## Resource IDs
+
+Resource IDs must be stable, deterministic, and require zero manual effort from the user.
+
+**Strategy: structural IDs derived from import paths.**
+
+The SDK generates a stable ID from the module path + export name + resource kind. For example:
+
+```ts
+// File: winix/features/git.ts
+export const git = feature("git", { ... });
+// Generated ID: "features/git/git"
+
+// File: winix/packages/nix/nodejs.ts
+export const nodejs = pkg({ version: "22" });
+// Generated ID: "packages/nix/nodejs"
+```
+
+Rules:
+
+- IDs are derived from the workspace-relative file path + export name.
+- Users may override with an explicit `id` field when the default is inadequate.
+- Renaming a file or export changes the ID (this is intentional: renames are breaking changes that should be visible).
+- Platform is structural: `packages/nix/*` vs `packages/winget/*` vs `packages/brew/*`.
+- No hidden ID generation from content hashing or runtime state.
 
 ## Required metadata
 

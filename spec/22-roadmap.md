@@ -14,49 +14,64 @@
 - `winix check` placeholder.
 - config discovery.
 
-## Phase 2: TypeScript evaluator prototype
+## Phase 2: Dendritic composition and merge semantics
 
-- Deno subprocess.
-- TypeScript SDK prototype.
+- Branch graph model.
+- Merge strategies with sensible defaults per resource kind.
+- Override/default/force behavior.
+- Conflict detection and diagnostics.
+- Precedence rules.
+- Provenance tracking through merges.
+
+## Phase 3: TypeScript evaluator prototype
+
+- Subprocess integration (runtime TBD: Bun, Node, or Deno).
+- TypeScript SDK prototype with structural resource IDs.
 - JSON IR emission.
-- source provenance basics.
+- Source provenance basics.
 
-## Phase 3: IR and validation
+## Phase 4: IR and validation
 
 - Rust IR types.
 - JSON Schema generation.
-- semantic validation.
-- diagnostics model.
+- Semantic validation.
+- Diagnostics model.
+- Capability checking.
 
-## Phase 4: Nix backend prototype
+## Phase 5: Nix backend prototype
 
-- generate/import Nix modules.
-- support one migrated host scenario.
-- flake check integration.
+- Generate/import Nix modules.
+- Support one migrated host scenario (WSL personal).
+- Flake check integration.
+- Dry-run diff against current generated output.
 
-## Phase 5: Windows backend prototype
+## Phase 6: Full Nix coverage
 
-- Winget package planning.
-- DSC resource export.
-- PowerShell escape hatch.
-
-## Phase 6: Dendritic composition
-
-- branch graph.
-- merge semantics.
-- override/default/force behavior.
-- provenance inspection.
+- All four hosts (WSL, WSL-work, macbook-pro, syncthing-lxc).
+- Activation DAG generation.
+- Platform conditionals.
+- Dotfile link resource kind.
+- Raw module escape hatches.
 
 ## Phase 7: Conformance
 
-- fixtures from current dotfiles.
-- golden IR snapshots.
-- traceability coverage checks.
+- Fixtures from current dotfiles.
+- Golden IR snapshots.
+- Traceability coverage checks.
 
-## Phase 8: Stabilization
+## Phase 8: Windows backend (v1.5)
 
-- docs.
-- examples.
-- agent commands.
-- migration guide.
+- Winget package planning.
+- Environment variables and PATH.
+- Dotfile/config placement.
+- WSL host-side config.
+- PowerShell escape hatch.
+
+## Phase 9: Stabilization
+
+- Docs.
+- Examples.
+- Agent commands.
+- Migration guide.
+- Cross-platform diff/plan UX.
 

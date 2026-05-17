@@ -68,6 +68,26 @@ Winix must model activation as a dependency graph with explicit ordering, idempo
 
 Nix flakes only see files tracked or staged by Git. Winix must detect unstaged new files when generating Nix flakes or warn clearly before evaluation.
 
+## WSL as a first-class concept
+
+WSL hosts are unique: they run Linux (managed by Nix) inside Windows. Configuration spans both sides:
+
+**Nix side (v1):**
+- NixOS-WSL module integration
+- interop flags (enabled, appendWindowsPath)
+- extraBin registration
+- nix-ld for dynamic linking
+- shell hooks (PATH sync, keep_current_path, BROWSER=wslview)
+- Git Credential Manager wrapper to Windows `.exe`
+- wl-clipboard for clipboard interop
+
+**Windows host side (v1.5):**
+- .wslconfig (memory, swap, processors)
+- WSL distro registration and default
+- Windows-side PATH entries that WSL needs
+
+Winix should model WSL as a **profile** that composes with the Linux platform, adding WSL-specific resources. The Windows host-side config belongs to the Windows backend and references the WSL distro by name.
+
 ## Migration requirements
 
 Winix should support incremental adoption:
