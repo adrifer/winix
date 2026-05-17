@@ -1,16 +1,14 @@
-import { type Fragment } from "winix";
+import { feature } from "winix";
 
 /**
  * @description Zoxide (smart cd) with shell integration
  * @example zoxide()
  * @category tool
  */
-export function zoxide(): Fragment {
-  return {
-    home: {
-      programs: {
-        zoxide: { enable: true },
-      },
+export const zoxide = feature("zoxide", () => ({
+  home: {
+    programs: {
+      zoxide: { enable: true },
     },
-  };
-}
+  },
+}));

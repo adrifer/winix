@@ -1,16 +1,14 @@
-import { type Fragment } from "winix";
+import { feature } from "winix";
 
 /**
  * @description Starship cross-shell prompt
  * @example starship()
  * @category shell
  */
-export function starship(): Fragment {
-  return {
-    home: {
-      programs: {
-        starship: { enable: true },
-      },
+export const starship = feature("starship", () => ({
+  home: {
+    programs: {
+      starship: { enable: true },
     },
-  };
-}
+  },
+}));

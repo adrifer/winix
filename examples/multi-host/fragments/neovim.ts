@@ -1,17 +1,15 @@
-import { type Fragment } from "winix";
+import { feature } from "winix";
 
 /**
  * @description Neovim editor with EDITOR env var
  * @example neovim()
  * @category tool
  */
-export function neovim(): Fragment {
-  return {
-    home: {
-      packages: ["neovim"],
-      sessionVariables: {
-        EDITOR: "nvim",
-      },
+export const neovim = feature("neovim", () => ({
+  home: {
+    packages: ["neovim"],
+    sessionVariables: {
+      EDITOR: "nvim",
     },
-  };
-}
+  },
+}));

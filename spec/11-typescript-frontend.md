@@ -182,12 +182,20 @@ export function gitCredential(): Fragment {
 }
 ```
 
-### Defining platforms and features
+### Helpers
 
-The `platform()` and `feature()` helpers create objects that are both callable (return a Fragment) and have an `.isActive` getter:
+Winix provides three helpers for defining system components:
+
+| Helper | Purpose | `.isActive` | Constraint |
+|---|---|---|---|
+| `platform(id, factory)` | System base (NixOS, darwin, Windows) | ✅ | Only one per host |
+| `feature(id, factory)` | Everything else (composable) | ✅ | N per host |
+| `host(name, fragments)` | Target machine definition | ❌ | Top-level only |
+
+All fragments are defined with a helper. This keeps the decision simple: "which helper?" not "do I need one?"
 
 ```ts
-// platforms/linux.ts
+// platforms/linux.ts — only one platform per host
 export const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
   nixos: {
     nixpkgs: { hostPlatform: "x86_64-linux", config: { allowUnfree: true } },
@@ -197,20 +205,36 @@ export const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
   },
 }));
 
-// fragments/wsl.ts
+// fragments/wsl.ts — feature, composable with others
 export const wsl = feature("wsl", (opts?: WslOpts) => ({
   nixos: { wsl: { enable: true, ...opts } },
   home: { packages: ["wslu"] },
 }));
+
+// fragments/fzf.ts — even simple ones use feature()
+export const fzf = feature("fzf", () => ({
+  home: { programs: { fzf: { enable: true } } },
+}));
 ```
 
-Usage in host list (as fragment):
+Usage in host list:
 ```ts
 host("wsl-work", [
   nixos({ stateVersion: "25.05" }),  // callable → Fragment
   wsl({ defaultUser: "adrifer" }),    // callable → Fragment
   zsh(),                              // uses nixos.isActive internally
 ]);
+```
+
+### Sharing fragments across hosts
+
+Common fragment lists are shared via plain array spreads (no helper needed):
+
+```ts
+const base = [nixos(), user("adrifer"), developer()];
+
+host("wsl-work", [...base, wsl(), workSysctl()]);
+host("wsl-personal", [...base, wsl()]);
 ```
 
 ### Evaluation model

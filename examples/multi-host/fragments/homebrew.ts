@@ -1,4 +1,4 @@
-import { type Fragment } from "winix";
+import { feature } from "winix";
 import { inputs } from "../inputs";
 
 /**
@@ -6,13 +6,11 @@ import { inputs } from "../inputs";
  * @example homebrew()
  * @category platform
  */
-export function homebrew(): Fragment {
-  return {
-    darwin: {
-      imports: [inputs.nixHomebrew],
-      homebrew: {
-        enable: true,
-      },
+export const homebrew = feature("homebrew", () => ({
+  darwin: {
+    imports: [inputs.nixHomebrew],
+    homebrew: {
+      enable: true,
     },
-  };
-}
+  },
+}));
