@@ -28,11 +28,12 @@ winix inspect provenance <resource-id> --json
 
 ## Agent-safe edit patterns
 
-- Add a resource with a stable ID.
-- Add a feature file and explicitly import it.
-- Extend a host with a named branch.
+- Add a fragment to a host's list.
+- Create a new fragment file and import it.
+- Compose existing fragments into a higher-level fragment.
 - Resolve a conflict with explicit override metadata.
 - Avoid broad rewrites of generated files.
+- Use the fragment registry for discoverability (`fragments.registry.ts`).
 
 ## JSON diagnostics
 

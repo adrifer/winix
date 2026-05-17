@@ -11,6 +11,8 @@ The TypeScript frontend is the user-facing language for Winix system specs.
 - Friendly to IDEs and agents.
 - Able to express dendritic composition.
 - Able to produce normalized IR without system mutation.
+- Trivially extensible by third parties.
+- LLM/agent-friendly: flat structure, consistent patterns, discoverable.
 
 ## Recommended layout
 
@@ -18,34 +20,216 @@ The TypeScript frontend is the user-facing language for Winix system specs.
 winix.config.ts
 winix/
   hosts/
-  users/
-  roles/
-  platforms/
-  features/
+  fragments/
   packages/
 ```
 
-## API style
+## Core concept: Fragments
 
-Prefer plain objects and pure functions:
+The fundamental building block is the **fragment**: a pure function that returns configuration data. Everything in Winix is a fragment: platforms, users, roles, features, packages, services. There is no structural distinction between them at the API level.
+
+A fragment is any function with the signature:
 
 ```ts
-export const developer = role("developer", {
-  packages: [
-    pkg.git({ id: "package.git" }),
-    pkg.nodejs({ id: "package.nodejs", version: "22" }),
+(...args) => Fragment | Fragment[]
+```
+
+A host is simply a name plus a flat list of fragments:
+
+```ts
+host("wsl-work", [
+  nixos(),
+  user("adrifer"),
+  wsl(),
+  workSysctl(),
+  packages(["socat", "bubblewrap"]),
+]);
+```
+
+The compiler resolves where each fragment's data belongs (NixOS config, Home Manager, boot, etc.) based on the fragment's return value. Users never need to think about nesting depth or option paths.
+
+## API style
+
+Prefer flat fragment composition:
+
+```ts
+host("wsl-work", [
+  nixos(),
+  user("adrifer"),
+  wsl({ defaultUser: "adrifer" }),
+  sysctl({ "fs.inotify.max_user_watches": 1048576 }),
+  nixLd({ libraries: ["icu", "zlib", "openssl"] }),
+  packages(["wl-clipboard", "socat"]),
+  homePackages(["wslu"]),
+  git.credentialHelper("git-credential-manager-windows"),
+]);
+```
+
+Avoid mutation-heavy builders and hidden global state.
+
+## Fragment anatomy
+
+A fragment function returns a `Fragment` object describing its contribution:
+
+```ts
+import { type Fragment } from "winix";
+
+export function sysctl(values: Record<string, number | string>): Fragment {
+  return {
+    nixos: {
+      boot: { kernel: { sysctl: values } },
+    },
+  };
+}
+```
+
+Fragments may target different scopes:
+
+```ts
+export function wsl(opts?: WslOpts): Fragment {
+  return {
+    nixos: {
+      wsl: { enable: true, ...opts },
+      packages: ["wl-clipboard"],
+      programs: { nixLd: { enable: true } },
+    },
+    home: {
+      packages: ["wslu"],
+      shell: { env: { BROWSER: "wslview" } },
+    },
+  };
+}
+```
+
+## Composite fragments
+
+A fragment may return an array of other fragments for composition:
+
+```ts
+export function devServer(): Fragment[] {
+  return [
+    docker(),
+    postgres({ port: 5432 }),
+    redis(),
+    caddy({ reverseProxy: "localhost:3000" }),
+  ];
+}
+```
+
+This replaces the previous `extends` and `roles` concepts. A "role" is just a composite fragment:
+
+```ts
+export function developer(): Fragment[] {
+  return [
+    packages(["git", "nodejs", "ripgrep"]),
+    neovim(),
+    starship(),
+    fzf(),
+    zoxide(),
+  ];
+}
+```
+
+## Workspace and inputs
+
+Inputs (flake dependencies) are declared at workspace level:
+
+```ts
+import { workspace, host, input } from "winix";
+
+export default workspace({
+  inputs: {
+    nixpkgs: "nixos-unstable",
+    nixpkgsStable: "github:NixOS/nixpkgs/nixos-25.11",
+    homeManager: input("github:nix-community/home-manager", {
+      follows: { nixpkgs: "nixpkgs" },
+    }),
+    nixosWsl: input("github:nix-community/NixOS-WSL", {
+      follows: { nixpkgs: "nixpkgs" },
+    }),
+  },
+
+  hosts: [
+    host("wsl-work", [
+      nixos(),
+      user("adrifer"),
+      wsl(),
+      developer(),
+      workSysctl(),
+      packages(["socat", "bubblewrap"]),
+    ]),
+
+    host("macbook-pro", [
+      darwin(),
+      user("adrifer"),
+      homebrew(),
+      developer(),
+      packages(["raycast", "wezterm"]),
+    ]),
   ],
 });
 ```
 
-Avoid mutation-heavy builders and hidden global state.
+Simple inputs are a URL string. Inputs with `follows` or other options use the `input()` helper.
+
+## Third-party extensibility
+
+Creating a third-party fragment requires no plugin system, hooks, or registration:
+
+```ts
+// npm: winix-fragment-tailscale
+import { type Fragment } from "winix";
+
+export function tailscale(opts?: { exitNode?: boolean }): Fragment {
+  return {
+    nixos: { services: { tailscale: { enable: true, ...opts } } },
+  };
+}
+```
+
+Usage:
+
+```ts
+import { tailscale } from "winix-fragment-tailscale";
+
+host("server", [
+  nixos(),
+  tailscale({ exitNode: true }),
+]);
+```
+
+The contract is just: export a function that returns `Fragment | Fragment[]`. No base classes, no interfaces to implement, no lifecycle hooks.
+
+## Fragment metadata
+
+Fragments may include metadata for discoverability and agent DX:
+
+```ts
+/**
+ * @description Enable WSL integration with NixOS-WSL module
+ * @example wsl({ defaultUser: "adrifer" })
+ * @category platform
+ */
+export function wsl(opts?: WslOpts): Fragment { ... }
+```
+
+A fragment registry file can be auto-generated for agent consumption:
+
+```ts
+// fragments.registry.ts (autogenerated)
+export const FRAGMENTS = {
+  wsl: { description: "WSL support", params: ["defaultUser?"], category: "platform" },
+  sysctl: { description: "Kernel sysctl tuning", params: ["Record<string, number>"], category: "system" },
+  docker: { description: "Docker/OCI runtime", params: ["storageDriver?"], category: "service" },
+};
+```
 
 ## Safe subset
 
 Prefer:
 
 - explicit imports
-- `export const`
+- `export const` / `export function`
 - plain objects
 - arrays
 - pure functions
@@ -63,42 +247,44 @@ Discourage:
 - dynamic imports for core config
 - time-dependent values
 
-## Example
+## Typing strategy
 
-```ts
-export default workspace({
-  hosts: [
-    host("wsl-work", {
-      extends: [platforms.nixos, roles.developer, users.adrifer],
-      features: [features.wsl(), features.workSysctl()],
-    }),
-  ],
-});
-```
+Fragment return types are typed incrementally:
+
+- Each fragment function types only its own parameters (small, focused types).
+- The `Fragment` interface uses `nixos?: Record<string, unknown>` and `home?: Record<string, unknown>` at the top level.
+- As the project matures, specific sub-types can be introduced for well-known paths (e.g., `NixosBoot`, `HomeShell`).
+- Auto-generation from NixOS option trees is a future goal, not a launch requirement.
 
 ## Dotfile links
 
-A common pattern is symlinking config directories from the repo into `XDG_CONFIG_HOME`. Winix provides a first-class helper:
+Dotfile linking is expressed as a fragment:
 
 ```ts
-import { dotfileLink } from "winix/sdk";
-import { darwin } from "winix/platforms";
+import { dotfiles } from "winix";
 
-export const nvimConfig = dotfileLink({
-  source: "./nvim/.config/nvim",    // relative to workspace root
-  target: "~/.config/nvim",          // expands per-user
-  recursive: true,
-});
-
-// Platform-conditional dotfile:
-export const ghosttyConfig = dotfileLink({
-  source: "./ghostty/.config/ghostty",
-  target: "~/.config/ghostty",
-  platforms: [darwin],  // typed reference, not a magic string
-});
+host("wsl-work", [
+  nixos(),
+  dotfiles({
+    "./nvim/.config/nvim": "~/.config/nvim",
+    "./ghostty/.config/ghostty": "~/.config/ghostty",
+  }),
+]);
 ```
 
-Platform references are imported from `winix/platforms`, which exports typed constants (not strings). This module is a leaf dependency (exports only tokens, imports nothing from features or resources), so circular dependencies cannot occur.
+Or as individual link fragments for conditional use:
+
+```ts
+import { dotfileLink } from "winix";
+
+export function nvimConfig(): Fragment {
+  return dotfileLink({
+    source: "./nvim/.config/nvim",
+    target: "~/.config/nvim",
+    recursive: true,
+  });
+}
+```
 
 This maps to Home Manager's `mkOutOfStoreSymlink` on Nix targets and native symlinks/junctions on Windows. The resource kind is `dotfile-link`, distinct from generic `symlink` because:
 
