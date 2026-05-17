@@ -70,23 +70,9 @@ Nix flakes only see files tracked or staged by Git. Winix must detect unstaged n
 
 ## WSL as a first-class concept
 
-WSL hosts are unique: they run Linux (managed by Nix) inside Windows. Configuration spans both sides:
+WSL hosts are unique: they run Linux (managed by Nix) inside Windows. The Nix side of WSL configuration (NixOS-WSL module, interop flags, shell hooks, credential manager wrapper) is part of the v1 Nix backend since it lives inside the NixOS host definition.
 
-**Nix side (v1):**
-- NixOS-WSL module integration
-- interop flags (enabled, appendWindowsPath)
-- extraBin registration
-- nix-ld for dynamic linking
-- shell hooks (PATH sync, keep_current_path, BROWSER=wslview)
-- Git Credential Manager wrapper to Windows `.exe`
-- wl-clipboard for clipboard interop
-
-**Windows host side (v1.5):**
-- .wslconfig (memory, swap, processors)
-- WSL distro registration and default
-- Windows-side PATH entries that WSL needs
-
-Winix should model WSL as a **profile** that composes with the Linux platform, adding WSL-specific resources. The Windows host-side config belongs to the Windows backend and references the WSL distro by name.
+The Windows host-side of WSL (enabling WSL, distro registration, .wslconfig) belongs to the Windows backend (v2) as it requires Windows system mutation.
 
 ## Migration requirements
 

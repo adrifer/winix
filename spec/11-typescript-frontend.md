@@ -82,6 +82,7 @@ A common pattern is symlinking config directories from the repo into `XDG_CONFIG
 
 ```ts
 import { dotfileLink } from "winix/sdk";
+import { darwin } from "winix/platforms";
 
 export const nvimConfig = dotfileLink({
   source: "./nvim/.config/nvim",    // relative to workspace root
@@ -93,9 +94,11 @@ export const nvimConfig = dotfileLink({
 export const ghosttyConfig = dotfileLink({
   source: "./ghostty/.config/ghostty",
   target: "~/.config/ghostty",
-  platforms: ["darwin"],  // only on macOS
+  platforms: [darwin],  // typed reference, not a magic string
 });
 ```
+
+Platform references are imported from `winix/platforms`, which exports typed constants (not strings). This module is a leaf dependency (exports only tokens, imports nothing from features or resources), so circular dependencies cannot occur.
 
 This maps to Home Manager's `mkOutOfStoreSymlink` on Nix targets and native symlinks/junctions on Windows. The resource kind is `dotfile-link`, distinct from generic `symlink` because:
 
