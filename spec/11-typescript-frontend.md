@@ -130,6 +130,163 @@ export function developer(): Fragment[] {
 }
 ```
 
+## Platform conditionals
+
+Fragments often need platform-specific behavior. Instead of a custom DSL, Winix uses **native TypeScript conditionals** with implicit context provided by the compiler.
+
+### Platform and feature objects as checkers
+
+Platform and feature objects serve dual purpose: they are both fragment factories (for the host list) and runtime checkers (inside other fragments):
+
+```ts
+import { nixos } from "./platforms/linux";
+import { darwin } from "./platforms/darwin";
+import { wsl } from "./fragments/wsl";
+
+export function zsh(): Fragment {
+  return {
+    home: {
+      programs: {
+        zsh: {
+          enable: true,
+          aliases: {
+            g: "lazygit",
+            n: "nvim",
+            ...(nixos.isActive && {
+              i: "sudo nixos-rebuild switch --flake /etc/nixos",
+              gc: "sudo nix-collect-garbage -d",
+            }),
+            ...(darwin.isActive && {
+              i: "sudo darwin-rebuild switch --flake ~/dotfiles/nixos#macbook-pro",
+              gc: "nix-collect-garbage -d",
+            }),
+          },
+        },
+      },
+    },
+  };
+}
+
+export function gitCredential(): Fragment {
+  return {
+    home: {
+      programs: {
+        git: {
+          credentialHelper: wsl.isActive
+            ? "git-credential-manager-windows"
+            : "git-credential-manager",
+        },
+      },
+    },
+  };
+}
+```
+
+### Helpers
+
+Winix provides three helpers for defining system components:
+
+| Helper | Purpose | `.isActive` | Constraint |
+|---|---|---|---|
+| `platform(id, factory)` | System base (NixOS, darwin, Windows) | ✅ | Only one per host |
+| `feature(id, factory)` | Everything else (composable) | ✅ | N per host |
+| `host(name, fragments)` | Target machine definition | ❌ | Top-level only |
+
+All fragments are defined with a helper. This keeps the decision simple: "which helper?" not "do I need one?"
+
+```ts
+// platforms/linux.ts — only one platform per host
+export const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
+  nixos: {
+    nixpkgs: { hostPlatform: "x86_64-linux", config: { allowUnfree: true } },
+    nix: { settings: { experimentalFeatures: ["nix-command", "flakes"] } },
+    system: { stateVersion: opts?.stateVersion },
+    homeManager: { useGlobalPkgs: true, useUserPackages: true },
+  },
+}));
+
+// fragments/wsl.ts — feature, composable with others
+export const wsl = feature("wsl", (opts?: WslOpts) => ({
+  nixos: { wsl: { enable: true, ...opts } },
+  home: { packages: ["wslu"] },
+}));
+
+// fragments/fzf.ts — even simple ones use feature()
+export const fzf = feature("fzf", () => ({
+  home: { programs: { fzf: { enable: true } } },
+}));
+```
+
+Usage in host list:
+```ts
+host("wsl-work", [
+  nixos({ stateVersion: "25.05" }),  // callable → Fragment
+  wsl({ defaultUser: "adrifer" }),    // callable → Fragment
+  zsh(),                              // uses nixos.isActive internally
+]);
+```
+
+### Sharing fragments across hosts
+
+Common fragment lists are shared via plain array spreads (no helper needed):
+
+```ts
+const base = [nixos(), user("adrifer"), developer()];
+
+host("wsl-work", [...base, wsl(), workSysctl()]);
+host("wsl-personal", [...base, wsl()]);
+```
+
+### Evaluation model
+
+The compiler performs two passes:
+
+1. **Collection pass:** Scan the host's fragment list to determine which platforms and features are present (by their registered IDs).
+2. **Evaluation pass:** Set the implicit context, then evaluate each fragment. `.isActive` getters read from this context.
+
+This means `.isActive` is independent of list order — a fragment can check `wsl.isActive` regardless of whether it appears before or after `wsl()` in the list.
+
+### No magic strings
+
+Conditions use imported objects, not strings:
+
+```ts
+import { nixos } from "./platforms/linux";
+import { wsl } from "./fragments/wsl";
+import { docker } from "./fragments/docker";
+
+// All type-safe, autocomplete-friendly:
+nixos.isActive   // is this host a NixOS host?
+wsl.isActive     // does this host have WSL?
+docker.isActive  // does this host have Docker?
+```
+
+### Third-party compatibility
+
+Third-party fragments created with `feature()` automatically get `.isActive`:
+
+```ts
+// winix-fragment-tailscale
+export const tailscale = feature("tailscale", (opts?) => ({ ... }));
+
+// In another fragment:
+import { tailscale } from "winix-fragment-tailscale";
+if (tailscale.isActive) { /* configure firewall for tailscale */ }
+```
+
+### Testing
+
+For unit testing fragments outside the compiler:
+
+```ts
+import { withContext } from "winix/testing";
+
+test("zsh linux aliases", () => {
+  const result = withContext({ platform: "linux", features: ["wsl"] }, () => zsh());
+  expect(result.home.programs.zsh.aliases.i).toContain("nixos-rebuild");
+});
+```
+
 ## Workspace and inputs
 
 Inputs (flake dependencies) are declared in a dedicated leaf file to avoid circular imports:

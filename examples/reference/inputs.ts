@@ -1,8 +1,3 @@
-/**
- * Workspace inputs definition.
- * This file is a leaf node: it imports nothing from the project.
- * Fragments that need input references import from here.
- */
 import { defineInputs, input } from "winix";
 
 export const inputs = defineInputs({
