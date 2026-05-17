@@ -24,6 +24,6 @@
 | Platform conditionals | `pkgs.stdenv.isDarwin` | Capability/platform guard | All | Required |
 | Raw Nix module | direct Nix code | Escape hatch | Nix | Required |
 | Git staging flake issue | operational workaround | CLI diagnostic | Nix | Required |
-| Windows packages | not in current dotfiles | Winget package resource | Windows | Required for parity |
-| Windows desired state | not in current dotfiles | DSC resource | Windows | Required for parity |
+| Windows packages | not in current dotfiles | Winget package resource | Windows | v1.5 |
+| Windows desired state | not in current dotfiles | DSC resource | Windows | v2 |
 

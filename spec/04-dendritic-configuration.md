@@ -54,3 +54,16 @@ Composition must be deterministic. Conflicts must be errors unless a resource de
 - Host files that duplicate shared concerns.
 - Platform-specific behavior hidden behind vague names.
 
+## Explicit imports
+
+All branches, features, and hosts must be composed via explicit TypeScript imports. No directory scanning or glob-based auto-discovery.
+
+Rationale:
+
+- IDE support: jump-to-definition, find-all-references, and rename work out of the box.
+- Agent-friendly: adding a feature means adding one import line, not placing a file in a magic directory.
+- Deterministic: evaluation order is defined by code, not filesystem sort order.
+- Refactor-safe: moving a file updates the import, not a hidden convention.
+
+The existing Nix `import-tree.nix` pattern (scan directory for `.nix` files) is a migration anti-pattern that Winix should not replicate.
+

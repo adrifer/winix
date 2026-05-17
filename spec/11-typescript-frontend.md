@@ -76,3 +76,33 @@ export default workspace({
 });
 ```
 
+## Dotfile links
+
+A common pattern is symlinking config directories from the repo into `XDG_CONFIG_HOME`. Winix provides a first-class helper:
+
+```ts
+import { dotfileLink } from "winix/sdk";
+import { darwin } from "winix/platforms";
+
+export const nvimConfig = dotfileLink({
+  source: "./nvim/.config/nvim",    // relative to workspace root
+  target: "~/.config/nvim",          // expands per-user
+  recursive: true,
+});
+
+// Platform-conditional dotfile:
+export const ghosttyConfig = dotfileLink({
+  source: "./ghostty/.config/ghostty",
+  target: "~/.config/ghostty",
+  platforms: [darwin],  // typed reference, not a magic string
+});
+```
+
+Platform references are imported from `winix/platforms`, which exports typed constants (not strings). This module is a leaf dependency (exports only tokens, imports nothing from features or resources), so circular dependencies cannot occur.
+
+This maps to Home Manager's `mkOutOfStoreSymlink` on Nix targets and native symlinks/junctions on Windows. The resource kind is `dotfile-link`, distinct from generic `symlink` because:
+
+- Source is always workspace-relative (repo is source of truth).
+- Target is always user-scoped (XDG or platform equivalent).
+- Backend can choose the best linking strategy per platform.
+

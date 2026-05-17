@@ -68,6 +68,12 @@ Winix must model activation as a dependency graph with explicit ordering, idempo
 
 Nix flakes only see files tracked or staged by Git. Winix must detect unstaged new files when generating Nix flakes or warn clearly before evaluation.
 
+## WSL as a first-class concept
+
+WSL hosts are unique: they run Linux (managed by Nix) inside Windows. The Nix side of WSL configuration (NixOS-WSL module, interop flags, shell hooks, credential manager wrapper) is part of the v1 Nix backend since it lives inside the NixOS host definition.
+
+The Windows host-side of WSL (enabling WSL, distro registration, .wslconfig) belongs to the Windows backend (v2) as it requires Windows system mutation.
+
 ## Migration requirements
 
 Winix should support incremental adoption:

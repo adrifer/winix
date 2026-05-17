@@ -26,6 +26,30 @@ Evaluation turns TypeScript branches into normalized IR. This document defines d
 | `merge-object` | Recursively merge object fields. |
 | `deny-merge` | Resource cannot be merged; duplicates are errors. |
 
+## Default merge strategy by resource kind
+
+Users should rarely need to specify a merge strategy. Sensible defaults per kind:
+
+| Resource kind | Default strategy | Rationale |
+|---|---|---|
+| package | `append` | Multiple branches can request packages; they accumulate. |
+| service | `merge-object` | Services have multiple fields; branches contribute different settings. |
+| file | `deny-merge` | Two branches writing the same file is almost always a bug. |
+| directory | `merge-object` | Directory metadata can be composed. |
+| symlink | `deny-merge` | A symlink target must be unambiguous. |
+| dotfile link | `deny-merge` | A dotfile source must be unambiguous. |
+| environment variable | `set` | One value per variable; conflicts are errors. |
+| PATH entry | `append` | Multiple PATH entries accumulate naturally. |
+| shell alias | `set` | One definition per alias name; conflicts are errors. |
+| shell function | `set` | One definition per function name; conflicts are errors. |
+| shell init snippet | `append` | Shell init lines from multiple features concatenate. |
+| activation task | `deny-merge` | Tasks have unique IDs; edges define ordering. |
+| secret reference | `set` | One secret per reference name. |
+| backend module import | `append` | Multiple module imports accumulate. |
+| backend raw block | `deny-merge` | Raw blocks are opaque; cannot merge safely. |
+
+Users override defaults with explicit `merge: "strategy"` on any resource.
+
 ## Precedence
 
 Default precedence from weakest to strongest:
