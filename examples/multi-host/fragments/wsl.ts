@@ -1,4 +1,5 @@
 import { type Fragment } from "winix";
+import { inputs } from "../inputs";
 
 interface WslOpts {
   defaultUser?: string;
@@ -12,7 +13,7 @@ interface WslOpts {
 export function wsl(opts?: WslOpts): Fragment {
   return {
     nixos: {
-      imports: ["nixos-wsl"],
+      imports: [inputs.nixosWsl],
       wsl: {
         enable: true,
         defaultUser: opts?.defaultUser,

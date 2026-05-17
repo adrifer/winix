@@ -1,4 +1,5 @@
 import { type Fragment } from "winix";
+import { inputs } from "../inputs";
 
 /**
  * @description Homebrew package manager for macOS via nix-homebrew
@@ -8,7 +9,7 @@ import { type Fragment } from "winix";
 export function homebrew(): Fragment {
   return {
     darwin: {
-      imports: ["nix-homebrew"],
+      imports: [inputs.nixHomebrew],
       homebrew: {
         enable: true,
       },

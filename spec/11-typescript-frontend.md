@@ -132,45 +132,57 @@ export function developer(): Fragment[] {
 
 ## Workspace and inputs
 
-Inputs (flake dependencies) are declared at workspace level:
+Inputs (flake dependencies) are declared in a dedicated leaf file to avoid circular imports:
 
 ```ts
-import { workspace, host, input } from "winix";
+// inputs.ts (leaf node — imports nothing from the project)
+import { defineInputs, input } from "winix";
+
+export const inputs = defineInputs({
+  nixpkgs: "nixos-unstable",
+  homeManager: input("github:nix-community/home-manager", {
+    follows: { nixpkgs: "nixpkgs" },
+  }),
+  nixosWsl: input("github:nix-community/NixOS-WSL", {
+    follows: { nixpkgs: "nixpkgs" },
+  }),
+});
+```
+
+`defineInputs` returns a typed object. Fragments that need to reference an input import from this file:
+
+```ts
+// fragments/wsl.ts
+import { inputs } from "../inputs";
+
+export function wsl(): Fragment {
+  return {
+    nixos: { imports: [inputs.nixosWsl] },  // typed, autocomplete, refactor-safe
+  };
+}
+```
+
+The workspace config imports both:
+
+```ts
+// winix.config.ts
+import { workspace, host } from "winix";
+import { inputs } from "./inputs";
+import { wsl } from "./fragments/wsl";
 
 export default workspace({
-  inputs: {
-    nixpkgs: "nixos-unstable",
-    nixpkgsStable: "github:NixOS/nixpkgs/nixos-25.11",
-    homeManager: input("github:nix-community/home-manager", {
-      follows: { nixpkgs: "nixpkgs" },
-    }),
-    nixosWsl: input("github:nix-community/NixOS-WSL", {
-      follows: { nixpkgs: "nixpkgs" },
-    }),
-  },
+  inputs,
 
   hosts: [
     host("wsl-work", [
       nixos(),
-      user("adrifer"),
-      wsl(),
-      developer(),
-      workSysctl(),
-      packages(["socat", "bubblewrap"]),
-    ]),
-
-    host("macbook-pro", [
-      darwin(),
-      user("adrifer"),
-      homebrew(),
-      developer(),
-      packages(["raycast", "wezterm"]),
+      wsl({ defaultUser: "adrifer" }),
     ]),
   ],
 });
 ```
 
-Simple inputs are a URL string. Inputs with `follows` or other options use the `input()` helper.
+Simple inputs are a URL string. Inputs with `follows` or other options use the `input()` helper. The separation into a leaf file prevents circular imports (fragments import inputs, workspace imports both, but inputs imports nothing from the project).
 
 ## Third-party extensibility
 
@@ -247,14 +259,25 @@ Discourage:
 - dynamic imports for core config
 - time-dependent values
 
-## Typing strategy
+## Typing strategy (v1 requirement)
 
-Fragment return types are typed incrementally:
+Autocomplete-while-typing is non-negotiable for v1 DX.
 
-- Each fragment function types only its own parameters (small, focused types).
-- The `Fragment` interface uses `nixos?: Record<string, unknown>` and `home?: Record<string, unknown>` at the top level.
-- As the project matures, specific sub-types can be introduced for well-known paths (e.g., `NixosBoot`, `HomeShell`).
-- Auto-generation from NixOS option trees is a future goal, not a launch requirement.
+Fragment return types use a phased approach:
+
+**Phase 1 (v1 launch):** Ship typed interfaces for the top ~20 NixOS/Home Manager options in active use (git, zsh, programs.*, packages, boot.kernel, services.*, wsl.*). Hand-written, tested, good JSDoc. Fragment output is generic:
+
+```ts
+function feature<T extends NixosOptions>(config: { nixos?: T; home?: HomeOptions }): Fragment;
+```
+
+This gives autocomplete for `home: { programs: { git: { |` immediately.
+
+**Phase 2:** `winix types generate` CLI command that reads the current NixOS/HM option tree (via `nixos-option --json`) and generates/updates type definitions. Run once after updating inputs, like `prisma generate`.
+
+**Phase 3:** Auto-generation integrated into the build pipeline. Full option coverage.
+
+The compiler validates all fragment output against the actual NixOS/HM module system at generation time, regardless of TypeScript type coverage. Types are for DX (autocomplete, error squiggles); the compiler is the source of truth.
 
 ## Dotfile links
 
