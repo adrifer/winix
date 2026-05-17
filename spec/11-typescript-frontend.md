@@ -130,6 +130,76 @@ export function developer(): Fragment[] {
 }
 ```
 
+## Platform conditionals
+
+Fragments may need platform-specific behavior. Use `when()` to conditionally include configuration based on the host's platform:
+
+```ts
+import { when, Platform } from "winix";
+
+export function zsh(): Fragment[] {
+  return [
+    // Shared across all platforms
+    {
+      home: {
+        programs: {
+          zsh: {
+            enable: true,
+            aliases: { ls: "eza -lh", g: "lazygit", n: "nvim" },
+          },
+        },
+      },
+    },
+
+    // Only included on Linux/NixOS hosts
+    when(Platform.linux, {
+      home: {
+        programs: {
+          zsh: {
+            aliases: {
+              i: "sudo nixos-rebuild switch --flake /etc/nixos",
+              gc: "sudo nix-collect-garbage -d",
+            },
+          },
+        },
+      },
+    }),
+
+    // Only included on macOS/darwin hosts
+    when(Platform.darwin, {
+      home: {
+        programs: {
+          zsh: {
+            aliases: {
+              i: "sudo darwin-rebuild switch --flake ~/dotfiles/nixos#macbook-pro",
+              gc: "nix-collect-garbage -d",
+            },
+          },
+        },
+      },
+    }),
+  ];
+}
+```
+
+`when()` is evaluated statically at compile time (the compiler knows each host's platform). The conditional fragment is either included in the merge or skipped entirely.
+
+Multiple conditions can be combined:
+
+```ts
+// Include only on WSL hosts (platform + feature check)
+when([Platform.linux, Feature.wsl], {
+  home: { shell: { env: { BROWSER: "wslview" } } },
+})
+
+// Negation
+when(not(Platform.darwin), {
+  nixos: { packages: ["wl-clipboard"] },
+})
+```
+
+`when()` returns a `Fragment` — it composes like everything else in the host list.
+
 ## Workspace and inputs
 
 Inputs (flake dependencies) are declared in a dedicated leaf file to avoid circular imports:
