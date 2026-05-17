@@ -1,0 +1,191 @@
+import { describe, it, expect } from "vitest";
+import {
+  platform,
+  feature,
+  host,
+  workspace,
+  input,
+  defineInputs,
+  withContext,
+  evaluate,
+  generateNix,
+} from "../src/index.js";
+
+// --- Define test fragments (mirrors examples/reference) ---
+
+const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
+  nixos: {
+    nixpkgs: { hostPlatform: "x86_64-linux", config: { allowUnfree: true } },
+    nix: { settings: { experimentalFeatures: ["nix-command", "flakes"] } },
+    system: { stateVersion: opts?.stateVersion },
+  },
+}));
+
+const wsl = feature("wsl", (opts?: { defaultUser?: string }) => ({
+  nixos: {
+    wsl: { enable: true, defaultUser: opts?.defaultUser },
+    packages: ["wl-clipboard"],
+  },
+  home: {
+    packages: ["wslu"],
+  },
+}));
+
+const workSysctl = feature("work-sysctl", () => ({
+  nixos: {
+    boot: {
+      kernel: {
+        sysctl: {
+          "fs.inotify.max_user_watches": 1048576,
+          "fs.inotify.max_user_instances": 1024,
+        },
+      },
+    },
+  },
+}));
+
+const zsh = feature("zsh", () => ({
+  home: {
+    programs: {
+      zsh: {
+        enable: true,
+        aliases: {
+          g: "lazygit",
+          ...(nixos.isActive && { i: "sudo nixos-rebuild switch" }),
+        },
+      },
+    },
+  },
+}));
+
+// --- Tests ---
+
+describe("SDK helpers", () => {
+  it("platform() creates callable with .isActive", () => {
+    const result = nixos({ stateVersion: "25.05" });
+    expect(result).toHaveProperty("nixos");
+    expect(result.__platform).toBe(true);
+    expect(result.__id).toBe("linux");
+  });
+
+  it("feature() creates callable with .isActive", () => {
+    const result = wsl({ defaultUser: "adrifer" });
+    expect(result).toHaveProperty("nixos");
+    expect((result as any).__id).toBe("wsl");
+  });
+
+  it(".isActive works inside withContext", () => {
+    withContext({ platform: "linux", features: ["wsl"] }, () => {
+      expect(nixos.isActive).toBe(true);
+      expect(wsl.isActive).toBe(true);
+    });
+
+    withContext({ platform: "darwin", features: [] }, () => {
+      expect(nixos.isActive).toBe(false);
+      expect(wsl.isActive).toBe(false);
+    });
+  });
+});
+
+describe("Evaluator", () => {
+  it("merges fragments for a host", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", [
+          nixos({ stateVersion: "25.05" }),
+          wsl({ defaultUser: "adrifer" }),
+          workSysctl(),
+        ]),
+      ],
+    });
+
+    const [result] = evaluate(ws);
+
+    expect(result.name).toBe("wsl-work");
+    expect(result.nixos).toHaveProperty("nixpkgs");
+    expect(result.nixos).toHaveProperty("wsl");
+    expect(result.nixos).toHaveProperty("boot");
+    expect((result.nixos as any).wsl.defaultUser).toBe("adrifer");
+    expect((result.nixos as any).system.stateVersion).toBe("25.05");
+  });
+
+  it("arrays are appended and deduped", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("test", [
+          nixos(),
+          wsl(),
+          { nixos: { packages: ["socat"] } },
+        ]),
+      ],
+    });
+
+    const [result] = evaluate(ws);
+    const packages = (result.nixos as any).packages;
+    expect(packages).toContain("wl-clipboard");
+    expect(packages).toContain("socat");
+  });
+
+  it("platform conditionals resolve correctly", () => {
+    // In real usage, workspace definition happens with context set by evaluator.
+    // For PoC, we wrap in withContext to simulate.
+    const ws = withContext({ platform: "linux", features: ["linux", "zsh"] }, () =>
+      workspace({
+        inputs: { nixpkgs: "nixos-unstable" },
+        hosts: [
+          host("wsl-work", [nixos(), zsh()]),
+        ],
+      })
+    );
+
+    const [result] = evaluate(ws);
+    const aliases = (result.home as any).programs.zsh.aliases;
+    expect(aliases.g).toBe("lazygit");
+    expect(aliases.i).toBe("sudo nixos-rebuild switch");
+  });
+});
+
+describe("Nix backend", () => {
+  it("generates flake.nix with inputs", () => {
+    const ws = workspace({
+      inputs: {
+        nixpkgs: "nixos-unstable",
+        homeManager: input("github:nix-community/home-manager", {
+          follows: { nixpkgs: "nixpkgs" },
+        }),
+      },
+      hosts: [host("wsl-work", [nixos()])],
+    });
+
+    const evaluated = evaluate(ws);
+    const output = generateNix(ws, evaluated);
+
+    expect(output["flake.nix"]).toContain("nixpkgs.url");
+    expect(output["flake.nix"]).toContain("home-manager.url");
+    expect(output["flake.nix"]).toContain("home-manager.inputs.nixpkgs.follows");
+    expect(output["flake.nix"]).toContain("nixosConfigurations.wsl-work");
+  });
+
+  it("generates host module with merged config", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", [
+          nixos({ stateVersion: "25.05" }),
+          workSysctl(),
+        ]),
+      ],
+    });
+
+    const evaluated = evaluate(ws);
+    const output = generateNix(ws, evaluated);
+    const hostNix = output.hosts["wsl-work.nix"];
+
+    expect(hostNix).toContain("stateVersion");
+    expect(hostNix).toContain("25.05");
+    expect(hostNix).toContain("boot.kernel.sysctl");
+    expect(hostNix).toContain("1048576");
+  });
+});
