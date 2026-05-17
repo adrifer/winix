@@ -263,19 +263,99 @@ Discourage:
 
 Autocomplete-while-typing is non-negotiable for v1 DX.
 
-Fragment return types use a phased approach:
+### Type generation from inputs
 
-**Phase 1 (v1 launch):** Ship typed interfaces for the top ~20 NixOS/Home Manager options in active use (git, zsh, programs.*, packages, boot.kernel, services.*, wsl.*). Hand-written, tested, good JSDoc. Fragment output is generic:
+Types are derived from **declared inputs**, not from user configuration files. A user starting from scratch gets full autocomplete immediately because the options come from the inputs (nixpkgs, home-manager, etc.), which are published packages with self-documented option trees.
 
-```ts
-function feature<T extends NixosOptions>(config: { nixos?: T; home?: HomeOptions }): Fragment;
+```bash
+# After winix init or after changing inputs:
+winix types generate
+
+# What it does:
+# 1. Reads inputs.ts → knows which flake inputs you have
+# 2. For each input, extracts its declared NixOS/HM options
+# 3. Merges into a unified type tree
+# 4. Writes generated/nixos.d.ts + generated/home-manager.d.ts
 ```
 
-This gives autocomplete for `home: { programs: { git: { |` immediately.
+Adding a new input (e.g., `nixos-wsl`) makes its options (`wsl.enable`, `wsl.defaultUser`, etc.) appear in types after the next `winix types generate`.
 
-**Phase 2:** `winix types generate` CLI command that reads the current NixOS/HM option tree (via `nixos-option --json`) and generates/updates type definitions. Run once after updating inputs, like `prisma generate`.
+### Nix type to TypeScript mapping
 
-**Phase 3:** Auto-generation integrated into the build pipeline. Full option coverage.
+| Nix type | TypeScript |
+|----------|------------|
+| `bool` | `boolean` |
+| `str` | `string` |
+| `int` | `number` |
+| `listOf str` | `string[]` |
+| `attrsOf str` | `Record<string, string>` |
+| `nullOr str` | `string \| null` |
+| `enum ["a" "b"]` | `"a" \| "b"` |
+| `submodule { ... }` | nested interface |
+
+### Generated output
+
+```ts
+// generated/nixos.d.ts (auto-generated, do not edit)
+export interface NixosOptions {
+  boot?: {
+    kernel?: {
+      sysctl?: Record<string, string | number | boolean>;
+    };
+  };
+  programs?: {
+    git?: { enable?: boolean; settings?: Record<string, unknown> };
+    nixLd?: { enable?: boolean; libraries?: string[] };
+  };
+  services?: {
+    tailscale?: { enable?: boolean; extraUpFlags?: string[] };
+  };
+  wsl?: {
+    enable?: boolean;
+    defaultUser?: string;
+  };
+}
+```
+
+The `Fragment` type references generated types:
+
+```ts
+import type { NixosOptions } from "./generated/nixos";
+import type { HomeOptions } from "./generated/home-manager";
+
+interface Fragment {
+  nixos?: NixosOptions;
+  home?: HomeOptions;
+  darwin?: DarwinOptions;
+}
+```
+
+### Automation
+
+Type generation can be triggered automatically:
+
+- `prepare` script in package.json (runs on install)
+- LSP/IDE plugin detects `inputs.ts` changes and regenerates
+- `winix init` runs it as part of project scaffolding
+
+### Scope control
+
+```bash
+# Generate types only for options used in current fragments (smaller output)
+winix types generate --scope used
+
+# Generate full option tree (all available NixOS + HM options)
+winix types generate --scope full
+
+# Add types for a specific module on demand
+winix types generate --add services.tailscale
+```
+
+### Phased delivery
+
+**Phase 1 (v1 launch):** Ship hand-written typed interfaces for the top ~20 options in active use as a fallback/baseline. Run `winix types generate` to get full coverage from inputs.
+
+**Phase 2:** Fully automated. `winix types generate` is the primary source. Hand-written types serve only as overrides for better JSDoc or narrower types.
 
 The compiler validates all fragment output against the actual NixOS/HM module system at generation time, regardless of TypeScript type coverage. Types are for DX (autocomplete, error squiggles); the compiler is the source of truth.
 
