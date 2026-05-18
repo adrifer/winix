@@ -214,4 +214,43 @@ describe("Nix backend", () => {
     expect(hostNix).toContain("boot.kernel.sysctl");
     expect(hostNix).toContain("1048576");
   });
+
+  it("renders NixOS and Home Manager package lists with pkgs scope", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          wsl({ defaultUser: "adrifer" }),
+        ]),
+      ],
+    });
+
+    const evaluated = evaluate(ws);
+    const output = generateNix(ws, evaluated);
+    const hostNix = output.hosts["wsl-work.nix"];
+
+    expect(hostNix).toContain("environment.systemPackages = with pkgs; [ wl-clipboard ];");
+    expect(hostNix).toContain("home.packages = with pkgs; [ wslu ];");
+    expect(hostNix).not.toContain("[ \"wl-clipboard\" ]");
+    expect(hostNix).not.toContain("[ \"wslu\" ]");
+  });
+
+  it("renders nix-darwin package lists as system packages with pkgs scope", () => {
+    const darwin = platform("darwin", () => ({
+      darwin: {
+        packages: ["mas"],
+      },
+    }));
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("macbook-pro", darwin(), [])],
+    });
+
+    const evaluated = evaluate(ws);
+    const output = generateNix(ws, evaluated);
+    const hostNix = output.hosts["macbook-pro.nix"];
+
+    expect(hostNix).toContain("environment.systemPackages = with pkgs; [ mas ];");
+    expect(hostNix).not.toContain("[ \"mas\" ]");
+  });
 });
