@@ -32,7 +32,7 @@
 
 ## 🔧 In Progress
 
-- [x] **P0.5 — Expression & lib helpers** — `pkg()`, `mkDefault()`/`mkForce()`/`mkBefore()`/`mkAfter()`, key quoting, and overlays
+- [ ] Next priority selection
 
 ## 📋 Next Up (Priority Order)
 
@@ -56,14 +56,14 @@
 - [x] Host modules include `config`, `lib`, `pkgs`, and `inputs` in module arguments
 
 ### P1 — CLI & DX
-- [ ] `winix check` — conflict detection, `--strict` mode
-- [ ] `winix switch` — apply + nixos-rebuild in one command
-- [ ] `winix init` — scaffold new project
-- [ ] `winix update` — update flake.lock inputs
-- [ ] `winix inspect` — fragment graph, host composition, provenance
-- [ ] `winix check --escape-report` — escape hatch debt report
-- [ ] Package as npm module so configs can `import { ... } from "winix"`
-- [ ] `winix` CLI binary (npm bin or npx)
+- [x] `winix check` — conflict detection, `--strict` mode
+- [x] `winix switch` — apply + nixos-rebuild in one command
+- [x] `winix init` — scaffold new project
+- [x] `winix update` — update flake.lock inputs
+- [x] `winix inspect` — fragment graph, host composition, provenance
+- [x] `winix check --escape-report` — escape hatch debt report
+- [x] Package as npm module so configs can `import { ... } from "winix"`
+- [x] `winix` CLI binary (npm bin or npx)
 
 ### P2 — Type system
 - [ ] `winix types generate` — extract NixOS/HM options from inputs → `.d.ts`

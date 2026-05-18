@@ -13,31 +13,33 @@ interface ApplyOptions {
   diff: boolean;
 }
 
-export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
-  // 1. Load workspace config
-  const { workspace, configDir } = await loadWorkspace(cwd);
+export interface ApplyResult {
+  configDir: string;
+  outDir: string;
+  hostNames: string[];
+  hostPlatforms: Map<string, "nixos" | "darwin">;
+}
 
-  // 2. Evaluate
+export async function applyWorkspace(
+  cwd: string,
+  opts: ApplyOptions
+): Promise<ApplyResult> {
+  const { workspace, configDir } = await loadWorkspace(cwd);
   let evaluated = evaluate(workspace);
 
-  // Filter to single host if specified
   if (opts.host) {
     evaluated = evaluated.filter((h) => h.name === opts.host);
     if (evaluated.length === 0) {
-      console.error(`Host "${opts.host}" not found. Available hosts:`);
       const all = evaluate(workspace);
-      for (const h of all) {
-        console.error(`  - ${h.name}`);
-      }
-      process.exit(1);
+      throw new Error(
+        `Host "${opts.host}" not found. Available hosts:\n` +
+        all.map((h) => `  - ${h.name}`).join("\n")
+      );
     }
   }
 
-  // 3. Generate Nix output
   const output = generateNix(workspace, evaluated);
   printWarnings(output.warnings);
-
-  // 4. Write or display
   const outDir = join(configDir, ".winix", "out");
 
   if (opts.dry) {
@@ -47,15 +49,14 @@ export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
       console.log(`\n=== .winix/out/hosts/${name} ===`);
       console.log(content);
     }
-    return;
+    return resultFor(configDir, outDir, evaluated);
   }
 
   if (opts.diff) {
     await showDiff(configDir, outDir, output);
-    return;
+    return resultFor(configDir, outDir, evaluated);
   }
 
-  // Write files
   await mkdir(join(outDir, "hosts"), { recursive: true });
   await writeFile(join(outDir, "flake.nix"), output["flake.nix"]);
 
@@ -78,6 +79,31 @@ export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
     console.log(`  → hosts/${name}`);
   }
   console.log(`\nNext: nixos-rebuild switch --flake path:$(pwd)/${relative(cwd, outDir) || ".winix/out"}`);
+  return resultFor(configDir, outDir, evaluated);
+}
+
+export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
+  await applyWorkspace(cwd, opts);
+}
+
+function resultFor(
+  configDir: string,
+  outDir: string,
+  evaluated: ReturnType<typeof evaluate>
+): ApplyResult {
+  return {
+    configDir,
+    outDir,
+    hostNames: evaluated.map((host) => host.name),
+    hostPlatforms: new Map(
+      evaluated.map((host) => [
+        host.name,
+        Object.keys(host.darwin).length > 0 && Object.keys(host.nixos).length === 0
+          ? "darwin"
+          : "nixos",
+      ])
+    ),
+  };
 }
 
 function printWarnings(warnings: string[]): void {
