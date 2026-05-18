@@ -9,6 +9,7 @@ import {
   withContext,
   evaluate,
   generateNix,
+  rawModule,
 } from "../src/index.js";
 
 // --- Define test fragments (mirrors examples/reference) ---
@@ -252,5 +253,109 @@ describe("Nix backend", () => {
 
     expect(hostNix).toContain("environment.systemPackages = with pkgs; [ mas ];");
     expect(hostNix).not.toContain("[ \"mas\" ]");
+  });
+
+  it("renders Home Manager programs inside the user module", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          {
+            home: {
+              username: "adrifer",
+              programs: {
+                git: {
+                  enable: true,
+                  userName: "Adrian Fernandez Garcia",
+                },
+              },
+            },
+          },
+        ]),
+      ],
+    });
+
+    const evaluated = evaluate(ws);
+    const output = generateNix(ws, evaluated);
+    const hostNix = output.hosts["wsl-work.nix"];
+
+    expect(hostNix).toContain("home-manager.users.adrifer = { pkgs, ... }: {");
+    expect(hostNix).toContain("programs.git.enable = true;");
+    expect(hostNix).toContain("programs.git.userName = \"Adrian Fernandez Garcia\";");
+    expect(hostNix).not.toContain("home.programs.git.enable");
+  });
+
+  it("renders rawModule imports and preserves mapped imports", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          { nixos: { imports: ["home-manager"] } },
+          rawModule("./legacy/foo.nix"),
+          rawModule("./legacy/foo.nix"),
+        ]),
+      ],
+    });
+
+    const evaluated = evaluate(ws);
+    const output = generateNix(ws, evaluated);
+    const hostNix = output.hosts["wsl-work.nix"];
+
+    expect(hostNix).toContain("inputs.home-manager.nixosModules.home-manager");
+    expect(hostNix).toContain("../raw-modules/legacy/foo.nix");
+    expect(hostNix.match(/\.\.\/raw-modules\/legacy\/foo\.nix/g)).toHaveLength(1);
+    expect(output.rawModules).toEqual([{ path: "legacy/foo.nix" }]);
+  });
+
+  it("renders rawModule.home imports inside the Home Manager user module", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          { home: { username: "adrifer" } },
+          rawModule.home("./legacy/home.nix"),
+        ]),
+      ],
+    });
+
+    const evaluated = evaluate(ws);
+    const output = generateNix(ws, evaluated);
+    const hostNix = output.hosts["wsl-work.nix"];
+
+    expect(hostNix).toContain("home-manager.users.adrifer = { pkgs, ... }: {");
+    expect(hostNix).toContain("    imports = [\n      ../raw-modules/legacy/home.nix\n    ];");
+    expect(output.rawModules).toEqual([{ path: "legacy/home.nix" }]);
+  });
+
+  it("renders rawModule.darwin imports in top-level darwin imports", () => {
+    const darwin = platform("darwin", () => ({
+      darwin: {
+        system: { stateVersion: 5 },
+      },
+    }));
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("macbook-pro", darwin(), [
+          rawModule.darwin("./legacy/mac.nix"),
+        ]),
+      ],
+    });
+
+    const evaluated = evaluate(ws);
+    const output = generateNix(ws, evaluated);
+    const hostNix = output.hosts["macbook-pro.nix"];
+
+    expect(hostNix).toContain("  imports = [\n    ../raw-modules/legacy/mac.nix\n  ];");
+    expect(output.rawModules).toEqual([{ path: "legacy/mac.nix" }]);
+  });
+
+  it("rejects invalid rawModule paths", () => {
+    expect(() => rawModule("")).toThrow("must not be empty");
+    expect(() => rawModule("/legacy/foo.nix")).toThrow("workspace-relative");
+    expect(() => rawModule("../legacy/foo.nix")).toThrow("must not escape");
+    expect(() => rawModule("legacy/../foo.nix")).toThrow("must not escape");
+    expect(() => rawModule("legacy\\foo.nix")).toThrow("POSIX path");
+    expect(() => rawModule("legacy/foo.txt")).toThrow(".nix");
   });
 });

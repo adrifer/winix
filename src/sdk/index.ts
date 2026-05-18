@@ -1,5 +1,6 @@
 // SDK: helpers exposed to user configs (platform, feature, host, workspace, etc.)
 
+import { posix as pathPosix } from "node:path";
 import type {
   Fragment,
   FragmentFactory,
@@ -12,6 +13,7 @@ import type {
   WorkspaceDef,
   HostDef,
   EvalContext,
+  RawModuleRef,
 } from "../core/types.ts";
 
 // --- Evaluation context (implicit, set by evaluator) ---
@@ -128,6 +130,69 @@ export function input(url: string, opts?: Omit<InputWithOptions, "url">): InputW
 
 export function defineInputs<T extends Record<string, InputDef>>(inputs: T): T {
   return inputs;
+}
+
+export interface RawModuleHelper {
+  (path: string): Fragment;
+  home(path: string): Fragment;
+  darwin(path: string): Fragment;
+}
+
+export const rawModule: RawModuleHelper = Object.assign(
+  (path: string): Fragment => ({
+    nixos: { imports: [createRawModuleRef(path)] },
+  }),
+  {
+    home: (path: string): Fragment => ({
+      home: { imports: [createRawModuleRef(path)] },
+    }),
+    darwin: (path: string): Fragment => ({
+      darwin: { imports: [createRawModuleRef(path)] },
+    }),
+  }
+);
+
+function createRawModuleRef(path: string): RawModuleRef {
+  return {
+    __winixRawModule: true,
+    path: normalizeRawModulePath(path),
+  };
+}
+
+function normalizeRawModulePath(path: string): string {
+  if (path.length === 0) {
+    throw new Error("rawModule() path must not be empty");
+  }
+  if (path.includes("\0")) {
+    throw new Error("rawModule() path must not contain null bytes");
+  }
+  if (path.includes("\\") || path.includes(":")) {
+    throw new Error("rawModule() path must be a workspace-relative POSIX path");
+  }
+  if (pathPosix.isAbsolute(path)) {
+    throw new Error("rawModule() path must be workspace-relative, not absolute");
+  }
+  // Allow a leading "./" convenience prefix, but reject "." or ".." elsewhere.
+  if (
+    path
+      .split("/")
+      .some(
+        (segment, index) =>
+          segment === "" || segment === ".." || (segment === "." && index !== 0)
+      )
+  ) {
+    throw new Error("rawModule() path must not escape the workspace");
+  }
+
+  const normalized = pathPosix.normalize(path);
+  if (normalized === "." || normalized === ".." || normalized.startsWith("../")) {
+    throw new Error("rawModule() path must not escape the workspace");
+  }
+  if (!normalized.endsWith(".nix")) {
+    throw new Error("rawModule() path must point to a .nix file");
+  }
+
+  return normalized;
 }
 
 // --- Testing helper ---
