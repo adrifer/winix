@@ -1,7 +1,7 @@
 // Evaluator: takes a workspace config, evaluates fragments per host, produces merged IR
 
 import type { Fragment, FragmentEntry, HostDef, LazyFragment, WorkspaceDef, EvalContext } from "../core/types.js";
-import { setEvalContext, clearEvalContext } from "../sdk/index.js";
+import { setEvalContext, restoreEvalContext } from "../sdk/index.js";
 
 /**
  * Evaluated host: the merged result of all fragments for one host.
@@ -46,26 +46,28 @@ function evaluateHost(host: HostDef): EvaluatedHost {
     activeIds,
   };
 
-  setEvalContext(ctx);
+  const prevCtx = setEvalContext(ctx);
 
   const resolvedFragments: Fragment[] = [];
 
-  for (const entry of host.fragments) {
-    if (isLazy(entry)) {
-      const result = entry.__resolve();
-      if (Array.isArray(result)) {
-        resolvedFragments.push(...result);
+  try {
+    for (const entry of host.fragments) {
+      if (isLazy(entry)) {
+        const result = entry.__resolve();
+        if (Array.isArray(result)) {
+          resolvedFragments.push(...result);
+        } else {
+          resolvedFragments.push(result);
+        }
+      } else if (Array.isArray(entry)) {
+        resolvedFragments.push(...entry);
       } else {
-        resolvedFragments.push(result);
+        resolvedFragments.push(entry);
       }
-    } else if (Array.isArray(entry)) {
-      resolvedFragments.push(...entry);
-    } else {
-      resolvedFragments.push(entry);
     }
+  } finally {
+    restoreEvalContext(prevCtx);
   }
-
-  clearEvalContext();
 
   // Pass 3: merge all fragments
   const result: EvaluatedHost = {

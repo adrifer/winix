@@ -16,7 +16,13 @@ import type {
 
 let _ctx: EvalContext | null = null;
 
-export function setEvalContext(ctx: EvalContext): void {
+export function setEvalContext(ctx: EvalContext): EvalContext | null {
+  const prev = _ctx;
+  _ctx = ctx;
+  return prev;
+}
+
+export function restoreEvalContext(ctx: EvalContext | null): void {
   _ctx = ctx;
 }
 
@@ -54,9 +60,11 @@ export function platform<T extends unknown[]>(
 
   Object.defineProperty(fn, "isActive", {
     get: () => getCtx().platform === id,
+    configurable: true,
+    enumerable: false,
   });
 
-  Object.defineProperty(fn, "id", { value: id });
+  Object.defineProperty(fn, "id", { value: id, configurable: true, enumerable: false });
 
   return fn;
 }
@@ -83,9 +91,11 @@ export function feature<T extends unknown[]>(
 
   Object.defineProperty(fn, "isActive", {
     get: () => getCtx().activeIds.has(id),
+    configurable: true,
+    enumerable: false,
   });
 
-  Object.defineProperty(fn, "id", { value: id });
+  Object.defineProperty(fn, "id", { value: id, configurable: true, enumerable: false });
 
   return fn;
 }
