@@ -12,3 +12,7 @@ export { shell } from "./shell.ts";
 export type { ShellOpts } from "./shell.ts";
 export { sysctl } from "./sysctl.ts";
 export type { SysctlSettings } from "./sysctl.ts";
+export { pkg } from "./pkg.ts";
+export { mkAfter, mkBefore, mkDefault, mkForce } from "./nix-lib.ts";
+export { overlay } from "./overlay.ts";
+export type { OverlayHelper } from "./overlay.ts";

@@ -1,7 +1,7 @@
-import type { Fragment } from "../core/types.ts";
+import type { Fragment, NixExpr } from "../core/types.ts";
 
 export interface UserOpts {
-  shell?: string;
+  shell?: string | NixExpr;
   homeDirectory?: string;
   stateVersion?: string;
   sessionVariables?: Record<string, string>;
@@ -20,7 +20,7 @@ export function user(username: string, opts: UserOpts = {}): Fragment {
         users: {
           users: {
             [username]: {
-              shell: `pkgs.${opts.shell}`,
+              shell: typeof opts.shell === "string" ? `pkgs.${opts.shell}` : opts.shell,
             },
           },
         },

@@ -4,7 +4,11 @@ import {
   generateNix,
   git,
   host,
+  mkDefault,
+  mkForce,
+  overlay,
   packages,
+  pkg,
   platform,
   program,
   shell,
@@ -37,6 +41,148 @@ describe("curated helpers", () => {
     expect(packages.home("wslu")).toEqual({
       home: { packages: ["wslu"] },
     });
+  });
+
+  it("pkg() returns a Nix expression package reference", () => {
+    expect(pkg("zsh")).toEqual({
+      __winixNixExpr: true,
+      expr: "pkgs.zsh",
+    });
+    expect(pkg("python3Packages.requests")).toEqual({
+      __winixNixExpr: true,
+      expr: "pkgs.python3Packages.requests",
+    });
+  });
+
+  it("pkg() renders unquoted in generated Nix output", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          user("adrifer", { shell: pkg("zsh"), stateVersion: "24.05" }),
+          { nixos: { environment: { shells: [pkg("zsh")] } } },
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain("users.users.adrifer.shell = pkgs.zsh;");
+    expect(hostNix).toContain("environment.shells = [ pkgs.zsh ];");
+  });
+
+  it("mkDefault() and mkForce() render lib option priority calls", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          {
+            nixos: {
+              wsl: { defaultUser: mkDefault("adrifer") },
+              services: { openssh: { enable: mkForce(true) } },
+            },
+          },
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain('wsl.defaultUser = lib.mkDefault "adrifer";');
+    expect(hostNix).toContain("services.openssh.enable = lib.mkForce true;");
+  });
+
+  it("quotes keys with URLs and special characters in generated Nix output", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          {
+            home: {
+              username: "adrifer",
+              programs: {
+                git: {
+                  settings: {
+                    credential: {
+                      "https://dev.azure.com": { useHttpPath: true },
+                      "urn:schemas-microsoft-com:asm.v3": { enabled: true },
+                    },
+                    versions: {
+                      "2.4.0": "enabled",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain('programs.git.settings.credential."https://dev.azure.com".useHttpPath = true;');
+    expect(hostNix).toContain('programs.git.settings.credential."urn:schemas-microsoft-com:asm.v3".enabled = true;');
+    expect(hostNix).toContain('programs.git.settings.versions."2.4.0" = "enabled";');
+  });
+
+  it("overlay.stable() produces a stable nixpkgs overlay fragment and output", () => {
+    const fragment = overlay.stable("nixpkgs-stable");
+    expect(fragment).toEqual({
+      nixos: {
+        nixpkgs: {
+          overlays: [
+            {
+              __winixNixExpr: true,
+              expr: "(final: prev: { stable = import inputs.nixpkgs-stable { inherit (final.stdenv.hostPlatform) system; config = final.config.nixpkgs.config or {}; }; })",
+            },
+          ],
+        },
+      },
+    });
+
+    const ws = workspace({
+      inputs: {
+        nixpkgs: "nixos-unstable",
+        nixpkgsStable: {
+          url: "github:NixOS/nixpkgs/nixos-25.11",
+          nixName: "nixpkgs-stable",
+        },
+      },
+      hosts: [host("wsl-work", nixos(), [fragment])],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain(
+      "nixpkgs.overlays = [ (final: prev: { stable = import inputs.nixpkgs-stable { inherit (final.stdenv.hostPlatform) system; config = final.config.nixpkgs.config or {}; }; }) ];"
+    );
+  });
+
+  it("composes pkg(), mkDefault(), and overlay in one host", () => {
+    const ws = workspace({
+      inputs: {
+        nixpkgs: "nixos-unstable",
+        nixpkgsStable: {
+          url: "github:NixOS/nixpkgs/nixos-25.11",
+          nixName: "nixpkgs-stable",
+        },
+      },
+      hosts: [
+        host("wsl-work", nixos(), [
+          overlay.stable("nixpkgs-stable"),
+          user("adrifer", { shell: pkg("zsh"), stateVersion: "24.05" }),
+          { nixos: { wsl: { defaultUser: mkDefault("adrifer") } } },
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain("{ config, lib, pkgs, inputs, ... }:");
+    expect(hostNix).toContain("nixpkgs.overlays = [ (final: prev:");
+    expect(hostNix).toContain("users.users.adrifer.shell = pkgs.zsh;");
+    expect(hostNix).toContain('wsl.defaultUser = lib.mkDefault "adrifer";');
   });
 
   it("user() declares Home Manager user settings and optional NixOS shell", () => {
