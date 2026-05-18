@@ -19,8 +19,7 @@ For quick hacks or things that don't fit any typed fragment:
 ```ts
 import { raw } from "winix";
 
-host("wsl-work", [
-  nixos(),
+host("wsl-work", nixos(), [
   wsl(),
   raw.nixos(`
     environment.interactiveShellInit = '''
@@ -55,8 +54,7 @@ For migration: reference an existing Nix module file without rewriting it:
 ```ts
 import { rawModule } from "winix";
 
-host("wsl-work", [
-  nixos(),
+host("wsl-work", nixos(), [
   rawModule("./legacy/vscode-path.nix"),
   rawModule("./legacy/git-credential.nix"),
   // Typed fragments for everything else:

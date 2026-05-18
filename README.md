@@ -49,8 +49,7 @@ const neovim = feature("neovim", () => ({
 export default workspace({
   inputs,
   hosts: [
-    host("wsl-work", [
-      nixos({ stateVersion: "25.05" }),
+    host("wsl-work", nixos({ stateVersion: "25.05" }), [
       wsl(),
       neovim(),
     ]),
@@ -64,7 +63,7 @@ export default workspace({
 winix.config.ts          →  Evaluator (two-pass)  →  .winix/out/
   platform("linux", ...)        collect IDs              flake.nix
   feature("wsl", ...)           resolve with context     hosts/wsl-work.nix
-  host("wsl-work", [...])       deep merge
+  host("wsl-work", nixos(), [...])  deep merge
 ```
 
 1. **Fragments** are the building blocks. Everything is a fragment: platforms, features, tools, roles.

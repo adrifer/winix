@@ -89,8 +89,7 @@ const developer = feature("developer", (): any => [
 export default workspace({
   inputs,
   hosts: [
-    host("wsl-work", [
-      nixos({ stateVersion: "25.05" }),
+    host("wsl-work", nixos({ stateVersion: "25.05" }), [
       wsl({ defaultUser: "adrifer" }),
       user(),
       workSysctl(),

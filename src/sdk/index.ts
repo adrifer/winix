@@ -3,7 +3,9 @@
 import type {
   Fragment,
   FragmentFactory,
+  PlatformFactory,
   LazyFragment,
+  PlatformLazyFragment,
   FragmentEntry,
   InputDef,
   InputWithOptions,
@@ -45,8 +47,8 @@ function getCtx(): EvalContext {
 export function platform<T extends unknown[]>(
   id: string,
   factory: (...args: T) => Fragment
-): FragmentFactory<T> {
-  const fn = ((...args: T): LazyFragment => {
+): PlatformFactory<T> {
+  const fn = ((...args: T): PlatformLazyFragment => {
     return {
       __lazy: true,
       __id: id,
@@ -56,7 +58,7 @@ export function platform<T extends unknown[]>(
         return { ...result, __id: id, __platform: true };
       },
     };
-  }) as FragmentFactory<T>;
+  }) as PlatformFactory<T>;
 
   Object.defineProperty(fn, "isActive", {
     get: () => getCtx().platform === id,
@@ -104,9 +106,10 @@ export function feature<T extends unknown[]>(
 
 export function host(
   name: string,
+  platform: PlatformLazyFragment,
   fragments: FragmentEntry[]
 ): HostDef {
-  return { name, fragments };
+  return { name, platform, fragments };
 }
 
 // --- workspace() ---
