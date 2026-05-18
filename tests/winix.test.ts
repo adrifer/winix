@@ -234,4 +234,23 @@ describe("Nix backend", () => {
     expect(hostNix).not.toContain("[ \"wl-clipboard\" ]");
     expect(hostNix).not.toContain("[ \"wslu\" ]");
   });
+
+  it("renders nix-darwin package lists as system packages with pkgs scope", () => {
+    const darwin = platform("darwin", () => ({
+      darwin: {
+        packages: ["mas"],
+      },
+    }));
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("macbook-pro", darwin(), [])],
+    });
+
+    const evaluated = evaluate(ws);
+    const output = generateNix(ws, evaluated);
+    const hostNix = output.hosts["macbook-pro.nix"];
+
+    expect(hostNix).toContain("environment.systemPackages = with pkgs; [ mas ];");
+    expect(hostNix).not.toContain("[ \"mas\" ]");
+  });
 });

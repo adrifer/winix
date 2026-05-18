@@ -213,6 +213,11 @@ function packageAttributeForPath(scope: NixScope, nixPath: string): string | und
     if (nixPath === "environment.systemPackages") return nixPath;
   }
 
+  if (scope === "darwin") {
+    if (nixPath === "packages") return "environment.systemPackages";
+    if (nixPath === "environment.systemPackages") return nixPath;
+  }
+
   if (scope === "home") {
     if (nixPath === "packages") return "home.packages";
     if (nixPath === "home.packages") return nixPath;
