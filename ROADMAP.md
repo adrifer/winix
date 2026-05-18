@@ -66,9 +66,10 @@
 - [x] `winix` CLI binary (npm bin or npx)
 
 ### P2 — Type system
-- [ ] `winix types generate` dynamic type extraction from NixOS channel `options.json`
 - [x] Hand-written types for top 20 options (git, zsh, packages, sysctl, wsl, etc.)
 - [x] Fragment type uses shipped static option types (`nixos?: NixosOptions`)
+- [x] `winix types generate` dynamic type extraction from NixOS 
+- [ ] `winix types generate` dynamic type extraction from darwin/home-manager
 
 ### P3 — Advanced features
 - [ ] Merge modifiers: `override()`, `prepend()`, `replace()`, `without()`, `force()`
