@@ -114,6 +114,20 @@ function generateHostModule(host: EvaluatedHost): string {
     lines.push(...darwinLines);
   }
 
+  // Generate Home Manager config (inline for now)
+  if (Object.keys(host.home).length > 0) {
+    lines.push(``);
+    lines.push(`  # Home Manager`);
+    const username = (host.home.username as string) ?? "user";
+    lines.push(`  home-manager.users.${username} = { pkgs, ... }: {`);
+    const homeLines = objectToNix(
+      filterKeys(host.home, ["username"]),
+      2
+    );
+    lines.push(...homeLines);
+    lines.push(`  };`);
+  }
+
   lines.push(`}`);
   return lines.join("\n") + "\n";
 }
@@ -177,6 +191,16 @@ function formatNixValue(value: unknown): string {
 
 function toKebabCase(str: string): string {
   return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+function filterKeys(obj: Record<string, unknown>, exclude: string[]): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (!exclude.includes(k)) {
+      result[k] = v;
+    }
+  }
+  return result;
 }
 
 function isPlainObject(val: unknown): val is Record<string, unknown> {

@@ -76,7 +76,7 @@ export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
   for (const name of Object.keys(output.hosts)) {
     console.log(`  → hosts/${name}`);
   }
-  console.log(`\nNext: nixos-rebuild switch --flake ${relative(cwd, outDir) || ".winix/out"}`);
+  console.log(`\nNext: nixos-rebuild switch --flake path:$(pwd)/${relative(cwd, outDir) || ".winix/out"}`);
 }
 
 async function showDiff(outDir: string, output: { "flake.nix": string; hosts: Record<string, string> }): Promise<void> {
