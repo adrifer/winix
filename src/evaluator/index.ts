@@ -21,20 +21,37 @@ export function evaluate(workspace: WorkspaceDef): EvaluatedHost[] {
 }
 
 function evaluateHost(host: HostDef): EvaluatedHost {
-  // Pass 1: scan lazy descriptors to collect IDs and determine platform
-  // (scans top-level only; nested composites are trusted to declare their own IDs)
+  // Pass 1: Resolve all lazy fragments WITHOUT context to discover IDs.
+  // This does a "dry resolve" — .isActive will throw if called, but we only
+  // need to collect IDs, not evaluate conditionals.
+  // We scan recursively: composites expand to reveal child IDs.
   const activeIds = new Set<string>();
   let platformId = "";
 
-  function scanEntry(entry: unknown): void {
+  function collectIds(entry: unknown): void {
     if (isLazy(entry)) {
       activeIds.add(entry.__id);
       if (entry.__platform) {
         platformId = entry.__id;
       }
+      // Try to resolve to discover children (ignore errors from .isActive)
+      try {
+        const result = entry.__resolve();
+        if (Array.isArray(result)) {
+          for (const item of result) {
+            collectIds(item);
+          }
+        } else if (result && typeof result === "object") {
+          if ((result as any).__id) {
+            activeIds.add((result as any).__id);
+          }
+        }
+      } catch {
+        // .isActive may throw without context — that's fine for ID collection
+      }
     } else if (Array.isArray(entry)) {
       for (const item of entry) {
-        scanEntry(item);
+        collectIds(item);
       }
     } else if (typeof entry === "object" && entry !== null) {
       const f = entry as Fragment;
@@ -48,7 +65,7 @@ function evaluateHost(host: HostDef): EvaluatedHost {
   }
 
   for (const entry of host.fragments) {
-    scanEntry(entry);
+    collectIds(entry);
   }
 
   // Pass 2: set context → resolve lazy fragments (now .isActive works)

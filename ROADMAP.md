@@ -82,7 +82,7 @@
 - `winix.config.ts` must use relative imports (no `"winix"` package yet)
 - Needs `node --experimental-transform-types` for native .ts execution
 - Home Manager config output is basic (inline in host module, not split file)
-- No `flake.lock` sharing yet (each apply creates a new lock)
+- Home packages rendered as quoted strings (need `with pkgs;` treatment like systemPackages)
 
 ## 📝 Design Decisions Log
 

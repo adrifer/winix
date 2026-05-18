@@ -182,10 +182,10 @@ function objectToNix(
     const nixPath = [...path, nixKey].join(".");
 
     if (Array.isArray(value)) {
-      if (nixPath === "environment.systemPackages") {
-        // Special: packages need pkgs prefix, no quotes
+      if (nixPath === "environment.systemPackages" || nixPath === "packages") {
+        // Packages need pkgs prefix, no quotes
         const items = value.map((v) => String(v)).join(" ");
-        lines.push(`${prefix}${nixPath} = with pkgs; [ ${items} ];`);
+        lines.push(`${prefix}${nixPath === "packages" ? "home.packages" : nixPath} = with pkgs; [ ${items} ];`);
       } else {
         const items = value.map((v) => formatNixValue(v)).join(" ");
         lines.push(`${prefix}${nixPath} = [ ${items} ];`);

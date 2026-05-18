@@ -47,11 +47,16 @@ const cwd = process.cwd();
 
 switch (command) {
   case "apply":
-    await apply(cwd, {
-      host: values.host as string | undefined,
-      dry: values.dry as boolean,
-      diff: values.diff as boolean,
-    });
+    try {
+      await apply(cwd, {
+        host: values.host as string | undefined,
+        dry: values.dry as boolean,
+        diff: values.diff as boolean,
+      });
+    } catch (err) {
+      console.error(`\u2717 Error: ${(err as Error).message}`);
+      process.exit(1);
+    }
     break;
   case "check":
     await check(cwd, { strict: values.strict as boolean });

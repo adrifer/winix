@@ -37,7 +37,7 @@ export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
   const output = generateNix(workspace, evaluated);
 
   // 4. Write or display
-  const outDir = join(cwd, ".winix", "out");
+  const outDir = join(configDir, ".winix", "out");
 
   if (opts.dry) {
     console.log("=== .winix/out/flake.nix ===");

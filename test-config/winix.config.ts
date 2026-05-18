@@ -67,6 +67,24 @@ const packages = feature("packages", () => ({
   },
 }));
 
+const git = feature("git", () => ({
+  home: {
+    programs: { git: { enable: true, userName: "Adrian Fernandez Garcia" } },
+  },
+}));
+
+const neovim = feature("neovim", () => ({
+  home: {
+    packages: ["neovim"],
+    sessionVariables: { EDITOR: "nvim" },
+  },
+}));
+
+const developer = feature("developer", (): any => [
+  git(),
+  neovim(),
+]);
+
 // --- Workspace ---
 export default workspace({
   inputs,
@@ -77,6 +95,7 @@ export default workspace({
       user(),
       workSysctl(),
       packages(),
+      developer(),
     ]),
   ],
 });

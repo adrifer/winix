@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import type { WorkspaceDef } from "../core/types.ts";
 
-const CONFIG_NAMES = ["winix.config.ts", "winix.config.ts", "winix.config.mjs"];
+const CONFIG_NAMES = ["winix.config.ts", "winix.config.js", "winix.config.mjs"];
 
 export interface LoadResult {
   workspace: WorkspaceDef;
