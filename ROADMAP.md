@@ -1,8 +1,8 @@
 # Winix — Roadmap & Tasks
 
-## ✅ Completed (2026-05-17)
+## ✅ Completed
 
-### Spec
+### Spec (2026-05-17)
 - [x] Flat fragment pattern (spec 11)
 - [x] `platform()` + `feature()` + `host()` helpers
 - [x] `.isActive` conditionals with native TS (no DSL)
@@ -15,7 +15,7 @@
 - [x] All-TypeScript tech stack (spec 10)
 - [x] Examples reorganized as `examples/reference/`
 
-### Code
+### Core (2026-05-17 → 2026-05-18)
 - [x] Core types (`Fragment`, `LazyFragment`, `FragmentFactory`, etc.)
 - [x] SDK (`platform()`, `feature()`, `host()`, `workspace()`, `defineInputs()`, `input()`)
 - [x] Lazy evaluation (two-pass: collect IDs → resolve with context)
@@ -25,73 +25,110 @@
 - [x] Nix backend — generates `flake.nix` + host modules
 - [x] Imports mapped to real module paths (home-manager, nixos-wsl)
 - [x] Dotted path output (no inline attr sets)
-- [x] Quoted keys for sysctl-style paths
+- [x] Quoted keys for non-identifier path segments
 - [x] `with pkgs;` for systemPackages
-- [x] CLI (`winix apply`, `--dry`, `--diff`, `--host`)
-- [x] **nixos-rebuild test successful** with generated Nix 🎉
+- [x] **nixos-rebuild switch successful** with generated Nix on real system 🎉
 
-## 🔧 In Progress
+### Helpers (2026-05-18)
+- [x] `rawModule()` / `rawModule.home()` / `rawModule.darwin()` — incremental migration
+- [x] Curated: `packages()`, `user()`, `git()`, `zsh()`, `shell()`, `sysctl()`
+- [x] Generic: `program()`, `program.service()`, `program.nixos()`, `program.darwin()`, `program.homeService()`
+- [x] `escape()` — inline Nix expressions
+- [x] `raw.nixos()` / `raw.home()` / `raw.darwin()` — verbatim Nix blocks
+- [x] `pkg()` — unquoted `pkgs.*` references
+- [x] `mkDefault()`, `mkForce()`, `mkBefore()`, `mkAfter()` — lib option priority
+- [x] `overlay.stable()`, `overlay.custom()` — nixpkgs overlays
+- [x] camelCase → kebab-case auto-mapping for program/service names at known path prefixes
 
-- [ ] Dynamic type generation from NixOS channel `options.json`
-
-## 📋 Next Up (Priority Order)
-
-### P0 — Core functionality
-- [x] Home Manager output: packages should use `home.packages = with pkgs; [ ... ];`
-- [x] Home Manager output: programs should map correctly (e.g., `programs.git.enable`)
-- [x] `rawModule()` support — import existing .nix files for incremental migration
-- [x] **Curated authoring helpers** — `packages()`, `user()`, `git()`, `zsh()`, `shell()`, `sysctl()` (spec 20)
-- [x] Generic `program()` helper for Home Manager, NixOS, and nix-darwin options (spec 24)
-- [x] `escape()` support — inline Nix expressions within typed fragments
-- [x] `raw.nixos()` / `raw.home()` — top-level raw Nix fragments
-- [x] camelCase → kebab-case mapping for known Nix option paths
-- [x] System arch from platform fragment (not hardcoded x86_64-linux)
-- [x] Input validation (warn if darwin host exists without nix-darwin input)
-
-### P0.5 — Expression & lib helpers
-- [x] `pkg()` helper for explicit unquoted `pkgs.*` references
-- [x] `mkDefault()`, `mkForce()`, `mkBefore()`, and `mkAfter()` helpers for `lib.mk*` option priority calls
-- [x] Backend quotes any attr path segment that is not a valid Nix identifier
-- [x] `overlay.stable()` and `overlay.custom()` helpers for nixpkgs overlays
-- [x] Host modules include `config`, `lib`, `pkgs`, and `inputs` in module arguments
-
-### P1 — CLI & DX
-- [x] `winix check` — conflict detection, `--strict` mode
-- [x] `winix switch` — apply + nixos-rebuild in one command
+### CLI (2026-05-18)
+- [x] `winix apply` (`--dry`, `--diff`, `--host`)
+- [x] `winix switch` — apply + nixos-rebuild/darwin-rebuild (auto-detect platform)
+- [x] `winix update` — nix flake update + copy lock back
+- [x] `winix check` — conflict detection, `--strict`, `--escape-report`
+- [x] `winix inspect` — fragment composition per host
 - [x] `winix init` — scaffold new project
-- [x] `winix update` — update flake.lock inputs
-- [x] `winix inspect` — fragment graph, host composition, provenance
-- [x] `winix check --escape-report` — escape hatch debt report
-- [x] Package as npm module so configs can `import { ... } from "winix"`
-- [x] `winix` CLI binary (npm bin or npx)
+- [x] `winix types generate` — dynamic NixOS types from channel options.json
+- [x] Package exports + bin (npm-ready)
 
-### P2 — Type system
-- [x] Hand-written types for top 20 options (git, zsh, packages, sysctl, wsl, etc.)
-- [x] Fragment type uses shipped static option types (`nixos?: NixosOptions`)
-- [x] `winix types generate` dynamic type extraction from NixOS 
-- [ ] `winix types generate` dynamic type extraction from darwin/home-manager
+### Types (2026-05-18)
+- [x] Static types shipped in package (NixOS, HM, Darwin, Programs)
+- [x] `Fragment` interface uses real typed options
+- [x] Dynamic NixOS type generation from channel (24,438 options)
 
-### P3 — Advanced features
+---
+
+## 🔧 Current Priorities
+
+### Priority 1 — DX: Reduce raw()/escape() and simplify authoring
+
+Goal: Make configs more readable and reduce boilerplate. Focus on the patterns that
+currently force users into raw() blocks.
+
+- [ ] **String interpolation helper** — `nixStr("${pkgs.neovim}/bin/nvim -d $LOCAL $REMOTE")` or similar, for package-path interpolation without raw blocks
+- [ ] **Activation helper** — `activation("name", { after: [...], script: "..." })` for `lib.hm.dag.entryAfter` pattern
+- [ ] **Conditional value helpers** — `ifDarwin(value)` / `ifLinux(value)` for platform-conditional values inside fragments (not fragment-level, which `.isActive` handles)
+- [ ] **`with pkgs` block helper** — for options that need `with pkgs; [...]` outside of package lists (e.g., `programs.nix-ld.libraries`)
+- [ ] **`script()` helper** — multiline Nix strings with proper escaping (`'' ... ''`)
+- [ ] **Improve error messages** — when a fragment fails, show which helper to use or how to fix it
+- [ ] **Audit existing config** — go through dotfiles/winix raw() blocks, find more patterns to abstract
+
+### Priority 2 — LLM-friendly: Make AI agents excellent at writing Winix configs
+
+Goal: An LLM with access to the repo/docs can generate correct, idiomatic Winix configs
+from a natural language description without trial and error.
+
+- [ ] **AGENTS.md** in repo root — clear instructions for LLMs: available helpers, patterns, how to create features, common pitfalls
+- [ ] **Fragment catalog** — machine-readable registry of all helpers with signatures, options, and usage examples (JSON or structured Markdown)
+- [ ] **`winix scaffold feature <name>`** — generate a feature template that an LLM just fills in
+- [ ] **Golden examples** — canonical configs for common setups (minimal, WSL, darwin, multi-host, migration) that serve as few-shot examples for LLMs
+- [ ] **`winix explain <host>`** — natural-language summary of what a host config does (useful for LLM context)
+- [ ] **Inline JSDoc on all helpers** — complete `@description`, `@example`, `@param` for editor hover + LLM extraction
+- [ ] **Error output as guidance** — errors should suggest the correct helper/pattern, not just report what went wrong
+
+### Priority 3 — Windows backend
+
+Goal: Manage Windows system configuration (DSC, winget, registry, scheduled tasks,
+PowerShell) using the same fragment/helper model.
+
+- [ ] **Windows backend design** — spec the output format (DSC? PowerShell scripts? winget export? Registry .reg?)
+- [ ] **`platform("windows", ...)`** — Windows platform fragment with `windows: {}` scope
+- [ ] **Windows-specific helpers** — `winget([...])`, `registry(path, values)`, `scheduledTask(...)`, `envVar(...)`, `windowsFeature(...)`
+- [ ] **`winix apply` on Windows** — generates PowerShell/DSC output in `.winix/out/`
+- [ ] **`winix switch` on Windows** — executes the generated config (elevated PowerShell)
+- [ ] **Cross-platform fragments** — fragments that target both NixOS and Windows (e.g., `packages()` that maps to `winget` on Windows)
+- [ ] **Windows type generation** — types for DSC resources, registry keys, winget packages
+
+---
+
+## 📋 Backlog (no priority assigned)
+
+### Type system
+- [ ] Dynamic type generation for Home Manager (local nix eval)
+- [ ] Dynamic type generation for nix-darwin (local nix eval)
+
+### Advanced Nix features
 - [ ] Merge modifiers: `override()`, `prepend()`, `replace()`, `without()`, `force()`
 - [ ] Provenance comments in generated Nix output
 - [ ] `winix migrate` — suggest converting rawModules to typed fragments
-- [ ] Multiple nixpkgs channels (`stable()` helper for packages)
-- [ ] Overlays support
-- [ ] nix-darwin backend
 - [ ] Home Manager standalone (no NixOS) backend
-- [ ] `winix dev` — watch mode
+- [ ] nix-darwin standalone backend
 
-### P4 — Future
-- [ ] Windows backend (DSC, winget, registry, PowerShell)
+### Developer experience
+- [ ] `winix dev` — watch mode (auto-apply on save)
+- [ ] `winix diff` — standalone diff command (currently `winix apply --diff`)
+- [ ] npm publish to registry
+- [ ] README rewrite with real usage examples
+
+### Future vision
+- [ ] VS Code extension / LSP (completions, hover, diagnostics)
 - [ ] Fragment registry (auto-generated for agent discovery)
 - [ ] Third-party fragment ecosystem (npm packages)
-- [ ] `winix` VS Code extension / LSP
+- [ ] Multi-machine orchestration
 
 ## 🐛 Known Issues
 
-- `winix.config.ts` must use relative imports (no `"winix"` package yet)
-- Needs `node --experimental-transform-types` for native .ts execution
-- Home Manager config output is basic (inline in host module, not split file)
+- Needs `node --experimental-transform-types` for native .ts execution (Node limitation)
+- Home Manager config is inline in host module (not split file) — design choice for now
 
 ## 📝 Design Decisions Log
 
@@ -105,3 +142,6 @@
 | `.winix/out/` gitignored | Generated output is per-machine. Not source of truth. | 2026-05-17 |
 | `path:` prefix for nixos-rebuild | Bypasses git tracking requirement for gitignored output. | 2026-05-17 |
 | Fragment keys match Nix option names | Use `"experimental-features"` not `experimentalFeatures`. Avoids mapping bugs. | 2026-05-17 |
+| Three abstraction levels | Curated helpers → `program()` generic → raw fragments. Progressive disclosure. | 2026-05-18 |
+| Static types + dynamic generation | Ship hand-written types for instant DX; generate full types from channel for complete coverage. | 2026-05-18 |
+| LLM-first design | Fragments, helpers, and docs should be optimized for AI agents to discover and use correctly. | 2026-05-18 |
