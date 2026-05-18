@@ -1,20 +1,21 @@
 import type { Fragment } from "../core/types.ts";
+import type { GitInclude as ProgramGitInclude, GitOptions } from "../types/index.ts";
 
 export interface GitOpts {
-  userName?: string;
-  userEmail?: string;
+  userName?: GitOptions["userName"];
+  userEmail?: GitOptions["userEmail"];
   defaultBranch?: string;
   difftool?: string;
-  signing?: { key: string; format?: "ssh" | "gpg" };
-  aliases?: Record<string, string>;
-  extraConfig?: Record<string, unknown>;
+  settings?: GitOptions["settings"];
+  signing?: GitOptions["signing"];
+  aliases?: GitOptions["aliases"];
+  extraConfig?: GitOptions["extraConfig"];
   includes?: GitInclude[];
 }
 
-export interface GitInclude {
+export interface GitInclude extends ProgramGitInclude {
   condition?: string;
   user?: { name?: string; email?: string };
-  contents?: Record<string, unknown>;
 }
 
 export function git(opts: GitOpts = {}): Fragment {
@@ -30,10 +31,11 @@ export function git(opts: GitOpts = {}): Fragment {
     home: {
       programs: {
         git: {
-          enable: true,
-          ...(opts.userName && { userName: opts.userName }),
-          ...(opts.userEmail && { userEmail: opts.userEmail }),
-          ...(Object.keys(extraConfig).length > 0 && { extraConfig }),
+            enable: true,
+            ...(opts.userName && { userName: opts.userName }),
+            ...(opts.userEmail && { userEmail: opts.userEmail }),
+            ...(opts.settings && { settings: opts.settings }),
+            ...(Object.keys(extraConfig).length > 0 && { extraConfig }),
           ...(opts.signing && { signing: opts.signing }),
           ...(opts.aliases && { aliases: opts.aliases }),
           ...(opts.includes && { includes: opts.includes.map(formatInclude) }),

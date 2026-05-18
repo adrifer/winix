@@ -13,6 +13,9 @@ import {
   program,
   shell,
   sysctl,
+  type Fragment,
+  type NixosOptions,
+  type ZshOptions,
   user,
   workspace,
   zsh,
@@ -318,6 +321,34 @@ describe("curated helpers", () => {
     expect(program("starship", { enable: true })).toEqual({
       home: { programs: { starship: { enable: true } } },
     });
+  });
+
+  it("program() accepts static option types", () => {
+    const zshProgram = program<ZshOptions>("zsh", {
+      enable: true,
+      shellAliases: { g: "lazygit" },
+    });
+
+    expect(zshProgram).toEqual({
+      home: {
+        programs: {
+          zsh: {
+            enable: true,
+            shellAliases: { g: "lazygit" },
+          },
+        },
+      },
+    });
+  });
+
+  it("Fragment accepts common static NixOS option types", () => {
+    const nixosOptions: NixosOptions = {
+      networking: { hostName: "wsl" },
+      wsl: { enable: true, defaultUser: "adrifer" },
+    };
+    const fragment: Fragment = { nixos: nixosOptions };
+
+    expect(fragment.nixos?.networking?.hostName).toBe("wsl");
   });
 
   it("program() supports empty options", () => {

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "winix": ["../../src/index.ts"],
+      "winix/types": ["../../src/types/index.ts"]
+    }
+  },
+  "include": ["static-types.ts"]
+}
