@@ -32,7 +32,7 @@
 
 ## 🔧 In Progress
 
-*(nothing currently in progress)*
+- [ ] **Curated authoring helpers** (spec 20) — `packages()`, `user()`, `git()`, `zsh()`, `shell()`, `sysctl()` in `src/helpers/`
 
 ## 📋 Next Up (Priority Order)
 
@@ -40,6 +40,7 @@
 - [x] Home Manager output: packages should use `home.packages = with pkgs; [ ... ];`
 - [x] Home Manager output: programs should map correctly (e.g., `programs.git.enable`)
 - [x] `rawModule()` support — import existing .nix files for incremental migration
+- [x] **Curated authoring helpers** — `packages()`, `user()`, `git()`, `zsh()`, `shell()`, `sysctl()` (spec 20)
 - [ ] `escape()` support — inline Nix expressions within typed fragments
 - [ ] `raw.nixos()` / `raw.home()` — top-level raw Nix fragments
 - [ ] camelCase → kebab-case mapping for known Nix option paths

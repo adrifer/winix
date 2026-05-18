@@ -1,0 +1,227 @@
+import { describe, expect, it } from "vitest";
+import {
+  evaluate,
+  generateNix,
+  git,
+  host,
+  packages,
+  platform,
+  shell,
+  sysctl,
+  user,
+  workspace,
+  zsh,
+} from "../src/index.js";
+
+const nixos = platform("linux", () => ({
+  nixos: {
+    system: { stateVersion: "25.05" },
+  },
+}));
+
+const darwin = platform("darwin", () => ({
+  darwin: {
+    system: { stateVersion: 5 },
+  },
+}));
+
+describe("curated helpers", () => {
+  it("packages() targets NixOS by default and supports explicit scopes", () => {
+    expect(packages("ripgrep", "fd")).toEqual({
+      nixos: { packages: ["ripgrep", "fd"] },
+    });
+    expect(packages(["jq"], { scope: "darwin" })).toEqual({
+      darwin: { packages: ["jq"] },
+    });
+    expect(packages.home("wslu")).toEqual({
+      home: { packages: ["wslu"] },
+    });
+  });
+
+  it("user() declares Home Manager user settings and optional NixOS shell", () => {
+    expect(
+      user("adrifer", {
+        shell: "zsh",
+        homeDirectory: "/home/adrifer",
+        stateVersion: "24.05",
+        sessionVariables: { EDITOR: "nvim" },
+      })
+    ).toEqual({
+      home: {
+        username: "adrifer",
+        stateVersion: "24.05",
+        home: { homeDirectory: "/home/adrifer" },
+        sessionVariables: { EDITOR: "nvim" },
+      },
+      nixos: {
+        users: {
+          users: {
+            adrifer: {
+              shell: "pkgs.zsh",
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("git() maps common options into Home Manager programs.git", () => {
+    expect(
+      git({
+        userName: "Adrian Fernandez Garcia",
+        userEmail: "tracker086@outlook.com",
+        defaultBranch: "main",
+        difftool: "nvimdiff",
+        aliases: { co: "checkout" },
+        signing: { key: "ssh-ed25519 AAA", format: "ssh" },
+        extraConfig: { push: { autoSetupRemote: true } },
+        includes: [
+          {
+            condition: "gitdir:~/work/",
+            user: { email: "adrifer@microsoft.com" },
+          },
+        ],
+      })
+    ).toEqual({
+      home: {
+        programs: {
+          git: {
+            enable: true,
+            userName: "Adrian Fernandez Garcia",
+            userEmail: "tracker086@outlook.com",
+            aliases: { co: "checkout" },
+            signing: { key: "ssh-ed25519 AAA", format: "ssh" },
+            extraConfig: {
+              init: { defaultBranch: "main" },
+              diff: { tool: "nvimdiff" },
+              push: { autoSetupRemote: true },
+            },
+            includes: [
+              {
+                condition: "gitdir:~/work/",
+                contents: {
+                  user: { email: "adrifer@microsoft.com" },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+  });
+
+  it("zsh() applies defaults and maps ergonomic options to Home Manager", () => {
+    expect(
+      zsh({
+        aliases: { g: "lazygit" },
+        plugins: ["zsh-vi-mode"],
+        viMode: true,
+        initExtra: "bindkey -v",
+        envExtra: "export ZDOTDIR=$HOME",
+      })
+    ).toEqual({
+      home: {
+        programs: {
+          zsh: {
+            enable: true,
+            enableCompletion: true,
+            autosuggestion: { enable: true },
+            syntaxHighlighting: { enable: true },
+            shellAliases: { g: "lazygit" },
+            plugins: [{ name: "zsh-vi-mode" }],
+            defaultKeymap: "viins",
+            initExtra: "bindkey -v",
+            envExtra: "export ZDOTDIR=$HOME",
+          },
+        },
+      },
+    });
+  });
+
+  it("shell() maps environment and PATH settings to Home Manager", () => {
+    expect(shell({ env: { EDITOR: "nvim" }, path: ["$HOME/.local/bin"] })).toEqual({
+      home: {
+        sessionVariables: { EDITOR: "nvim" },
+        sessionPath: ["$HOME/.local/bin"],
+      },
+    });
+  });
+
+  it("sysctl() maps kernel settings to NixOS boot.kernel.sysctl", () => {
+    expect(
+      sysctl({
+        "fs.inotify.max_user_watches": 1048576,
+        "net.ipv4.ip_forward": "1",
+      })
+    ).toEqual({
+      nixos: {
+        boot: {
+          kernel: {
+            sysctl: {
+              "fs.inotify.max_user_watches": 1048576,
+              "net.ipv4.ip_forward": "1",
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("helpers compose through evaluation and Nix generation", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          user("adrifer", { shell: "zsh", stateVersion: "24.05" }),
+          packages("ripgrep"),
+          packages.home("wslu"),
+          git({
+            userName: "Adrian Fernandez Garcia",
+            defaultBranch: "main",
+            includes: [
+              {
+                condition: "gitdir:~/work/",
+                user: { email: "adrifer@microsoft.com" },
+              },
+            ],
+          }),
+          zsh({
+            aliases: { g: "lazygit" },
+            completion: false,
+            plugins: ["zsh-vi-mode"],
+          }),
+          shell({ env: { EDITOR: "nvim" } }),
+          sysctl({ "fs.inotify.max_user_watches": 1048576 }),
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    expect((evaluated.home as any).programs.git.enable).toBe(true);
+    expect((evaluated.home as any).programs.zsh.enableCompletion).toBe(false);
+
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain("environment.systemPackages = with pkgs; [ ripgrep ];");
+    expect(hostNix).toContain("users.users.adrifer.shell = pkgs.zsh;");
+    expect(hostNix).toContain("home.packages = with pkgs; [ wslu ];");
+    expect(hostNix).toContain("programs.git.extraConfig.init.defaultBranch = \"main\";");
+    expect(hostNix).toContain(
+      "programs.git.includes = [ { condition = \"gitdir:~/work/\"; contents.user.email = \"adrifer@microsoft.com\"; } ];"
+    );
+    expect(hostNix).toContain("programs.zsh.shellAliases.g = \"lazygit\";");
+    expect(hostNix).toContain("programs.zsh.plugins = [ { name = \"zsh-vi-mode\"; } ];");
+    expect(hostNix).toContain("sessionVariables.EDITOR = \"nvim\";");
+    expect(hostNix).toContain("\"fs.inotify.max_user_watches\" = 1048576;");
+  });
+
+  it("packages.darwin() composes with darwin hosts", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("macbook-pro", darwin(), [packages.darwin("mas")])],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["macbook-pro.nix"];
+    expect(hostNix).toContain("environment.systemPackages = with pkgs; [ mas ];");
+  });
+});

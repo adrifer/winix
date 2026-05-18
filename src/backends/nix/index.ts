@@ -315,10 +315,30 @@ function formatNixValue(value: unknown): string {
   if (isRawModuleRef(value)) {
     throw new Error("rawModule() references are only supported in imports arrays");
   }
-  if (typeof value === "string") return `"${value}"`;
+  if (typeof value === "string") {
+    if (isPkgsReference(value)) return value;
+    return `"${value}"`;
+  }
   if (typeof value === "number") return String(value);
   if (typeof value === "boolean") return value ? "true" : "false";
+  if (Array.isArray(value)) {
+    return `[ ${value.map((item) => formatNixValue(item)).join(" ")} ]`;
+  }
+  if (isPlainObject(value)) {
+    return formatInlineAttrSet(value);
+  }
   return `"${String(value)}"`;
+}
+
+function formatInlineAttrSet(obj: Record<string, unknown>): string {
+  // Scope-specific package rewriting only applies to top-level fragment fields;
+  // inline attrsets are already inside a concrete option value.
+  const parts = objectToNix(obj, 0, "home").map((line) => line.trim());
+  return `{ ${parts.join(" ")} }`;
+}
+
+function isPkgsReference(value: string): boolean {
+  return /^pkgs\.[A-Za-z_][A-Za-z0-9_'-]*(\.[A-Za-z_][A-Za-z0-9_'-]*)*$/.test(value);
 }
 
 function toKebabCase(str: string): string {
