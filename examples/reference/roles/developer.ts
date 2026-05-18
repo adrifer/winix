@@ -39,6 +39,6 @@ export const developer = feature("developer", (): Fragment[] => [
     "nixd",
     "azure-cli",
     "python3",
-    "gnumake"
+    "gnumake",
   ),
 ]);

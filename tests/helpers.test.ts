@@ -172,7 +172,7 @@ describe("curated helpers", () => {
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", nixos(), [
-          user("adrifer", { stateVersion: "24.05" }),
+          user("adrifer", { shell: "zsh", stateVersion: "24.05" }),
           packages("ripgrep"),
           packages.home("wslu"),
           git({
@@ -202,6 +202,7 @@ describe("curated helpers", () => {
 
     const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
     expect(hostNix).toContain("environment.systemPackages = with pkgs; [ ripgrep ];");
+    expect(hostNix).toContain("users.users.adrifer.shell = pkgs.zsh;");
     expect(hostNix).toContain("home.packages = with pkgs; [ wslu ];");
     expect(hostNix).toContain("programs.git.extraConfig.init.defaultBranch = \"main\";");
     expect(hostNix).toContain(
