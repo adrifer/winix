@@ -8,7 +8,9 @@ import {
   defineInputs,
   withContext,
   evaluate,
+  escape,
   generateNix,
+  raw,
   rawModule,
 } from "../src/index.js";
 
@@ -357,5 +359,146 @@ describe("Nix backend", () => {
     expect(() => rawModule("legacy/../foo.nix")).toThrow("must not escape");
     expect(() => rawModule("legacy\\foo.nix")).toThrow("POSIX path");
     expect(() => rawModule("legacy/foo.txt")).toThrow(".nix");
+  });
+
+  it("renders escape() values as verbatim Nix expressions", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          {
+            nixos: {
+              users: {
+                users: {
+                  adrifer: {
+                    shell: escape("pkgs.zsh"),
+                  },
+                },
+              },
+              environment: {
+                systemPackages: ["git", escape("nodejs_20")],
+              },
+            },
+            home: {
+              username: "adrifer",
+              programs: {
+                zsh: {
+                  initExtra: escape("''\nexport EDITOR=nvim\n''"),
+                },
+              },
+            },
+          },
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const output = generateNix(ws, [evaluated]);
+    const hostNix = output.hosts["wsl-work.nix"];
+
+    expect(hostNix).toContain("users.users.adrifer.shell = pkgs.zsh;");
+    expect(hostNix).toContain("environment.systemPackages = with pkgs; [ git nodejs_20 ];");
+    expect(hostNix).toContain("programs.zsh.initExtra = ''\nexport EDITOR=nvim\n'';");
+  });
+
+  it("treats escape() values as merge atoms with last value winning", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          { nixos: { services: { demo: { value: escape("pkgs.old") } } } },
+          { nixos: { services: { demo: { value: escape("pkgs.new") } } } },
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    expect((evaluated.nixos as any).services.demo.value).toEqual(escape("pkgs.new"));
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain("services.demo.value = pkgs.new;");
+  });
+
+  it("renders raw.nixos/home/darwin fragments verbatim", () => {
+    const linuxWs = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          { home: { username: "adrifer" } },
+          raw.nixos("environment.variables.FOO = \"bar\";"),
+          raw.home("programs.zsh.initExtra = ''\necho raw\n'';"),
+        ]),
+      ],
+    });
+    const linuxHostNix = generateNix(linuxWs, evaluate(linuxWs)).hosts["wsl-work.nix"];
+    expect(linuxHostNix).toContain("environment.variables.FOO = \"bar\";");
+    expect(linuxHostNix).toContain("programs.zsh.initExtra = ''\n    echo raw\n    '';");
+
+    const darwin = platform("darwin", () => ({
+      darwin: { nixpkgs: { hostPlatform: "x86_64-darwin" } },
+    }));
+    const darwinWs = workspace({
+      inputs: { nixpkgs: "nixos-unstable", nixDarwin: "github:nix-darwin/nix-darwin" },
+      hosts: [host("macbook-pro", darwin(), [raw.darwin("system.defaults.dock.autohide = true;")])],
+    });
+    const darwinHostNix = generateNix(darwinWs, evaluate(darwinWs)).hosts["macbook-pro.nix"];
+    expect(darwinHostNix).toContain("system.defaults.dock.autohide = true;");
+  });
+
+  it("maps known camelCase option paths to kebab-case Nix paths", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          {
+            nixos: {
+              nix: { settings: { experimentalFeatures: ["nix-command", "flakes"] } },
+              programs: { nixLd: { enable: true, libraries: ["icu"] } },
+            },
+          },
+        ]),
+      ],
+    });
+
+    const hostNix = generateNix(ws, evaluate(ws)).hosts["wsl-work.nix"];
+    expect(hostNix).toContain("nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];");
+    expect(hostNix).toContain("programs.nix-ld.enable = true;");
+    expect(hostNix).toContain("programs.nix-ld.libraries = [ \"icu\" ];");
+  });
+
+  it("uses nixpkgs.hostPlatform for generated flake systems", () => {
+    const linux = platform("linux", () => ({
+      nixos: { nixpkgs: { hostPlatform: "aarch64-linux" } },
+    }));
+    const darwin = platform("darwin", () => ({
+      darwin: { nixpkgs: { hostPlatform: "x86_64-darwin" } },
+    }));
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable", nixDarwin: "github:nix-darwin/nix-darwin" },
+      hosts: [
+        host("linux-arm", linux(), []),
+        host("mac-intel", darwin(), []),
+      ],
+    });
+
+    const flakeNix = generateNix(ws, evaluate(ws))["flake.nix"];
+    expect(flakeNix).toContain("nixosConfigurations.linux-arm");
+    expect(flakeNix).toContain("system = \"aarch64-linux\";");
+    expect(flakeNix).toContain("darwinConfigurations.mac-intel");
+    expect(flakeNix).toContain("system = \"x86_64-darwin\";");
+  });
+
+  it("warns when darwin hosts are generated without a nix-darwin input", () => {
+    const darwin = platform("darwin", () => ({
+      darwin: { system: { stateVersion: 6 } },
+    }));
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("macbook-pro", darwin(), [])],
+    });
+
+    const output = generateNix(ws, evaluate(ws));
+    expect(output.warnings).toContain(
+      "darwin host detected but workspace inputs do not include nix-darwin"
+    );
   });
 });
