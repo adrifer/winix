@@ -32,7 +32,7 @@
 
 ## 🔧 In Progress
 
-- [ ] **Generic `program()` helper** (spec 24) — `program()`, `program.service()`, `program.nixos()`, `program.darwin()`, `program.homeService()`
+- [x] **P0.5 — Expression & lib helpers** — `pkg()`, `mkDefault()`/`mkForce()`/`mkBefore()`/`mkAfter()`, key quoting, and overlays
 
 ## 📋 Next Up (Priority Order)
 
@@ -47,6 +47,13 @@
 - [x] camelCase → kebab-case mapping for known Nix option paths
 - [x] System arch from platform fragment (not hardcoded x86_64-linux)
 - [x] Input validation (warn if darwin host exists without nix-darwin input)
+
+### P0.5 — Expression & lib helpers
+- [x] `pkg()` helper for explicit unquoted `pkgs.*` references
+- [x] `mkDefault()`, `mkForce()`, `mkBefore()`, and `mkAfter()` helpers for `lib.mk*` option priority calls
+- [x] Backend quotes any attr path segment that is not a valid Nix identifier
+- [x] `overlay.stable()` and `overlay.custom()` helpers for nixpkgs overlays
+- [x] Host modules include `config`, `lib`, `pkgs`, and `inputs` in module arguments
 
 ### P1 — CLI & DX
 - [ ] `winix check` — conflict detection, `--strict` mode

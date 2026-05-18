@@ -1,7 +1,7 @@
 // winix apply — generate .winix/out/ from config
 
 import { isAbsolute, join, dirname, relative } from "node:path";
-import { mkdir, writeFile, readFile, symlink, unlink, copyFile, realpath, rm } from "node:fs/promises";
+import { mkdir, writeFile, readFile, copyFile, cp, realpath, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { loadWorkspace } from "../loader.ts";
 import { evaluate } from "../../evaluator/index.ts";
@@ -65,14 +65,12 @@ export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
 
   await copyRawModules(configDir, outDir, output.rawModules);
 
-  // Symlink flake.lock from project root if it exists
+  // Copy flake.lock from project root if it exists.
   const rootLock = join(cwd, "flake.lock");
   const outLock = join(outDir, "flake.lock");
   if (existsSync(rootLock)) {
-    try {
-      await unlink(outLock);
-    } catch {}
-    await symlink(rootLock, outLock);
+    await rm(outLock, { force: true });
+    await copyFile(rootLock, outLock);
   }
 
   console.log(`✓ Generated ${Object.keys(output.hosts).length} host(s) in .winix/out/`);
@@ -143,9 +141,26 @@ async function copyRawModules(
 
   const rawModulesDir = join(outDir, "raw-modules");
   await rm(rawModulesDir, { recursive: true, force: true });
+  const copiedRoots = new Set<string>();
 
   for (const rawModule of rawModules) {
     const source = await resolveRawModuleSource(configDir, rawModule.path);
+    const segments = rawModule.path.split("/");
+    if (segments.length > 1) {
+      const root = segments[0];
+      if (!copiedRoots.has(root)) {
+        const sourceRoot = join(configDir, root);
+        const realConfigDir = await realpath(configDir);
+        const realSourceRoot = await realpath(sourceRoot);
+        if (!isPathInside(realConfigDir, realSourceRoot)) {
+          throw new Error(`rawModule("${rawModule.path}") resolves outside the workspace`);
+        }
+        await cp(sourceRoot, join(rawModulesDir, root), { recursive: true, force: true });
+        copiedRoots.add(root);
+      }
+      continue;
+    }
+
     const target = rawModuleTarget(outDir, rawModule.path);
     await mkdir(dirname(target), { recursive: true });
     await copyFile(source, target);

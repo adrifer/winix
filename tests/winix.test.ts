@@ -281,7 +281,7 @@ describe("Nix backend", () => {
     const output = generateNix(ws, evaluated);
     const hostNix = output.hosts["wsl-work.nix"];
 
-    expect(hostNix).toContain("home-manager.users.adrifer = { pkgs, ... }: {");
+    expect(hostNix).toContain("home-manager.users.adrifer = { config, lib, pkgs, ... }: {");
     expect(hostNix).toContain("programs.git.enable = true;");
     expect(hostNix).toContain("programs.git.userName = \"Adrian Fernandez Garcia\";");
     expect(hostNix).not.toContain("home.programs.git.enable");
@@ -324,7 +324,7 @@ describe("Nix backend", () => {
     const output = generateNix(ws, evaluated);
     const hostNix = output.hosts["wsl-work.nix"];
 
-    expect(hostNix).toContain("home-manager.users.adrifer = { pkgs, ... }: {");
+    expect(hostNix).toContain("home-manager.users.adrifer = { config, lib, pkgs, ... }: {");
     expect(hostNix).toContain("    imports = [\n      ../raw-modules/legacy/home.nix\n    ];");
     expect(output.rawModules).toEqual([{ path: "legacy/home.nix" }]);
   });
