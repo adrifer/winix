@@ -1,7 +1,7 @@
 // Nix backend: generates .nix files from evaluated host IR
 
-import type { EvaluatedHost } from "../../evaluator/index.js";
-import type { InputDef, InputWithOptions, WorkspaceDef } from "../../core/types.js";
+import type { EvaluatedHost } from "../../evaluator/index.ts";
+import type { InputDef, InputWithOptions, WorkspaceDef } from "../../core/types.ts";
 
 /**
  * Generated output for a workspace.

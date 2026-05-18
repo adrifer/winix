@@ -10,7 +10,7 @@ import type {
   WorkspaceDef,
   HostDef,
   EvalContext,
-} from "../core/types.js";
+} from "../core/types.ts";
 
 // --- Evaluation context (implicit, set by evaluator) ---
 

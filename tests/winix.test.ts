@@ -134,6 +134,33 @@ describe("Evaluator", () => {
     expect(packages).toContain("socat");
   });
 
+  it("resolves nested composite fragments (Feature returning Fragment[])", () => {
+    // developer() returns [git(), neovim()] which are themselves lazy
+    const git = feature("git", () => ({
+      home: { programs: { git: { enable: true } } },
+    }));
+
+    const neovimFeat = feature("neovim", () => ({
+      home: { packages: ["neovim"] },
+    }));
+
+    const developer = feature("developer", (): any => [
+      git(),
+      neovimFeat(),
+    ]);
+
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("test", [nixos(), developer()]),
+      ],
+    });
+
+    const [result] = evaluate(ws);
+    expect((result.home as any).programs.git.enable).toBe(true);
+    expect((result.home as any).packages).toContain("neovim");
+  });
+
   it("platform conditionals resolve correctly", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
