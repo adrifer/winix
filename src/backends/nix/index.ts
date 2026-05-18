@@ -318,7 +318,18 @@ function formatNixValue(value: unknown): string {
   if (typeof value === "string") return `"${value}"`;
   if (typeof value === "number") return String(value);
   if (typeof value === "boolean") return value ? "true" : "false";
+  if (Array.isArray(value)) {
+    return `[ ${value.map((item) => formatNixValue(item)).join(" ")} ]`;
+  }
+  if (isPlainObject(value)) {
+    return formatInlineAttrSet(value);
+  }
   return `"${String(value)}"`;
+}
+
+function formatInlineAttrSet(obj: Record<string, unknown>): string {
+  const parts = objectToNix(obj, 0, "home").map((line) => line.trim());
+  return `{ ${parts.join(" ")} }`;
 }
 
 function toKebabCase(str: string): string {

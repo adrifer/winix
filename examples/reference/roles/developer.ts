@@ -1,5 +1,4 @@
-import { feature, type Fragment } from "winix";
-import { packages } from "winix/fragments";
+import { feature, packages, type Fragment } from "winix";
 import { git } from "../features/git";
 import { neovim } from "../features/neovim";
 import { zsh } from "../features/zsh";
@@ -18,7 +17,7 @@ export const developer = feature("developer", (): Fragment[] => [
   starship(),
   fzf(),
   zoxide(),
-  packages([
+  packages(
     "wget",
     "curl",
     "eza",
@@ -40,6 +39,6 @@ export const developer = feature("developer", (): Fragment[] => [
     "nixd",
     "azure-cli",
     "python3",
-    "gnumake",
-  ]),
+    "gnumake"
+  ),
 ]);
