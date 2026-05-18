@@ -1,6 +1,6 @@
 // Evaluator: takes a workspace config, evaluates fragments per host, produces merged IR
 
-import type { Fragment, HostDef, WorkspaceDef, EvalContext } from "../core/types.js";
+import type { Fragment, FragmentEntry, HostDef, LazyFragment, WorkspaceDef, EvalContext } from "../core/types.js";
 import { setEvalContext, clearEvalContext } from "../sdk/index.js";
 
 /**
@@ -21,23 +21,25 @@ export function evaluate(workspace: WorkspaceDef): EvaluatedHost[] {
 }
 
 function evaluateHost(host: HostDef): EvaluatedHost {
-  // Pass 1: flatten and collect IDs (calling fragment factories)
-  // We need context set even for this pass so .isActive works during factory calls
-  // First do a quick scan to find the platform
-  const quickFlat = flatten(host.fragments);
+  // Pass 1: scan lazy descriptors to collect IDs and determine platform
   const activeIds = new Set<string>();
   let platformId = "";
 
-  for (const f of quickFlat) {
-    if (f.__id) {
-      activeIds.add(f.__id);
-    }
-    if (f.__platform && f.__id) {
-      platformId = f.__id;
+  for (const entry of host.fragments) {
+    if (isLazy(entry)) {
+      activeIds.add(entry.__id);
+      if (entry.__platform) {
+        platformId = entry.__id;
+      }
+    } else if (isFragment(entry) && entry.__id) {
+      activeIds.add(entry.__id);
+      if (entry.__platform) {
+        platformId = entry.__id;
+      }
     }
   }
 
-  // Pass 2: set context so .isActive resolves, then collect final fragments
+  // Pass 2: set context → resolve lazy fragments (now .isActive works)
   const ctx: EvalContext = {
     platform: platformId,
     hostname: host.name,
@@ -46,15 +48,22 @@ function evaluateHost(host: HostDef): EvaluatedHost {
 
   setEvalContext(ctx);
 
-  // Re-evaluate fragment factories with context active
-  // For now, we just use the already-flattened results since factories
-  // were already called. The .isActive getters work at read time.
-  // We need to re-call any factories that use .isActive...
-  // Actually, fragments in the list are already evaluated (host() receives results).
-  // The trick: .isActive is checked when the object LITERAL is evaluated by JS.
-  // So we need the context set BEFORE the workspace() call.
-  // For the PoC, we accept this limitation and re-flatten.
-  const resolvedFragments = flatten(host.fragments);
+  const resolvedFragments: Fragment[] = [];
+
+  for (const entry of host.fragments) {
+    if (isLazy(entry)) {
+      const result = entry.__resolve();
+      if (Array.isArray(result)) {
+        resolvedFragments.push(...result);
+      } else {
+        resolvedFragments.push(result);
+      }
+    } else if (Array.isArray(entry)) {
+      resolvedFragments.push(...entry);
+    } else {
+      resolvedFragments.push(entry);
+    }
+  }
 
   clearEvalContext();
 
@@ -81,19 +90,12 @@ function evaluateHost(host: HostDef): EvaluatedHost {
   return result;
 }
 
-/**
- * Flatten nested fragment arrays into a single list.
- */
-function flatten(fragments: (Fragment | Fragment[])[]): Fragment[] {
-  const result: Fragment[] = [];
-  for (const f of fragments) {
-    if (Array.isArray(f)) {
-      result.push(...f);
-    } else {
-      result.push(f);
-    }
-  }
-  return result;
+function isLazy(entry: FragmentEntry): entry is LazyFragment {
+  return typeof entry === "object" && entry !== null && "__lazy" in entry && entry.__lazy === true;
+}
+
+function isFragment(entry: FragmentEntry): entry is Fragment {
+  return typeof entry === "object" && entry !== null && !Array.isArray(entry) && !("__lazy" in entry);
 }
 
 /**

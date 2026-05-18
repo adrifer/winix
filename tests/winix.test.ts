@@ -61,17 +61,23 @@ const zsh = feature("zsh", () => ({
 // --- Tests ---
 
 describe("SDK helpers", () => {
-  it("platform() creates callable with .isActive", () => {
+  it("platform() creates lazy descriptor with .isActive", () => {
     const result = nixos({ stateVersion: "25.05" });
-    expect(result).toHaveProperty("nixos");
+    expect(result.__lazy).toBe(true);
     expect(result.__platform).toBe(true);
     expect(result.__id).toBe("linux");
+    // Resolve to get the actual fragment
+    const resolved = withContext({ platform: "linux" }, () => result.__resolve());
+    expect(resolved).toHaveProperty("nixos");
   });
 
-  it("feature() creates callable with .isActive", () => {
+  it("feature() creates lazy descriptor with .isActive", () => {
     const result = wsl({ defaultUser: "adrifer" });
-    expect(result).toHaveProperty("nixos");
-    expect((result as any).__id).toBe("wsl");
+    expect(result.__lazy).toBe(true);
+    expect(result.__id).toBe("wsl");
+    // Resolve to get the actual fragment
+    const resolved = withContext({ platform: "linux", features: ["wsl"] }, () => result.__resolve());
+    expect(resolved).toHaveProperty("nixos");
   });
 
   it(".isActive works inside withContext", () => {
@@ -129,16 +135,12 @@ describe("Evaluator", () => {
   });
 
   it("platform conditionals resolve correctly", () => {
-    // In real usage, workspace definition happens with context set by evaluator.
-    // For PoC, we wrap in withContext to simulate.
-    const ws = withContext({ platform: "linux", features: ["linux", "zsh"] }, () =>
-      workspace({
-        inputs: { nixpkgs: "nixos-unstable" },
-        hosts: [
-          host("wsl-work", [nixos(), zsh()]),
-        ],
-      })
-    );
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", [nixos(), zsh()]),
+      ],
+    });
 
     const [result] = evaluate(ws);
     const aliases = (result.home as any).programs.zsh.aliases;

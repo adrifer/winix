@@ -3,6 +3,8 @@
 import type {
   Fragment,
   FragmentFactory,
+  LazyFragment,
+  FragmentEntry,
   InputDef,
   InputWithOptions,
   WorkspaceDef,
@@ -38,9 +40,16 @@ export function platform<T extends unknown[]>(
   id: string,
   factory: (...args: T) => Fragment
 ): FragmentFactory<T> {
-  const fn = ((...args: T): Fragment => {
-    const result = factory(...args);
-    return { ...result, __id: id, __platform: true };
+  const fn = ((...args: T): LazyFragment => {
+    return {
+      __lazy: true,
+      __id: id,
+      __platform: true,
+      __resolve: () => {
+        const result = factory(...args);
+        return { ...result, __id: id, __platform: true };
+      },
+    };
   }) as FragmentFactory<T>;
 
   Object.defineProperty(fn, "isActive", {
@@ -58,12 +67,18 @@ export function feature<T extends unknown[]>(
   id: string,
   factory: (...args: T) => Fragment | Fragment[]
 ): FragmentFactory<T> {
-  const fn = ((...args: T): Fragment | Fragment[] => {
-    const result = factory(...args);
-    if (Array.isArray(result)) {
-      return result.map((r) => ({ ...r, __id: r.__id ?? id }));
-    }
-    return { ...result, __id: id };
+  const fn = ((...args: T): LazyFragment => {
+    return {
+      __lazy: true,
+      __id: id,
+      __resolve: () => {
+        const result = factory(...args);
+        if (Array.isArray(result)) {
+          return result.map((r) => ({ ...r, __id: r.__id ?? id }));
+        }
+        return { ...result, __id: id };
+      },
+    };
   }) as FragmentFactory<T>;
 
   Object.defineProperty(fn, "isActive", {
@@ -79,7 +94,7 @@ export function feature<T extends unknown[]>(
 
 export function host(
   name: string,
-  fragments: (Fragment | Fragment[])[]
+  fragments: FragmentEntry[]
 ): HostDef {
   return { name, fragments };
 }

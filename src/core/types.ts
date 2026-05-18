@@ -15,10 +15,26 @@ export interface Fragment {
 }
 
 /**
- * A fragment factory: callable to produce a Fragment, with .isActive getter.
+ * A lazy fragment descriptor: holds the factory + args for deferred evaluation.
+ * The evaluator calls __resolve() with context set to get the actual Fragment(s).
+ */
+export interface LazyFragment {
+  __lazy: true;
+  __id: string;
+  __platform?: boolean;
+  __resolve: () => Fragment | Fragment[];
+}
+
+/**
+ * What goes into a host's fragment list: either a lazy descriptor or a plain Fragment.
+ */
+export type FragmentEntry = LazyFragment | Fragment | Fragment[];
+
+/**
+ * A fragment factory: callable to produce a LazyFragment, with .isActive getter.
  */
 export interface FragmentFactory<T extends unknown[] = []> {
-  (...args: T): Fragment | Fragment[];
+  (...args: T): LazyFragment;
   readonly isActive: boolean;
   readonly id: string;
 }
@@ -47,7 +63,7 @@ export interface WorkspaceDef {
  */
 export interface HostDef {
   name: string;
-  fragments: (Fragment | Fragment[])[];
+  fragments: FragmentEntry[];
 }
 
 /**
