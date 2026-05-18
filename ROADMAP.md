@@ -32,7 +32,7 @@
 
 ## 🔧 In Progress
 
-- [ ] **Curated authoring helpers** (spec 20) — `packages()`, `user()`, `git()`, `zsh()`, `shell()`, `sysctl()` in `src/helpers/`
+- [ ] **Generic `program()` helper** (spec 24) — `program()`, `program.service()`, `program.nixos()`, `program.darwin()`, `program.homeService()`
 
 ## 📋 Next Up (Priority Order)
 
