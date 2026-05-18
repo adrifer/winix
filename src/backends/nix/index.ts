@@ -394,14 +394,37 @@ function isPkgsReference(value: string): boolean {
 function mapKnownOptionPath(scope: NixScope, path: string[]): string[] {
   const key = `${scope}:${path.join(".")}`;
   const mapped = KNOWN_OPTION_PATHS[key];
-  return mapped ? mapped.split(".") : path;
+  if (mapped) return mapped.split(".");
+
+  for (const prefix of KEBAB_NAME_PREFIXES[scope]) {
+    const prefixSegments = prefix.split(".");
+    if (path.length !== prefixSegments.length + 1) continue;
+    if (!prefixSegments.every((segment, index) => path[index] === segment)) continue;
+
+    const name = path[prefixSegments.length];
+    if (hasCamelCaseBoundary(name)) {
+      return [...prefixSegments, toKebabCase(name)];
+    }
+  }
+
+  return path;
 }
 
 const KNOWN_OPTION_PATHS: Record<string, string> = {
   "nixos:nix.settings.experimentalFeatures": "nix.settings.experimental-features",
   "darwin:nix.settings.experimentalFeatures": "nix.settings.experimental-features",
-  "nixos:programs.nixLd": "programs.nix-ld",
+  "home:nix.settings.experimentalFeatures": "nix.settings.experimental-features",
 };
+
+const KEBAB_NAME_PREFIXES: Record<NixScope, string[]> = {
+  nixos: ["programs", "services", "nix.settings"],
+  home: ["programs", "services"],
+  darwin: ["programs", "services", "nix.settings", "homebrew"],
+};
+
+function hasCamelCaseBoundary(value: string): boolean {
+  return /[a-z][A-Z]/.test(value);
+}
 
 function systemForHost(host: EvaluatedHost, scope: "nixos" | "darwin"): string {
   const config = scope === "nixos" ? host.nixos : host.darwin;

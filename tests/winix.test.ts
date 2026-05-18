@@ -453,6 +453,14 @@ describe("Nix backend", () => {
             nixos: {
               nix: { settings: { experimentalFeatures: ["nix-command", "flakes"] } },
               programs: { nixLd: { enable: true, libraries: ["icu"] } },
+              services: { openSsh: { enable: true } },
+            },
+            home: {
+              username: "adrifer",
+              programs: {
+                git: { userName: "Adrian Fernandez Garcia" },
+                zsh: { syntaxHighlighting: { enable: true } },
+              },
             },
           },
         ]),
@@ -463,6 +471,11 @@ describe("Nix backend", () => {
     expect(hostNix).toContain("nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];");
     expect(hostNix).toContain("programs.nix-ld.enable = true;");
     expect(hostNix).toContain("programs.nix-ld.libraries = [ \"icu\" ];");
+    expect(hostNix).toContain("services.open-ssh.enable = true;");
+    expect(hostNix).toContain("programs.git.userName = \"Adrian Fernandez Garcia\";");
+    expect(hostNix).toContain("programs.zsh.syntaxHighlighting.enable = true;");
+    expect(hostNix).not.toContain("programs.git.user-name");
+    expect(hostNix).not.toContain("programs.zsh.syntax-highlighting");
   });
 
   it("uses nixpkgs.hostPlatform for generated flake systems", () => {
