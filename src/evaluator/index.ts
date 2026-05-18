@@ -23,19 +23,17 @@ export function evaluate(workspace: WorkspaceDef): EvaluatedHost[] {
 function evaluateHost(host: HostDef): EvaluatedHost {
   // The platform is always host.platform (exactly one, guaranteed by type system)
   const platformEntry = host.platform;
-  const allEntries: unknown[] = [platformEntry, ...host.fragments];
+  const allEntries: FragmentEntry[] = [platformEntry, ...host.fragments];
 
-  // Pass 1: Resolve all lazy fragments WITHOUT context to discover IDs.
+  // Platform ID is known directly from the platform descriptor
+  const platformId = platformEntry.__id;
   const activeIds = new Set<string>();
-  let platformId = "";
+  activeIds.add(platformId);
 
+  // Collect remaining IDs from fragments
   function collectIds(entry: unknown): void {
     if (isLazy(entry)) {
       activeIds.add(entry.__id);
-      if (entry.__platform) {
-        platformId = entry.__id;
-      }
-      // Try to resolve to discover children (ignore errors from .isActive)
       try {
         const result = entry.__resolve();
         if (Array.isArray(result)) {
@@ -48,7 +46,7 @@ function evaluateHost(host: HostDef): EvaluatedHost {
           }
         }
       } catch {
-        // .isActive may throw without context — that's fine for ID collection
+        // .isActive may throw without context
       }
     } else if (Array.isArray(entry)) {
       for (const item of entry) {
@@ -58,14 +56,11 @@ function evaluateHost(host: HostDef): EvaluatedHost {
       const f = entry as Fragment;
       if (f.__id) {
         activeIds.add(f.__id);
-        if (f.__platform) {
-          platformId = f.__id;
-        }
       }
     }
   }
 
-  for (const entry of allEntries) {
+  for (const entry of host.fragments) {
     collectIds(entry);
   }
 
