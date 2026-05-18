@@ -22,6 +22,14 @@ export interface RawModuleRef {
   path: string;
 }
 
+/**
+ * Internal reference to a verbatim Nix expression.
+ */
+export interface NixExpr {
+  __winixNixExpr: true;
+  expr: string;
+}
+
 export type ImportRef = string | RawModuleRef;
 
 /**

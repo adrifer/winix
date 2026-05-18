@@ -42,11 +42,11 @@
 - [x] `rawModule()` support — import existing .nix files for incremental migration
 - [x] **Curated authoring helpers** — `packages()`, `user()`, `git()`, `zsh()`, `shell()`, `sysctl()` (spec 20)
 - [x] Generic `program()` helper for Home Manager, NixOS, and nix-darwin options (spec 24)
-- [ ] `escape()` support — inline Nix expressions within typed fragments
-- [ ] `raw.nixos()` / `raw.home()` — top-level raw Nix fragments
-- [ ] camelCase → kebab-case mapping for known Nix option paths
-- [ ] System arch from platform fragment (not hardcoded x86_64-linux)
-- [ ] Input validation (warn if darwin host exists without nix-darwin input)
+- [x] `escape()` support — inline Nix expressions within typed fragments
+- [x] `raw.nixos()` / `raw.home()` — top-level raw Nix fragments
+- [x] camelCase → kebab-case mapping for known Nix option paths
+- [x] System arch from platform fragment (not hardcoded x86_64-linux)
+- [x] Input validation (warn if darwin host exists without nix-darwin input)
 
 ### P1 — CLI & DX
 - [ ] `winix check` — conflict detection, `--strict` mode

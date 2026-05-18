@@ -13,6 +13,7 @@ import type {
   WorkspaceDef,
   HostDef,
   EvalContext,
+  NixExpr,
   RawModuleRef,
 } from "../core/types.ts";
 
@@ -151,6 +152,25 @@ export const rawModule: RawModuleHelper = Object.assign(
     }),
   }
 );
+
+export interface RawHelper {
+  nixos(body: string): Fragment;
+  home(body: string): Fragment;
+  darwin(body: string): Fragment;
+}
+
+export const raw: RawHelper = {
+  nixos: (body: string): Fragment => ({ nixos: { __raw: [body] } }),
+  home: (body: string): Fragment => ({ home: { __raw: [body] } }),
+  darwin: (body: string): Fragment => ({ darwin: { __raw: [body] } }),
+};
+
+export function escape(expr: string): NixExpr {
+  return {
+    __winixNixExpr: true,
+    expr,
+  };
+}
 
 function createRawModuleRef(path: string): RawModuleRef {
   return {

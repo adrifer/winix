@@ -35,6 +35,7 @@ export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
 
   // 3. Generate Nix output
   const output = generateNix(workspace, evaluated);
+  printWarnings(output.warnings);
 
   // 4. Write or display
   const outDir = join(configDir, ".winix", "out");
@@ -79,6 +80,12 @@ export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
     console.log(`  → hosts/${name}`);
   }
   console.log(`\nNext: nixos-rebuild switch --flake path:$(pwd)/${relative(cwd, outDir) || ".winix/out"}`);
+}
+
+function printWarnings(warnings: string[]): void {
+  for (const warning of warnings) {
+    console.warn(`Warning: ${warning}`);
+  }
 }
 
 async function showDiff(configDir: string, outDir: string, output: NixOutput): Promise<void> {

@@ -1,6 +1,6 @@
 // Evaluator: takes a workspace config, evaluates fragments per host, produces merged IR
 
-import type { Fragment, FragmentEntry, HostDef, LazyFragment, WorkspaceDef, EvalContext } from "../core/types.ts";
+import type { Fragment, FragmentEntry, HostDef, LazyFragment, NixExpr, RawModuleRef, WorkspaceDef, EvalContext } from "../core/types.ts";
 import { setEvalContext, restoreEvalContext } from "../sdk/index.ts";
 
 /**
@@ -181,5 +181,29 @@ export function deepMerge(
 }
 
 function isPlainObject(val: unknown): val is Record<string, unknown> {
-  return typeof val === "object" && val !== null && !Array.isArray(val);
+  return (
+    typeof val === "object" &&
+    val !== null &&
+    !Array.isArray(val) &&
+    !isNixExpr(val) &&
+    !isRawModuleRef(val)
+  );
+}
+
+function isNixExpr(val: unknown): val is NixExpr {
+  return (
+    typeof val === "object" &&
+    val !== null &&
+    (val as NixExpr).__winixNixExpr === true &&
+    typeof (val as NixExpr).expr === "string"
+  );
+}
+
+function isRawModuleRef(val: unknown): val is RawModuleRef {
+  return (
+    typeof val === "object" &&
+    val !== null &&
+    (val as RawModuleRef).__winixRawModule === true &&
+    typeof (val as RawModuleRef).path === "string"
+  );
 }

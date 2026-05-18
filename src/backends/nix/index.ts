@@ -1,7 +1,7 @@
 // Nix backend: generates .nix files from evaluated host IR
 
 import type { EvaluatedHost } from "../../evaluator/index.ts";
-import type { ImportRef, InputDef, InputWithOptions, RawModuleRef, WorkspaceDef } from "../../core/types.ts";
+import type { ImportRef, InputDef, InputWithOptions, NixExpr, RawModuleRef, WorkspaceDef } from "../../core/types.ts";
 
 /**
  * Generated output for a workspace.
@@ -10,6 +10,7 @@ export interface NixOutput {
   "flake.nix": string;
   hosts: Record<string, string>; // hostname → .nix content
   rawModules: RawModuleCopy[];
+  warnings: string[];
 }
 
 export interface RawModuleCopy {
@@ -34,6 +35,7 @@ export function generateNix(
     "flake.nix": flakeNix,
     hosts,
     rawModules: collectRawModules(evaluatedHosts),
+    warnings: validateWorkspaceInputs(workspace, evaluatedHosts),
   };
 }
 
@@ -50,7 +52,7 @@ function generateFlake(
     .map(
       (h) =>
         `    nixosConfigurations.${h.name} = nixpkgs.lib.nixosSystem {\n` +
-        `      system = "x86_64-linux";\n` +
+        `      system = "${systemForHost(h, "nixos")}";\n` +
         `      modules = [ ./hosts/${h.name}.nix ];\n` +
         `      specialArgs = { inherit inputs; };\n` +
         `    };`
@@ -62,7 +64,7 @@ function generateFlake(
     .map(
       (h) =>
         `    darwinConfigurations.${h.name} = nix-darwin.lib.darwinSystem {\n` +
-        `      system = "aarch64-darwin";\n` +
+        `      system = "${systemForHost(h, "darwin")}";\n` +
         `      modules = [ ./hosts/${h.name}.nix ];\n` +
         `      specialArgs = { inherit inputs; };\n` +
         `    };`
@@ -87,7 +89,7 @@ ${outputs}
 }
 
 function formatInput(name: string, def: InputDef): string {
-  const nixName = toKebabCase(name);
+  const nixName = inputNixName(name, def);
 
   if (typeof def === "string") {
     const url = def.startsWith("github:") ? def : `github:NixOS/nixpkgs/${def}`;
@@ -122,6 +124,7 @@ function generateHostModule(host: EvaluatedHost): string {
 
   // Generate imports
   const imports = getImports(host.nixos);
+  const nixosRaw = getRawBlocks(host.nixos);
   if (imports.length > 0) {
     lines.push(...importsToNix(imports, 1));
     lines.push(``);
@@ -130,8 +133,11 @@ function generateHostModule(host: EvaluatedHost): string {
   // Generate NixOS config (skip internal fields)
   const skipKeys = ["imports", "__id", "__platform", "homeManager"];
   if (Object.keys(host.nixos).length > 0) {
-    const nixLines = objectToNix(filterKeys(host.nixos, skipKeys), 1, "nixos");
+    const nixLines = objectToNix(filterKeys(host.nixos, [...skipKeys, "__raw"]), 1, "nixos");
     lines.push(...nixLines);
+  }
+  if (nixosRaw.length > 0) {
+    lines.push(...rawBlocksToNix(nixosRaw, 1));
   }
 
   // Emit home-manager settings
@@ -146,13 +152,17 @@ function generateHostModule(host: EvaluatedHost): string {
   // Generate darwin config
   if (Object.keys(host.darwin).length > 0) {
     const darwinImports = getImports(host.darwin);
+    const darwinRaw = getRawBlocks(host.darwin);
     if (darwinImports.length > 0) {
       lines.push(...importsToNix(darwinImports, 1));
       lines.push(``);
     }
 
-    const darwinLines = objectToNix(filterKeys(host.darwin, ["imports"]), 1, "darwin");
+    const darwinLines = objectToNix(filterKeys(host.darwin, ["imports", "__raw"]), 1, "darwin");
     lines.push(...darwinLines);
+    if (darwinRaw.length > 0) {
+      lines.push(...rawBlocksToNix(darwinRaw, 1));
+    }
   }
 
   // Generate Home Manager config (inline)
@@ -164,11 +174,15 @@ function generateHostModule(host: EvaluatedHost): string {
       lines.push(`  # Home Manager`);
       lines.push(`  home-manager.users.${username} = { pkgs, ... }: {`);
       const homeImports = getImports(homeData);
+      const homeRaw = getRawBlocks(homeData);
       if (homeImports.length > 0) {
         lines.push(...importsToNix(homeImports, 2));
       }
-      const homeLines = objectToNix(filterKeys(homeData, ["imports"]), 2, "home");
+      const homeLines = objectToNix(filterKeys(homeData, ["imports", "__raw"]), 2, "home");
       lines.push(...homeLines);
+      if (homeRaw.length > 0) {
+        lines.push(...rawBlocksToNix(homeRaw, 2));
+      }
       lines.push(`  };`);
     }
   }
@@ -190,22 +204,27 @@ function objectToNix(
   const prefix = "  ".repeat(indent);
 
   for (const [key, value] of Object.entries(obj)) {
+    if (key === "__raw") {
+      throw new Error("raw fragments must be handled before objectToNix()");
+    }
     if (key.startsWith("__")) continue; // skip internal fields
     if (value === undefined) continue;
     if (isRawModuleRef(value)) {
       throw new Error("rawModule() references are only supported in imports arrays");
     }
 
-    const currentPath = [...path, key];
+    const mappedPath = mapKnownOptionPath(scope, [...path, key]);
+    const mappedKey = mappedPath[mappedPath.length - 1];
+    const currentPath = [...path, mappedKey];
     // Quote keys that contain dots (e.g. sysctl keys)
-    const nixKey = key.includes(".") ? `"${key}"` : key;
+    const nixKey = mappedKey.includes(".") ? `"${mappedKey}"` : mappedKey;
     const nixPath = [...path, nixKey].join(".");
 
     if (Array.isArray(value)) {
       const packageAttr = packageAttributeForPath(scope, nixPath);
       if (packageAttr) {
         // Packages need pkgs prefix, no quotes
-        const items = value.map((v) => String(v)).join(" ");
+        const items = value.map((v) => formatPackageItem(v)).join(" ");
         lines.push(`${prefix}${packageAttr} = with pkgs; [ ${items} ];`);
       } else {
         const items = value.map((v) => formatNixValue(v)).join(" ");
@@ -273,11 +292,33 @@ function getImports(obj: Record<string, unknown>): ImportRef[] {
   }
 
   return imports.map((imp) => {
+    if (isNixExpr(imp)) {
+      throw new Error("escape() expressions are not supported in imports arrays");
+    }
     if (typeof imp === "string" || isRawModuleRef(imp)) {
       return imp;
     }
     throw new Error("imports entries must be strings or rawModule() references");
   });
+}
+
+function getRawBlocks(obj: Record<string, unknown>): string[] {
+  const rawBlocks = obj.__raw;
+  if (rawBlocks === undefined) return [];
+  if (!Array.isArray(rawBlocks) || rawBlocks.some((block) => typeof block !== "string")) {
+    throw new Error("raw fragments must contain string bodies");
+  }
+  return rawBlocks;
+}
+
+function rawBlocksToNix(rawBlocks: string[], indent: number): string[] {
+  const prefix = "  ".repeat(indent);
+  return rawBlocks.flatMap((block) =>
+    block
+      .trim()
+      .split("\n")
+      .map((line) => `${prefix}${line}`)
+  );
 }
 
 function collectRawModules(hosts: EvaluatedHost[]): RawModuleCopy[] {
@@ -312,6 +353,9 @@ function uniqueBy<T>(values: T[], keyForValue: (value: T) => string): T[] {
 }
 
 function formatNixValue(value: unknown): string {
+  if (isNixExpr(value)) {
+    return value.expr;
+  }
   if (isRawModuleRef(value)) {
     throw new Error("rawModule() references are only supported in imports arrays");
   }
@@ -337,8 +381,79 @@ function formatInlineAttrSet(obj: Record<string, unknown>): string {
   return `{ ${parts.join(" ")} }`;
 }
 
+function formatPackageItem(value: unknown): string {
+  if (isNixExpr(value)) return value.expr;
+  if (typeof value === "string") return value;
+  throw new Error("package lists only support strings or escape() expressions");
+}
+
 function isPkgsReference(value: string): boolean {
   return /^pkgs\.[A-Za-z_][A-Za-z0-9_'-]*(\.[A-Za-z_][A-Za-z0-9_'-]*)*$/.test(value);
+}
+
+function mapKnownOptionPath(scope: NixScope, path: string[]): string[] {
+  const key = `${scope}:${path.join(".")}`;
+  const mapped = KNOWN_OPTION_PATHS[key];
+  if (mapped) return mapped.split(".");
+
+  for (const prefix of KEBAB_NAME_PREFIXES[scope]) {
+    const prefixSegments = prefix.split(".");
+    if (path.length !== prefixSegments.length + 1) continue;
+    if (!prefixSegments.every((segment, index) => path[index] === segment)) continue;
+
+    const name = path[prefixSegments.length];
+    if (hasCamelCaseBoundary(name)) {
+      return [...prefixSegments, toKebabCase(name)];
+    }
+  }
+
+  return path;
+}
+
+const KNOWN_OPTION_PATHS: Record<string, string> = {
+  "nixos:nix.settings.experimentalFeatures": "nix.settings.experimental-features",
+  "darwin:nix.settings.experimentalFeatures": "nix.settings.experimental-features",
+  "home:nix.settings.experimentalFeatures": "nix.settings.experimental-features",
+};
+
+const KEBAB_NAME_PREFIXES: Record<NixScope, string[]> = {
+  nixos: ["programs", "services", "nix.settings"],
+  home: ["programs", "services"],
+  darwin: ["programs", "services", "nix.settings", "homebrew"],
+};
+
+function hasCamelCaseBoundary(value: string): boolean {
+  return /[a-z][A-Z]/.test(value);
+}
+
+function systemForHost(host: EvaluatedHost, scope: "nixos" | "darwin"): string {
+  const config = scope === "nixos" ? host.nixos : host.darwin;
+  const fallback = scope === "nixos" ? "x86_64-linux" : "aarch64-darwin";
+  const hostPlatform = (config.nixpkgs as Record<string, unknown> | undefined)?.hostPlatform;
+  return typeof hostPlatform === "string" ? hostPlatform : fallback;
+}
+
+function validateWorkspaceInputs(
+  workspace: WorkspaceDef,
+  hosts: EvaluatedHost[]
+): string[] {
+  const warnings: string[] = [];
+  if (hosts.some((host) => Object.keys(host.darwin).length > 0) && !hasInput(workspace, "nix-darwin")) {
+    warnings.push(
+      "darwin host detected but workspace inputs do not include nix-darwin"
+    );
+  }
+  return warnings;
+}
+
+function hasInput(workspace: WorkspaceDef, nixName: string): boolean {
+  return Object.entries(workspace.inputs).some(
+    ([name, def]) => inputNixName(name, def) === nixName
+  );
+}
+
+function inputNixName(name: string, def: InputDef): string {
+  return typeof def === "object" && def.nixName ? def.nixName : toKebabCase(name);
 }
 
 function toKebabCase(str: string): string {
@@ -356,7 +471,13 @@ function filterKeys(obj: Record<string, unknown>, exclude: string[]): Record<str
 }
 
 function isPlainObject(val: unknown): val is Record<string, unknown> {
-  return typeof val === "object" && val !== null && !Array.isArray(val);
+  return (
+    typeof val === "object" &&
+    val !== null &&
+    !Array.isArray(val) &&
+    !isNixExpr(val) &&
+    !isRawModuleRef(val)
+  );
 }
 
 function isRawModuleRef(val: unknown): val is RawModuleRef {
@@ -365,5 +486,14 @@ function isRawModuleRef(val: unknown): val is RawModuleRef {
     val !== null &&
     (val as RawModuleRef).__winixRawModule === true &&
     typeof (val as RawModuleRef).path === "string"
+  );
+}
+
+function isNixExpr(val: unknown): val is NixExpr {
+  return (
+    typeof val === "object" &&
+    val !== null &&
+    (val as NixExpr).__winixNixExpr === true &&
+    typeof (val as NixExpr).expr === "string"
   );
 }
