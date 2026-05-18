@@ -172,6 +172,7 @@ function normalizeRawModulePath(path: string): string {
   if (pathPosix.isAbsolute(path)) {
     throw new Error("rawModule() path must be workspace-relative, not absolute");
   }
+  // Allow a leading "./" convenience prefix, but reject "." or ".." elsewhere.
   if (
     path
       .split("/")

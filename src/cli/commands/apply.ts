@@ -150,7 +150,18 @@ async function resolveRawModuleSource(
   rawModulePath: string
 ): Promise<string> {
   const realConfigDir = await realpath(configDir);
-  const source = await realpath(join(configDir, rawModulePath));
+  const expectedPath = join(configDir, rawModulePath);
+  let source: string;
+  try {
+    source = await realpath(expectedPath);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(
+        `rawModule("${rawModulePath}") file not found. Expected at: ${expectedPath}`
+      );
+    }
+    throw err;
+  }
 
   if (!isPathInside(realConfigDir, source)) {
     throw new Error(`rawModule("${rawModulePath}") resolves outside the workspace`);
