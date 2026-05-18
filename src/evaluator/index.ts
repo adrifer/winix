@@ -1,7 +1,7 @@
 // Evaluator: takes a workspace config, evaluates fragments per host, produces merged IR
 
-import type { Fragment, FragmentEntry, HostDef, LazyFragment, WorkspaceDef, EvalContext } from "../core/types.js";
-import { setEvalContext, restoreEvalContext } from "../sdk/index.js";
+import type { Fragment, FragmentEntry, HostDef, LazyFragment, WorkspaceDef, EvalContext } from "../core/types.ts";
+import { setEvalContext, restoreEvalContext } from "../sdk/index.ts";
 
 /**
  * Evaluated host: the merged result of all fragments for one host.
@@ -21,22 +21,51 @@ export function evaluate(workspace: WorkspaceDef): EvaluatedHost[] {
 }
 
 function evaluateHost(host: HostDef): EvaluatedHost {
-  // Pass 1: scan lazy descriptors to collect IDs and determine platform
+  // Pass 1: Resolve all lazy fragments WITHOUT context to discover IDs.
+  // This does a "dry resolve" — .isActive will throw if called, but we only
+  // need to collect IDs, not evaluate conditionals.
+  // We scan recursively: composites expand to reveal child IDs.
   const activeIds = new Set<string>();
   let platformId = "";
 
-  for (const entry of host.fragments) {
+  function collectIds(entry: unknown): void {
     if (isLazy(entry)) {
       activeIds.add(entry.__id);
       if (entry.__platform) {
         platformId = entry.__id;
       }
-    } else if (isFragment(entry) && entry.__id) {
-      activeIds.add(entry.__id);
-      if (entry.__platform) {
-        platformId = entry.__id;
+      // Try to resolve to discover children (ignore errors from .isActive)
+      try {
+        const result = entry.__resolve();
+        if (Array.isArray(result)) {
+          for (const item of result) {
+            collectIds(item);
+          }
+        } else if (result && typeof result === "object") {
+          if ((result as any).__id) {
+            activeIds.add((result as any).__id);
+          }
+        }
+      } catch {
+        // .isActive may throw without context — that's fine for ID collection
+      }
+    } else if (Array.isArray(entry)) {
+      for (const item of entry) {
+        collectIds(item);
+      }
+    } else if (typeof entry === "object" && entry !== null) {
+      const f = entry as Fragment;
+      if (f.__id) {
+        activeIds.add(f.__id);
+        if (f.__platform) {
+          platformId = f.__id;
+        }
       }
     }
+  }
+
+  for (const entry of host.fragments) {
+    collectIds(entry);
   }
 
   // Pass 2: set context → resolve lazy fragments (now .isActive works)
@@ -52,18 +81,7 @@ function evaluateHost(host: HostDef): EvaluatedHost {
 
   try {
     for (const entry of host.fragments) {
-      if (isLazy(entry)) {
-        const result = entry.__resolve();
-        if (Array.isArray(result)) {
-          resolvedFragments.push(...result);
-        } else {
-          resolvedFragments.push(result);
-        }
-      } else if (Array.isArray(entry)) {
-        resolvedFragments.push(...entry);
-      } else {
-        resolvedFragments.push(entry);
-      }
+      resolveEntry(entry, resolvedFragments);
     }
   } finally {
     restoreEvalContext(prevCtx);
@@ -92,12 +110,37 @@ function evaluateHost(host: HostDef): EvaluatedHost {
   return result;
 }
 
-function isLazy(entry: FragmentEntry): entry is LazyFragment {
-  return typeof entry === "object" && entry !== null && "__lazy" in entry && entry.__lazy === true;
+function isLazy(entry: unknown): entry is LazyFragment {
+  return typeof entry === "object" && entry !== null && "__lazy" in entry && (entry as any).__lazy === true;
 }
 
 function isFragment(entry: FragmentEntry): entry is Fragment {
   return typeof entry === "object" && entry !== null && !Array.isArray(entry) && !("__lazy" in entry);
+}
+
+/**
+ * Recursively resolve a fragment entry. Handles:
+ * - LazyFragment → resolve, then recurse (may return Fragment[] with more lazies)
+ * - Fragment[] → recurse each
+ * - Fragment → push directly
+ */
+function resolveEntry(entry: unknown, out: Fragment[]): void {
+  if (isLazy(entry)) {
+    const result = entry.__resolve();
+    if (Array.isArray(result)) {
+      for (const item of result) {
+        resolveEntry(item, out);
+      }
+    } else {
+      resolveEntry(result, out);
+    }
+  } else if (Array.isArray(entry)) {
+    for (const item of entry) {
+      resolveEntry(item, out);
+    }
+  } else if (typeof entry === "object" && entry !== null) {
+    out.push(entry as Fragment);
+  }
 }
 
 /**
