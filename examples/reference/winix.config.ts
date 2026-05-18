@@ -15,16 +15,14 @@ export default workspace({
   inputs,
 
   hosts: [
-    host("wsl-work", [
-      nixos({ stateVersion: "25.05" }),
+    host("wsl-work", nixos({ stateVersion: "25.05" }), [
       ...base,
       wsl({ defaultUser: "adrifer" }),
       workSysctl(),
       packages(["socat", "bubblewrap"]),
     ]),
 
-    host("macbook-pro", [
-      darwin({ stateVersion: 6 }),
+    host("macbook-pro", darwin({ stateVersion: 6 }), [
       ...base,
       homebrew(),
     ]),

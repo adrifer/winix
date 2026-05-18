@@ -30,7 +30,7 @@ Fragments are merged in **list order** (top to bottom). Each fragment contribute
 ### Example
 
 ```ts
-host("wsl-work", [
+host("wsl-work", nixos(), [
   developer(),    // packages: ["git", "nodejs"], programs.git.enable: true
   workSysctl(),   // boot.kernel.sysctl: { "fs.inotify...": 1048576 }
   packages(["socat"]),  // packages appends: ["git", "nodejs", "socat"]
@@ -123,7 +123,7 @@ packages(without(["git"]))
 In the flat fragment model, precedence is determined by **list order** (later wins). For composite fragments, the expanded order is:
 
 ```ts
-host("example", [
+host("example", nixos(), [
   developer(),  // expands to [git(), zsh(), neovim(), ...] at positions 0-N
   wsl(),        // position N+1
   packages(override(["custom"])),  // position N+2, highest precedence

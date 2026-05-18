@@ -104,9 +104,10 @@ export function feature<T extends unknown[]>(
 
 export function host(
   name: string,
+  platform: LazyFragment,
   fragments: FragmentEntry[]
 ): HostDef {
-  return { name, fragments };
+  return { name, platform, fragments };
 }
 
 // --- workspace() ---

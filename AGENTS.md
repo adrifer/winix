@@ -31,7 +31,7 @@ Everything is a `Fragment | Fragment[]`. No inheritance, no classes. Just functi
 ### Three Helpers
 - `platform(id, factory)` — system base (NixOS, darwin). Only one per host. Has `.isActive`.
 - `feature(id, factory)` — everything else. N per host. Has `.isActive`.
-- `host(name, fragments[])` — top-level target. No `.isActive`.
+- `host(name, platform, fragments[])` — top-level target. No `.isActive`.
 
 ### Lazy Evaluation
 `platform()` and `feature()` return `LazyFragment` descriptors (not resolved fragments). The evaluator:

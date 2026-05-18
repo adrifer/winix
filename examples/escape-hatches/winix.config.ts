@@ -32,8 +32,7 @@ export default workspace({
   inputs,
 
   hosts: [
-    host("wsl-work", [
-      nixos(),
+    host("wsl-work", nixos(), [
       user(),
 
       // Level 2: rawModule — legacy .nix file not yet migrated

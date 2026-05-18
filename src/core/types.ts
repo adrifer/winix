@@ -59,10 +59,11 @@ export interface WorkspaceDef {
 }
 
 /**
- * Host definition: a named target with its fragment list.
+ * Host definition: a named target with a platform and its fragment list.
  */
 export interface HostDef {
   name: string;
+  platform: LazyFragment;
   fragments: FragmentEntry[];
 }
 

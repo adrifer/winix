@@ -21,10 +21,11 @@ export function evaluate(workspace: WorkspaceDef): EvaluatedHost[] {
 }
 
 function evaluateHost(host: HostDef): EvaluatedHost {
+  // The platform is always host.platform (exactly one, guaranteed by type system)
+  const platformEntry = host.platform;
+  const allEntries: unknown[] = [platformEntry, ...host.fragments];
+
   // Pass 1: Resolve all lazy fragments WITHOUT context to discover IDs.
-  // This does a "dry resolve" — .isActive will throw if called, but we only
-  // need to collect IDs, not evaluate conditionals.
-  // We scan recursively: composites expand to reveal child IDs.
   const activeIds = new Set<string>();
   let platformId = "";
 
@@ -64,7 +65,7 @@ function evaluateHost(host: HostDef): EvaluatedHost {
     }
   }
 
-  for (const entry of host.fragments) {
+  for (const entry of allEntries) {
     collectIds(entry);
   }
 
@@ -80,7 +81,7 @@ function evaluateHost(host: HostDef): EvaluatedHost {
   const resolvedFragments: Fragment[] = [];
 
   try {
-    for (const entry of host.fragments) {
+    for (const entry of allEntries) {
       resolveEntry(entry, resolvedFragments);
     }
   } finally {

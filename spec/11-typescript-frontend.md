@@ -37,8 +37,7 @@ A fragment is any function with the signature:
 A host is simply a name plus a flat list of fragments:
 
 ```ts
-host("wsl-work", [
-  nixos(),
+host("wsl-work", nixos(), [
   user("adrifer"),
   wsl(),
   workSysctl(),
@@ -53,8 +52,7 @@ The compiler resolves where each fragment's data belongs (NixOS config, Home Man
 Prefer flat fragment composition:
 
 ```ts
-host("wsl-work", [
-  nixos(),
+host("wsl-work", nixos(), [
   user("adrifer"),
   wsl({ defaultUser: "adrifer" }),
   sysctl({ "fs.inotify.max_user_watches": 1048576 }),
@@ -190,7 +188,7 @@ Winix provides three helpers for defining system components:
 |---|---|---|---|
 | `platform(id, factory)` | System base (NixOS, darwin, Windows) | ✅ | Only one per host |
 | `feature(id, factory)` | Everything else (composable) | ✅ | N per host |
-| `host(name, fragments)` | Target machine definition | ❌ | Top-level only |
+| `host(name, platform, fragments)` | Target machine definition | ❌ | Top-level only |
 
 All fragments are defined with a helper. This keeps the decision simple: "which helper?" not "do I need one?"
 
@@ -219,8 +217,7 @@ export const fzf = feature("fzf", () => ({
 
 Usage in host list:
 ```ts
-host("wsl-work", [
-  nixos({ stateVersion: "25.05" }),  // callable → Fragment
+host("wsl-work", nixos({ stateVersion: "25.05" }), [
   wsl({ defaultUser: "adrifer" }),    // callable → Fragment
   zsh(),                              // uses nixos.isActive internally
 ]);
@@ -231,10 +228,10 @@ host("wsl-work", [
 Common fragment lists are shared via plain array spreads (no helper needed):
 
 ```ts
-const base = [nixos(), user("adrifer"), developer()];
+const base = [user("adrifer"), developer()];
 
-host("wsl-work", [...base, wsl(), workSysctl()]);
-host("wsl-personal", [...base, wsl()]);
+host("wsl-work", nixos(), [...base, wsl(), workSysctl()]);
+host("wsl-personal", nixos(), [...base, wsl()]);
 ```
 
 ### Evaluation model
@@ -331,8 +328,7 @@ export default workspace({
   inputs,
 
   hosts: [
-    host("wsl-work", [
-      nixos(),
+    host("wsl-work", nixos(), [
       wsl({ defaultUser: "adrifer" }),
     ]),
   ],
@@ -361,8 +357,7 @@ Usage:
 ```ts
 import { tailscale } from "winix-fragment-tailscale";
 
-host("server", [
-  nixos(),
+host("server", nixos(), [
   tailscale({ exitNode: true }),
 ]);
 ```
@@ -523,8 +518,7 @@ Dotfile linking is expressed as a fragment:
 ```ts
 import { dotfiles } from "winix";
 
-host("wsl-work", [
-  nixos(),
+host("wsl-work", nixos(), [
   dotfiles({
     "./nvim/.config/nvim": "~/.config/nvim",
     "./ghostty/.config/ghostty": "~/.config/ghostty",

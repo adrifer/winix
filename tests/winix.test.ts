@@ -98,8 +98,7 @@ describe("Evaluator", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
-        host("wsl-work", [
-          nixos({ stateVersion: "25.05" }),
+        host("wsl-work", nixos({ stateVersion: "25.05" }), [
           wsl({ defaultUser: "adrifer" }),
           workSysctl(),
         ]),
@@ -120,8 +119,7 @@ describe("Evaluator", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
-        host("test", [
-          nixos(),
+        host("test", nixos(), [
           wsl(),
           { nixos: { packages: ["socat"] } },
         ]),
@@ -152,7 +150,7 @@ describe("Evaluator", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
-        host("test", [nixos(), developer()]),
+        host("test", nixos(), [developer()]),
       ],
     });
 
@@ -165,7 +163,7 @@ describe("Evaluator", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
-        host("wsl-work", [nixos(), zsh()]),
+        host("wsl-work", nixos(), [zsh()]),
       ],
     });
 
@@ -185,7 +183,7 @@ describe("Nix backend", () => {
           follows: { nixpkgs: "nixpkgs" },
         }),
       },
-      hosts: [host("wsl-work", [nixos()])],
+      hosts: [host("wsl-work", nixos(), [])],
     });
 
     const evaluated = evaluate(ws);
@@ -201,8 +199,7 @@ describe("Nix backend", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
-        host("wsl-work", [
-          nixos({ stateVersion: "25.05" }),
+        host("wsl-work", nixos({ stateVersion: "25.05" }), [
           workSysctl(),
         ]),
       ],
