@@ -1,4 +1,5 @@
 import type { Attrs, PackageRef, Script } from "./common.ts";
+import type { NixExpr } from "../core/types.ts";
 
 export interface ZshPlugin extends Record<string, unknown> {
   name?: string;
@@ -12,7 +13,7 @@ export interface ZshOptions extends Record<string, unknown> {
   autosuggestion?: { enable?: boolean } & Record<string, unknown>;
   syntaxHighlighting?: { enable?: boolean } & Record<string, unknown>;
   plugins?: ZshPlugin[];
-  shellAliases?: Record<string, string>;
+  shellAliases?: Record<string, string> | NixExpr;
   initContent?: Script;
   initExtra?: Script;
   envExtra?: Script;

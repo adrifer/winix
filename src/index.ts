@@ -31,6 +31,7 @@ export type {
   NixosOptions,
   PackageRef,
   Script,
+  ServicesOptions,
   StarshipOptions,
   SystemdOptions,
   SystemdService,

@@ -11,5 +11,5 @@
       "winix/types": ["../../src/types/index.ts"]
     }
   },
-  "include": ["static-types.ts"]
+  "include": ["static-types.ts", "generated-types.ts", "generated-augmentation.d.ts"]
 }

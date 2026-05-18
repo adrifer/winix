@@ -32,7 +32,7 @@
 
 ## 🔧 In Progress
 
-- [ ] Next priority selection
+- [ ] Dynamic type generation from NixOS channel `options.json`
 
 ## 📋 Next Up (Priority Order)
 
@@ -66,7 +66,7 @@
 - [x] `winix` CLI binary (npm bin or npx)
 
 ### P2 — Type system
-- [ ] `winix  types generate` Future: dynamic type extraction from nixpkgs/Home Manager/nix-darwin inputs
+- [ ] `winix types generate` dynamic type extraction from NixOS channel `options.json`
 - [x] Hand-written types for top 20 options (git, zsh, packages, sysctl, wsl, etc.)
 - [x] Fragment type uses shipped static option types (`nixos?: NixosOptions`)
 

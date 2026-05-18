@@ -1,4 +1,4 @@
-import type { Attrs, PackageRef, Script } from "./common.ts";
+import type { PackageRef, Script } from "./common.ts";
 import type { CommonPrograms } from "./programs.ts";
 import type { NixExpr } from "../core/types.ts";
 
@@ -89,6 +89,8 @@ export interface SystemdOptions extends Record<string, unknown> {
   mounts?: Record<string, unknown>[];
 }
 
+export interface ServicesOptions extends Record<string, unknown> {}
+
 export interface EnvironmentOptions extends Record<string, unknown> {
   systemPackages?: PackageRef[];
   shells?: PackageRef[];
@@ -118,7 +120,7 @@ export interface NixosOptions extends Record<string, unknown> {
   networking?: NetworkingOptions;
   users?: UsersOptions;
   boot?: BootOptions;
-  services?: Attrs;
+  services?: ServicesOptions;
   systemd?: SystemdOptions;
   environment?: EnvironmentOptions;
   programs?: CommonPrograms & Record<string, unknown>;
