@@ -1,11 +1,37 @@
-// Test config for CLI validation
-import { workspace, host, platform, feature } from "../src/index.ts";
+// Realistic test config: minimal WSL NixOS host
+import { workspace, host, platform, feature, input, defineInputs } from "../src/index.ts";
 
+// --- Inputs ---
+const inputs = defineInputs({
+  nixpkgs: "nixos-unstable",
+  nixosWsl: input("github:nix-community/NixOS-WSL", {
+    follows: { nixpkgs: "nixpkgs" },
+  }),
+  homeManager: input("github:nix-community/home-manager", {
+    follows: { nixpkgs: "nixpkgs" },
+  }),
+});
+
+// --- Platform ---
 const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
   nixos: {
+    imports: ["home-manager"],
     nixpkgs: { hostPlatform: "x86_64-linux", config: { allowUnfree: true } },
     nix: { settings: { experimentalFeatures: ["nix-command", "flakes"] } },
     system: { stateVersion: opts?.stateVersion },
+    homeManager: { useGlobalPkgs: true, useUserPackages: true },
+  },
+}));
+
+// --- Features ---
+const wsl = feature("wsl", (opts?: { defaultUser?: string }) => ({
+  nixos: {
+    imports: ["nixos-wsl"],
+    wsl: {
+      enable: true,
+      defaultUser: opts?.defaultUser ?? "adrifer",
+    },
+    networking: { hostName: "wsl-work" },
   },
 }));
 
@@ -14,36 +40,43 @@ const workSysctl = feature("work-sysctl", () => ({
     boot: {
       kernel: {
         sysctl: {
+          "net.ipv4.ip_unprivileged_port_start": 443,
           "fs.inotify.max_user_watches": 1048576,
           "fs.inotify.max_user_instances": 1024,
+          "fs.inotify.max_queued_events": 65536,
         },
       },
     },
   },
 }));
 
-const git = feature("git", () => ({
-  home: { programs: { git: { enable: true } } },
-}));
-
-const neovim = feature("neovim", () => ({
-  home: { packages: ["neovim"], sessionVariables: { EDITOR: "nvim" } },
-}));
-
-const developer = feature("developer", (): any => [
-  git(),
-  neovim(),
-]);
-
-export default workspace({
-  inputs: {
-    nixpkgs: "nixos-unstable",
+const user = feature("user", () => ({
+  nixos: {
+    users: { users: { adrifer: { isNormalUser: true } } },
   },
+  home: {
+    username: "adrifer",
+  },
+}));
+
+const packages = feature("packages", () => ({
+  nixos: {
+    environment: {
+      systemPackages: ["socat", "bubblewrap"],
+    },
+  },
+}));
+
+// --- Workspace ---
+export default workspace({
+  inputs,
   hosts: [
     host("wsl-work", [
       nixos({ stateVersion: "25.05" }),
+      wsl({ defaultUser: "adrifer" }),
+      user(),
       workSysctl(),
-      developer(),
+      packages(),
     ]),
   ],
 });
