@@ -17,7 +17,7 @@ const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
   nixos: {
     imports: ["home-manager"],
     nixpkgs: { hostPlatform: "x86_64-linux", config: { allowUnfree: true } },
-    nix: { settings: { experimentalFeatures: ["nix-command", "flakes"] } },
+    nix: { settings: { "experimental-features": ["nix-command", "flakes"] } },
     system: { stateVersion: opts?.stateVersion },
     homeManager: { useGlobalPkgs: true, useUserPackages: true },
   },
