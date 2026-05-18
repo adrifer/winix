@@ -1,5 +1,5 @@
-export type * from "./common.ts";
-export type * from "./programs.ts";
-export type * from "./nixos.ts";
-export type * from "./home.ts";
-export type * from "./darwin.ts";
+export * from "./common.ts";
+export * from "./programs.ts";
+export * from "./nixos.ts";
+export * from "./home.ts";
+export * from "./darwin.ts";

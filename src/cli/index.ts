@@ -7,12 +7,14 @@ import { check } from "./commands/check.ts";
 import { init } from "./commands/init.ts";
 import { inspect } from "./commands/inspect.ts";
 import { switchCommand } from "./commands/switch.ts";
+import { typesGenerate } from "./commands/types-generate.ts";
 import { update } from "./commands/update.ts";
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
     host: { type: "string" },
+    channel: { type: "string" },
     dry: { type: "boolean", default: false },
     diff: { type: "boolean", default: false },
     strict: { type: "boolean", default: false },
@@ -35,9 +37,12 @@ Commands:
   switch       Generate output and run nixos-rebuild/darwin-rebuild
   update       Update generated flake.lock and copy it to project root
   inspect      Print host composition and fragment graph
+  types generate
+              Generate dynamic NixOS option types from a channel options.json
 
 Options:
   --host <name>   Target a specific host
+  --channel <name> NixOS channel for types generate (default: workspace nixpkgs)
   --dry           Show what would be generated (apply)
   --diff          Show diff against current output (apply)
   --strict        Treat conflicts as errors (check)
@@ -54,6 +59,7 @@ Examples:
   winix check --escape-report
   winix switch --host wsl-work
   winix update
+  winix types generate --channel nixos-unstable
 `);
   process.exit(0);
 }
@@ -112,6 +118,21 @@ switch (command) {
   case "inspect":
     try {
       await inspect(cwd);
+    } catch (err) {
+      console.error(`\u2717 Error: ${(err as Error).message}`);
+      process.exit(1);
+    }
+    break;
+  case "types":
+    if (positionals[1] !== "generate") {
+      console.error("Unknown command: types. Did you mean `winix types generate`?");
+      process.exit(2);
+    }
+    try {
+      await typesGenerate(cwd, {
+        channel: values.channel as string | undefined,
+        force: values.force as boolean,
+      });
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
       process.exit(1);
