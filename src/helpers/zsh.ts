@@ -1,7 +1,12 @@
 import type { Fragment } from "../core/types.ts";
+import type { ZshOptions } from "../types/index.ts";
 
-export interface ZshOpts {
-  aliases?: Record<string, string>;
+export interface ZshOpts
+  extends Omit<
+    ZshOptions,
+    "autosuggestion" | "enableCompletion" | "plugins" | "shellAliases" | "syntaxHighlighting"
+  > {
+  aliases?: ZshOptions["shellAliases"];
   plugins?: string[];
   viMode?: boolean;
   autosuggestions?: boolean;

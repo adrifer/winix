@@ -1,13 +1,15 @@
 // Core types for Winix fragments and composition
 
+import type { DarwinOptions, HomeOptions, NixosOptions } from "../types/index.ts";
+
 /**
  * The output shape of any fragment. Keys correspond to target scopes.
  * Values are deep-merged by the evaluator according to merge rules.
  */
 export interface Fragment {
-  nixos?: Record<string, unknown>;
-  home?: Record<string, unknown>;
-  darwin?: Record<string, unknown>;
+  nixos?: NixosOptions;
+  home?: HomeOptions;
+  darwin?: DarwinOptions;
   /** Internal: platform/feature ID for .isActive resolution */
   __id?: string;
   /** Internal: marks this as a platform fragment */

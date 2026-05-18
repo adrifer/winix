@@ -1,10 +1,11 @@
-import type { Fragment, NixExpr } from "../core/types.ts";
+import type { Fragment } from "../core/types.ts";
+import type { HomeConfig, PackageRef } from "../types/index.ts";
 
 export interface UserOpts {
-  shell?: string | NixExpr;
-  homeDirectory?: string;
-  stateVersion?: string;
-  sessionVariables?: Record<string, string>;
+  shell?: PackageRef;
+  homeDirectory?: HomeConfig["homeDirectory"];
+  stateVersion?: HomeConfig["stateVersion"];
+  sessionVariables?: HomeConfig["sessionVariables"];
 }
 
 export function user(username: string, opts: UserOpts = {}): Fragment {
