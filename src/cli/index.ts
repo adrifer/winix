@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --experimental-transform-types --no-warnings
 // Winix CLI entry point
 
 import { resolve, join } from "node:path";
