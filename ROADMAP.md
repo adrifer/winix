@@ -41,6 +41,7 @@
 - [x] Home Manager output: programs should map correctly (e.g., `programs.git.enable`)
 - [x] `rawModule()` support — import existing .nix files for incremental migration
 - [x] **Curated authoring helpers** — `packages()`, `user()`, `git()`, `zsh()`, `shell()`, `sysctl()` (spec 20)
+- [x] Generic `program()` helper for Home Manager, NixOS, and nix-darwin options (spec 24)
 - [ ] `escape()` support — inline Nix expressions within typed fragments
 - [ ] `raw.nixos()` / `raw.home()` — top-level raw Nix fragments
 - [ ] camelCase → kebab-case mapping for known Nix option paths
