@@ -37,9 +37,9 @@
 ## 📋 Next Up (Priority Order)
 
 ### P0 — Core functionality
-- [ ] Home Manager output: packages should use `home.packages = with pkgs; [ ... ];`
-- [ ] Home Manager output: programs should map correctly (e.g., `programs.git.enable`)
-- [ ] `rawModule()` support — import existing .nix files for incremental migration
+- [x] Home Manager output: packages should use `home.packages = with pkgs; [ ... ];`
+- [x] Home Manager output: programs should map correctly (e.g., `programs.git.enable`)
+- [x] `rawModule()` support — import existing .nix files for incremental migration
 - [ ] `escape()` support — inline Nix expressions within typed fragments
 - [ ] `raw.nixos()` / `raw.home()` — top-level raw Nix fragments
 - [ ] camelCase → kebab-case mapping for known Nix option paths
@@ -82,7 +82,6 @@
 - `winix.config.ts` must use relative imports (no `"winix"` package yet)
 - Needs `node --experimental-transform-types` for native .ts execution
 - Home Manager config output is basic (inline in host module, not split file)
-- Home packages rendered as quoted strings (need `with pkgs;` treatment like systemPackages)
 
 ## 📝 Design Decisions Log
 

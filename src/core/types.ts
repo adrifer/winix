@@ -15,6 +15,16 @@ export interface Fragment {
 }
 
 /**
+ * Internal reference to a workspace-relative raw Nix module file.
+ */
+export interface RawModuleRef {
+  __winixRawModule: true;
+  path: string;
+}
+
+export type ImportRef = string | RawModuleRef;
+
+/**
  * A lazy fragment descriptor: holds the factory + args for deferred evaluation.
  */
 export interface LazyFragment {

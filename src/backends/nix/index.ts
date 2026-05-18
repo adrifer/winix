@@ -1,7 +1,7 @@
 // Nix backend: generates .nix files from evaluated host IR
 
 import type { EvaluatedHost } from "../../evaluator/index.ts";
-import type { InputDef, InputWithOptions, WorkspaceDef } from "../../core/types.ts";
+import type { ImportRef, InputDef, InputWithOptions, RawModuleRef, WorkspaceDef } from "../../core/types.ts";
 
 /**
  * Generated output for a workspace.
@@ -9,6 +9,11 @@ import type { InputDef, InputWithOptions, WorkspaceDef } from "../../core/types.
 export interface NixOutput {
   "flake.nix": string;
   hosts: Record<string, string>; // hostname → .nix content
+  rawModules: RawModuleCopy[];
+}
+
+export interface RawModuleCopy {
+  path: string;
 }
 
 /**
@@ -25,7 +30,11 @@ export function generateNix(
     hosts[`${host.name}.nix`] = generateHostModule(host);
   }
 
-  return { "flake.nix": flakeNix, hosts };
+  return {
+    "flake.nix": flakeNix,
+    hosts,
+    rawModules: collectRawModules(evaluatedHosts),
+  };
 }
 
 function generateFlake(
@@ -112,14 +121,9 @@ function generateHostModule(host: EvaluatedHost): string {
   ];
 
   // Generate imports
-  const imports = (host.nixos as any).imports as string[] | undefined;
-  if (imports && imports.length > 0) {
-    const importLines = imports.map((imp) => {
-      return `    ${MODULE_MAP[imp] ?? imp}`;
-    });
-    lines.push(`  imports = [`);
-    lines.push(...importLines);
-    lines.push(`  ];`);
+  const imports = getImports(host.nixos);
+  if (imports.length > 0) {
+    lines.push(...importsToNix(imports, 1));
     lines.push(``);
   }
 
@@ -141,7 +145,13 @@ function generateHostModule(host: EvaluatedHost): string {
 
   // Generate darwin config
   if (Object.keys(host.darwin).length > 0) {
-    const darwinLines = objectToNix(host.darwin, 1, "darwin");
+    const darwinImports = getImports(host.darwin);
+    if (darwinImports.length > 0) {
+      lines.push(...importsToNix(darwinImports, 1));
+      lines.push(``);
+    }
+
+    const darwinLines = objectToNix(filterKeys(host.darwin, ["imports"]), 1, "darwin");
     lines.push(...darwinLines);
   }
 
@@ -153,7 +163,11 @@ function generateHostModule(host: EvaluatedHost): string {
       lines.push(``);
       lines.push(`  # Home Manager`);
       lines.push(`  home-manager.users.${username} = { pkgs, ... }: {`);
-      const homeLines = objectToNix(homeData, 2, "home");
+      const homeImports = getImports(homeData);
+      if (homeImports.length > 0) {
+        lines.push(...importsToNix(homeImports, 2));
+      }
+      const homeLines = objectToNix(filterKeys(homeData, ["imports"]), 2, "home");
       lines.push(...homeLines);
       lines.push(`  };`);
     }
@@ -178,6 +192,9 @@ function objectToNix(
   for (const [key, value] of Object.entries(obj)) {
     if (key.startsWith("__")) continue; // skip internal fields
     if (value === undefined) continue;
+    if (isRawModuleRef(value)) {
+      throw new Error("rawModule() references are only supported in imports arrays");
+    }
 
     const currentPath = [...path, key];
     // Quote keys that contain dots (e.g. sysctl keys)
@@ -226,7 +243,78 @@ function packageAttributeForPath(scope: NixScope, nixPath: string): string | und
   return undefined;
 }
 
+function importsToNix(imports: ImportRef[], indent: number): string[] {
+  const prefix = "  ".repeat(indent);
+  const itemPrefix = "  ".repeat(indent + 1);
+  const importLines = uniqueBy(imports, formatImport).map((imp) => {
+    return `${itemPrefix}${formatImport(imp)}`;
+  });
+
+  return [`${prefix}imports = [`, ...importLines, `${prefix}];`];
+}
+
+function formatImport(imp: ImportRef): string {
+  if (isRawModuleRef(imp)) {
+    return `../raw-modules/${imp.path}`;
+  }
+
+  if (typeof imp === "string") {
+    return MODULE_MAP[imp] ?? imp;
+  }
+
+  throw new Error("imports entries must be strings or rawModule() references");
+}
+
+function getImports(obj: Record<string, unknown>): ImportRef[] {
+  const imports = obj.imports;
+  if (imports === undefined) return [];
+  if (!Array.isArray(imports)) {
+    throw new Error("imports must be an array");
+  }
+
+  return imports.map((imp) => {
+    if (typeof imp === "string" || isRawModuleRef(imp)) {
+      return imp;
+    }
+    throw new Error("imports entries must be strings or rawModule() references");
+  });
+}
+
+function collectRawModules(hosts: EvaluatedHost[]): RawModuleCopy[] {
+  const rawModules = new Map<string, RawModuleCopy>();
+
+  for (const host of hosts) {
+    for (const scope of [host.nixos, host.home, host.darwin]) {
+      for (const imp of getImports(scope)) {
+        if (isRawModuleRef(imp)) {
+          rawModules.set(imp.path, { path: imp.path });
+        }
+      }
+    }
+  }
+
+  return [...rawModules.values()];
+}
+
+function uniqueBy<T>(values: T[], keyForValue: (value: T) => string): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+
+  for (const value of values) {
+    const key = keyForValue(value);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(value);
+    }
+  }
+
+  return result;
+}
+
 function formatNixValue(value: unknown): string {
+  if (isRawModuleRef(value)) {
+    throw new Error("rawModule() references are only supported in imports arrays");
+  }
   if (typeof value === "string") return `"${value}"`;
   if (typeof value === "number") return String(value);
   if (typeof value === "boolean") return value ? "true" : "false";
@@ -249,4 +337,13 @@ function filterKeys(obj: Record<string, unknown>, exclude: string[]): Record<str
 
 function isPlainObject(val: unknown): val is Record<string, unknown> {
   return typeof val === "object" && val !== null && !Array.isArray(val);
+}
+
+function isRawModuleRef(val: unknown): val is RawModuleRef {
+  return (
+    typeof val === "object" &&
+    val !== null &&
+    (val as RawModuleRef).__winixRawModule === true &&
+    typeof (val as RawModuleRef).path === "string"
+  );
 }
