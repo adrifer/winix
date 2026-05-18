@@ -6,5 +6,5 @@ export { evaluate } from "./evaluator/index.ts";
 export type { EvaluatedHost } from "./evaluator/index.ts";
 export { generateNix } from "./backends/nix/index.ts";
 export type { NixOutput } from "./backends/nix/index.ts";
-export { packages, user, git, zsh, shell, sysctl } from "./helpers/index.ts";
-export type { PackagesHelper, PackagesOpts, UserOpts, GitInclude, GitOpts, ZshOpts, ShellOpts, SysctlSettings } from "./helpers/index.ts";
+export { packages, program, user, git, zsh, shell, sysctl } from "./helpers/index.ts";
+export type { PackagesHelper, PackagesOpts, ProgramHelper, UserOpts, GitInclude, GitOpts, ZshOpts, ShellOpts, SysctlSettings } from "./helpers/index.ts";

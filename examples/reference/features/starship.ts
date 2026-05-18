@@ -1,11 +1,9 @@
-import { feature } from "winix";
+import { feature, program } from "winix";
 
 /**
  * @description Starship cross-shell prompt
  * @category shell
  */
-export const starship = feature("starship", () => ({
-  home: {
-    programs: { starship: { enable: true } },
-  },
-}));
+export const starship = feature("starship", () =>
+  program("starship", { enable: true })
+);

@@ -6,6 +6,7 @@ import {
   host,
   packages,
   platform,
+  program,
   shell,
   sysctl,
   user,
@@ -167,6 +168,62 @@ describe("curated helpers", () => {
     });
   });
 
+  it("program() maps to Home Manager programs by default", () => {
+    expect(program("starship", { enable: true })).toEqual({
+      home: { programs: { starship: { enable: true } } },
+    });
+  });
+
+  it("program() supports empty options", () => {
+    expect(program("foo")).toEqual({
+      home: { programs: { foo: {} } },
+    });
+  });
+
+  it("program.service() maps to NixOS services", () => {
+    expect(
+      program.service("openssh", {
+        enable: true,
+        settings: { PermitRootLogin: "no" },
+      })
+    ).toEqual({
+      nixos: {
+        services: {
+          openssh: {
+            enable: true,
+            settings: { PermitRootLogin: "no" },
+          },
+        },
+      },
+    });
+  });
+
+  it("program.nixos() maps to top-level NixOS options", () => {
+    expect(
+      program.nixos("nix", {
+        settings: { "experimental-features": "nix-command flakes" },
+      })
+    ).toEqual({
+      nixos: {
+        nix: {
+          settings: { "experimental-features": "nix-command flakes" },
+        },
+      },
+    });
+  });
+
+  it("program.darwin() maps to top-level nix-darwin options", () => {
+    expect(program.darwin("homebrew", { enable: true })).toEqual({
+      darwin: { homebrew: { enable: true } },
+    });
+  });
+
+  it("program.homeService() maps to Home Manager services", () => {
+    expect(program.homeService("syncthing", { enable: true })).toEqual({
+      home: { services: { syncthing: { enable: true } } },
+    });
+  });
+
   it("helpers compose through evaluation and Nix generation", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
@@ -191,6 +248,9 @@ describe("curated helpers", () => {
             plugins: ["zsh-vi-mode"],
           }),
           shell({ env: { EDITOR: "nvim" } }),
+          program("starship", { enable: true }),
+          program.service("openssh", { enable: true }),
+          program.homeService("syncthing", { enable: true }),
           sysctl({ "fs.inotify.max_user_watches": 1048576 }),
         ]),
       ],
@@ -210,6 +270,9 @@ describe("curated helpers", () => {
     );
     expect(hostNix).toContain("programs.zsh.shellAliases.g = \"lazygit\";");
     expect(hostNix).toContain("programs.zsh.plugins = [ { name = \"zsh-vi-mode\"; } ];");
+    expect(hostNix).toContain("programs.starship.enable = true;");
+    expect(hostNix).toContain("services.openssh.enable = true;");
+    expect(hostNix).toContain("services.syncthing.enable = true;");
     expect(hostNix).toContain("sessionVariables.EDITOR = \"nvim\";");
     expect(hostNix).toContain("\"fs.inotify.max_user_watches\" = 1048576;");
   });
@@ -223,5 +286,20 @@ describe("curated helpers", () => {
     const [evaluated] = evaluate(ws);
     const hostNix = generateNix(ws, [evaluated]).hosts["macbook-pro.nix"];
     expect(hostNix).toContain("environment.systemPackages = with pkgs; [ mas ];");
+  });
+
+  it("program.darwin() composes with darwin hosts", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("macbook-pro", darwin(), [
+          program.darwin("homebrew", { enable: true }),
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["macbook-pro.nix"];
+    expect(hostNix).toContain("homebrew.enable = true;");
   });
 });

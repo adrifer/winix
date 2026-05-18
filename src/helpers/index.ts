@@ -1,5 +1,7 @@
 export { packages } from "./packages.ts";
 export type { PackagesHelper, PackagesOpts } from "./packages.ts";
+export { program } from "./program.ts";
+export type { ProgramHelper } from "./program.ts";
 export { user } from "./user.ts";
 export type { UserOpts } from "./user.ts";
 export { git } from "./git.ts";
