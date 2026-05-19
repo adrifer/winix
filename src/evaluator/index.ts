@@ -92,18 +92,27 @@ function evaluateHost(host: HostDef): EvaluatedHost {
   };
 
   for (const fragment of resolvedFragments) {
-    if (fragment.nixos) {
+    if (fragment.nixos && shouldMergeScope(resolvedFragments, "nixos")) {
       result.nixos = deepMerge(result.nixos, fragment.nixos);
     }
     if (fragment.home) {
       result.home = deepMerge(result.home, fragment.home);
     }
-    if (fragment.darwin) {
+    if (fragment.darwin && shouldMergeScope(resolvedFragments, "darwin")) {
       result.darwin = deepMerge(result.darwin, fragment.darwin);
     }
   }
 
   return result;
+}
+
+function shouldMergeScope(
+  fragments: Fragment[],
+  scope: "nixos" | "darwin"
+): boolean {
+  const platformFragments = fragments.filter((fragment) => fragment.__platform);
+  if (platformFragments.length === 0) return true;
+  return platformFragments.some((fragment) => Boolean(fragment[scope]));
 }
 
 function isLazy(entry: unknown): entry is LazyFragment {

@@ -254,6 +254,16 @@ describe("curated helpers", () => {
           ],
         },
       },
+      darwin: {
+        nixpkgs: {
+          overlays: [
+            {
+              __winixNixExpr: true,
+              expr: "(final: prev: { stable = import inputs.nixpkgs-stable { inherit (final.stdenv.hostPlatform) system; config = final.config.nixpkgs.config or {}; }; })",
+            },
+          ],
+        },
+      },
     });
 
     const ws = workspace({
@@ -272,6 +282,60 @@ describe("curated helpers", () => {
     expect(hostNix).toContain(
       "nixpkgs.overlays = [ (final: prev: { stable = import inputs.nixpkgs-stable { inherit (final.stdenv.hostPlatform) system; config = final.config.nixpkgs.config or {}; }; }) ];"
     );
+  });
+
+  it("overlay.darwin.stable() produces a darwin stable nixpkgs overlay fragment and output", () => {
+    const fragment = overlay.darwin.stable("nixpkgs-stable");
+    expect(fragment).toEqual({
+      darwin: {
+        nixpkgs: {
+          overlays: [
+            {
+              __winixNixExpr: true,
+              expr: "(final: prev: { stable = import inputs.nixpkgs-stable { inherit (final.stdenv.hostPlatform) system; config = final.config.nixpkgs.config or {}; }; })",
+            },
+          ],
+        },
+      },
+    });
+
+    const ws = workspace({
+      inputs: {
+        nixpkgs: "nixos-unstable",
+        nixpkgsStable: {
+          url: "github:NixOS/nixpkgs/nixos-25.11",
+          nixName: "nixpkgs-stable",
+        },
+      },
+      hosts: [host("macbook-pro", darwin(), [fragment])],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["macbook-pro.nix"];
+    expect(hostNix).toContain(
+      "nixpkgs.overlays = [ (final: prev: { stable = import inputs.nixpkgs-stable { inherit (final.stdenv.hostPlatform) system; config = final.config.nixpkgs.config or {}; }; }) ];"
+    );
+  });
+
+  it("overlay.stable() composes with darwin hosts without emitting NixOS-only scope", () => {
+    const ws = workspace({
+      inputs: {
+        nixpkgs: "nixos-unstable",
+        nixpkgsStable: {
+          url: "github:NixOS/nixpkgs/nixos-25.11",
+          nixName: "nixpkgs-stable",
+        },
+      },
+      hosts: [host("macbook-pro", darwin(), [overlay.stable("nixpkgs-stable")])],
+    });
+
+    const [evaluated] = evaluate(ws);
+    expect(evaluated.nixos).toEqual({});
+    expect((evaluated.darwin as any).nixpkgs.overlays).toHaveLength(1);
+
+    const hostNix = generateNix(ws, [evaluated]).hosts["macbook-pro.nix"];
+    expect(hostNix).toContain("nixpkgs.overlays = [ (final: prev:");
+    expect(hostNix).not.toContain("home-manager.useGlobalPkgs");
   });
 
   it("composes pkg(), mkDefault(), and overlay in one host", () => {
