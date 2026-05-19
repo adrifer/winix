@@ -4,19 +4,28 @@ import {
   generateNix,
   git,
   host,
+  activation,
+  ifDarwin,
+  ifDarwinAttrs,
+  ifLinux,
+  ifLinuxAttrs,
   mkDefault,
   mkForce,
+  nixStr,
   overlay,
   packages,
   pkg,
   platform,
   program,
+  script,
+  scriptConcat,
   shell,
   sysctl,
   type Fragment,
   type NixosOptions,
   type ZshOptions,
   user,
+  withPkgs,
   workspace,
   zsh,
 } from "../src/index.js";
@@ -72,6 +81,109 @@ describe("curated helpers", () => {
     const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
     expect(hostNix).toContain("users.users.adrifer.shell = pkgs.zsh;");
     expect(hostNix).toContain("environment.shells = [ pkgs.zsh ];");
+  });
+
+  it("nixStr() interpolates package refs into quoted Nix strings", () => {
+    expect(nixStr`${pkg("neovim")}/bin/nvim -d "$LOCAL" "$REMOTE"`).toEqual({
+      __winixNixExpr: true,
+      expr: '"${pkgs.neovim}/bin/nvim -d \\"$LOCAL\\" \\"$REMOTE\\""',
+    });
+  });
+
+  it("nixStr() renders plain strings as quoted string content", () => {
+    expect(nixStr`hello ${"world"} "${"again"}"`).toEqual({
+      __winixNixExpr: true,
+      expr: '"hello world \\"again\\""',
+    });
+    expect(nixStr`literal ${"${HOME}"}`).toEqual({
+      __winixNixExpr: true,
+      expr: '"literal \\${HOME}"',
+    });
+  });
+
+  it("activation() produces Home Manager activation fragments and output", () => {
+    const fragment = activation("ensureWritableNpmrc", {
+      script: "mkdir -p \"$HOME/.config/npm\"",
+    });
+    expect(fragment).toEqual({
+      home: {
+        activation: {
+          ensureWritableNpmrc: {
+            __winixNixExpr: true,
+            expr: 'lib.hm.dag.entryAfter [ "writeBoundary" ] \'\'\nmkdir -p "$HOME/.config/npm"\n\'\'',
+          },
+        },
+      },
+    });
+
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("wsl-work", nixos(), [fragment])],
+    });
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain(
+      "home.activation.ensureWritableNpmrc = lib.hm.dag.entryAfter [ \"writeBoundary\" ]"
+    );
+  });
+
+  it("activation() supports custom after dependencies", () => {
+    expect(activation("installPkgs", { after: ["writeBoundary", "ensureWritableNpmrc"], script: "npm i -g pnpm" })).toEqual({
+      home: {
+        activation: {
+          installPkgs: {
+            __winixNixExpr: true,
+            expr: 'lib.hm.dag.entryAfter [ "writeBoundary" "ensureWritableNpmrc" ] \'\'\nnpm i -g pnpm\n\'\'',
+          },
+        },
+      },
+    });
+  });
+
+  it("ifDarwin() and ifLinux() render runtime conditional expressions", () => {
+    expect(ifDarwin("darwin-only")).toEqual({
+      __winixNixExpr: true,
+      expr: '(if pkgs.stdenv.isDarwin then "darwin-only" else null)',
+    });
+    expect(ifLinux("linux-only")).toEqual({
+      __winixNixExpr: true,
+      expr: '(if pkgs.stdenv.isLinux then "linux-only" else null)',
+    });
+  });
+
+  it("ifDarwinAttrs() and ifLinuxAttrs() render optionalAttrs expressions", () => {
+    expect(ifDarwinAttrs({ gc: "nix-collect-garbage -d" })).toEqual({
+      __winixNixExpr: true,
+      expr: '(lib.optionalAttrs pkgs.stdenv.isDarwin { gc = "nix-collect-garbage -d"; })',
+    });
+    expect(ifLinuxAttrs({ "nix-switch": "sudo nixos-rebuild switch" })).toEqual({
+      __winixNixExpr: true,
+      expr: '(lib.optionalAttrs pkgs.stdenv.isLinux { nix-switch = "sudo nixos-rebuild switch"; })',
+    });
+  });
+
+  it("withPkgs() renders arbitrary package lists with pkgs in scope", () => {
+    expect(withPkgs(["icu", "zlib", "openssl"])).toEqual({
+      __winixNixExpr: true,
+      expr: "with pkgs; [ icu zlib openssl ]",
+    });
+  });
+
+  it("script() renders multiline Nix indented strings", () => {
+    expect(script(`
+      export BROWSER=wslview
+      echo "hello"
+    `)).toEqual({
+      __winixNixExpr: true,
+      expr: '\'\'\n      export BROWSER=wslview\n      echo "hello"\n\'\'',
+    });
+  });
+
+  it("scriptConcat() joins Nix expressions with plus", () => {
+    expect(scriptConcat(script("base"), ifLinux("linux"))).toEqual({
+      __winixNixExpr: true,
+      expr: '\'\'\nbase\n\'\' + (if pkgs.stdenv.isLinux then "linux" else null)',
+    });
   });
 
   it("mkDefault() and mkForce() render lib option priority calls", () => {
@@ -399,6 +511,66 @@ describe("curated helpers", () => {
     expect(program.homeService("syncthing", { enable: true })).toEqual({
       home: { services: { syncthing: { enable: true } } },
     });
+  });
+
+  it("new DX helpers compose in generated Nix output", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          {
+            nixos: {
+              wsl: {
+                extraBin: [{ src: nixStr`${pkg("coreutils")}/bin/mkdir` }],
+              },
+              programs: {
+                "nix-ld": {
+                  libraries: withPkgs(["icu", "zlib", "openssl"]),
+                },
+              },
+            },
+            home: {
+              programs: {
+                git: {
+                  settings: {
+                    difftool: {
+                      nvimdiff: {
+                        cmd: nixStr`${pkg("neovim")}/bin/nvim -d "$LOCAL" "$REMOTE"`,
+                      },
+                    },
+                  },
+                },
+                zsh: {
+                  shellAliases: ifDarwinAttrs({ gc: "nix-collect-garbage -d" }),
+                  initContent: scriptConcat(
+                    script("export ZVM_VI_INSERT_ESCAPE_BINDKEY=jj"),
+                    ifLinux("export BROWSER=wslview")
+                  ),
+                },
+              },
+            },
+          },
+          activation("ensureWritableNpmrc", {
+            script: "mkdir -p \"${config.home.homeDirectory}/.config/npm\"",
+          }),
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain('wsl.extraBin = [ { src = "${pkgs.coreutils}/bin/mkdir"; } ];');
+    expect(hostNix).toContain("programs.nix-ld.libraries = with pkgs; [ icu zlib openssl ];");
+    expect(hostNix).toContain(
+      'programs.git.settings.difftool.nvimdiff.cmd = "${pkgs.neovim}/bin/nvim -d \\"$LOCAL\\" \\"$REMOTE\\"";'
+    );
+    expect(hostNix).toContain(
+      'programs.zsh.shellAliases = (lib.optionalAttrs pkgs.stdenv.isDarwin { gc = "nix-collect-garbage -d"; });'
+    );
+    expect(hostNix).toContain(
+      'programs.zsh.initContent = \'\'\nexport ZVM_VI_INSERT_ESCAPE_BINDKEY=jj\n\'\' + (if pkgs.stdenv.isLinux then "export BROWSER=wslview" else null);'
+    );
+    expect(hostNix).toContain("home.activation.ensureWritableNpmrc = lib.hm.dag.entryAfter");
   });
 
   it("helpers compose through evaluation and Nix generation", () => {

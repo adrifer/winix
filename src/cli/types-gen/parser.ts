@@ -34,7 +34,11 @@ export function nixTypeToTs(type: string): string {
   if (nullInner) return `${nixTypeToTs(nullInner)} | null`;
 
   const listInner = matchWrapper(normalized, "list of ");
-  if (listInner) return `${parenthesizeUnion(nixTypeToTs(listInner))}[]`;
+  if (listInner) {
+    const innerType = nixTypeToTs(listInner);
+    const listType = `${parenthesizeUnion(innerType)}[]`;
+    return innerType === "PackageRef" ? `${listType} | NixExpr` : listType;
+  }
 
   const attrsInner = matchAttrSet(normalized);
   if (attrsInner) {

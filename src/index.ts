@@ -50,5 +50,5 @@ export { evaluate } from "./evaluator/index.ts";
 export type { EvaluatedHost } from "./evaluator/index.ts";
 export { generateNix } from "./backends/nix/index.ts";
 export type { NixOutput } from "./backends/nix/index.ts";
-export { packages, program, user, git, zsh, shell, sysctl, pkg, mkAfter, mkBefore, mkDefault, mkForce, overlay } from "./helpers/index.ts";
-export type { PackagesHelper, PackagesOpts, ProgramHelper, UserOpts, GitOpts, ZshOpts, ShellOpts, SysctlSettings, OverlayHelper } from "./helpers/index.ts";
+export { packages, program, user, git, zsh, shell, sysctl, pkg, mkAfter, mkBefore, mkDefault, mkForce, overlay, nixStr, activation, ifDarwin, ifLinux, ifDarwinAttrs, ifLinuxAttrs, withPkgs, script, scriptConcat } from "./helpers/index.ts";
+export type { PackagesHelper, PackagesOpts, ProgramHelper, UserOpts, GitOpts, ZshOpts, ShellOpts, SysctlSettings, OverlayHelper, ActivationOpts } from "./helpers/index.ts";

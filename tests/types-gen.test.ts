@@ -18,6 +18,7 @@ describe("types generate parser", () => {
     expect(nixTypeToTs("strings concatenated with \"\\n\"")).toBe("string");
     expect(nixTypeToTs("null or string")).toBe("string | null");
     expect(nixTypeToTs("list of signed integer")).toBe("number[]");
+    expect(nixTypeToTs("list of package")).toBe("PackageRef[] | NixExpr");
     expect(nixTypeToTs("attribute set of string")).toBe("Record<string, string>");
     expect(nixTypeToTs("attribute set of (submodule)")).toBe("Record<string, unknown>");
     expect(nixTypeToTs("one of \"yes\", \"no\"")).toBe("\"no\" | \"yes\"");
