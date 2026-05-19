@@ -2,6 +2,8 @@ import type { Fragment } from "../core/types.ts";
 import type { PackageRef, XdgFile } from "../types/index.ts";
 
 export interface HomeHelper {
+  program<T extends ProgramOpts = ProgramOpts>(name: string, opts?: T): Fragment;
+  service<T extends ProgramOpts = ProgramOpts>(name: string, opts?: T): Fragment;
   env(vars: Record<string, string>): Fragment;
   path(paths: string[]): Fragment;
   path(...paths: string[]): Fragment;
@@ -11,7 +13,21 @@ export interface HomeHelper {
   configFiles(files: Record<string, XdgFile>): Fragment;
 }
 
+type ProgramOpts = Record<string, unknown>;
+
 export const home: HomeHelper = {
+  program: <T extends ProgramOpts = ProgramOpts>(
+    name: string,
+    opts: T = {} as T
+  ): Fragment => ({
+    homeManager: { programs: { [name]: { enable: true, ...opts } } },
+  }),
+  service: <T extends ProgramOpts = ProgramOpts>(
+    name: string,
+    opts: T = {} as T
+  ): Fragment => ({
+    homeManager: { services: { [name]: { enable: true, ...opts } } },
+  }),
   env: (vars: Record<string, string>): Fragment => ({
     homeManager: { home: { sessionVariables: vars } },
   }),

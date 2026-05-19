@@ -1,9 +1,9 @@
-import { feature, programs } from "winix";
+import { feature, home } from "winix";
 
 /**
  * @description Zoxide (smart cd) with shell integration
  * @category shell
  */
 export const zoxide = feature("zoxide", () =>
-  programs.enable("zoxide")
+  home.program("zoxide")
 );

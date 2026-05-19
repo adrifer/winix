@@ -138,8 +138,8 @@ describe("Evaluator", () => {
   });
 
   it("resolves nested composite fragments (Feature returning Fragment[])", () => {
-    // developer() returns [git(), neovim()] which are themselves lazy
-    const git = feature("git", () => ({
+    // developer() returns [gitFeature(), neovim()] which are themselves lazy
+    const gitFeature = feature("git", () => ({
       homeManager: { programs: { git: { enable: true } } },
     }));
 
@@ -148,7 +148,7 @@ describe("Evaluator", () => {
     }));
 
     const developer = feature("developer", (): any => [
-      git(),
+      gitFeature(),
       neovimFeat(),
     ]);
 

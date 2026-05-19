@@ -134,7 +134,7 @@ For named reusable composition, prefer `profile()`:
 
 ```ts
 export const developer = profile("developer", [
-  git(),
+  home.program("git"),
   neovim(),
   zsh(),
   packages.homeManager("ripgrep", "fd"),
@@ -229,9 +229,7 @@ export const wsl = feature("wsl", (opts?: WslOpts) => ({
 }));
 
 // fragments/fzf.ts — even simple ones use feature()
-export const fzf = feature("fzf", () => ({
-  homeManager: { programs: { fzf: { enable: true } } },
-}));
+export const fzf = feature("fzf", () => home.program("fzf"));
 ```
 
 Usage in host list:
@@ -307,7 +305,7 @@ home.env({ EDITOR: "nvim" })
 home.path("~/.local/bin")
 home.packages("ripgrep", "fd")
 home.configFile("nvim/init.lua", { text: "vim.o.number = true" })
-programs.enable("starship")
+home.program("starship")
 nix.gc({ olderThan: "14d" })
 ```
 
@@ -316,7 +314,7 @@ nix.gc({ olderThan: "14d" })
 Common fragment lists are shared via plain array spreads (no helper needed):
 
 ```ts
-const base = [user("adrifer"), developer()];
+const base = [account("adrifer"), developer()];
 
 host("wsl-work", nixos(), [...base, wsl(), workSysctl()]);
 host("wsl-personal", nixos(), [...base, wsl()]);

@@ -1,4 +1,4 @@
-import { feature, git as gitConfig } from "winix";
+import { feature, home } from "winix";
 import { wsl } from "../features/wsl";
 
 /**
@@ -6,11 +6,11 @@ import { wsl } from "../features/wsl";
  * @category tool
  */
 export const git = feature("git", () =>
-  gitConfig({
+  home.program("git", {
     userName: "Adrian Fernandez Garcia",
     userEmail: "tracker086@outlook.com",
-    difftool: "nvimdiff",
     extraConfig: {
+      diff: { tool: "nvimdiff" },
       difftool: { prompt: false },
       credential: {
         "https://dev.azure.com": { useHttpPath: true },
@@ -22,9 +22,11 @@ export const git = feature("git", () =>
     includes: [
       {
         condition: "gitdir:~/work/",
-        user: {
-          name: "Adrian Fernandez Garcia",
-          email: "adrifer@microsoft.com",
+        contents: {
+          user: {
+            name: "Adrian Fernandez Garcia",
+            email: "adrifer@microsoft.com",
+          },
         },
       },
     ],

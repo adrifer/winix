@@ -1,5 +1,5 @@
 // Realistic test config: minimal WSL NixOS host
-import { account, feature, host, input, defineInputs, packages, platforms, profile, sysctl, workspace } from "../src/index.ts";
+import { account, feature, home, host, input, defineInputs, packages, platforms, profile, sysctl, workspace } from "../src/index.ts";
 
 // --- Inputs ---
 const inputs = defineInputs({
@@ -31,11 +31,9 @@ const workSysctl = feature("work-sysctl", () =>
   })
 );
 
-const git = feature("git", () => ({
-  homeManager: {
-    programs: { git: { enable: true, userName: "Adrian Fernandez Garcia" } },
-  },
-}));
+const git = feature("git", () =>
+  home.program("git", { userName: "Adrian Fernandez Garcia" })
+);
 
 const neovim = feature("neovim", () => ({
   homeManager: {
