@@ -205,17 +205,21 @@ function objectToNix(
 
   for (const [key, value] of Object.entries(obj)) {
     if (key === "__raw") {
-      throw new Error("raw fragments must be handled before objectToNix()");
+      throw new Error(
+        "Internal error: raw blocks must be extracted before objectToNix(). This is a Winix bug."
+      );
     }
     if (key.startsWith("__")) continue; // skip internal fields
     if (value === undefined) continue;
     if (isRawModuleRef(value)) {
-      throw new Error("rawModule() references are only supported in imports arrays");
+      throw new Error(
+        "rawModule() references are only supported in imports arrays. " +
+          "Use rawModule() inside a fragment's imports field, e.g. { nixos: { imports: [rawModule('path.nix')] } }."
+      );
     }
 
     const mappedPath = mapKnownOptionPath(scope, [...path, key]);
-    const mappedKey = mappedPath[mappedPath.length - 1];
-    const currentPath = [...path, mappedKey];
+    const currentPath = mappedPath;
     const nixPath = formatAttrPath(currentPath);
 
     if (Array.isArray(value)) {
@@ -291,7 +295,10 @@ function getImports(obj: Record<string, unknown>): ImportRef[] {
 
   return imports.map((imp) => {
     if (isNixExpr(imp)) {
-      throw new Error("escape() expressions are not supported in imports arrays");
+      throw new Error(
+        "escape() expressions are not supported in imports arrays. " +
+          "Use a string for module paths. escape() is for option values."
+      );
     }
     if (typeof imp === "string" || isRawModuleRef(imp)) {
       return imp;
@@ -355,7 +362,10 @@ function formatNixValue(value: unknown): string {
     return value.expr;
   }
   if (isRawModuleRef(value)) {
-    throw new Error("rawModule() references are only supported in imports arrays");
+    throw new Error(
+      "rawModule() references are only supported in imports arrays. " +
+        "Use rawModule() inside a fragment's imports field, e.g. { nixos: { imports: [rawModule('path.nix')] } }."
+    );
   }
   if (typeof value === "string") {
     if (isPkgsReference(value)) return value;
@@ -419,6 +429,10 @@ const NIX_KEYWORDS = new Set([
 ]);
 
 function mapKnownOptionPath(scope: NixScope, path: string[]): string[] {
+  if (scope === "home" && path[0] === "activation") {
+    return ["home", "activation", ...path.slice(1)];
+  }
+
   const key = `${scope}:${path.join(".")}`;
   const mapped = KNOWN_OPTION_PATHS[key];
   if (mapped) return mapped.split(".");

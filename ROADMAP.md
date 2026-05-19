@@ -64,13 +64,13 @@
 Goal: Make configs more readable and reduce boilerplate. Focus on the patterns that
 currently force users into raw() blocks.
 
-- [ ] **String interpolation helper** — `nixStr("${pkgs.neovim}/bin/nvim -d $LOCAL $REMOTE")` or similar, for package-path interpolation without raw blocks
-- [ ] **Activation helper** — `activation("name", { after: [...], script: "..." })` for `lib.hm.dag.entryAfter` pattern
-- [ ] **Conditional value helpers** — `ifDarwin(value)` / `ifLinux(value)` for platform-conditional values inside fragments (not fragment-level, which `.isActive` handles)
-- [ ] **`with pkgs` block helper** — for options that need `with pkgs; [...]` outside of package lists (e.g., `programs.nix-ld.libraries`)
-- [ ] **`script()` helper** — multiline Nix strings with proper escaping (`'' ... ''`)
-- [ ] **Improve error messages** — when a fragment fails, show which helper to use or how to fix it
-- [ ] **Audit existing config** — go through dotfiles/winix raw() blocks, find more patterns to abstract
+- [x] **String interpolation helper** — `nixStr` template helper for package-path interpolation without raw blocks
+- [x] **Activation helper** — `activation("name", { after: [...], script: "..." })` for `lib.hm.dag.entryAfter` pattern
+- [x] **Conditional value helpers** — `ifDarwin(value)` / `ifLinux(value)` for platform-conditional values inside fragments (not fragment-level, which `.isActive` handles)
+- [x] **`with pkgs` block helper** — for options that need `with pkgs; [...]` outside of package lists (e.g., `programs.nix-ld.libraries`)
+- [x] **`script()` helper** — multiline Nix strings with proper escaping (`'' ... ''`)
+- [x] **Improve error messages** — when a fragment fails, show which helper to use or how to fix it
+- [x] **Audit existing config** — go through dotfiles/winix raw() blocks, find more patterns to abstract
 
 ### Priority 2 — LLM-friendly: Make AI agents excellent at writing Winix configs
 
