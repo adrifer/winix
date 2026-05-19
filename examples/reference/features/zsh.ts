@@ -1,13 +1,16 @@
-import { feature, platforms, zsh as zshConfig } from "winix";
+import { feature, home, platforms } from "winix";
 
 /**
  * @description Zsh with vi-mode, autosuggestions, syntax highlighting, and platform aliases
  * @category shell
  */
 export const zsh = feature("zsh", () =>
-  zshConfig({
-    plugins: ["zsh-vi-mode"],
-    aliases: {
+  home.program("zsh", {
+    enableCompletion: true,
+    autosuggestion: { enable: true },
+    syntaxHighlighting: { enable: true },
+    plugins: [{ name: "zsh-vi-mode" }],
+    shellAliases: {
       ls: "eza -lh --group-directories-first --icons=auto",
       lsa: "ls -a",
       lt: "eza --tree --level=2 --long --icons --git",

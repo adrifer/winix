@@ -182,18 +182,6 @@ export const rawModule: RawModuleHelper = Object.assign(
   }
 );
 
-export interface RawHelper {
-  nixos(body: string): Fragment;
-  homeManager(body: string): Fragment;
-  darwin(body: string): Fragment;
-}
-
-export const raw: RawHelper = {
-  nixos: (body: string): Fragment => ({ nixos: { __raw: [body] } }),
-  homeManager: (body: string): Fragment => ({ homeManager: { __raw: [body] } }),
-  darwin: (body: string): Fragment => ({ darwin: { __raw: [body] } }),
-};
-
 export function escape(expr: string): NixExpr {
   return {
     __winixNixExpr: true,

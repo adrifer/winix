@@ -41,7 +41,7 @@ host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
   account("adrifer", { admin: true, shell: "zsh", wslDefault: true }),
   wsl(),
   workSysctl(),
-  packages(["socat", "bubblewrap"]),
+  nixos.packages("socat", "bubblewrap"),
 ]);
 ```
 
@@ -55,10 +55,10 @@ Prefer flat fragment composition:
 host("wsl-work", nixos(), [
   account("adrifer", { admin: true, shell: "zsh" }),
   wsl({ defaultUser: "adrifer" }),
-  sysctl({ "fs.inotify.max_user_watches": 1048576 }),
+  nixos.sysctl({ "fs.inotify.max_user_watches": 1048576 }),
   nixLd({ libraries: ["icu", "zlib", "openssl"] }),
-  packages(["wl-clipboard", "socat"]),
-  homePackages(["wslu"]),
+  nixos.packages("wl-clipboard", "socat"),
+  home.packages("wslu"),
   git.credentialHelper("git-credential-manager-windows"),
 ]);
 ```
@@ -72,7 +72,7 @@ A fragment function returns a `Fragment` object describing its contribution:
 ```ts
 import { type Fragment } from "winix";
 
-export function sysctl(values: Record<string, number | string>): Fragment {
+export function kernelTuning(values: Record<string, number | string>): Fragment {
   return {
     nixos: {
       boot: { kernel: { sysctl: values } },
@@ -121,7 +121,7 @@ This replaces the previous `extends` and `roles` concepts. A "role" is just a co
 ```ts
 export function developer(): Fragment[] {
   return [
-    packages(["git", "nodejs", "ripgrep"]),
+    nixos.packages("git", "nodejs", "ripgrep"),
     neovim(),
     starship(),
     fzf(),
@@ -136,8 +136,8 @@ For named reusable composition, prefer `profile()`:
 export const developer = profile("developer", [
   home.program("git"),
   neovim(),
-  zsh(),
-  packages.homeManager("ripgrep", "fd"),
+  shell(),
+  home.packages("ripgrep", "fd"),
 ]);
 
 host("wsl-work", platforms.nixos(), [
@@ -159,7 +159,7 @@ import { nixos } from "./platforms/linux";
 import { darwin } from "./platforms/darwin";
 import { wsl } from "./fragments/wsl";
 
-export function zsh(): Fragment {
+export function shell(): Fragment {
   return {
     homeManager: {
       programs: {
@@ -236,7 +236,7 @@ Usage in host list:
 ```ts
 host("wsl-work", nixos({ stateVersion: "25.05" }), [
   wsl({ defaultUser: "adrifer" }),    // callable → Fragment
-  zsh(),                              // uses nixos.isActive internally
+  shell(),                            // uses nixos.isActive internally
 ]);
 ```
 
@@ -297,10 +297,10 @@ evaluated by Nix, such as `pkgs.stdenv.isDarwin`.
 Common nested Nix patterns should use intent helpers:
 
 ```ts
-services.enable("openssh", { settings: { PermitRootLogin: "no" } })
-systemd.service("backup", { script: nix.script`echo backup` })
-systemd.timer("backup", { wantedBy: ["timers.target"] })
-firewall.tcp(80, 443)
+nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
+nixos.systemd({ services: { backup: { script: nix.script`echo backup` } } })
+nixos.systemd({ timers: { backup: { wantedBy: ["timers.target"] } } })
+nixos.firewall({ allowedTCPPorts: [80, 443] })
 home.env({ EDITOR: "nvim" })
 home.path("~/.local/bin")
 home.packages("ripgrep", "fd")
@@ -365,7 +365,7 @@ For unit testing fragments outside the compiler:
 import { withContext } from "winix/testing";
 
 test("zsh linux aliases", () => {
-  const result = withContext({ platform: "linux", features: ["wsl"] }, () => zsh());
+  const result = withContext({ platform: "linux", features: ["wsl"] }, () => shell());
   expect(result.home.programs.zsh.aliases.i).toContain("nixos-rebuild");
 });
 ```

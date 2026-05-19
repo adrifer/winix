@@ -2,26 +2,20 @@ import { describe, expect, it } from "vitest";
 import {
   evaluate,
   account,
-  firewall,
+  darwin as darwinHelpers,
   generateNix,
   home,
   host,
-  activation,
   nix,
+  nixos as nixosHelpers,
   overlay,
-  packages,
   platforms,
   platform,
   profile,
-  service,
-  services,
-  sysctl,
-  systemd,
   type Fragment,
   type NixosOptions,
   type ZshOptions,
   workspace,
-  zsh,
 } from "../src/index.js";
 
 const nixos = platform("linux", () => ({
@@ -37,17 +31,14 @@ const darwin = platform("darwin", () => ({
 }));
 
 describe("curated helpers", () => {
-  it("packages() targets NixOS by default and supports explicit scopes", () => {
-    expect(packages("ripgrep", "fd")).toEqual({
+  it("platform package helpers target their platform namespaces", () => {
+    expect(nixosHelpers.packages("ripgrep", "fd")).toEqual({
       nixos: { packages: ["ripgrep", "fd"] },
     });
-    expect(packages(["jq"], { scope: "darwin" })).toEqual({
+    expect(darwinHelpers.packages(["jq"])).toEqual({
       darwin: { packages: ["jq"] },
     });
-    expect(packages(["wslu"], { scope: "homeManager" })).toEqual({
-      homeManager: { home: { packages: ["wslu"] } },
-    });
-    expect(packages.homeManager("wslu")).toEqual({
+    expect(home.packages(["wslu"])).toEqual({
       homeManager: { home: { packages: ["wslu"] } },
     });
   });
@@ -102,8 +93,8 @@ describe("curated helpers", () => {
     });
   });
 
-  it("activation() produces Home Manager activation fragments and output", () => {
-    const fragment = activation("ensureWritableNpmrc", {
+  it("home.activation() produces Home Manager activation fragments and output", () => {
+    const fragment = home.activation("ensureWritableNpmrc", {
       script: "mkdir -p \"$HOME/.config/npm\"",
     });
     expect(fragment).toEqual({
@@ -130,8 +121,8 @@ describe("curated helpers", () => {
     );
   });
 
-  it("activation() supports custom after dependencies", () => {
-    expect(activation("installPkgs", { after: ["writeBoundary", "ensureWritableNpmrc"], script: "npm i -g pnpm" })).toEqual({
+  it("home.activation() supports custom after dependencies", () => {
+    expect(home.activation("installPkgs", { after: ["writeBoundary", "ensureWritableNpmrc"], script: "npm i -g pnpm" })).toEqual({
       homeManager: {
         home: {
           activation: {
@@ -369,26 +360,23 @@ describe("curated helpers", () => {
     expect(hostNix).toContain('wsl.defaultUser = lib.mkDefault "adrifer";');
   });
 
-  it("zsh() applies defaults and maps ergonomic options to Home Manager", () => {
+  it("home.program() maps zsh options to Home Manager", () => {
     expect(
-      zsh({
-        aliases: { g: "lazygit" },
-        plugins: ["zsh-vi-mode"],
-        viMode: true,
+      home.program("zsh", {
+        shellAliases: { g: "lazygit" },
+        plugins: [{ name: "zsh-vi-mode" }],
+        defaultKeymap: "viins",
         initExtra: "bindkey -v",
         envExtra: "export ZDOTDIR=$HOME",
       })
     ).toEqual({
       homeManager: {
         programs: {
-          zsh: {
-            enable: true,
-            enableCompletion: true,
-            autosuggestion: { enable: true },
-            syntaxHighlighting: { enable: true },
-            shellAliases: { g: "lazygit" },
-            plugins: [{ name: "zsh-vi-mode" }],
-            defaultKeymap: "viins",
+            zsh: {
+              enable: true,
+              shellAliases: { g: "lazygit" },
+              plugins: [{ name: "zsh-vi-mode" }],
+              defaultKeymap: "viins",
             initExtra: "bindkey -v",
             envExtra: "export ZDOTDIR=$HOME",
           },
@@ -397,9 +385,9 @@ describe("curated helpers", () => {
     });
   });
 
-  it("sysctl() maps kernel settings to NixOS boot.kernel.sysctl", () => {
+  it("nixos.sysctl() maps kernel settings to NixOS boot.kernel.sysctl", () => {
     expect(
-      sysctl({
+      nixosHelpers.sysctl({
         "fs.inotify.max_user_watches": 1048576,
         "net.ipv4.ip_forward": "1",
       })
@@ -459,7 +447,7 @@ describe("curated helpers", () => {
 
   it("profile() accepts nested fragments without spread boilerplate", () => {
     const tools = profile("tools", [
-      packages.homeManager("ripgrep"),
+      home.packages("ripgrep"),
       [home.program("starship")],
     ]);
     const ws = workspace({
@@ -503,19 +491,19 @@ describe("curated helpers", () => {
   });
 
   it("intent helpers map common system patterns", () => {
-    expect(services.enable("openssh", { settings: { PermitRootLogin: "no" } })).toEqual({
+    expect(nixosHelpers.service("openssh", { settings: { PermitRootLogin: "no" } })).toEqual({
       nixos: { services: { openssh: { enable: true, settings: { PermitRootLogin: "no" } } } },
     });
-    expect(service("nginx")).toEqual({
+    expect(nixosHelpers.service("nginx")).toEqual({
       nixos: { services: { nginx: { enable: true } } },
     });
-    expect(systemd.service("demo", { description: "Demo" })).toEqual({
+    expect(nixosHelpers.systemd({ services: { demo: { description: "Demo" } } })).toEqual({
       nixos: { systemd: { services: { demo: { description: "Demo" } } } },
     });
-    expect(systemd.timer("demo", { wantedBy: ["timers.target"] })).toEqual({
+    expect(nixosHelpers.systemd({ timers: { demo: { wantedBy: ["timers.target"] } } })).toEqual({
       nixos: { systemd: { timers: { demo: { wantedBy: ["timers.target"] } } } },
     });
-    expect(firewall.tcp(80, 443)).toEqual({
+    expect(nixosHelpers.firewall({ allowedTCPPorts: [80, 443] })).toEqual({
       nixos: { networking: { firewall: { allowedTCPPorts: [80, 443] } } },
     });
     expect(home.env({ EDITOR: "nvim" })).toEqual({
@@ -575,7 +563,7 @@ describe("curated helpers", () => {
               },
             },
           },
-          activation("ensureWritableNpmrc", {
+          home.activation("ensureWritableNpmrc", {
             script: "mkdir -p \"${config.home.homeDirectory}/.config/npm\"",
           }),
         ]),
@@ -604,8 +592,8 @@ describe("curated helpers", () => {
       hosts: [
         host("wsl-work", nixos(), [
           account("adrifer", { shell: "zsh", stateVersion: "24.05" }),
-          packages("ripgrep"),
-          packages.homeManager("wslu"),
+          nixosHelpers.packages("ripgrep"),
+          home.packages("wslu"),
           home.program("git", {
             userName: "Adrian Fernandez Garcia",
             extraConfig: { init: { defaultBranch: "main" } },
@@ -616,16 +604,16 @@ describe("curated helpers", () => {
               },
             ],
           }),
-          zsh({
-            aliases: { g: "lazygit" },
-            completion: false,
-            plugins: ["zsh-vi-mode"],
+          home.program("zsh", {
+            shellAliases: { g: "lazygit" },
+            enableCompletion: false,
+            plugins: [{ name: "zsh-vi-mode" }],
           }),
           home.env({ EDITOR: "nvim" }),
           home.program("starship"),
-          services.enable("openssh"),
+          nixosHelpers.service("openssh"),
           home.service("syncthing"),
-          sysctl({ "fs.inotify.max_user_watches": 1048576 }),
+          nixosHelpers.sysctl({ "fs.inotify.max_user_watches": 1048576 }),
         ]),
       ],
     });
@@ -651,10 +639,10 @@ describe("curated helpers", () => {
     expect(hostNix).toContain("\"fs.inotify.max_user_watches\" = 1048576;");
   });
 
-  it("packages.darwin() composes with darwin hosts", () => {
+  it("darwin.packages() composes with darwin hosts", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
-      hosts: [host("macbook-pro", darwin(), [packages.darwin("mas")])],
+      hosts: [host("macbook-pro", darwin(), [darwinHelpers.packages("mas")])],
     });
 
     const [evaluated] = evaluate(ws);

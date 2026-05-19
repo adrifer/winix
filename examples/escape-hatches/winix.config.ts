@@ -2,9 +2,9 @@
  * Example: escape hatches in practice.
  * Shows all three levels in a standalone config.
  */
-import { workspace, host, raw, rawModule, nix } from "winix";
+import { workspace, host, rawModule, nix } from "winix";
 import { defineInputs, input } from "winix";
-import { account, feature, platforms, type Fragment } from "winix";
+import { account, feature, nixos, platforms, type Fragment } from "winix";
 
 const inputs = defineInputs({
   nixpkgs: "nixos-unstable",
@@ -27,7 +27,7 @@ export default workspace({
       rawModule("./legacy/vscode-path.nix"),
 
       // Level 1: raw — inline Nix for a quick one-off
-      raw.nixos(`
+      nixos.raw(`
         environment.variables.DOTNET_ROOT =
           "''${pkgs.dotnet-sdk_9}/share/dotnet";
       `),

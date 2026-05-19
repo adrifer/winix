@@ -1,5 +1,5 @@
 // Realistic test config: minimal WSL NixOS host
-import { account, feature, home, host, input, defineInputs, packages, platforms, profile, sysctl, workspace } from "../src/index.ts";
+import { account, feature, home, host, input, defineInputs, nixos, platforms, profile, workspace } from "../src/index.ts";
 
 // --- Inputs ---
 const inputs = defineInputs({
@@ -23,7 +23,7 @@ const wsl = feature("wsl", () => ({
 }));
 
 const workSysctl = feature("work-sysctl", () =>
-  sysctl({
+  nixos.sysctl({
     "net.ipv4.ip_unprivileged_port_start": 443,
     "fs.inotify.max_user_watches": 1048576,
     "fs.inotify.max_user_instances": 1024,
@@ -57,7 +57,7 @@ export default workspace({
       wsl(),
       account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }),
       workSysctl(),
-      packages("socat", "bubblewrap"),
+      nixos.packages("socat", "bubblewrap"),
       developer(),
     ]),
   ],

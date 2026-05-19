@@ -16,23 +16,27 @@ anything not covered.
 
 ## Helpers
 
-### `packages(...names: string[]): Fragment`
+### `nixos.*` and `darwin.*`
 
-System-level packages.
-
-```ts
-packages("ripgrep", "fd", "jq")
-packages.homeManager("wslu")
-packages.darwin("mas")
-```
-
-Options:
+Platform-level helpers target NixOS or nix-darwin explicitly.
 
 ```ts
-interface PackagesOpts {
-  scope?: "nixos" | "homeManager" | "darwin";
-}
+nixos.program("nix-ld", { libraries: nix.withPkgs(["icu", "zlib"]) })
+nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
+nixos.packages("ripgrep", "fd", "jq")
+nixos.sysctl({ "fs.inotify.max_user_watches": 1048576 })
+nixos.firewall({ allowedTCPPorts: [80, 443] })
+nixos.systemd({ services: { backup: { script: nix.script`echo backup` } } })
+nixos.raw("environment.variables.FOO = \"bar\";")
+
+darwin.program("zsh")
+darwin.service("some-agent")
+darwin.packages("mas")
+darwin.raw("system.defaults.dock.autohide = true;")
 ```
+
+Program and service helpers add `enable: true` by default. Explicit `enable` in
+`opts` wins.
 
 ### `account(username: string, opts?: AccountOpts): LazyFragment`
 
@@ -93,21 +97,6 @@ home.service("syncthing", { tray: true })
 
 Output: `{ homeManager: { services: { [name]: { enable: true, ...opts } } } }`.
 
-### `zsh(opts?: ZshOpts): Fragment`
-
-Curated zsh helper with defaults and ergonomic plugin mapping.
-
-```ts
-zsh({
-  aliases: { g: "lazygit", n: "nvim" },
-  plugins: ["zsh-vi-mode"],
-  viMode: true,
-})
-```
-
-Defaults: `autosuggestions: true`, `completion: true`, and
-`syntaxHighlighting: true`.
-
 ### `home.env()` / `home.path()`
 
 Home Manager shell environment helpers.
@@ -117,34 +106,18 @@ home.env({ EDITOR: "nvim", BROWSER: "wslview" })
 home.path("$HOME/.local/bin", "$HOME/go/bin")
 ```
 
-### `home.packages()` / `home.configFile()`
+### `home.packages()` / `home.configFile()` / `home.raw()` / `home.activation()`
 
 Home Manager package and XDG config-file helpers.
 
 ```ts
 home.packages("neovim", "ripgrep")
 home.configFile("nvim/init.lua", { text: "vim.o.number = true" })
+home.raw("programs.zsh.initExtra = ''echo raw'';")
+home.activation("ensureNpmrc", { script: "mkdir -p \"$HOME/.config/npm\"" })
 ```
 
-### `services.enable(name, opts?): Fragment`
-
-NixOS service configuration with `enable: true` by default.
-
-```ts
-services.enable("openssh", { settings: { PermitRootLogin: "no" } })
-```
-
-### `systemd`, `firewall`, `sysctl`, and `nix.gc`
-
-Intent helpers for common NixOS patterns:
-
-```ts
-systemd.service("backup", { script: nix.script`echo backup` })
-systemd.timer("backup", { wantedBy: ["timers.target"] })
-firewall.tcp(80, 443)
-sysctl({ "fs.inotify.max_user_watches": 1048576 })
-nix.gc({ olderThan: "14d" })
-```
+`nix.gc({ olderThan: "14d" })` remains available for NixOS garbage collection.
 
 ## Removed Helpers
 
@@ -156,19 +129,17 @@ These older helpers are intentionally not part of the public API:
 - `user()`
 - `shell()`
 
-Use `home.program()`, `home.service()`, `account()`, `home.env()`,
-`home.path()`, `services.enable()`, or plain fragments instead.
+Use `nixos.*`, `darwin.*`, `home.program()`, `home.service()`, `account()`,
+`home.env()`, `home.path()`, or plain fragments instead.
 
 ## File Structure
 
 ```text
 src/helpers/
 ├── account.ts
+├── darwin.ts
 ├── home.ts
-├── packages.ts
-├── services.ts
-├── zsh.ts
-├── sysctl.ts
+├── nixos.ts
 └── ...
 ```
 

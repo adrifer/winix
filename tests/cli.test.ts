@@ -12,7 +12,7 @@ import {
 import { activationCommand } from "../src/cli/activation.js";
 import { init } from "../src/cli/commands/init.js";
 import { selectHost } from "../src/cli/commands/switch.js";
-import { host, nix, platform, raw, workspace } from "../src/index.js";
+import { host, nix, nixos as nixosHelpers, platform, workspace } from "../src/index.js";
 
 const nixos = platform("linux", () => ({
   nixos: {
@@ -52,7 +52,7 @@ describe("CLI analysis", () => {
       hosts: [
         host("wsl", nixos(), [
           { nixos: { users: { users: { root: { shell: nix.expr("pkgs.bash") } } } } },
-          raw.nixos("services.openssh.enable = true;"),
+          nixosHelpers.raw("services.openssh.enable = true;"),
         ]),
       ],
     });

@@ -33,7 +33,7 @@ Fragments are merged in **list order** (top to bottom). Each fragment contribute
 host("wsl-work", nixos(), [
   developer(),    // packages: ["git", "nodejs"], programs.git.enable: true
   workSysctl(),   // boot.kernel.sysctl: { "fs.inotify...": 1048576 }
-  packages(["socat"]),  // packages appends: ["git", "nodejs", "socat"]
+  nixos.packages("socat"),  // packages appends: ["git", "nodejs", "socat"]
 ]);
 ```
 
@@ -86,21 +86,21 @@ export function corporate(): Fragment {
 ### `prepend(items)` — add to front of list
 
 ```ts
-packages(prepend(["priority-package"]))
+nixos.packages(prepend(["priority-package"]))
 // Result: ["priority-package", ...existing]
 ```
 
 ### `replace(items)` — discard previous, use only these
 
 ```ts
-packages(replace(["only-these-packages"]))
+nixos.packages(replace(["only-these-packages"]))
 // Result: ["only-these-packages"] (ignores earlier fragments)
 ```
 
 ### `without(items)` — remove from accumulated list
 
 ```ts
-packages(without(["git"]))
+nixos.packages(without(["git"]))
 // Removes "git" added by an earlier fragment
 ```
 
@@ -124,9 +124,9 @@ In the flat fragment model, precedence is determined by **list order** (later wi
 
 ```ts
 host("example", nixos(), [
-  developer(),  // expands to [home.program("git"), zsh(), neovim(), ...] at positions 0-N
+  developer(),  // expands to [home.program("git"), shell(), neovim(), ...] at positions 0-N
   wsl(),        // position N+1
-  packages(override(["custom"])),  // position N+2, highest precedence
+  nixos.packages(override(["custom"])),  // position N+2, highest precedence
 ]);
 ```
 

@@ -1,4 +1,4 @@
-import { workspace, host, packages, platforms, profile } from "winix";
+import { workspace, host, nixos, platforms, profile } from "winix";
 import { inputs } from "./inputs";
 import { adrifer } from "./users/adrifer";
 import { developer } from "./roles/developer";
@@ -16,7 +16,7 @@ export default workspace({
       base(),
       wsl({ defaultUser: "adrifer" }),
       workSysctl(),
-      packages("socat", "bubblewrap"),
+      nixos.packages("socat", "bubblewrap"),
     ]),
 
     host("macbook-pro", platforms.darwin({ stateVersion: 6, homebrew: true }), [

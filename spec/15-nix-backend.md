@@ -186,10 +186,10 @@ The frontend DX helpers are normal fragments before backend generation:
 | `platforms.darwin({ stateVersion, homebrew })` | nix-darwin base with flakes, nixpkgs, hostname, Home Manager, and optional nix-homebrew module |
 | `account("adrifer", opts)` | `home.home.*`, `users.users.*` or `darwin.users.users.*`, shell, admin groups, optional WSL default user |
 | `profile("dev", [...])` | Resolves recursively to child fragments; no backend-specific output |
-| `services.enable("openssh", opts)` | `nixos.services.openssh = { enable = true; ... }` |
-| `systemd.service("name", opts)` | `nixos.systemd.services.name = opts` |
-| `systemd.timer("name", opts)` | `nixos.systemd.timers.name = opts` |
-| `firewall.tcp(80, 443)` | `networking.firewall.allowedTCPPorts = [ 80 443 ];` |
+| `nixos.service("openssh", opts)` | `nixos.services.openssh = { enable = true; ... }` |
+| `nixos.systemd({ services })` | `nixos.systemd.services.* = ...` |
+| `nixos.systemd({ timers })` | `nixos.systemd.timers.* = ...` |
+| `nixos.firewall({ allowedTCPPorts: [80, 443] })` | `networking.firewall.allowedTCPPorts = [ 80 443 ];` |
 | `home.env(vars)` | `home.sessionVariables.*` inside the Home Manager module |
 | `home.path(paths)` | `home.sessionPath` inside the Home Manager module |
 | `home.configFile(name, opts)` | `xdg.configFile.name = opts` inside the Home Manager module |

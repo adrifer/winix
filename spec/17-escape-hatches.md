@@ -12,23 +12,23 @@ Escape hatches allow Winix to represent backend-specific behavior before a typed
 
 ## Three levels of escape
 
-### Level 1: `raw()` — inline Nix expressions
+### Level 1: `nixos.raw()` / `home.raw()` / `darwin.raw()` — inline Nix expressions
 
 For quick hacks or things that don't fit any typed fragment:
 
 ```ts
-import { raw } from "winix";
+import { home, nixos } from "winix";
 
 host("wsl-work", nixos(), [
   wsl(),
-  raw.nixos(`
+  nixos.raw(`
     environment.interactiveShellInit = '''
       win_home="$(wslpath -w "$HOME")"
       win_user="''${win_home##*/}"
       export PATH="$PATH:/mnt/c/Users/$win_user/AppData/Local/Programs/Microsoft VS Code Insiders/bin"
     ''';
   `),
-  raw.homeManager(`
+  home.raw(`
     programs.zsh.initContent = '''
       export BROWSER=wslview
       precmd_functions+=(keep_current_path)
@@ -41,9 +41,9 @@ Variants:
 
 | Function | Target scope |
 |----------|-------------|
-| `raw.nixos(expr)` | NixOS configuration |
-| `raw.homeManager(expr)` | Home Manager configuration |
-| `raw.darwin(expr)` | nix-darwin configuration |
+| `nixos.raw(expr)` | NixOS configuration |
+| `home.raw(expr)` | Home Manager configuration |
+| `darwin.raw(expr)` | nix-darwin configuration |
 
 The expression is passed verbatim to the Nix backend. No TypeScript type checking occurs on the content.
 
@@ -108,7 +108,7 @@ export function wsl(opts?: WslOpts): Fragment {
 
 | Escape | Scope | Use case |
 |--------|-------|----------|
-| `raw.nixos()` / `raw.homeManager()` / `raw.darwin()` | Top-level fragment | Quick hacks, one-off config |
+| `nixos.raw()` / `home.raw()` / `darwin.raw()` | Top-level fragment | Quick hacks, one-off config |
 | `rawModule(path)` | Top-level fragment | Migration, existing .nix files |
 | `nix.expr(\`...\`)` | Value within a typed fragment | One field needs a Nix expression |
 
@@ -133,7 +133,7 @@ winix check --escape-report
 
 # Escape Hatch Report
 # ────────────────────
-# Raw fragments (raw.*):    1
+# Raw fragments (*.raw):    1
 # Raw modules (rawModule):  2
 # Inline escapes (nix.expr):  3
 # ────────────────────
@@ -144,7 +144,7 @@ winix check --escape-report
 
 1. **Day 1:** Use `rawModule()` for all existing .nix files. Everything works as before.
 2. **Week 1:** Convert simple modules (packages, sysctl, git) to typed fragments.
-3. **Ongoing:** Complex modules with Nix logic stay as `raw()` or `nix.expr()` until types cover them or `winix types generate` adds support.
+3. **Ongoing:** Complex modules with Nix logic stay as `*.raw()` or `nix.expr()` until types cover them or `winix types generate` adds support.
 
 ## Backend-specific escape hatches
 

@@ -8,7 +8,7 @@
 - [x] `.isActive` conditionals with native TS (no DSL)
 - [x] Inputs as leaf file (`inputs.ts`) with typed references
 - [x] Type generation strategy from inputs (spec 11)
-- [x] Escape hatches — 3 levels: `raw()`, `rawModule()`, `nix.expr()` (spec 17)
+- [x] Escape hatches — 3 levels: `nixos.raw()` / `home.raw()` / `darwin.raw()`, `rawModule()`, `nix.expr()` (spec 17)
 - [x] Merge semantics — last wins + modifiers (spec 06)
 - [x] CLI design — init, check, apply, switch, types generate, etc. (spec 13)
 - [x] Nix backend — output structure, mapping, lock management (spec 15)
@@ -31,10 +31,10 @@
 
 ### Helpers (2026-05-18)
 - [x] `rawModule()` / `rawModule.homeManager()` / `rawModule.darwin()` — incremental migration
-- [x] Curated: `packages()`, `account()`, `zsh()`, `sysctl()`
-- [x] Namespace helpers: `home.program()`, `home.service()`, `home.env()`, `home.path()`, `services.enable()`
+- [x] Curated: `account()`, `nixos.*`, `darwin.*`, `home.*`
+- [x] Namespace helpers: `home.program()`, `home.service()`, `home.env()`, `home.path()`, `nixos.service()`
 - [x] `nix.expr()` — inline Nix expressions
-- [x] `raw.nixos()` / `raw.homeManager()` / `raw.darwin()` — verbatim Nix blocks
+- [x] `nixos.raw()` / `home.raw()` / `darwin.raw()` — verbatim Nix blocks
 - [x] `nix.pkg()` — unquoted `pkgs.*` references
 - [x] `nix.lib.mkDefault()`, `nix.lib.mkForce()`, `nix.lib.mkBefore()`, `nix.lib.mkAfter()` — lib option priority
 - [x] `overlay.stable()`, `overlay.custom()` — nixpkgs overlays
@@ -68,8 +68,8 @@ currently force users into raw() blocks.
 - [x] **Recursive profiles** — `profile()` composes fragments/profiles without spread boilerplate
 - [x] **Built-in platform presets** — `platforms.nixos()` and `platforms.darwin()` cover common NixOS/nix-darwin bases
 - [x] **Unified accounts** — `account()` configures Home Manager, NixOS/Darwin users, shells, admin groups, and WSL defaults
-- [x] **Intent helpers** — `services`, `service`, `systemd`, `firewall`, `home`, `programs`, and `nix.gc()` reduce nested Nix-shaped objects
-- [x] **Activation helper** — `activation("name", { after: [...], script: "..." })` for `lib.hm.dag.entryAfter` pattern
+- [x] **Intent helpers** — `nixos.*`, `darwin.*`, `home.*`, and `nix.gc()` reduce nested Nix-shaped objects
+- [x] **Activation helper** — `home.activation("name", { after: [...], script: "..." })` for `lib.hm.dag.entryAfter` pattern
 - [x] **Improve error messages** — when a fragment fails, show which helper to use or how to fix it
 - [x] **Audit existing config** — go through dotfiles/winix raw() blocks, find more patterns to abstract
 - [x] **Real config migration** — `/home/adrifer/dotfiles/winix` uses the new profiles, platforms, account, `nix.*`, and intent helpers
@@ -98,7 +98,7 @@ PowerShell) using the same fragment/helper model.
 - [ ] **Windows-specific helpers** — `winget([...])`, `registry(path, values)`, `scheduledTask(...)`, `envVar(...)`, `windowsFeature(...)`
 - [ ] **`winix apply` on Windows** — generates PowerShell/DSC output in `.winix/out/`
 - [ ] **`winix switch` on Windows** — executes the generated config (elevated PowerShell)
-- [ ] **Cross-platform fragments** — fragments that target both NixOS and Windows (e.g., `packages()` that maps to `winget` on Windows)
+- [ ] **Cross-platform fragments** — fragments that target both NixOS and Windows (e.g., package lists that map to `winget` on Windows)
 - [ ] **Windows type generation** — types for DSC resources, registry keys, winget packages
 
 ---
@@ -145,7 +145,7 @@ PowerShell) using the same fragment/helper model.
 | `.winix/out/` gitignored | Generated output is per-machine. Not source of truth. | 2026-05-17 |
 | `path:` prefix for nixos-rebuild | Bypasses git tracking requirement for gitignored output. | 2026-05-17 |
 | Fragment keys match Nix option names | Use `"experimental-features"` not `experimentalFeatures`. Avoids mapping bugs. | 2026-05-17 |
-| Namespace-first helpers | Prefer scoped helpers like `home.program()` and `services.enable()` over ambiguous generic helpers. | 2026-05-18 |
+| Namespace-first helpers | Prefer scoped helpers like `home.program()` and `nixos.service()` over ambiguous generic helpers. | 2026-05-18 |
 | Static types + dynamic generation | Ship hand-written types for instant DX; generate full types from channel for complete coverage. | 2026-05-18 |
 | LLM-first design | Fragments, helpers, and docs should be optimized for AI agents to discover and use correctly. | 2026-05-18 |
 | Unified Nix expression namespace | Public raw expression helpers live under `nix.*` to reduce import sprawl and make escape hatches discoverable. | 2026-05-19 |
