@@ -12,7 +12,7 @@ Write your system config in TypeScript. Get type safety, autocomplete, and compo
 
 ```ts
 // winix.config.ts
-import { account, feature, home, host, input, defineInputs, platforms, workspace } from "winix";
+import { account, feature, home, host, input, defineInputs, nixos, platforms, workspace } from "winix";
 
 const inputs = defineInputs({
   nixpkgs: "nixos-unstable",
@@ -42,6 +42,7 @@ export default workspace({
     host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
       account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }),
       wsl(),
+      nixos.packages("socat", "bubblewrap"),
       neovim(),
     ]),
   ],
@@ -103,7 +104,7 @@ const developer = feature("developer", () => [
   home.program("git"),
   neovim(),
   starship(),
-  zsh(),
+  shell(),
 ]);
 ```
 
@@ -112,7 +113,7 @@ const developer = feature("developer", () => [
 Use `.isActive` with native TypeScript — no custom DSL:
 
 ```ts
-const zsh = feature("zsh", () => ({
+const shell = feature("shell", () => ({
   homeManager: {
     programs: {
       zsh: {

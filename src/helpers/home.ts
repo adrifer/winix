@@ -1,4 +1,4 @@
-import type { Fragment } from "../core/types.ts";
+import type { Fragment, NixExpr } from "../core/types.ts";
 import type { PackageRef, XdgFile } from "../types/index.ts";
 
 export interface HomeHelper {
@@ -11,9 +11,18 @@ export interface HomeHelper {
   packages(...packages: PackageRef[]): Fragment;
   configFile(name: string, opts: XdgFile): Fragment;
   configFiles(files: Record<string, XdgFile>): Fragment;
+  raw(config: string | Record<string, unknown>): Fragment;
+  activation(name: string, opts: ActivationOpts): Fragment;
 }
 
 type ProgramOpts = Record<string, unknown>;
+
+export interface ActivationOpts {
+  /** DAG dependencies. Defaults to ["writeBoundary"]. */
+  after?: string[];
+  /** Shell script body. Nix interpolations such as ${config.home.homeDirectory} are passed through. */
+  script: string;
+}
 
 export const home: HomeHelper = {
   program: <T extends ProgramOpts = ProgramOpts>(
@@ -43,6 +52,26 @@ export const home: HomeHelper = {
   configFiles: (files: Record<string, XdgFile>): Fragment => ({
     homeManager: { xdg: { configFile: files } },
   }),
+  raw: (config: string | Record<string, unknown>): Fragment =>
+    typeof config === "string"
+      ? { homeManager: { __raw: [config] } }
+      : { homeManager: config },
+  activation: (name: string, opts: ActivationOpts): Fragment => {
+    const after = opts.after ?? ["writeBoundary"];
+    const afterList = after.map((s) => JSON.stringify(s)).join(" ");
+    return {
+      homeManager: {
+        home: {
+          activation: {
+            [name]: {
+              __winixNixExpr: true,
+              expr: `lib.hm.dag.entryAfter [ ${afterList} ] ''\n${opts.script}\n''`,
+            } as NixExpr,
+          },
+        },
+      },
+    };
+  },
 };
 
 function normalizeArgs<T>(args: T[] | [T[]]): T[] {

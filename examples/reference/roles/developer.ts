@@ -1,4 +1,4 @@
-import { packages, profile } from "winix";
+import { nixos, profile } from "winix";
 import { git } from "../features/git";
 import { neovim } from "../features/neovim";
 import { zsh } from "../features/zsh";
@@ -17,7 +17,7 @@ export const developer = profile("developer", [
   starship(),
   fzf(),
   zoxide(),
-  packages(
+  nixos.packages(
     "wget",
     "curl",
     "eza",

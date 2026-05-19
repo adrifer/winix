@@ -8,9 +8,11 @@ import {
   defineInputs,
   withContext,
   evaluate,
+  darwin as darwinHelpers,
+  home,
+  nixos as nixosHelpers,
   nix,
   generateNix,
-  raw,
   rawModule,
 } from "../src/index.js";
 
@@ -420,14 +422,14 @@ describe("Nix backend", () => {
     expect(hostNix).toContain("services.demo.value = pkgs.new;");
   });
 
-  it("renders raw.nixos/homeManager/darwin fragments verbatim", () => {
+  it("renders nixos.raw/home.raw/darwin.raw fragments verbatim", () => {
     const linuxWs = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", nixos(), [
           { homeManager: { home: { username: "adrifer" } } },
-          raw.nixos("environment.variables.FOO = \"bar\";"),
-          raw.homeManager("programs.zsh.initExtra = ''\necho raw\n'';"),
+          nixosHelpers.raw("environment.variables.FOO = \"bar\";"),
+          home.raw("programs.zsh.initExtra = ''\necho raw\n'';"),
         ]),
       ],
     });
@@ -440,7 +442,7 @@ describe("Nix backend", () => {
     }));
     const darwinWs = workspace({
       inputs: { nixpkgs: "nixos-unstable", nixDarwin: "github:nix-darwin/nix-darwin" },
-      hosts: [host("macbook-pro", darwin(), [raw.darwin("system.defaults.dock.autohide = true;")])],
+      hosts: [host("macbook-pro", darwin(), [darwinHelpers.raw("system.defaults.dock.autohide = true;")])],
     });
     const darwinHostNix = generateNix(darwinWs, evaluate(darwinWs)).hosts["macbook-pro.nix"];
     expect(darwinHostNix).toContain("system.defaults.dock.autohide = true;");

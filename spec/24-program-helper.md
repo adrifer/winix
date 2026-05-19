@@ -50,11 +50,11 @@ home.program("git", { enable: false })
 | `home.program(name, opts)` | `homeManager.programs.<name>` | Adds `enable: true` by default |
 | `home.service(name, opts)` | `homeManager.services.<name>` | Adds `enable: true` by default |
 
-NixOS services use `services.enable()`. Top-level NixOS and nix-darwin options use
-plain fragments for now:
+NixOS services use `nixos.service()`. Top-level NixOS and nix-darwin options can
+use `nixos.raw()` / `darwin.raw()` or plain fragments:
 
 ```ts
-services.enable("openssh", { settings: { PermitRootLogin: "no" } })
+nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
 
 { nixos: { nix: { settings: { "experimental-features": "nix-command flakes" } } } }
 { darwin: { homebrew: { enable: true } } }
