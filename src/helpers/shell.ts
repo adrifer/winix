@@ -7,9 +7,11 @@ export interface ShellOpts {
 
 export function shell(opts: ShellOpts): Fragment {
   return {
-    home: {
-      ...(opts.env && { sessionVariables: opts.env }),
-      ...(opts.path && { sessionPath: opts.path }),
+    homeManager: {
+      home: {
+        ...(opts.env && { sessionVariables: opts.env }),
+        ...(opts.path && { sessionPath: opts.path }),
+      },
     },
   };
 }

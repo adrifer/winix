@@ -8,6 +8,7 @@ import type {
   WorkspaceDef,
   EvalContext,
 } from "../core/types.ts";
+import { collectActiveIds } from "../evaluator/index.ts";
 import { restoreEvalContext, setEvalContext } from "../sdk/index.ts";
 
 export interface FragmentRecord {
@@ -60,7 +61,7 @@ export function detectConflicts(analyses: HostAnalysis[]): Conflict[] {
     const seen = new Map<string, { fragment: string; value: unknown; formatted: string }>();
 
     for (const record of analysis.fragments) {
-      for (const scope of ["nixos", "home", "darwin"] as const) {
+      for (const scope of ["nixos", "homeManager", "darwin"] as const) {
         const data = record.fragment[scope];
         if (!data) continue;
         for (const leaf of walkLeaves(data)) {
@@ -95,7 +96,7 @@ export function collectEscapeReport(analyses: HostAnalysis[]): EscapeReportItem[
 
   for (const analysis of analyses) {
     for (const record of analysis.fragments) {
-      for (const scope of ["nixos", "home", "darwin"] as const) {
+      for (const scope of ["nixos", "homeManager", "darwin"] as const) {
         const data = record.fragment[scope];
         if (!data) continue;
         collectEscapeItems(analysis.name, record.label, scope, [], data, items);
@@ -125,34 +126,6 @@ function analyzeHost(host: HostDef): HostAnalysis {
   return { name: host.name, platform, fragments };
 }
 
-function collectActiveIds(host: HostDef): Set<string> {
-  const activeIds = new Set<string>([host.platform.__id]);
-  for (const entry of host.fragments) {
-    collectIds(entry, activeIds);
-  }
-  return activeIds;
-}
-
-function collectIds(entry: unknown, activeIds: Set<string>): void {
-  if (isLazy(entry)) {
-    activeIds.add(entry.__id);
-    try {
-      const resolved = entry.__resolve();
-      if (Array.isArray(resolved)) {
-        for (const item of resolved) collectIds(item, activeIds);
-      } else if (resolved?.__id) {
-        activeIds.add(resolved.__id);
-      }
-    } catch {
-      // Some descriptors need evaluation context; pass 2 will resolve them.
-    }
-  } else if (Array.isArray(entry)) {
-    for (const item of entry) collectIds(item, activeIds);
-  } else if (typeof entry === "object" && entry !== null && (entry as Fragment).__id) {
-    activeIds.add((entry as Fragment).__id as string);
-  }
-}
-
 function resolveEntry(entry: unknown, label: string, out: FragmentRecord[]): void {
   if (isLazy(entry)) {
     const resolved = entry.__resolve();
@@ -172,7 +145,7 @@ function resolveEntry(entry: unknown, label: string, out: FragmentRecord[]): voi
 function labelForEntry(entry: FragmentEntry, index: number): string {
   if (isLazy(entry)) return entry.__id;
   if (Array.isArray(entry)) return `inline[${index}]`;
-  return entry.__id ?? `inline[${index}]`;
+  return (entry as Fragment).__id ?? `inline[${index}]`;
 }
 
 function walkLeaves(

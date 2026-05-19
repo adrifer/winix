@@ -12,7 +12,7 @@ Users can always fall back to raw fragment objects for anything not covered.
 1. **Helpers return `Fragment`** — they compose just like any other fragment.
 2. **Opinionated but overridable** — sensible defaults, all options optional.
 3. **No magic** — a helper is sugar over the same fragment shape users write manually.
-4. **Scope-aware** — each helper knows whether it targets `nixos`, `home`, or `darwin`.
+4. **Scope-aware** — each helper knows whether it targets `nixos`, `homeManager`, or `darwin`.
 5. **Typed options** — each helper has a dedicated interface exported from `winix`.
 
 ## Helpers to Implement
@@ -35,11 +35,11 @@ it puts packages in the appropriate top-level key based on a `scope` option or d
 Options:
 ```ts
 interface PackagesOpts {
-  scope?: "nixos" | "home" | "darwin"; // default: "nixos"
+  scope?: "nixos" | "homeManager" | "darwin"; // default: "nixos"
 }
 ```
 
-Overload: `packages.home(...names)` → shorthand for `{ home: { packages: [...] } }`
+Overload: `packages.homeManager(...names)` → shorthand for `{ homeManager: { home: { packages: [...] } } }`
 
 ### `user(username: string, opts?: UserOpts): Fragment`
 
@@ -66,11 +66,13 @@ interface UserOpts {
 Output:
 ```ts
 {
-  home: {
-    username,
-    ...(opts.stateVersion && { stateVersion: opts.stateVersion }),
-    ...(opts.homeDirectory && { home: { homeDirectory: opts.homeDirectory } }),
-    ...(opts.sessionVariables && { sessionVariables: opts.sessionVariables }),
+  homeManager: {
+    home: {
+      username,
+      ...(opts.stateVersion && { stateVersion: opts.stateVersion }),
+      ...(opts.homeDirectory && { homeDirectory: opts.homeDirectory }),
+      ...(opts.sessionVariables && { sessionVariables: opts.sessionVariables }),
+    },
   },
   nixos: {
     ...(opts.shell && { users: { users: { [username]: { shell: `pkgs.${opts.shell}` } } } }),
@@ -114,7 +116,7 @@ interface GitInclude {
 }
 ```
 
-Output: `{ home: { programs: { git: { enable: true, ...mappedOpts } } } }`
+Output: `{ homeManager: { programs: { git: { enable: true, ...mappedOpts } } } }`
 
 ### `zsh(opts?: ZshOpts): Fragment`
 
@@ -144,7 +146,7 @@ interface ZshOpts {
 
 Defaults: `autosuggestions: true`, `completion: true`, `syntaxHighlighting: true`.
 
-Output: `{ home: { programs: { zsh: { enable: true, ...mappedOpts } } } }`
+Output: `{ homeManager: { programs: { zsh: { enable: true, ...mappedOpts } } } }`
 
 ### `shell(opts: ShellOpts): Fragment`
 
@@ -168,9 +170,11 @@ interface ShellOpts {
 Output:
 ```ts
 {
-  home: {
-    sessionVariables: opts.env,
-    sessionPath: opts.path,
+  homeManager: {
+    home: {
+      sessionVariables: opts.env,
+      sessionPath: opts.path,
+    },
   },
 }
 ```
@@ -220,5 +224,5 @@ are additive), but examples should showcase the cleaner API.
 
 - Type generation from nixpkgs (P2)
 - camelCase → kebab-case mapping (separate task)
-- `escape()` support (separate task)
+- Additional `nix.expr()` escape-hatch coverage (separate task)
 - Platform-aware auto-routing (helpers are explicit about scope)

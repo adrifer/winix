@@ -12,7 +12,7 @@ Write your system config in TypeScript. Get type safety, autocomplete, and compo
 
 ```ts
 // winix.config.ts
-import { workspace, host, platform, feature, input, defineInputs } from "winix";
+import { account, feature, host, input, defineInputs, platforms, workspace } from "winix";
 
 const inputs = defineInputs({
   nixpkgs: "nixos-unstable",
@@ -24,32 +24,27 @@ const inputs = defineInputs({
   }),
 });
 
-const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
-  nixos: {
-    nixpkgs: { hostPlatform: "x86_64-linux", config: { allowUnfree: true } },
-    nix: { settings: { "experimental-features": ["nix-command", "flakes"] } },
-    system: { stateVersion: opts?.stateVersion },
-  },
-}));
-
 const wsl = feature("wsl", () => ({
   nixos: {
     imports: ["nixos-wsl"],
-    wsl: { enable: true, defaultUser: "adrifer" },
+    wsl: { enable: true },
   },
 }));
 
 const neovim = feature("neovim", () => ({
-  home: {
-    packages: ["neovim"],
-    sessionVariables: { EDITOR: "nvim" },
+  homeManager: {
+    home: {
+      packages: ["neovim"],
+      sessionVariables: { EDITOR: "nvim" },
+    },
   },
 }));
 
 export default workspace({
   inputs,
   hosts: [
-    host("wsl-work", nixos({ stateVersion: "25.05" }), [
+    host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
+      account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }),
       wsl(),
       neovim(),
     ]),
@@ -67,7 +62,7 @@ winix.config.ts          →  Evaluator (two-pass)  →  .winix/out/
 ```
 
 1. **Fragments** are the building blocks. Everything is a fragment: platforms, features, tools, roles.
-2. **Helpers** create fragments: `platform(id, factory)` for system bases, `feature(id, factory)` for everything else.
+2. **Helpers** create fragments: `platforms.nixos()` / `platforms.darwin()` for common bases, `feature(id, factory)` for features, and `profile(id, entries)` for reusable bundles.
 3. **`.isActive`** lets fragments conditionally include config based on what other fragments are in the host.
 4. **Lazy evaluation** means fragments are resolved after the evaluator knows what's active, so conditionals work naturally.
 5. **Nix backend** generates valid `flake.nix` + host modules that `nixos-rebuild` consumes directly.
@@ -101,7 +96,7 @@ Everything is a function that returns configuration data:
 
 ```ts
 const starship = feature("starship", () => ({
-  home: { programs: { starship: { enable: true } } },
+  homeManager: { programs: { starship: { enable: true } } },
 }));
 ```
 
@@ -124,15 +119,15 @@ Use `.isActive` with native TypeScript — no custom DSL:
 
 ```ts
 const zsh = feature("zsh", () => ({
-  home: {
+  homeManager: {
     programs: {
       zsh: {
         aliases: {
           g: "lazygit",
-          ...(nixos.isActive && {
+          ...(platforms.nixos.isActive && {
             i: "sudo nixos-rebuild switch --flake /etc/nixos",
           }),
-          ...(darwin.isActive && {
+          ...(platforms.darwin.isActive && {
             i: "sudo darwin-rebuild switch --flake ~/dotfiles",
           }),
         },
@@ -140,6 +135,17 @@ const zsh = feature("zsh", () => ({
     },
   },
 }));
+```
+
+### Nix Escape Hatches
+
+Use the unified `nix.*` namespace when a value needs to be a Nix expression:
+
+```ts
+nix.pkg("zsh")
+nix.str`${nix.pkg("neovim")}/bin/nvim`
+nix.script`echo hello`
+nix.lib.mkDefault("adrifer")
 ```
 
 ### Third-Party Fragments

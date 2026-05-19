@@ -26,8 +26,10 @@ const fragment: Fragment = {
       defaultUser: "adrifer",
     },
   },
-  home: {
-    username: "adrifer",
+  homeManager: {
+    home: {
+      username: "adrifer",
+    },
     programs: {
       zsh: { enable: true },
       git: gitOptions,

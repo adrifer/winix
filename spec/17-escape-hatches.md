@@ -28,7 +28,7 @@ host("wsl-work", nixos(), [
       export PATH="$PATH:/mnt/c/Users/$win_user/AppData/Local/Programs/Microsoft VS Code Insiders/bin"
     ''';
   `),
-  raw.home(`
+  raw.homeManager(`
     programs.zsh.initContent = '''
       export BROWSER=wslview
       precmd_functions+=(keep_current_path)
@@ -42,7 +42,7 @@ Variants:
 | Function | Target scope |
 |----------|-------------|
 | `raw.nixos(expr)` | NixOS configuration |
-| `raw.home(expr)` | Home Manager configuration |
+| `raw.homeManager(expr)` | Home Manager configuration |
 | `raw.darwin(expr)` | nix-darwin configuration |
 
 The expression is passed verbatim to the Nix backend. No TypeScript type checking occurs on the content.
@@ -68,17 +68,17 @@ Variants:
 | Function | Target |
 |----------|--------|
 | `rawModule(path)` | NixOS module |
-| `rawModule.home(path)` | Home Manager module |
+| `rawModule.homeManager(path)` | Home Manager module |
 | `rawModule.darwin(path)` | nix-darwin module |
 
 The path is workspace-relative. The compiler includes the file as-is in the generated output. This enables incremental migration: start with everything as `rawModule`, convert one file at a time to typed fragments.
 
-### Level 3: `escape()` — inline Nix within typed fragments
+### Level 3: `nix.expr()` — inline Nix within typed fragments
 
 For when 90% of a fragment is typed but one value needs a Nix expression:
 
 ```ts
-import { escape } from "winix";
+import { nix } from "winix";
 
 export function wsl(opts?: WslOpts): Fragment {
   return {
@@ -86,9 +86,9 @@ export function wsl(opts?: WslOpts): Fragment {
       wsl: { enable: true, defaultUser: opts?.defaultUser },
       packages: ["wl-clipboard"],
     },
-    home: {
+    homeManager: {
       shell: {
-        initContent: escape(`
+        initContent: nix.expr(`
           export BROWSER=wslview
 
           keep_current_path() {
@@ -102,22 +102,22 @@ export function wsl(opts?: WslOpts): Fragment {
 }
 ```
 
-`escape()` marks a value as a Nix literal expression. The compiler emits it without quoting or interpretation. The TypeScript type is opaque (`NixExpr`), so it can be assigned to any string-typed option field.
+`nix.expr()` marks a value as a Nix literal expression. The compiler emits it without quoting or interpretation. The TypeScript type is opaque (`NixExpr`), so it can be assigned to any compatible option field. Prefer narrower helpers like `nix.pkg()`, `nix.str()`, `nix.script()`, and `nix.lib.*` when they fit.
 
 ## Summary table
 
 | Escape | Scope | Use case |
 |--------|-------|----------|
-| `raw.nixos()` / `raw.home()` / `raw.darwin()` | Top-level fragment | Quick hacks, one-off config |
+| `raw.nixos()` / `raw.homeManager()` / `raw.darwin()` | Top-level fragment | Quick hacks, one-off config |
 | `rawModule(path)` | Top-level fragment | Migration, existing .nix files |
-| `escape(\`...\`)` | Value within a typed fragment | One field needs a Nix expression |
+| `nix.expr(\`...\`)` | Value within a typed fragment | One field needs a Nix expression |
 
 ## Diagnostics
 
 The compiler emits warnings (not errors) for escape hatch usage:
 
 ```
-⚠ wsl.ts:15 — escape() used in home.shell.initContent
+⚠ wsl.ts:15 — nix.expr() used in home.shell.initContent
   Consider extracting to a typed fragment when stable.
 
 ⚠ winix.config.ts:8 — rawModule("./legacy/vscode-path.nix")
@@ -135,7 +135,7 @@ winix check --escape-report
 # ────────────────────
 # Raw fragments (raw.*):    1
 # Raw modules (rawModule):  2
-# Inline escapes (escape):  3
+# Inline escapes (nix.expr):  3
 # ────────────────────
 # Typed coverage: 87%
 ```
@@ -144,7 +144,7 @@ winix check --escape-report
 
 1. **Day 1:** Use `rawModule()` for all existing .nix files. Everything works as before.
 2. **Week 1:** Convert simple modules (packages, sysctl, git) to typed fragments.
-3. **Ongoing:** Complex modules with Nix logic stay as `raw()` or `escape()` until types cover them or `winix types generate` adds support.
+3. **Ongoing:** Complex modules with Nix logic stay as `raw()` or `nix.expr()` until types cover them or `winix types generate` adds support.
 
 ## Backend-specific escape hatches
 

@@ -28,7 +28,7 @@ export function git(opts: GitOpts = {}): Fragment {
   );
 
   return {
-    home: {
+    homeManager: {
       programs: {
         git: {
             enable: true,

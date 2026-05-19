@@ -1,5 +1,4 @@
-import { feature } from "winix";
-import { inputs } from "../inputs";
+import { feature, nix } from "winix";
 
 interface WslOpts {
   defaultUser?: string;
@@ -11,18 +10,18 @@ interface WslOpts {
  */
 export const wsl = feature("wsl", (opts?: WslOpts) => ({
   nixos: {
-    imports: [inputs.nixosWsl],
+    imports: ["nixos-wsl"],
     wsl: {
       enable: true,
       defaultUser: opts?.defaultUser,
       extraBin: [
-        "coreutils/mkdir",
-        "coreutils/cat",
-        "coreutils/whoami",
-        "coreutils/ls",
-        "busybox/addgroup",
-        "su/groupadd",
-        "su/usermod",
+        { src: nix.bin("coreutils", "mkdir") },
+        { src: nix.bin("coreutils", "cat") },
+        { src: nix.bin("coreutils", "whoami") },
+        { src: nix.bin("coreutils", "ls") },
+        { src: nix.bin("busybox", "addgroup") },
+        { src: nix.bin("su", "groupadd") },
+        { src: nix.bin("su", "usermod") },
       ],
       wslConf: {
         interop: { enabled: true, appendWindowsPath: false },
@@ -33,14 +32,14 @@ export const wsl = feature("wsl", (opts?: WslOpts) => ({
     programs: {
       nixLd: {
         enable: true,
-        libraries: ["icu", "zlib", "openssl"],
+        libraries: nix.withPkgs(["icu", "zlib", "openssl"]),
       },
     },
   },
-  home: {
-    packages: ["wslu"],
-    shell: {
-      env: { BROWSER: "wslview" },
+  homeManager: {
+    home: {
+      packages: [nix.pkg.stable("wslu")],
+      sessionVariables: { BROWSER: "wslview" },
     },
   },
 }));

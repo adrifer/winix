@@ -21,16 +21,7 @@ async function writeIfAllowed(path: string, content: string, force: boolean): Pr
   await writeFile(path, content);
 }
 
-const CONFIG = `import { host, packages, platform, user, workspace } from "winix";
-
-const nixos = platform("nixos", () => ({
-  nixos: {
-    imports: ["home-manager"],
-    nixpkgs: { hostPlatform: "x86_64-linux" },
-    nix: { settings: { "experimental-features": ["nix-command", "flakes"] } },
-    homeManager: { useGlobalPkgs: true, useUserPackages: true },
-  },
-}));
+const CONFIG = `import { account, host, packages, platforms, workspace } from "winix";
 
 export default workspace({
   inputs: {
@@ -41,8 +32,8 @@ export default workspace({
     },
   },
   hosts: [
-    host("my-host", nixos(), [
-      user("adrifer", { homeDirectory: "/home/adrifer", stateVersion: "25.05" }),
+    host("my-host", platforms.nixos({ stateVersion: "25.05" }), [
+      account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05" }),
       packages("git", "curl"),
     ]),
   ],

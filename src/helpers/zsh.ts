@@ -18,7 +18,7 @@ export interface ZshOpts
 
 export function zsh(opts: ZshOpts = {}): Fragment {
   return {
-    home: {
+    homeManager: {
       programs: {
         zsh: {
           enable: true,

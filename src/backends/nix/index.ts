@@ -166,22 +166,22 @@ function generateHostModule(host: EvaluatedHost): string {
   }
 
   // Generate Home Manager config (inline)
-  if (Object.keys(host.home).length > 0) {
-    const username = (host.home.username as string) ?? "user";
-    const homeData = filterKeys(host.home, ["username"]);
-    if (Object.keys(homeData).length > 0) {
+  if (Object.keys(host.homeManager).length > 0) {
+    const username = homeUsername(host.homeManager) ?? "user";
+    const homeManagerData = filterKeys(host.homeManager, ["username"]);
+    if (Object.keys(homeManagerData).length > 0) {
       lines.push(``);
       lines.push(`  # Home Manager`);
       lines.push(`  home-manager.users.${username} = { config, lib, pkgs, ... }: {`);
-      const homeImports = getImports(homeData);
-      const homeRaw = getRawBlocks(homeData);
-      if (homeImports.length > 0) {
-        lines.push(...importsToNix(homeImports, 2));
+      const homeManagerImports = getImports(homeManagerData);
+      const homeManagerRaw = getRawBlocks(homeManagerData);
+      if (homeManagerImports.length > 0) {
+        lines.push(...importsToNix(homeManagerImports, 2));
       }
-      const homeLines = objectToNix(filterKeys(homeData, ["imports", "__raw"]), 2, "home");
-      lines.push(...homeLines);
-      if (homeRaw.length > 0) {
-        lines.push(...rawBlocksToNix(homeRaw, 2));
+      const homeManagerLines = objectToNix(filterKeys(homeManagerData, ["imports", "__raw"]), 2, "home");
+      lines.push(...homeManagerLines);
+      if (homeManagerRaw.length > 0) {
+        lines.push(...rawBlocksToNix(homeManagerRaw, 2));
       }
       lines.push(`  };`);
     }
@@ -296,8 +296,8 @@ function getImports(obj: Record<string, unknown>): ImportRef[] {
   return imports.map((imp) => {
     if (isNixExpr(imp)) {
       throw new Error(
-        "escape() expressions are not supported in imports arrays. " +
-          "Use a string for module paths. escape() is for option values."
+        "nix.expr() expressions are not supported in imports arrays. " +
+          "Use a string for module paths. nix.expr() is for option values."
       );
     }
     if (typeof imp === "string" || isRawModuleRef(imp)) {
@@ -330,7 +330,7 @@ function collectRawModules(hosts: EvaluatedHost[]): RawModuleCopy[] {
   const rawModules = new Map<string, RawModuleCopy>();
 
   for (const host of hosts) {
-    for (const scope of [host.nixos, host.home, host.darwin]) {
+    for (const scope of [host.nixos, host.homeManager, host.darwin]) {
       for (const imp of getImports(scope)) {
         if (isRawModuleRef(imp)) {
           rawModules.set(imp.path, { path: imp.path });
@@ -392,7 +392,7 @@ function formatInlineAttrSet(obj: Record<string, unknown>): string {
 function formatPackageItem(value: unknown): string {
   if (isNixExpr(value)) return value.expr;
   if (typeof value === "string") return value;
-  throw new Error("package lists only support strings or escape() expressions");
+  throw new Error("package lists only support strings or nix.expr() expressions");
 }
 
 function isPkgsReference(value: string): boolean {
@@ -455,6 +455,8 @@ const KNOWN_OPTION_PATHS: Record<string, string> = {
   "nixos:nix.settings.experimentalFeatures": "nix.settings.experimental-features",
   "darwin:nix.settings.experimentalFeatures": "nix.settings.experimental-features",
   "home:nix.settings.experimentalFeatures": "nix.settings.experimental-features",
+  "home:sessionVariables": "home.sessionVariables",
+  "home:sessionPath": "home.sessionPath",
 };
 
 const KEBAB_NAME_PREFIXES: Record<NixScope, string[]> = {
@@ -509,6 +511,14 @@ function filterKeys(obj: Record<string, unknown>, exclude: string[]): Record<str
     }
   }
   return result;
+}
+
+function homeUsername(home: Record<string, unknown>): string | undefined {
+  const nestedHome = home.home as Record<string, unknown> | undefined;
+  const nestedUsername = nestedHome?.username;
+  if (typeof nestedUsername === "string") return nestedUsername;
+  const topLevelUsername = home.username;
+  return typeof topLevelUsername === "string" ? topLevelUsername : undefined;
 }
 
 function isPlainObject(val: unknown): val is Record<string, unknown> {

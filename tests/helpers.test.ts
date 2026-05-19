@@ -1,31 +1,30 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluate,
+  account,
+  firewall,
   generateNix,
   git,
+  home,
   host,
   activation,
-  ifDarwin,
-  ifDarwinAttrs,
-  ifLinux,
-  ifLinuxAttrs,
-  mkDefault,
-  mkForce,
-  nixStr,
+  nix,
   overlay,
   packages,
-  pkg,
+  platforms,
   platform,
   program,
-  script,
-  scriptConcat,
+  programs,
+  profile,
+  service,
+  services,
   shell,
   sysctl,
+  systemd,
   type Fragment,
   type NixosOptions,
   type ZshOptions,
   user,
-  withPkgs,
   workspace,
   zsh,
 } from "../src/index.js";
@@ -50,29 +49,36 @@ describe("curated helpers", () => {
     expect(packages(["jq"], { scope: "darwin" })).toEqual({
       darwin: { packages: ["jq"] },
     });
-    expect(packages.home("wslu")).toEqual({
-      home: { packages: ["wslu"] },
+    expect(packages(["wslu"], { scope: "homeManager" })).toEqual({
+      homeManager: { home: { packages: ["wslu"] } },
+    });
+    expect(packages.homeManager("wslu")).toEqual({
+      homeManager: { home: { packages: ["wslu"] } },
     });
   });
 
-  it("pkg() returns a Nix expression package reference", () => {
-    expect(pkg("zsh")).toEqual({
+  it("nix.pkg() returns a Nix expression package reference", () => {
+    expect(nix.pkg("zsh")).toEqual({
       __winixNixExpr: true,
       expr: "pkgs.zsh",
     });
-    expect(pkg("python3Packages.requests")).toEqual({
+    expect(nix.pkg("python3Packages.requests")).toEqual({
       __winixNixExpr: true,
       expr: "pkgs.python3Packages.requests",
     });
+    expect(nix.pkg.stable("wslu")).toEqual({
+      __winixNixExpr: true,
+      expr: "pkgs.stable.wslu",
+    });
   });
 
-  it("pkg() renders unquoted in generated Nix output", () => {
+  it("nix.pkg() renders unquoted in generated Nix output", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", nixos(), [
-          user("adrifer", { shell: pkg("zsh"), stateVersion: "24.05" }),
-          { nixos: { environment: { shells: [pkg("zsh")] } } },
+          user("adrifer", { shell: nix.pkg("zsh"), stateVersion: "24.05" }),
+          { nixos: { environment: { shells: [nix.pkg("zsh")] } } },
         ]),
       ],
     });
@@ -83,19 +89,19 @@ describe("curated helpers", () => {
     expect(hostNix).toContain("environment.shells = [ pkgs.zsh ];");
   });
 
-  it("nixStr() interpolates package refs into quoted Nix strings", () => {
-    expect(nixStr`${pkg("neovim")}/bin/nvim -d "$LOCAL" "$REMOTE"`).toEqual({
+  it("nix.str() interpolates package refs into quoted Nix strings", () => {
+    expect(nix.str`${nix.pkg("neovim")}/bin/nvim -d "$LOCAL" "$REMOTE"`).toEqual({
       __winixNixExpr: true,
       expr: '"${pkgs.neovim}/bin/nvim -d \\"$LOCAL\\" \\"$REMOTE\\""',
     });
   });
 
-  it("nixStr() renders plain strings as quoted string content", () => {
-    expect(nixStr`hello ${"world"} "${"again"}"`).toEqual({
+  it("nix.str() renders plain strings as quoted string content", () => {
+    expect(nix.str`hello ${"world"} "${"again"}"`).toEqual({
       __winixNixExpr: true,
       expr: '"hello world \\"again\\""',
     });
-    expect(nixStr`literal ${"${HOME}"}`).toEqual({
+    expect(nix.str`literal ${"${HOME}"}`).toEqual({
       __winixNixExpr: true,
       expr: '"literal \\${HOME}"',
     });
@@ -106,11 +112,13 @@ describe("curated helpers", () => {
       script: "mkdir -p \"$HOME/.config/npm\"",
     });
     expect(fragment).toEqual({
-      home: {
-        activation: {
-          ensureWritableNpmrc: {
-            __winixNixExpr: true,
-            expr: 'lib.hm.dag.entryAfter [ "writeBoundary" ] \'\'\nmkdir -p "$HOME/.config/npm"\n\'\'',
+      homeManager: {
+        home: {
+          activation: {
+            ensureWritableNpmrc: {
+              __winixNixExpr: true,
+              expr: 'lib.hm.dag.entryAfter [ "writeBoundary" ] \'\'\nmkdir -p "$HOME/.config/npm"\n\'\'',
+            },
           },
         },
       },
@@ -129,48 +137,50 @@ describe("curated helpers", () => {
 
   it("activation() supports custom after dependencies", () => {
     expect(activation("installPkgs", { after: ["writeBoundary", "ensureWritableNpmrc"], script: "npm i -g pnpm" })).toEqual({
-      home: {
-        activation: {
-          installPkgs: {
-            __winixNixExpr: true,
-            expr: 'lib.hm.dag.entryAfter [ "writeBoundary" "ensureWritableNpmrc" ] \'\'\nnpm i -g pnpm\n\'\'',
+      homeManager: {
+        home: {
+          activation: {
+            installPkgs: {
+              __winixNixExpr: true,
+              expr: 'lib.hm.dag.entryAfter [ "writeBoundary" "ensureWritableNpmrc" ] \'\'\nnpm i -g pnpm\n\'\'',
+            },
           },
         },
       },
     });
   });
 
-  it("ifDarwin() and ifLinux() render runtime conditional expressions", () => {
-    expect(ifDarwin("darwin-only")).toEqual({
+  it("nix.optionalString() renders runtime conditional expressions", () => {
+    expect(nix.optionalString(nix.isDarwin, "darwin-only")).toEqual({
       __winixNixExpr: true,
-      expr: '(if pkgs.stdenv.isDarwin then "darwin-only" else null)',
+      expr: '(lib.optionalString pkgs.stdenv.isDarwin "darwin-only")',
     });
-    expect(ifLinux("linux-only")).toEqual({
+    expect(nix.optionalString(nix.isLinux, "linux-only")).toEqual({
       __winixNixExpr: true,
-      expr: '(if pkgs.stdenv.isLinux then "linux-only" else null)',
+      expr: '(lib.optionalString pkgs.stdenv.isLinux "linux-only")',
     });
   });
 
-  it("ifDarwinAttrs() and ifLinuxAttrs() render optionalAttrs expressions", () => {
-    expect(ifDarwinAttrs({ gc: "nix-collect-garbage -d" })).toEqual({
+  it("nix.optionalAttrs() renders optionalAttrs expressions", () => {
+    expect(nix.optionalAttrs(nix.isDarwin, { gc: "nix-collect-garbage -d" })).toEqual({
       __winixNixExpr: true,
       expr: '(lib.optionalAttrs pkgs.stdenv.isDarwin { gc = "nix-collect-garbage -d"; })',
     });
-    expect(ifLinuxAttrs({ "nix-switch": "sudo nixos-rebuild switch" })).toEqual({
+    expect(nix.optionalAttrs(nix.isLinux, { "nix-switch": "sudo nixos-rebuild switch" })).toEqual({
       __winixNixExpr: true,
       expr: '(lib.optionalAttrs pkgs.stdenv.isLinux { nix-switch = "sudo nixos-rebuild switch"; })',
     });
   });
 
-  it("withPkgs() renders arbitrary package lists with pkgs in scope", () => {
-    expect(withPkgs(["icu", "zlib", "openssl"])).toEqual({
+  it("nix.withPkgs() renders arbitrary package lists with pkgs in scope", () => {
+    expect(nix.withPkgs(["icu", "zlib", "openssl"])).toEqual({
       __winixNixExpr: true,
       expr: "with pkgs; [ icu zlib openssl ]",
     });
   });
 
-  it("script() renders multiline Nix indented strings", () => {
-    expect(script(`
+  it("nix.script() renders multiline Nix indented strings", () => {
+    expect(nix.script(`
       export BROWSER=wslview
       echo "hello"
     `)).toEqual({
@@ -179,22 +189,22 @@ describe("curated helpers", () => {
     });
   });
 
-  it("scriptConcat() joins Nix expressions with plus", () => {
-    expect(scriptConcat(script("base"), ifLinux("linux"))).toEqual({
+  it("nix.concat() joins Nix expressions with plus", () => {
+    expect(nix.concat(nix.script("base"), nix.optionalString(nix.isLinux, "linux"))).toEqual({
       __winixNixExpr: true,
-      expr: '\'\'\nbase\n\'\' + (if pkgs.stdenv.isLinux then "linux" else null)',
+      expr: '\'\'\nbase\n\'\' + (lib.optionalString pkgs.stdenv.isLinux "linux")',
     });
   });
 
-  it("mkDefault() and mkForce() render lib option priority calls", () => {
+  it("nix.lib priority helpers render lib option priority calls", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", nixos(), [
           {
             nixos: {
-              wsl: { defaultUser: mkDefault("adrifer") },
-              services: { openssh: { enable: mkForce(true) } },
+              wsl: { defaultUser: nix.lib.mkDefault("adrifer") },
+              services: { openssh: { enable: nix.lib.mkForce(true) } },
             },
           },
         ]),
@@ -213,8 +223,8 @@ describe("curated helpers", () => {
       hosts: [
         host("wsl-work", nixos(), [
           {
-            home: {
-              username: "adrifer",
+            homeManager: {
+              home: { username: "adrifer" },
               programs: {
                 git: {
                   settings: {
@@ -338,7 +348,7 @@ describe("curated helpers", () => {
     expect(hostNix).not.toContain("home-manager.useGlobalPkgs");
   });
 
-  it("composes pkg(), mkDefault(), and overlay in one host", () => {
+  it("composes nix.pkg(), nix.lib.mkDefault(), and overlay in one host", () => {
     const ws = workspace({
       inputs: {
         nixpkgs: "nixos-unstable",
@@ -350,8 +360,8 @@ describe("curated helpers", () => {
       hosts: [
         host("wsl-work", nixos(), [
           overlay.stable("nixpkgs-stable"),
-          user("adrifer", { shell: pkg("zsh"), stateVersion: "24.05" }),
-          { nixos: { wsl: { defaultUser: mkDefault("adrifer") } } },
+          user("adrifer", { shell: nix.pkg("zsh"), stateVersion: "24.05" }),
+          { nixos: { wsl: { defaultUser: nix.lib.mkDefault("adrifer") } } },
         ]),
       ],
     });
@@ -373,17 +383,22 @@ describe("curated helpers", () => {
         sessionVariables: { EDITOR: "nvim" },
       })
     ).toEqual({
-      home: {
-        username: "adrifer",
-        stateVersion: "24.05",
-        home: { homeDirectory: "/home/adrifer" },
-        sessionVariables: { EDITOR: "nvim" },
+      homeManager: {
+        home: {
+          username: "adrifer",
+          stateVersion: "24.05",
+          homeDirectory: "/home/adrifer",
+          sessionVariables: { EDITOR: "nvim" },
+        },
       },
       nixos: {
         users: {
           users: {
             adrifer: {
-              shell: "pkgs.zsh",
+              shell: {
+                __winixNixExpr: true,
+                expr: "pkgs.zsh",
+              },
             },
           },
         },
@@ -409,7 +424,7 @@ describe("curated helpers", () => {
         ],
       })
     ).toEqual({
-      home: {
+      homeManager: {
         programs: {
           git: {
             enable: true,
@@ -446,7 +461,7 @@ describe("curated helpers", () => {
         envExtra: "export ZDOTDIR=$HOME",
       })
     ).toEqual({
-      home: {
+      homeManager: {
         programs: {
           zsh: {
             enable: true,
@@ -466,9 +481,11 @@ describe("curated helpers", () => {
 
   it("shell() maps environment and PATH settings to Home Manager", () => {
     expect(shell({ env: { EDITOR: "nvim" }, path: ["$HOME/.local/bin"] })).toEqual({
-      home: {
-        sessionVariables: { EDITOR: "nvim" },
-        sessionPath: ["$HOME/.local/bin"],
+      homeManager: {
+        home: {
+          sessionVariables: { EDITOR: "nvim" },
+          sessionPath: ["$HOME/.local/bin"],
+        },
       },
     });
   });
@@ -495,7 +512,7 @@ describe("curated helpers", () => {
 
   it("program() maps to Home Manager programs by default", () => {
     expect(program("starship", { enable: true })).toEqual({
-      home: { programs: { starship: { enable: true } } },
+      homeManager: { programs: { starship: { enable: true } } },
     });
   });
 
@@ -506,7 +523,7 @@ describe("curated helpers", () => {
     });
 
     expect(zshProgram).toEqual({
-      home: {
+      homeManager: {
         programs: {
           zsh: {
             enable: true,
@@ -529,7 +546,7 @@ describe("curated helpers", () => {
 
   it("program() supports empty options", () => {
     expect(program("foo")).toEqual({
-      home: { programs: { foo: {} } },
+      homeManager: { programs: { foo: {} } },
     });
   });
 
@@ -573,7 +590,82 @@ describe("curated helpers", () => {
 
   it("program.homeService() maps to Home Manager services", () => {
     expect(program.homeService("syncthing", { enable: true })).toEqual({
-      home: { services: { syncthing: { enable: true } } },
+      homeManager: { services: { syncthing: { enable: true } } },
+    });
+  });
+
+  it("profile() accepts nested fragments without spread boilerplate", () => {
+    const tools = profile("tools", [
+      packages.homeManager("ripgrep"),
+      [programs.enable("starship")],
+    ]);
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("wsl-work", nixos(), [tools()])],
+    });
+
+    const [evaluated] = evaluate(ws);
+    expect((evaluated.homeManager as any).home.packages).toContain("ripgrep");
+    expect((evaluated.homeManager as any).programs.starship.enable).toBe(true);
+  });
+
+  it("platforms.nixos() provides a typed default NixOS platform", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable", homeManager: "github:nix-community/home-manager" },
+      hosts: [host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [])],
+    });
+
+    const [evaluated] = evaluate(ws);
+    expect((evaluated.nixos as any).networking.hostName).toBe("wsl-work");
+    expect((evaluated.nixos as any).system.stateVersion).toBe("25.05");
+    expect((evaluated.nixos as any).homeManager.useGlobalPkgs).toBe(true);
+  });
+
+  it("account() configures Home Manager, NixOS users, and WSL default user", () => {
+    const wsl = profile("wsl", []);
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", platforms.nixos(), [
+          wsl(),
+          account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }),
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    expect((evaluated.homeManager as any).home.username).toBe("adrifer");
+    expect((evaluated.nixos as any).users.users.adrifer.extraGroups).toContain("wheel");
+    expect((evaluated.nixos as any).wsl.defaultUser).toEqual(nix.lib.mkDefault("adrifer"));
+  });
+
+  it("intent helpers map common system patterns", () => {
+    expect(services.enable("openssh", { settings: { PermitRootLogin: "no" } })).toEqual({
+      nixos: { services: { openssh: { enable: true, settings: { PermitRootLogin: "no" } } } },
+    });
+    expect(service("nginx")).toEqual({
+      nixos: { services: { nginx: { enable: true } } },
+    });
+    expect(systemd.service("demo", { description: "Demo" })).toEqual({
+      nixos: { systemd: { services: { demo: { description: "Demo" } } } },
+    });
+    expect(systemd.timer("demo", { wantedBy: ["timers.target"] })).toEqual({
+      nixos: { systemd: { timers: { demo: { wantedBy: ["timers.target"] } } } },
+    });
+    expect(firewall.tcp(80, 443)).toEqual({
+      nixos: { networking: { firewall: { allowedTCPPorts: [80, 443] } } },
+    });
+    expect(home.env({ EDITOR: "nvim" })).toEqual({
+      homeManager: { home: { sessionVariables: { EDITOR: "nvim" } } },
+    });
+    expect(home.path("~/.local/bin")).toEqual({
+      homeManager: { home: { sessionPath: ["~/.local/bin"] } },
+    });
+    expect(home.configFile("nvim/init.lua", { text: "vim.o.number = true" })).toEqual({
+      homeManager: { xdg: { configFile: { "nvim/init.lua": { text: "vim.o.number = true" } } } },
+    });
+    expect(nix.gc({ olderThan: "14d" })).toEqual({
+      nixos: { nix: { gc: { automatic: true, dates: "weekly", options: "--delete-older-than 14d" } } },
     });
   });
 
@@ -585,30 +677,30 @@ describe("curated helpers", () => {
           {
             nixos: {
               wsl: {
-                extraBin: [{ src: nixStr`${pkg("coreutils")}/bin/mkdir` }],
+                extraBin: [{ src: nix.bin("coreutils", "mkdir") }],
               },
               programs: {
                 "nix-ld": {
-                  libraries: withPkgs(["icu", "zlib", "openssl"]),
+                  libraries: nix.withPkgs(["icu", "zlib", "openssl"]),
                 },
               },
             },
-            home: {
+            homeManager: {
               programs: {
                 git: {
                   settings: {
                     difftool: {
                       nvimdiff: {
-                        cmd: nixStr`${pkg("neovim")}/bin/nvim -d "$LOCAL" "$REMOTE"`,
+                        cmd: nix.str`${nix.pkg("neovim")}/bin/nvim -d "$LOCAL" "$REMOTE"`,
                       },
                     },
                   },
                 },
                 zsh: {
-                  shellAliases: ifDarwinAttrs({ gc: "nix-collect-garbage -d" }),
-                  initContent: scriptConcat(
-                    script("export ZVM_VI_INSERT_ESCAPE_BINDKEY=jj"),
-                    ifLinux("export BROWSER=wslview")
+                  shellAliases: nix.optionalAttrs(nix.isDarwin, { gc: "nix-collect-garbage -d" }),
+                  initContent: nix.concat(
+                    nix.script("export ZVM_VI_INSERT_ESCAPE_BINDKEY=jj"),
+                    nix.optionalString(nix.isLinux, "export BROWSER=wslview")
                   ),
                 },
               },
@@ -632,7 +724,7 @@ describe("curated helpers", () => {
       'programs.zsh.shellAliases = (lib.optionalAttrs pkgs.stdenv.isDarwin { gc = "nix-collect-garbage -d"; });'
     );
     expect(hostNix).toContain(
-      'programs.zsh.initContent = \'\'\nexport ZVM_VI_INSERT_ESCAPE_BINDKEY=jj\n\'\' + (if pkgs.stdenv.isLinux then "export BROWSER=wslview" else null);'
+      'programs.zsh.initContent = \'\'\nexport ZVM_VI_INSERT_ESCAPE_BINDKEY=jj\n\'\' + (lib.optionalString pkgs.stdenv.isLinux "export BROWSER=wslview");'
     );
     expect(hostNix).toContain("home.activation.ensureWritableNpmrc = lib.hm.dag.entryAfter");
   });
@@ -644,7 +736,7 @@ describe("curated helpers", () => {
         host("wsl-work", nixos(), [
           user("adrifer", { shell: "zsh", stateVersion: "24.05" }),
           packages("ripgrep"),
-          packages.home("wslu"),
+          packages.homeManager("wslu"),
           git({
             userName: "Adrian Fernandez Garcia",
             defaultBranch: "main",
@@ -670,8 +762,8 @@ describe("curated helpers", () => {
     });
 
     const [evaluated] = evaluate(ws);
-    expect((evaluated.home as any).programs.git.enable).toBe(true);
-    expect((evaluated.home as any).programs.zsh.enableCompletion).toBe(false);
+    expect((evaluated.homeManager as any).programs.git.enable).toBe(true);
+    expect((evaluated.homeManager as any).programs.zsh.enableCompletion).toBe(false);
 
     const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
     expect(hostNix).toContain("environment.systemPackages = with pkgs; [ ripgrep ];");
@@ -686,7 +778,7 @@ describe("curated helpers", () => {
     expect(hostNix).toContain("programs.starship.enable = true;");
     expect(hostNix).toContain("services.openssh.enable = true;");
     expect(hostNix).toContain("services.syncthing.enable = true;");
-    expect(hostNix).toContain("sessionVariables.EDITOR = \"nvim\";");
+    expect(hostNix).toContain("home.sessionVariables.EDITOR = \"nvim\";");
     expect(hostNix).toContain("\"fs.inotify.max_user_watches\" = 1048576;");
   });
 

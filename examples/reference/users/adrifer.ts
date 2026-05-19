@@ -1,14 +1,9 @@
-import { feature, user } from "winix";
+import { account, profile } from "winix";
 
 /**
  * @description User account configuration
  * @category user
  */
-export const adrifer = feature("adrifer", () => [
-  user("adrifer"),
-  {
-    nixos: {
-      users: { users: { adrifer: { isNormalUser: true } } },
-    },
-  },
+export const adrifer = profile("adrifer", [
+  account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }),
 ]);

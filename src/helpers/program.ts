@@ -12,7 +12,7 @@ export interface ProgramHelper {
 
 export const program: ProgramHelper = Object.assign(
   <T extends ProgramOpts = ProgramOpts>(name: string, opts: T = {} as T): Fragment => ({
-    home: { programs: { [name]: opts } },
+    homeManager: { programs: { [name]: opts } },
   }),
   {
     service: <T extends ProgramOpts = ProgramOpts>(
@@ -37,7 +37,7 @@ export const program: ProgramHelper = Object.assign(
       name: string,
       opts: T = {} as T
     ): Fragment => ({
-      home: { services: { [name]: opts } },
+      homeManager: { services: { [name]: opts } },
     }),
   }
 );

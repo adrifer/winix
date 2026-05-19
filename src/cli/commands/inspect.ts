@@ -11,7 +11,7 @@ export async function inspect(cwd: string): Promise<void> {
     console.log(`\n${analysis.name}`);
     console.log(`  platform: ${analysis.platform}`);
     console.log(`  fragments: ${analysis.fragments.map((f) => f.label).join(" -> ")}`);
-    for (const scope of ["nixos", "home", "darwin"] as const) {
+    for (const scope of ["nixos", "homeManager", "darwin"] as const) {
       const keys = new Set<string>();
       for (const record of analysis.fragments) {
         const data = record.fragment[scope];

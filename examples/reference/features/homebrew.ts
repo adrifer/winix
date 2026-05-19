@@ -1,5 +1,4 @@
 import { feature } from "winix";
-import { inputs } from "../inputs";
 
 /**
  * @description Homebrew package manager for macOS via nix-homebrew
@@ -7,7 +6,9 @@ import { inputs } from "../inputs";
  */
 export const homebrew = feature("homebrew", () => ({
   darwin: {
-    imports: [inputs.nixHomebrew],
+    "nix-homebrew": {
+      user: "adrifer",
+    },
     homebrew: { enable: true },
   },
 }));

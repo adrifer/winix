@@ -1,4 +1,4 @@
-import { feature, packages, type Fragment } from "winix";
+import { packages, profile } from "winix";
 import { git } from "../features/git";
 import { neovim } from "../features/neovim";
 import { zsh } from "../features/zsh";
@@ -10,7 +10,7 @@ import { zoxide } from "../features/zoxide";
  * @description Developer role: composes shell, tools, and common packages
  * @category role
  */
-export const developer = feature("developer", (): Fragment[] => [
+export const developer = profile("developer", [
   git(),
   neovim(),
   zsh(),
