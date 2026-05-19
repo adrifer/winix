@@ -31,8 +31,8 @@
 
 ### Helpers (2026-05-18)
 - [x] `rawModule()` / `rawModule.homeManager()` / `rawModule.darwin()` — incremental migration
-- [x] Curated: `packages()`, `user()`, `git()`, `zsh()`, `shell()`, `sysctl()`
-- [x] Generic: `program()`, `program.service()`, `program.nixos()`, `program.darwin()`, `program.homeService()`
+- [x] Curated: `packages()`, `account()`, `zsh()`, `sysctl()`
+- [x] Namespace helpers: `home.program()`, `home.service()`, `home.env()`, `home.path()`, `services.enable()`
 - [x] `nix.expr()` — inline Nix expressions
 - [x] `raw.nixos()` / `raw.homeManager()` / `raw.darwin()` — verbatim Nix blocks
 - [x] `nix.pkg()` — unquoted `pkgs.*` references
@@ -145,7 +145,7 @@ PowerShell) using the same fragment/helper model.
 | `.winix/out/` gitignored | Generated output is per-machine. Not source of truth. | 2026-05-17 |
 | `path:` prefix for nixos-rebuild | Bypasses git tracking requirement for gitignored output. | 2026-05-17 |
 | Fragment keys match Nix option names | Use `"experimental-features"` not `experimentalFeatures`. Avoids mapping bugs. | 2026-05-17 |
-| Three abstraction levels | Curated helpers → `program()` generic → raw fragments. Progressive disclosure. | 2026-05-18 |
+| Namespace-first helpers | Prefer scoped helpers like `home.program()` and `services.enable()` over ambiguous generic helpers. | 2026-05-18 |
 | Static types + dynamic generation | Ship hand-written types for instant DX; generate full types from channel for complete coverage. | 2026-05-18 |
 | LLM-first design | Fragments, helpers, and docs should be optimized for AI agents to discover and use correctly. | 2026-05-18 |
 | Unified Nix expression namespace | Public raw expression helpers live under `nix.*` to reduce import sprawl and make escape hatches discoverable. | 2026-05-19 |

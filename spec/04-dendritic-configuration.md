@@ -31,8 +31,8 @@ export default workspace({
     platform("darwin", darwinBase()),
     platform("windows", windowsBase()),
 
-    role("developer", [features.git(), features.node(), features.editor()]),
-    user("adrifer", [features.shell(), features.dotfiles()]),
+    profile("developer", [features.git(), features.node(), features.editor()]),
+    account("adrifer", { shell: "zsh" }),
 
     host("wsl-work", {
       extends: ["nixos", "developer", "adrifer"],
@@ -66,4 +66,3 @@ Rationale:
 - Refactor-safe: moving a file updates the import, not a hidden convention.
 
 The existing Nix `import-tree.nix` pattern (scan directory for `.nix` files) is a migration anti-pattern that Winix should not replicate.
-

@@ -50,5 +50,5 @@ export { evaluate } from "./evaluator/index.ts";
 export type { EvaluatedHost } from "./evaluator/index.ts";
 export { generateNix } from "./backends/nix/index.ts";
 export type { NixOutput } from "./backends/nix/index.ts";
-export { account, activation, firewall, git, home, nix, overlay, packages, platforms, program, programs, service, services, shell, sysctl, systemd, user, zsh } from "./helpers/index.ts";
-export type { AccountOpts, ActivationOpts, DarwinPlatformOpts, FirewallHelper, GitOpts, HomeHelper, NixGcHelperOpts, NixNamespace, NixosPlatformOpts, OverlayHelper, PackagesHelper, PackagesOpts, PkgHelper, PlatformsHelper, ProgramHelper, ProgramsHelper, ScriptHelper, ServicesHelper, ShellOpts, SysctlSettings, SystemdHelper, UserOpts, ZshOpts } from "./helpers/index.ts";
+export { account, activation, firewall, home, nix, overlay, packages, platforms, service, services, sysctl, systemd, zsh } from "./helpers/index.ts";
+export type { AccountOpts, ActivationOpts, DarwinPlatformOpts, FirewallHelper, HomeHelper, NixGcHelperOpts, NixNamespace, NixosPlatformOpts, OverlayHelper, PackagesHelper, PackagesOpts, PkgHelper, PlatformsHelper, ScriptHelper, ServicesHelper, SysctlSettings, SystemdHelper, ZshOpts } from "./helpers/index.ts";

@@ -55,19 +55,19 @@ profile("name", [...])
 feature("name", () => ...)
 ```
 
-### What to deprecate/remove:
+### What to remove:
 
 | Helper | Replacement | Action |
 |--------|-------------|--------|
-| `program("X", opts)` | `home.program("X", opts)` | Deprecate (keep as alias for compat) |
-| `program.service("X", opts)` | `services.enable("X", opts)` | Deprecate |
+| `program("X", opts)` | `home.program("X", opts)` | Remove |
+| `program.service("X", opts)` | `services.enable("X", opts)` | Remove |
 | `program.nixos("X", opts)` | Inline `{ nixos: { X: opts } }` | Remove (rare use case) |
 | `program.darwin("X", opts)` | Inline `{ darwin: { X: opts } }` | Remove (rare use case) |
-| `program.homeService("X", opts)` | `home.service("X", opts)` | Deprecate |
-| `programs.enable("X", opts)` | `home.program("X", opts)` | Deprecate |
+| `program.homeService("X", opts)` | `home.service("X", opts)` | Remove |
+| `programs.enable("X", opts)` | `home.program("X", opts)` | Remove |
 | `git(opts)` | `home.program("git", opts)` | Remove (no added value) |
 | `zsh(opts)` | Keep IF it adds real defaults | Evaluate |
-| `user(name, opts)` | `account(name, opts)` | Deprecate |
+| `user(name, opts)` | `account(name, opts)` | Remove |
 | `shell(opts)` | `home.env()` + `home.path()` | Remove |
 
 ### Curated helpers — keep only if they add real value:
@@ -106,8 +106,8 @@ home.program("git", { enable: false })  // → { enable: false }
 
 1. Add `home.program()` and `home.service()` to the `home` namespace
 2. Update dotfiles to use new API
-3. Mark old helpers as `@deprecated` with JSDoc pointing to replacement
-4. Remove deprecated helpers in a future breaking version (or keep as aliases forever, they're tiny)
+3. Remove old helpers and exports
+4. Use plain fragments for former `program.nixos()` and `program.darwin()` cases
 
 ## Before/After for dotfiles:
 
@@ -137,8 +137,8 @@ export const git = feature("git", () =>
 
 Consistent, one import (`home`), one pattern.
 
-## Open questions:
+## Decisions:
 
-1. Should `home.program()` emit under `home:` or `homeManager:`? (depends on the home/homeManager unification decision)
-2. Do we keep `program()` as a low-level escape hatch (no enable, no namespace), or kill it entirely?
-3. Should `zsh()` stay as a curated helper alongside `home.program("zsh", ...)`?
+1. `home.program()` emits under `homeManager.programs`.
+2. The generic `program()` family is removed.
+3. `zsh()` stays as a curated helper because it adds defaults and plugin mapping.

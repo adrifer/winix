@@ -1,180 +1,99 @@
-# Spec 24 — Generic `program()` Helper
+# Spec 24 — Home Manager Program Helpers
 
 ## Overview
 
-A generic helper that wraps any Home Manager or NixOS program/service into a fragment
-without requiring a dedicated named helper. Sits between the curated helpers (spec 20)
-and raw fragment objects in the abstraction ladder:
-
-1. **Curated helpers** (`git()`, `zsh()`) — max ergonomics, limited scope
-2. **`program()`** — generic, any program, still cleaner than raw fragments
-3. **Raw fragments** — full control, verbose
+Home Manager programs and services are configured through the `home` namespace.
+This replaces the older generic `program()` helper family.
 
 ## API
 
 ```ts
-function program(name: string, opts?: Record<string, unknown>): Fragment;
-function program<T>(name: string, opts?: T): Fragment;
+home.program(name: string, opts?: Record<string, unknown>): Fragment;
+home.program<T>(name: string, opts?: T): Fragment;
+
+home.service(name: string, opts?: Record<string, unknown>): Fragment;
+home.service<T>(name: string, opts?: T): Fragment;
 ```
 
-### Basic Usage
+## Basic Usage
 
 ```ts
-import { program } from "winix";
+import { feature, home } from "winix";
 
-// Home Manager program (default scope)
-program("starship", { enable: true })
-// → { homeManager: { programs: { starship: { enable: true } } } }
+export const starship = feature("starship", () =>
+  home.program("starship")
+);
+// -> { homeManager: { programs: { starship: { enable: true } } } }
 
-program("tmux", {
-  enable: true,
-  terminal: "tmux-256color",
-  keyMode: "vi",
-  plugins: ["tmux-sensible", "tmux-yank"],
-})
-// → { homeManager: { programs: { tmux: { enable: true, terminal: ..., ... } } } }
+export const fzf = feature("fzf", () =>
+  home.program("fzf", { enableZshIntegration: true })
+);
+// -> { homeManager: { programs: { fzf: { enable: true, enableZshIntegration: true } } } }
 
-// NixOS service
-program.service("openssh", { enable: true, settings: { PermitRootLogin: "no" } })
-// → { nixos: { services: { openssh: { enable: true, settings: { ... } } } } }
-
-// NixOS program
-program.nixos("nix", { settings: { "experimental-features": "nix-command flakes" } })
-// → { nixos: { nix: { settings: { ... } } } }
+export const syncthing = feature("syncthing", () =>
+  home.service("syncthing", { tray: true })
+);
+// -> { homeManager: { services: { syncthing: { enable: true, tray: true } } } }
 ```
 
-## Scope Variants
+`enable` is injected by default and can be explicitly overridden:
 
-| Function | Target path | Use case |
+```ts
+home.program("git", { enable: false })
+// -> { homeManager: { programs: { git: { enable: false } } } }
+```
+
+## Scope Rules
+
+| Function | Target path | Behavior |
 |----------|-------------|----------|
-| `program(name, opts)` | `homeManager.programs.<name>` | Home Manager programs (default) |
-| `program.service(name, opts)` | `nixos.services.<name>` | NixOS services |
-| `program.nixos(name, opts)` | `nixos.<name>` | Top-level NixOS options (nix, networking, etc.) |
-| `program.darwin(name, opts)` | `darwin.<name>` | Top-level nix-darwin options |
-| `program.homeService(name, opts)` | `homeManager.services.<name>` | Home Manager services |
+| `home.program(name, opts)` | `homeManager.programs.<name>` | Adds `enable: true` by default |
+| `home.service(name, opts)` | `homeManager.services.<name>` | Adds `enable: true` by default |
+
+NixOS services use `services.enable()`. Top-level NixOS and nix-darwin options use
+plain fragments for now:
+
+```ts
+services.enable("openssh", { settings: { PermitRootLogin: "no" } })
+
+{ nixos: { nix: { settings: { "experimental-features": "nix-command flakes" } } } }
+{ darwin: { homebrew: { enable: true } } }
+```
+
+## Removed Helpers
+
+The following helpers are removed from the public API:
+
+- `program()`
+- `program.service()`
+- `program.nixos()`
+- `program.darwin()`
+- `program.homeService()`
+- `programs.enable()`
 
 ## Design Decisions
 
-### Why not just raw fragments?
+### Namespace-first API
 
-Compare:
-```ts
-// Raw fragment (37 chars of nesting boilerplate)
-{ homeManager: { programs: { starship: { enable: true } } } }
+`home.program("git")` clearly communicates both scope and target. The old
+`program("git")` name hid that it wrote to Home Manager, and `program.nixos()`
+was misleading because it wrote arbitrary top-level NixOS options.
 
-// program() (immediately clear what it does)
-program("starship", { enable: true })
-```
+### Auto-enable by default
 
-The value increases with deeper nesting:
-```ts
-// Raw
-{ nixos: { services: { openssh: { enable: true, settings: { PermitRootLogin: "no" } } } } }
-
-// program.service()
-program.service("openssh", { enable: true, settings: { PermitRootLogin: "no" } })
-```
-
-### `enable: true` is NOT implicit
-
-Many Nix programs require `enable = true`, but not all options objects need it.
-The helper does NOT auto-inject `enable: true` — users write it explicitly.
-This keeps the mapping 1:1 with Nix and avoids surprises.
+Home Manager programs and services almost always need `enable = true`, so the
+helper injects it by default while preserving explicit override behavior.
 
 ### Options are pass-through
 
-The `opts` object is placed directly at the target path without transformation.
-No camelCase mapping, no key renaming. What you write is what you get.
-This makes it predictable and debuggable.
-
-Future: when generated types land (P2), `program<ZshOptions>("zsh", { ... })`
-gives full autocomplete without any runtime cost.
-
-## Type Parameter (Future)
-
-```ts
-// Without types (works today)
-program("tmux", { enable: true, keyMode: "vi" })
-
-// With generated types (P2, future)
-import type { TmuxOptions } from "winix/types";
-program<TmuxOptions>("tmux", { enable: true, keyMode: "vi" })
-// ^ full autocomplete + type checking
-```
-
-The type parameter is optional and doesn't change runtime behavior.
-It's purely for DX when types are available.
-
-## Implementation
-
-### File: `src/helpers/program.ts`
-
-```ts
-import type { Fragment } from "../core/types.ts";
-
-export interface ProgramHelper {
-  (name: string, opts?: Record<string, unknown>): Fragment;
-  service(name: string, opts?: Record<string, unknown>): Fragment;
-  nixos(name: string, opts?: Record<string, unknown>): Fragment;
-  darwin(name: string, opts?: Record<string, unknown>): Fragment;
-  homeService(name: string, opts?: Record<string, unknown>): Fragment;
-}
-
-export const program: ProgramHelper = Object.assign(
-  (name: string, opts: Record<string, unknown> = {}): Fragment => ({
-    homeManager: { programs: { [name]: opts } },
-  }),
-  {
-    service: (name: string, opts: Record<string, unknown> = {}): Fragment => ({
-      nixos: { services: { [name]: opts } },
-    }),
-    nixos: (name: string, opts: Record<string, unknown> = {}): Fragment => ({
-      nixos: { [name]: opts },
-    }),
-    darwin: (name: string, opts: Record<string, unknown> = {}): Fragment => ({
-      darwin: { [name]: opts },
-    }),
-    homeService: (name: string, opts: Record<string, unknown> = {}): Fragment => ({
-      homeManager: { services: { [name]: opts } },
-    }),
-  }
-);
-```
-
-### Export from `src/helpers/index.ts` and `src/index.ts`
-
-Add `program` to the public API exports.
+The options object is merged directly into the target option set after
+`enable: true`. No option keys are renamed.
 
 ## Testing
 
-`tests/helpers.test.ts` (append to existing):
+`tests/helpers.test.ts` covers:
 
-1. `program("starship", { enable: true })` → correct fragment shape
-2. `program.service("openssh", { ... })` → nixos.services path
-3. `program.nixos("nix", { ... })` → nixos top-level
-4. `program.darwin("homebrew", { ... })` → darwin top-level
-5. `program.homeService("syncthing", { ... })` → home.services path
-6. Composition test: `program()` + curated helper in same host, verify Nix output
-7. Empty opts: `program("foo")` → `{ homeManager: { programs: { foo: {} } } }`
-
-## Migration of Examples
-
-After implementing, optionally update `examples/reference/features/` to show
-`program()` for simpler cases like starship, fzf, zoxide:
-
-```ts
-// Before
-export const starship = feature("starship", () => ({
-  homeManager: { programs: { starship: { enable: true } } },
-}));
-
-// After
-export const starship = feature("starship", () => program("starship", { enable: true }));
-```
-
-## Non-Goals
-
-- Auto-injecting `enable: true`
-- camelCase → kebab-case transformation (separate spec)
-- Type generation (P2, separate spec)
-- Validation of option names against nixpkgs schema
+1. `home.program("starship")` -> enabled Home Manager program
+2. `home.program("zsh", { enable: false })` -> explicit override wins
+3. `home.service("syncthing")` -> enabled Home Manager service
+4. Composition through `profile()` and generated Nix output

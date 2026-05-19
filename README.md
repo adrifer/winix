@@ -12,7 +12,7 @@ Write your system config in TypeScript. Get type safety, autocomplete, and compo
 
 ```ts
 // winix.config.ts
-import { account, feature, host, input, defineInputs, platforms, workspace } from "winix";
+import { account, feature, home, host, input, defineInputs, platforms, workspace } from "winix";
 
 const inputs = defineInputs({
   nixpkgs: "nixos-unstable",
@@ -31,14 +31,10 @@ const wsl = feature("wsl", () => ({
   },
 }));
 
-const neovim = feature("neovim", () => ({
-  homeManager: {
-    home: {
-      packages: ["neovim"],
-      sessionVariables: { EDITOR: "nvim" },
-    },
-  },
-}));
+const neovim = feature("neovim", () => [
+  home.packages("neovim"),
+  home.env({ EDITOR: "nvim" }),
+]);
 
 export default workspace({
   inputs,
@@ -95,9 +91,7 @@ sudo nixos-rebuild test --flake path:$(pwd)/.winix/out#wsl-work
 Everything is a function that returns configuration data:
 
 ```ts
-const starship = feature("starship", () => ({
-  homeManager: { programs: { starship: { enable: true } } },
-}));
+const starship = feature("starship", () => home.program("starship"));
 ```
 
 ### Composite Fragments
@@ -106,7 +100,7 @@ A fragment can compose other fragments:
 
 ```ts
 const developer = feature("developer", () => [
-  git(),
+  home.program("git"),
   neovim(),
   starship(),
   zsh(),

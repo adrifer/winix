@@ -193,7 +193,8 @@ The frontend DX helpers are normal fragments before backend generation:
 | `home.env(vars)` | `home.sessionVariables.*` inside the Home Manager module |
 | `home.path(paths)` | `home.sessionPath` inside the Home Manager module |
 | `home.configFile(name, opts)` | `xdg.configFile.name = opts` inside the Home Manager module |
-| `programs.enable("starship", opts)` | `programs.starship = { enable = true; ... }` inside the Home Manager module |
+| `home.program("starship", opts)` | `programs.starship = { enable = true; ... }` inside the Home Manager module |
+| `home.service("syncthing", opts)` | `services.syncthing = { enable = true; ... }` inside the Home Manager module |
 | `nix.gc({ olderThan })` | `nix.gc` settings for NixOS |
 
 ## Nix expression namespace

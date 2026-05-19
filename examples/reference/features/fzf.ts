@@ -1,9 +1,9 @@
-import { feature, programs } from "winix";
+import { feature, home } from "winix";
 
 /**
  * @description Fuzzy finder with shell integration
  * @category shell
  */
 export const fzf = feature("fzf", () =>
-  programs.enable("fzf")
+  home.program("fzf")
 );

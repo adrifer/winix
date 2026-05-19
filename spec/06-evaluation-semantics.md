@@ -124,7 +124,7 @@ In the flat fragment model, precedence is determined by **list order** (later wi
 
 ```ts
 host("example", nixos(), [
-  developer(),  // expands to [git(), zsh(), neovim(), ...] at positions 0-N
+  developer(),  // expands to [home.program("git"), zsh(), neovim(), ...] at positions 0-N
   wsl(),        // position N+1
   packages(override(["custom"])),  // position N+2, highest precedence
 ]);

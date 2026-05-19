@@ -2,125 +2,100 @@
 
 ## Overview
 
-First-party helpers that wrap common NixOS/Home Manager/nix-darwin patterns into
-ergonomic, typed functions. These live in `src/helpers/` and are exported from `winix`.
-
-Users can always fall back to raw fragment objects for anything not covered.
+First-party helpers wrap common NixOS, Home Manager, and nix-darwin patterns into
+ergonomic fragments. Users can always fall back to plain fragment objects for
+anything not covered.
 
 ## Design Principles
 
-1. **Helpers return `Fragment`** — they compose just like any other fragment.
-2. **Opinionated but overridable** — sensible defaults, all options optional.
-3. **No magic** — a helper is sugar over the same fragment shape users write manually.
-4. **Scope-aware** — each helper knows whether it targets `nixos`, `homeManager`, or `darwin`.
-5. **Typed options** — each helper has a dedicated interface exported from `winix`.
+1. **Helpers return `Fragment` or `LazyFragment`** — they compose like any other fragment.
+2. **Namespace-first** — helper names should reveal their target scope.
+3. **Opinionated but overridable** — sensible defaults, with explicit overrides.
+4. **No hidden key conversion** — option keys are passed through as written.
+5. **Typed options** — helper option interfaces are exported from `winix`.
 
-## Helpers to Implement
+## Helpers
 
 ### `packages(...names: string[]): Fragment`
 
-System-level packages (NixOS `environment.systemPackages` / darwin `environment.systemPackages`).
+System-level packages.
 
 ```ts
 packages("ripgrep", "fd", "jq")
-// → { nixos: { packages: ["ripgrep", "fd", "jq"] } }
-// On darwin hosts: { darwin: { packages: ["ripgrep", "fd", "jq"] } }
+packages.homeManager("wslu")
+packages.darwin("mas")
 ```
 
-**Behavior:** Returns `nixos.packages` by default. When composed into a darwin-only host
-(no NixOS platform), the evaluator already routes to `darwin`. The helper is scope-agnostic —
-it puts packages in the appropriate top-level key based on a `scope` option or defaults to
-`nixos` (the backend already handles the `packages` → `environment.systemPackages` mapping).
-
 Options:
+
 ```ts
 interface PackagesOpts {
-  scope?: "nixos" | "homeManager" | "darwin"; // default: "nixos"
+  scope?: "nixos" | "homeManager" | "darwin";
 }
 ```
 
-Overload: `packages.homeManager(...names)` → shorthand for `{ homeManager: { home: { packages: [...] } } }`
+### `account(username: string, opts?: AccountOpts): LazyFragment`
 
-### `user(username: string, opts?: UserOpts): Fragment`
-
-Declares the Home Manager user and common user-level settings.
+Declares Home Manager user settings and platform-specific system user settings.
 
 ```ts
-user("adrifer", {
+account("adrifer", {
+  admin: true,
   shell: "zsh",
-  homeDirectory: "/home/adrifer",
-  stateVersion: "24.05",
+  stateVersion: "25.05",
+  wslDefault: true,
 })
 ```
 
 Options:
+
 ```ts
-interface UserOpts {
-  shell?: string;           // login shell program name (e.g. "zsh")
-  homeDirectory?: string;   // override home dir (default: /home/<username>)
-  stateVersion?: string;    // HM stateVersion
+interface AccountOpts {
+  admin?: boolean;
+  shell?: string | PackageRef;
+  homeDirectory?: string;
+  stateVersion?: string;
   sessionVariables?: Record<string, string>;
+  groups?: string[];
+  uid?: number;
+  wslDefault?: boolean;
 }
 ```
 
-Output:
-```ts
-{
-  homeManager: {
-    home: {
-      username,
-      ...(opts.stateVersion && { stateVersion: opts.stateVersion }),
-      ...(opts.homeDirectory && { homeDirectory: opts.homeDirectory }),
-      ...(opts.sessionVariables && { sessionVariables: opts.sessionVariables }),
-    },
-  },
-  nixos: {
-    ...(opts.shell && { users: { users: { [username]: { shell: `pkgs.${opts.shell}` } } } }),
-  },
-}
-```
+### `home.program(name, opts?): Fragment`
 
-### `git(opts: GitOpts): Fragment`
-
-Git configuration via Home Manager `programs.git`.
+Home Manager program configuration with `enable: true` by default.
 
 ```ts
-git({
+home.program("git", {
   userName: "Adrian Fernandez Garcia",
   userEmail: "tracker086@outlook.com",
-  defaultBranch: "main",
-  difftool: "nvimdiff",
-  includes: [
-    { condition: "gitdir:~/work/", user: { email: "adrifer@microsoft.com" } },
-  ],
+  extraConfig: {
+    init: { defaultBranch: "main" },
+    diff: { tool: "nvimdiff" },
+  },
 })
+
+home.program("fzf", { enableZshIntegration: true })
+home.program("git", { enable: false })
 ```
 
-Options:
+Output: `{ homeManager: { programs: { [name]: { enable: true, ...opts } } } }`.
+Explicit `enable` in `opts` wins.
+
+### `home.service(name, opts?): Fragment`
+
+Home Manager service configuration with `enable: true` by default.
+
 ```ts
-interface GitOpts {
-  userName?: string;
-  userEmail?: string;
-  defaultBranch?: string;
-  difftool?: string;
-  signing?: { key: string; format?: "ssh" | "gpg" };
-  aliases?: Record<string, string>;
-  extraConfig?: Record<string, unknown>;
-  includes?: GitInclude[];
-}
-
-interface GitInclude {
-  condition?: string;
-  user?: { name?: string; email?: string };
-  contents?: Record<string, unknown>;
-}
+home.service("syncthing", { tray: true })
 ```
 
-Output: `{ homeManager: { programs: { git: { enable: true, ...mappedOpts } } } }`
+Output: `{ homeManager: { services: { [name]: { enable: true, ...opts } } } }`.
 
 ### `zsh(opts?: ZshOpts): Fragment`
 
-Zsh shell with common plugins and settings via Home Manager `programs.zsh`.
+Curated zsh helper with defaults and ergonomic plugin mapping.
 
 ```ts
 zsh({
@@ -130,99 +105,71 @@ zsh({
 })
 ```
 
-Options:
-```ts
-interface ZshOpts {
-  aliases?: Record<string, string>;
-  plugins?: string[];         // plugin names (resolved to HM plugin objects)
-  viMode?: boolean;           // enable vi-mode (default: false)
-  autosuggestions?: boolean;  // default: true
-  completion?: boolean;       // default: true
-  syntaxHighlighting?: boolean; // default: true
-  initExtra?: string;         // extra zshrc lines
-  envExtra?: string;          // extra zshenv lines
-}
-```
+Defaults: `autosuggestions: true`, `completion: true`, and
+`syntaxHighlighting: true`.
 
-Defaults: `autosuggestions: true`, `completion: true`, `syntaxHighlighting: true`.
+### `home.env()` / `home.path()`
 
-Output: `{ homeManager: { programs: { zsh: { enable: true, ...mappedOpts } } } }`
-
-### `shell(opts: ShellOpts): Fragment`
-
-Cross-cutting shell environment (env vars, PATH additions). Scope: Home Manager.
+Home Manager shell environment helpers.
 
 ```ts
-shell({
-  env: { EDITOR: "nvim", BROWSER: "wslview" },
-  path: ["$HOME/.local/bin", "$HOME/go/bin"],
-})
+home.env({ EDITOR: "nvim", BROWSER: "wslview" })
+home.path("$HOME/.local/bin", "$HOME/go/bin")
 ```
 
-Options:
-```ts
-interface ShellOpts {
-  env?: Record<string, string>;
-  path?: string[];
-}
-```
+### `home.packages()` / `home.configFile()`
 
-Output:
-```ts
-{
-  homeManager: {
-    home: {
-      sessionVariables: opts.env,
-      sessionPath: opts.path,
-    },
-  },
-}
-```
-
-### `sysctl(settings: Record<string, number | string>): Fragment`
-
-NixOS kernel sysctl settings.
+Home Manager package and XDG config-file helpers.
 
 ```ts
-sysctl({ "net.core.rmem_max": 2500000, "fs.inotify.max_user_watches": 1048576 })
+home.packages("neovim", "ripgrep")
+home.configFile("nvim/init.lua", { text: "vim.o.number = true" })
 ```
 
-Output: `{ nixos: { boot: { kernel: { sysctl: settings } } } }`
+### `services.enable(name, opts?): Fragment`
+
+NixOS service configuration with `enable: true` by default.
+
+```ts
+services.enable("openssh", { settings: { PermitRootLogin: "no" } })
+```
+
+### `systemd`, `firewall`, `sysctl`, and `nix.gc`
+
+Intent helpers for common NixOS patterns:
+
+```ts
+systemd.service("backup", { script: nix.script`echo backup` })
+systemd.timer("backup", { wantedBy: ["timers.target"] })
+firewall.tcp(80, 443)
+sysctl({ "fs.inotify.max_user_watches": 1048576 })
+nix.gc({ olderThan: "14d" })
+```
+
+## Removed Helpers
+
+These older helpers are intentionally not part of the public API:
+
+- `program()` and all `program.*` variants
+- `programs.enable()`
+- `git()`
+- `user()`
+- `shell()`
+
+Use `home.program()`, `home.service()`, `account()`, `home.env()`,
+`home.path()`, `services.enable()`, or plain fragments instead.
 
 ## File Structure
 
-```
+```text
 src/helpers/
-├── index.ts          # re-exports all helpers
+├── account.ts
+├── home.ts
 ├── packages.ts
-├── user.ts
-├── git.ts
+├── services.ts
 ├── zsh.ts
-├── shell.ts
-└── sysctl.ts
+├── sysctl.ts
+└── ...
 ```
 
-All exported from `src/index.ts` (the public API entry point).
-
-## Testing
-
-Each helper needs tests verifying:
-1. Default output shape is correct
-2. All options are respected
-3. Composes correctly with other fragments in a host
-4. Type-checks (no `any` leaks)
-
-Add tests to `tests/helpers.test.ts`.
-
-## Migration of Examples
-
-After implementing, update `examples/reference/features/` to use the new helpers
-where appropriate. The existing `feature("git", ...)` etc. should still work (helpers
-are additive), but examples should showcase the cleaner API.
-
-## Non-Goals (for this task)
-
-- Type generation from nixpkgs (P2)
-- camelCase → kebab-case mapping (separate task)
-- Additional `nix.expr()` escape-hatch coverage (separate task)
-- Platform-aware auto-routing (helpers are explicit about scope)
+All public helpers are re-exported from `src/helpers/index.ts` and `src/index.ts`.
