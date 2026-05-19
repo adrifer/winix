@@ -8,7 +8,7 @@ import type { DarwinOptions, HomeOptions, NixosOptions } from "../types/index.ts
  */
 export interface Fragment {
   nixos?: NixosOptions;
-  home?: HomeOptions;
+  homeManager?: HomeOptions;
   darwin?: DarwinOptions;
   /** Internal: platform/feature ID for .isActive resolution */
   __id?: string;
@@ -35,13 +35,24 @@ export interface NixExpr {
 export type ImportRef = string | RawModuleRef;
 
 /**
+ * What goes into a host/profile fragment list. Arrays are recursive so profiles
+ * can be nested without spread boilerplate.
+ */
+export type FragmentEntry = LazyFragment | Fragment | readonly FragmentEntry[];
+
+/**
+ * What a lazy fragment can resolve into.
+ */
+export type FragmentResult = FragmentEntry;
+
+/**
  * A lazy fragment descriptor: holds the factory + args for deferred evaluation.
  */
 export interface LazyFragment {
   __lazy: true;
   __id: string;
   __platform?: boolean;
-  __resolve: () => Fragment | Fragment[];
+  __resolve: () => FragmentResult;
 }
 
 /**
@@ -52,11 +63,6 @@ export interface PlatformLazyFragment extends LazyFragment {
 }
 
 /**
- * What goes into a host's fragment list: either a lazy descriptor or a plain Fragment.
- */
-export type FragmentEntry = LazyFragment | Fragment | Fragment[];
-
-/**
  * A fragment factory: callable to produce a LazyFragment, with .isActive getter.
  */
 export interface FragmentFactory<T extends unknown[] = []> {
@@ -64,6 +70,11 @@ export interface FragmentFactory<T extends unknown[] = []> {
   readonly isActive: boolean;
   readonly id: string;
 }
+
+/**
+ * A profile factory: a semantic alias for composite fragments.
+ */
+export interface ProfileFactory<T extends unknown[] = []> extends FragmentFactory<T> {}
 
 /**
  * A platform factory: callable to produce a PlatformLazyFragment, with .isActive getter.
@@ -99,7 +110,7 @@ export interface WorkspaceDef {
 export interface HostDef {
   name: string;
   platform: PlatformLazyFragment;
-  fragments: FragmentEntry[];
+  fragments: readonly FragmentEntry[];
 }
 
 /**

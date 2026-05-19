@@ -8,7 +8,7 @@ import {
   defineInputs,
   withContext,
   evaluate,
-  escape,
+  nix,
   generateNix,
   raw,
   rawModule,
@@ -29,8 +29,10 @@ const wsl = feature("wsl", (opts?: { defaultUser?: string }) => ({
     wsl: { enable: true, defaultUser: opts?.defaultUser },
     packages: ["wl-clipboard"],
   },
-  home: {
-    packages: ["wslu"],
+  homeManager: {
+    home: {
+      packages: ["wslu"],
+    },
   },
 }));
 
@@ -48,7 +50,7 @@ const workSysctl = feature("work-sysctl", () => ({
 }));
 
 const zsh = feature("zsh", () => ({
-  home: {
+  homeManager: {
     programs: {
       zsh: {
         enable: true,
@@ -138,11 +140,11 @@ describe("Evaluator", () => {
   it("resolves nested composite fragments (Feature returning Fragment[])", () => {
     // developer() returns [git(), neovim()] which are themselves lazy
     const git = feature("git", () => ({
-      home: { programs: { git: { enable: true } } },
+      homeManager: { programs: { git: { enable: true } } },
     }));
 
     const neovimFeat = feature("neovim", () => ({
-      home: { packages: ["neovim"] },
+      homeManager: { home: { packages: ["neovim"] } },
     }));
 
     const developer = feature("developer", (): any => [
@@ -158,8 +160,8 @@ describe("Evaluator", () => {
     });
 
     const [result] = evaluate(ws);
-    expect((result.home as any).programs.git.enable).toBe(true);
-    expect((result.home as any).packages).toContain("neovim");
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+    expect((result.homeManager as any).home.packages).toContain("neovim");
   });
 
   it("platform conditionals resolve correctly", () => {
@@ -171,7 +173,7 @@ describe("Evaluator", () => {
     });
 
     const [result] = evaluate(ws);
-    const aliases = (result.home as any).programs.zsh.aliases;
+    const aliases = (result.homeManager as any).programs.zsh.aliases;
     expect(aliases.g).toBe("lazygit");
     expect(aliases.i).toBe("sudo nixos-rebuild switch");
   });
@@ -263,8 +265,8 @@ describe("Nix backend", () => {
       hosts: [
         host("wsl-work", nixos(), [
           {
-            home: {
-              username: "adrifer",
+            homeManager: {
+              home: { username: "adrifer" },
               programs: {
                 git: {
                   enable: true,
@@ -309,13 +311,13 @@ describe("Nix backend", () => {
     expect(output.rawModules).toEqual([{ path: "legacy/foo.nix" }]);
   });
 
-  it("renders rawModule.home imports inside the Home Manager user module", () => {
+  it("renders rawModule.homeManager imports inside the Home Manager user module", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", nixos(), [
-          { home: { username: "adrifer" } },
-          rawModule.home("./legacy/home.nix"),
+          { homeManager: { home: { username: "adrifer" } } },
+          rawModule.homeManager("./legacy/home.nix"),
         ]),
       ],
     });
@@ -361,7 +363,7 @@ describe("Nix backend", () => {
     expect(() => rawModule("legacy/foo.txt")).toThrow(".nix");
   });
 
-  it("renders escape() values as verbatim Nix expressions", () => {
+  it("renders nix.expr() values as verbatim Nix expressions", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
@@ -371,19 +373,19 @@ describe("Nix backend", () => {
               users: {
                 users: {
                   adrifer: {
-                    shell: escape("pkgs.zsh"),
+                    shell: nix.expr("pkgs.zsh"),
                   },
                 },
               },
               environment: {
-                systemPackages: ["git", escape("nodejs_20")],
+                systemPackages: ["git", nix.expr("nodejs_20")],
               },
             },
-            home: {
-              username: "adrifer",
+            homeManager: {
+              home: { username: "adrifer" },
               programs: {
                 zsh: {
-                  initExtra: escape("''\nexport EDITOR=nvim\n''"),
+                  initExtra: nix.expr("''\nexport EDITOR=nvim\n''"),
                 },
               },
             },
@@ -401,31 +403,31 @@ describe("Nix backend", () => {
     expect(hostNix).toContain("programs.zsh.initExtra = ''\nexport EDITOR=nvim\n'';");
   });
 
-  it("treats escape() values as merge atoms with last value winning", () => {
+  it("treats nix.expr() values as merge atoms with last value winning", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", nixos(), [
-          { nixos: { services: { demo: { value: escape("pkgs.old") } } } },
-          { nixos: { services: { demo: { value: escape("pkgs.new") } } } },
+          { nixos: { services: { demo: { value: nix.expr("pkgs.old") } } } },
+          { nixos: { services: { demo: { value: nix.expr("pkgs.new") } } } },
         ]),
       ],
     });
 
     const [evaluated] = evaluate(ws);
-    expect((evaluated.nixos as any).services.demo.value).toEqual(escape("pkgs.new"));
+    expect((evaluated.nixos as any).services.demo.value).toEqual(nix.expr("pkgs.new"));
     const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
     expect(hostNix).toContain("services.demo.value = pkgs.new;");
   });
 
-  it("renders raw.nixos/home/darwin fragments verbatim", () => {
+  it("renders raw.nixos/homeManager/darwin fragments verbatim", () => {
     const linuxWs = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", nixos(), [
-          { home: { username: "adrifer" } },
+          { homeManager: { home: { username: "adrifer" } } },
           raw.nixos("environment.variables.FOO = \"bar\";"),
-          raw.home("programs.zsh.initExtra = ''\necho raw\n'';"),
+          raw.homeManager("programs.zsh.initExtra = ''\necho raw\n'';"),
         ]),
       ],
     });
@@ -455,8 +457,8 @@ describe("Nix backend", () => {
               programs: { nixLd: { enable: true, libraries: ["icu"] } },
               services: { openSsh: { enable: true } },
             },
-            home: {
-              username: "adrifer",
+            homeManager: {
+              home: { username: "adrifer" },
               programs: {
                 git: { userName: "Adrian Fernandez Garcia" },
                 zsh: { syntaxHighlighting: { enable: true } },

@@ -1,5 +1,5 @@
 // Realistic test config: minimal WSL NixOS host
-import { workspace, host, platform, feature, input, defineInputs } from "../src/index.ts";
+import { account, feature, host, input, defineInputs, packages, platforms, profile, sysctl, workspace } from "../src/index.ts";
 
 // --- Inputs ---
 const inputs = defineInputs({
@@ -12,75 +12,41 @@ const inputs = defineInputs({
   }),
 });
 
-// --- Platform ---
-const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
-  nixos: {
-    imports: ["home-manager"],
-    nixpkgs: { hostPlatform: "x86_64-linux", config: { allowUnfree: true } },
-    nix: { settings: { "experimental-features": ["nix-command", "flakes"] } },
-    system: { stateVersion: opts?.stateVersion },
-    homeManager: { useGlobalPkgs: true, useUserPackages: true },
-  },
-}));
-
 // --- Features ---
-const wsl = feature("wsl", (opts?: { defaultUser?: string }) => ({
+const wsl = feature("wsl", () => ({
   nixos: {
     imports: ["nixos-wsl"],
     wsl: {
       enable: true,
-      defaultUser: opts?.defaultUser ?? "adrifer",
-    },
-    networking: { hostName: "wsl-work" },
-  },
-}));
-
-const workSysctl = feature("work-sysctl", () => ({
-  nixos: {
-    boot: {
-      kernel: {
-        sysctl: {
-          "net.ipv4.ip_unprivileged_port_start": 443,
-          "fs.inotify.max_user_watches": 1048576,
-          "fs.inotify.max_user_instances": 1024,
-          "fs.inotify.max_queued_events": 65536,
-        },
-      },
     },
   },
 }));
 
-const user = feature("user", () => ({
-  nixos: {
-    users: { users: { adrifer: { isNormalUser: true } } },
-  },
-  home: {
-    username: "adrifer",
-  },
-}));
-
-const packages = feature("packages", () => ({
-  nixos: {
-    environment: {
-      systemPackages: ["socat", "bubblewrap"],
-    },
-  },
-}));
+const workSysctl = feature("work-sysctl", () =>
+  sysctl({
+    "net.ipv4.ip_unprivileged_port_start": 443,
+    "fs.inotify.max_user_watches": 1048576,
+    "fs.inotify.max_user_instances": 1024,
+    "fs.inotify.max_queued_events": 65536,
+  })
+);
 
 const git = feature("git", () => ({
-  home: {
+  homeManager: {
     programs: { git: { enable: true, userName: "Adrian Fernandez Garcia" } },
   },
 }));
 
 const neovim = feature("neovim", () => ({
-  home: {
-    packages: ["neovim"],
-    sessionVariables: { EDITOR: "nvim" },
+  homeManager: {
+    home: {
+      packages: ["neovim"],
+      sessionVariables: { EDITOR: "nvim" },
+    },
   },
 }));
 
-const developer = feature("developer", (): any => [
+const developer = profile("developer", [
   git(),
   neovim(),
 ]);
@@ -89,11 +55,11 @@ const developer = feature("developer", (): any => [
 export default workspace({
   inputs,
   hosts: [
-    host("wsl-work", nixos({ stateVersion: "25.05" }), [
-      wsl({ defaultUser: "adrifer" }),
-      user(),
+    host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
+      wsl(),
+      account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }),
       workSysctl(),
-      packages(),
+      packages("socat", "bubblewrap"),
       developer(),
     ]),
   ],

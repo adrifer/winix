@@ -17,12 +17,14 @@ export function activation(name: string, opts: ActivationOpts): Fragment {
   const after = opts.after ?? ["writeBoundary"];
   const afterList = after.map((s) => JSON.stringify(s)).join(" ");
   return {
-    home: {
-      activation: {
-        [name]: {
-          __winixNixExpr: true,
-          expr: `lib.hm.dag.entryAfter [ ${afterList} ] ''\n${opts.script}\n''`,
-        } as NixExpr,
+    homeManager: {
+      home: {
+        activation: {
+          [name]: {
+            __winixNixExpr: true,
+            expr: `lib.hm.dag.entryAfter [ ${afterList} ] ''\n${opts.script}\n''`,
+          } as NixExpr,
+        },
       },
     },
   };

@@ -16,7 +16,7 @@ Evaluation turns TypeScript fragments into normalized IR. This document defines 
 
 ## Fragment merge model
 
-Fragments are merged in **list order** (top to bottom). Each fragment contributes data to scopes (`nixos`, `home`, `darwin`). The merge strategy depends on the value type:
+Fragments are merged in **list order** (top to bottom). Each fragment contributes data to scopes (`nixos`, `homeManager`, `darwin`). The merge strategy depends on the value type:
 
 ### Strategy by value type
 

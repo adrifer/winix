@@ -24,7 +24,7 @@ import { program } from "winix";
 
 // Home Manager program (default scope)
 program("starship", { enable: true })
-// → { home: { programs: { starship: { enable: true } } } }
+// → { homeManager: { programs: { starship: { enable: true } } } }
 
 program("tmux", {
   enable: true,
@@ -32,7 +32,7 @@ program("tmux", {
   keyMode: "vi",
   plugins: ["tmux-sensible", "tmux-yank"],
 })
-// → { home: { programs: { tmux: { enable: true, terminal: ..., ... } } } }
+// → { homeManager: { programs: { tmux: { enable: true, terminal: ..., ... } } } }
 
 // NixOS service
 program.service("openssh", { enable: true, settings: { PermitRootLogin: "no" } })
@@ -47,11 +47,11 @@ program.nixos("nix", { settings: { "experimental-features": "nix-command flakes"
 
 | Function | Target path | Use case |
 |----------|-------------|----------|
-| `program(name, opts)` | `home.programs.<name>` | Home Manager programs (default) |
+| `program(name, opts)` | `homeManager.programs.<name>` | Home Manager programs (default) |
 | `program.service(name, opts)` | `nixos.services.<name>` | NixOS services |
 | `program.nixos(name, opts)` | `nixos.<name>` | Top-level NixOS options (nix, networking, etc.) |
 | `program.darwin(name, opts)` | `darwin.<name>` | Top-level nix-darwin options |
-| `program.homeService(name, opts)` | `home.services.<name>` | Home Manager services |
+| `program.homeService(name, opts)` | `homeManager.services.<name>` | Home Manager services |
 
 ## Design Decisions
 
@@ -60,7 +60,7 @@ program.nixos("nix", { settings: { "experimental-features": "nix-command flakes"
 Compare:
 ```ts
 // Raw fragment (37 chars of nesting boilerplate)
-{ home: { programs: { starship: { enable: true } } } }
+{ homeManager: { programs: { starship: { enable: true } } } }
 
 // program() (immediately clear what it does)
 program("starship", { enable: true })
@@ -122,7 +122,7 @@ export interface ProgramHelper {
 
 export const program: ProgramHelper = Object.assign(
   (name: string, opts: Record<string, unknown> = {}): Fragment => ({
-    home: { programs: { [name]: opts } },
+    homeManager: { programs: { [name]: opts } },
   }),
   {
     service: (name: string, opts: Record<string, unknown> = {}): Fragment => ({
@@ -135,7 +135,7 @@ export const program: ProgramHelper = Object.assign(
       darwin: { [name]: opts },
     }),
     homeService: (name: string, opts: Record<string, unknown> = {}): Fragment => ({
-      home: { services: { [name]: opts } },
+      homeManager: { services: { [name]: opts } },
     }),
   }
 );
@@ -155,7 +155,7 @@ Add `program` to the public API exports.
 4. `program.darwin("homebrew", { ... })` → darwin top-level
 5. `program.homeService("syncthing", { ... })` → home.services path
 6. Composition test: `program()` + curated helper in same host, verify Nix output
-7. Empty opts: `program("foo")` → `{ home: { programs: { foo: {} } } }`
+7. Empty opts: `program("foo")` → `{ homeManager: { programs: { foo: {} } } }`
 
 ## Migration of Examples
 
@@ -165,7 +165,7 @@ After implementing, optionally update `examples/reference/features/` to show
 ```ts
 // Before
 export const starship = feature("starship", () => ({
-  home: { programs: { starship: { enable: true } } },
+  homeManager: { programs: { starship: { enable: true } } },
 }));
 
 // After

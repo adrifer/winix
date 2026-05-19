@@ -11,7 +11,7 @@ import {
 } from "../src/cli/analysis.js";
 import { init } from "../src/cli/commands/init.js";
 import { selectHost } from "../src/cli/commands/switch.js";
-import { escape, host, platform, raw, workspace } from "../src/index.js";
+import { host, nix, platform, raw, workspace } from "../src/index.js";
 
 const nixos = platform("linux", () => ({
   nixos: {
@@ -50,7 +50,7 @@ describe("CLI analysis", () => {
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl", nixos(), [
-          { nixos: { users: { users: { root: { shell: escape("pkgs.bash") } } } } },
+          { nixos: { users: { users: { root: { shell: nix.expr("pkgs.bash") } } } } },
           raw.nixos("services.openssh.enable = true;"),
         ]),
       ],

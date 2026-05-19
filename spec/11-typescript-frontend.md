@@ -37,8 +37,8 @@ A fragment is any function with the signature:
 A host is simply a name plus a flat list of fragments:
 
 ```ts
-host("wsl-work", nixos(), [
-  user("adrifer"),
+host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
+  account("adrifer", { admin: true, shell: "zsh", wslDefault: true }),
   wsl(),
   workSysctl(),
   packages(["socat", "bubblewrap"]),
@@ -53,7 +53,7 @@ Prefer flat fragment composition:
 
 ```ts
 host("wsl-work", nixos(), [
-  user("adrifer"),
+  account("adrifer", { admin: true, shell: "zsh" }),
   wsl({ defaultUser: "adrifer" }),
   sysctl({ "fs.inotify.max_user_watches": 1048576 }),
   nixLd({ libraries: ["icu", "zlib", "openssl"] }),
@@ -91,9 +91,11 @@ export function wsl(opts?: WslOpts): Fragment {
       packages: ["wl-clipboard"],
       programs: { nixLd: { enable: true } },
     },
-    home: {
-      packages: ["wslu"],
-      shell: { env: { BROWSER: "wslview" } },
+    homeManager: {
+      home: {
+        packages: ["wslu"],
+        sessionVariables: { BROWSER: "wslview" },
+      },
     },
   };
 }
@@ -128,6 +130,22 @@ export function developer(): Fragment[] {
 }
 ```
 
+For named reusable composition, prefer `profile()`:
+
+```ts
+export const developer = profile("developer", [
+  git(),
+  neovim(),
+  zsh(),
+  packages.homeManager("ripgrep", "fd"),
+]);
+
+host("wsl-work", platforms.nixos(), [
+  developer(),
+  wsl(),
+]);
+```
+
 ## Platform conditionals
 
 Fragments often need platform-specific behavior. Instead of a custom DSL, Winix uses **native TypeScript conditionals** with implicit context provided by the compiler.
@@ -143,7 +161,7 @@ import { wsl } from "./fragments/wsl";
 
 export function zsh(): Fragment {
   return {
-    home: {
+    homeManager: {
       programs: {
         zsh: {
           enable: true,
@@ -167,7 +185,7 @@ export function zsh(): Fragment {
 
 export function gitCredential(): Fragment {
   return {
-    home: {
+    homeManager: {
       programs: {
         git: {
           credentialHelper: wsl.isActive
@@ -182,12 +200,13 @@ export function gitCredential(): Fragment {
 
 ### Helpers
 
-Winix provides three helpers for defining system components:
+Winix provides four helpers for defining system components:
 
 | Helper | Purpose | `.isActive` | Constraint |
 |---|---|---|---|
 | `platform(id, factory)` | System base (NixOS, darwin, Windows) | ✅ | Only one per host |
 | `feature(id, factory)` | Everything else (composable) | ✅ | N per host |
+| `profile(id, entries \| factory)` | Named composite of features/profiles/fragments | ✅ | N per host |
 | `host(name, platform, fragments)` | Target machine definition | ❌ | Top-level only |
 
 All fragments are defined with a helper. This keeps the decision simple: "which helper?" not "do I need one?"
@@ -206,12 +225,12 @@ export const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
 // fragments/wsl.ts — feature, composable with others
 export const wsl = feature("wsl", (opts?: WslOpts) => ({
   nixos: { wsl: { enable: true, ...opts } },
-  home: { packages: ["wslu"] },
+  homeManager: { home: { packages: ["wslu"] } },
 }));
 
 // fragments/fzf.ts — even simple ones use feature()
 export const fzf = feature("fzf", () => ({
-  home: { programs: { fzf: { enable: true } } },
+  homeManager: { programs: { fzf: { enable: true } } },
 }));
 ```
 
@@ -221,6 +240,75 @@ host("wsl-work", nixos({ stateVersion: "25.05" }), [
   wsl({ defaultUser: "adrifer" }),    // callable → Fragment
   zsh(),                              // uses nixos.isActive internally
 ]);
+```
+
+### Built-in presets and account helper
+
+Most configs should start with built-in platform presets instead of custom platform
+boilerplate:
+
+```ts
+host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
+  account("adrifer", {
+    admin: true,
+    shell: "zsh",
+    stateVersion: "25.05",
+    wslDefault: true,
+  }),
+  wsl(),
+]);
+
+host("macbook-pro", platforms.darwin({ stateVersion: 6, homebrew: true }), [
+  account("adrifer", { shell: "zsh", stateVersion: "25.05" }),
+  homebrew(),
+]);
+```
+
+`platforms.nixos()` and `platforms.darwin()` enable flakes, configure nixpkgs,
+set the host platform, auto-fill `networking.hostName` from `host()`, and wire
+Home Manager by default. The low-level `platform()` helper remains available for
+custom platforms.
+
+`account()` is context-aware. It writes Home Manager `home.*` settings, configures
+NixOS or nix-darwin users for the active platform, can add admin groups, sets shells
+with `nix.pkg()`, and can set `wsl.defaultUser` when the `wsl` feature is active.
+
+### Nix expression namespace
+
+Raw Nix expression escape hatches are grouped under one namespace:
+
+```ts
+nix.expr("pkgs.zsh")
+nix.pkg("zsh")
+nix.pkg.stable("wslu")
+nix.bin("coreutils", "mkdir")
+nix.str`${nix.pkg("neovim")}/bin/nvim`
+nix.script`echo hello`
+nix.concat(partA, partB)
+nix.withPkgs(["icu", "zlib", "openssl"])
+nix.lib.mkDefault("adrifer")
+nix.optionalAttrs(nix.isDarwin, { gc: "nix-collect-garbage -d" })
+```
+
+Use TypeScript conditionals and `.isActive` for Winix-time branching. Use
+`nix.optionalAttrs()` / `nix.optionalString()` only for conditions that must be
+evaluated by Nix, such as `pkgs.stdenv.isDarwin`.
+
+### Intent helpers
+
+Common nested Nix patterns should use intent helpers:
+
+```ts
+services.enable("openssh", { settings: { PermitRootLogin: "no" } })
+systemd.service("backup", { script: nix.script`echo backup` })
+systemd.timer("backup", { wantedBy: ["timers.target"] })
+firewall.tcp(80, 443)
+home.env({ EDITOR: "nvim" })
+home.path("~/.local/bin")
+home.packages("ripgrep", "fd")
+home.configFile("nvim/init.lua", { text: "vim.o.number = true" })
+programs.enable("starship")
+nix.gc({ olderThan: "14d" })
 ```
 
 ### Sharing fragments across hosts
@@ -477,7 +565,7 @@ import type { HomeOptions } from "./generated/home-manager";
 
 interface Fragment {
   nixos?: NixosOptions;
-  home?: HomeOptions;
+  homeManager?: HomeOptions;
   darwin?: DarwinOptions;
 }
 ```
@@ -545,4 +633,3 @@ This maps to Home Manager's `mkOutOfStoreSymlink` on Nix targets and native syml
 - Source is always workspace-relative (repo is source of truth).
 - Target is always user-scoped (XDG or platform equivalent).
 - Backend can choose the best linking strategy per platform.
-

@@ -1,13 +1,13 @@
 import type { Fragment } from "../core/types.ts";
 
 export interface PackagesOpts {
-  scope?: "nixos" | "home" | "darwin";
+  scope?: "nixos" | "homeManager" | "darwin";
 }
 
 export interface PackagesHelper {
   (...names: string[]): Fragment;
   (names: string[], opts?: PackagesOpts): Fragment;
-  home(...names: string[]): Fragment;
+  homeManager(...names: string[]): Fragment;
   darwin(...names: string[]): Fragment;
 }
 
@@ -21,7 +21,7 @@ export const packages: PackagesHelper = Object.assign(
     return packagesForScope(args as string[], "nixos");
   },
   {
-    home: (...names: string[]): Fragment => packagesForScope(names, "home"),
+    homeManager: (...names: string[]): Fragment => packagesForScope(names, "homeManager"),
     darwin: (...names: string[]): Fragment => packagesForScope(names, "darwin"),
   }
 );
@@ -30,6 +30,12 @@ function packagesForScope(
   names: string[],
   scope: NonNullable<PackagesOpts["scope"]>
 ): Fragment {
+  if (scope === "homeManager") {
+    return {
+      homeManager: { home: { packages: names } },
+    };
+  }
+
   return {
     [scope]: { packages: names },
   };

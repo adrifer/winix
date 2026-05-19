@@ -5,9 +5,11 @@ import type {
   Fragment,
   FragmentFactory,
   PlatformFactory,
+  ProfileFactory,
   LazyFragment,
   PlatformLazyFragment,
   FragmentEntry,
+  FragmentResult,
   InputDef,
   InputWithOptions,
   WorkspaceDef,
@@ -45,6 +47,14 @@ function getCtx(): EvalContext {
   return _ctx;
 }
 
+export function getEvalContext(): EvalContext {
+  return getCtx();
+}
+
+export function getOptionalEvalContext(): EvalContext | null {
+  return _ctx;
+}
+
 // --- platform() ---
 
 export function platform<T extends unknown[]>(
@@ -78,7 +88,7 @@ export function platform<T extends unknown[]>(
 
 export function feature<T extends unknown[]>(
   id: string,
-  factory: (...args: T) => Fragment | Fragment[]
+  factory: (...args: T) => FragmentResult
 ): FragmentFactory<T> {
   const fn = ((...args: T): LazyFragment => {
     return {
@@ -86,10 +96,7 @@ export function feature<T extends unknown[]>(
       __id: id,
       __resolve: () => {
         const result = factory(...args);
-        if (Array.isArray(result)) {
-          return result.map((r) => ({ ...r, __id: r.__id ?? id }));
-        }
-        return { ...result, __id: id };
+        return annotateResult(result, id);
       },
     };
   }) as FragmentFactory<T>;
@@ -105,12 +112,34 @@ export function feature<T extends unknown[]>(
   return fn;
 }
 
+// --- profile() ---
+
+export function profile<T extends unknown[]>(
+  id: string,
+  factory: (...args: T) => FragmentResult
+): ProfileFactory<T>;
+export function profile(
+  id: string,
+  entries: FragmentEntry | readonly FragmentEntry[]
+): ProfileFactory<[]>;
+export function profile<T extends unknown[]>(
+  id: string,
+  entriesOrFactory: FragmentResult | ((...args: T) => FragmentResult)
+): ProfileFactory<T> {
+  const factory =
+    typeof entriesOrFactory === "function"
+      ? (entriesOrFactory as (...args: T) => FragmentResult)
+      : (() => entriesOrFactory);
+
+  return feature(id, factory) as ProfileFactory<T>;
+}
+
 // --- host() ---
 
 export function host(
   name: string,
   platform: PlatformLazyFragment,
-  fragments: FragmentEntry[]
+  fragments: readonly FragmentEntry[]
 ): HostDef {
   return { name, platform, fragments };
 }
@@ -135,7 +164,7 @@ export function defineInputs<T extends Record<string, InputDef>>(inputs: T): T {
 
 export interface RawModuleHelper {
   (path: string): Fragment;
-  home(path: string): Fragment;
+  homeManager(path: string): Fragment;
   darwin(path: string): Fragment;
 }
 
@@ -144,8 +173,8 @@ export const rawModule: RawModuleHelper = Object.assign(
     nixos: { imports: [createRawModuleRef(path)] },
   }),
   {
-    home: (path: string): Fragment => ({
-      home: { imports: [createRawModuleRef(path)] },
+    homeManager: (path: string): Fragment => ({
+      homeManager: { imports: [createRawModuleRef(path)] },
     }),
     darwin: (path: string): Fragment => ({
       darwin: { imports: [createRawModuleRef(path)] },
@@ -155,13 +184,13 @@ export const rawModule: RawModuleHelper = Object.assign(
 
 export interface RawHelper {
   nixos(body: string): Fragment;
-  home(body: string): Fragment;
+  homeManager(body: string): Fragment;
   darwin(body: string): Fragment;
 }
 
 export const raw: RawHelper = {
   nixos: (body: string): Fragment => ({ nixos: { __raw: [body] } }),
-  home: (body: string): Fragment => ({ home: { __raw: [body] } }),
+  homeManager: (body: string): Fragment => ({ homeManager: { __raw: [body] } }),
   darwin: (body: string): Fragment => ({ darwin: { __raw: [body] } }),
 };
 
@@ -170,6 +199,38 @@ export function escape(expr: string): NixExpr {
     __winixNixExpr: true,
     expr,
   };
+}
+
+function annotateResult(result: FragmentResult, id: string): FragmentResult {
+  if (Array.isArray(result)) {
+    return result.map((entry) => annotateEntry(entry, id));
+  }
+  if (isLazy(result)) {
+    return result;
+  }
+  return annotateFragment(result as Fragment, id);
+}
+
+function annotateEntry(entry: FragmentEntry, id: string): FragmentEntry {
+  if (Array.isArray(entry)) {
+    return entry.map((item) => annotateEntry(item, id));
+  }
+  if (isLazy(entry)) {
+    return entry;
+  }
+  return annotateFragment(entry as Fragment, id);
+}
+
+function annotateFragment(fragment: Fragment, id: string): Fragment {
+  return { ...fragment, __id: fragment.__id ?? id };
+}
+
+function isLazy(entry: unknown): entry is LazyFragment {
+  return (
+    typeof entry === "object" &&
+    entry !== null &&
+    (entry as LazyFragment).__lazy === true
+  );
 }
 
 function createRawModuleRef(path: string): RawModuleRef {
