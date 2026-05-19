@@ -21,30 +21,31 @@ import type {
 
 // --- Evaluation context (implicit, set by evaluator) ---
 
-let _ctx: EvalContext | null = null;
+const G = globalThis as { __winixEvalContext?: EvalContext | null };
 
 export function setEvalContext(ctx: EvalContext): EvalContext | null {
-  const prev = _ctx;
-  _ctx = ctx;
+  const prev = G.__winixEvalContext ?? null;
+  G.__winixEvalContext = ctx;
   return prev;
 }
 
 export function restoreEvalContext(ctx: EvalContext | null): void {
-  _ctx = ctx;
+  G.__winixEvalContext = ctx;
 }
 
 export function clearEvalContext(): void {
-  _ctx = null;
+  G.__winixEvalContext = null;
 }
 
 function getCtx(): EvalContext {
-  if (!_ctx) {
+  const ctx = G.__winixEvalContext ?? null;
+  if (!ctx) {
     throw new Error(
       "Fragment evaluated outside of Winix context. " +
       "Use withContext() for testing or ensure the evaluator is running."
     );
   }
-  return _ctx;
+  return ctx;
 }
 
 export function getEvalContext(): EvalContext {
@@ -52,7 +53,7 @@ export function getEvalContext(): EvalContext {
 }
 
 export function getOptionalEvalContext(): EvalContext | null {
-  return _ctx;
+  return G.__winixEvalContext ?? null;
 }
 
 // --- platform() ---
@@ -270,8 +271,8 @@ export function withContext<R>(
   ctx: { platform: string; hostname?: string; features?: string[] },
   fn: () => R
 ): R {
-  const prev = _ctx;
-  _ctx = {
+  const prev = G.__winixEvalContext ?? null;
+  G.__winixEvalContext = {
     platform: ctx.platform,
     hostname: ctx.hostname ?? "test",
     activeIds: new Set(ctx.features ?? []),
@@ -279,6 +280,6 @@ export function withContext<R>(
   try {
     return fn();
   } finally {
-    _ctx = prev;
+    G.__winixEvalContext = prev;
   }
 }
