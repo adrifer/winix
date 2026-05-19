@@ -2,6 +2,7 @@ import { hostname } from "node:os";
 import { evaluate } from "../../evaluator/index.ts";
 import { loadWorkspace } from "../loader.ts";
 import { runCommand } from "../run.ts";
+import { activationCommand, platformForEvaluatedHost } from "../activation.ts";
 import { applyWorkspace } from "./apply.ts";
 
 interface SwitchOptions {
@@ -16,10 +17,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
   const selected = evaluated.find((host) => host.name === hostName);
   if (!selected) throw new Error(`Host "${hostName}" not found`);
 
-  const platform =
-    Object.keys(selected.darwin).length > 0 && Object.keys(selected.nixos).length === 0
-      ? "darwin"
-      : "nixos";
+  const platform = platformForEvaluatedHost(selected);
 
   const result = await applyWorkspace(cwd, {
     host: hostName,
@@ -28,10 +26,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
   });
 
   const flake = `path:${result.outDir}#${hostName}`;
-  const command =
-    platform === "darwin"
-      ? ["darwin-rebuild", "switch", "--flake", flake]
-      : withSudo(["nixos-rebuild", "switch", "--flake", flake]);
+  const command = activationCommand(platform, flake);
 
   console.log(`\nRunning: ${command.join(" ")}`);
   await runCommand(command[0], command.slice(1), { dry: opts.dry });
@@ -60,9 +55,4 @@ export function selectHost(
     "`winix switch` needs --host. Available hosts:\n" +
     hosts.map((host) => `  - ${host}`).join("\n")
   );
-}
-
-function withSudo(command: string[]): string[] {
-  if (typeof process.getuid === "function" && process.getuid() === 0) return command;
-  return ["sudo", ...command];
 }

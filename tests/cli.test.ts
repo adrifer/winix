@@ -9,6 +9,7 @@ import {
   collectEscapeReport,
   findDuplicateHosts,
 } from "../src/cli/analysis.js";
+import { activationCommand } from "../src/cli/activation.js";
 import { init } from "../src/cli/commands/init.js";
 import { selectHost } from "../src/cli/commands/switch.js";
 import { host, nix, platform, raw, workspace } from "../src/index.js";
@@ -95,5 +96,33 @@ describe("winix switch host selection", () => {
     expect(() => selectHost(["wsl", "wsl-work"], undefined, "other")).toThrow(
       'Current hostname "other" does not match a configured host'
     );
+  });
+});
+
+describe("activation commands", () => {
+  it("runs NixOS and nix-darwin activation through sudo when not root", () => {
+    expect(activationCommand("nixos", "path:/repo/.winix/out#wsl", false)).toEqual([
+      "sudo",
+      "nixos-rebuild",
+      "switch",
+      "--flake",
+      "path:/repo/.winix/out#wsl",
+    ]);
+    expect(activationCommand("darwin", "path:/repo/.winix/out#macbook-pro", false)).toEqual([
+      "sudo",
+      "darwin-rebuild",
+      "switch",
+      "--flake",
+      "path:/repo/.winix/out#macbook-pro",
+    ]);
+  });
+
+  it("does not prefix activation commands with sudo when already root", () => {
+    expect(activationCommand("darwin", "path:/repo/.winix/out#macbook-pro", true)).toEqual([
+      "darwin-rebuild",
+      "switch",
+      "--flake",
+      "path:/repo/.winix/out#macbook-pro",
+    ]);
   });
 });

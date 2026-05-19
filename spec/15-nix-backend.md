@@ -247,7 +247,7 @@ After updating, commit `flake.lock` to share the pin across all machines.
 | Platform | Activation command |
 |---|---|
 | NixOS | `sudo nixos-rebuild switch --flake .winix/out` |
-| nix-darwin | `darwin-rebuild switch --flake .winix/out` |
+| nix-darwin | `sudo darwin-rebuild switch --flake .winix/out` |
 | Home Manager only | `home-manager switch --flake .winix/out` |
 
 Variants via flags: `--boot`, `--test`, `--dry-activate`.
