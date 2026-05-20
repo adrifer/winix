@@ -1,9 +1,25 @@
-import { home, type Fragment, type ZshOptions } from "winix";
+import { darwin, home, nixos, type Fragment, type ZshOptions } from "winix";
 import type { GitOptions } from "winix/types";
 
-home.program<ZshOptions>("zsh", {
+home.program("zsh", {
   enable: true,
   shellAliases: { g: "lazygit" },
+});
+
+nixos.raw({
+  networking: { hostName: "wsl" },
+  wsl: { enable: true },
+  futureOption: { stillAllowed: true },
+});
+
+home.raw({
+  programs: { zsh: { enable: true } },
+  futureOption: { stillAllowed: true },
+});
+
+darwin.raw({
+  networking: { hostName: "macbook-pro" },
+  futureOption: { stillAllowed: true },
 });
 
 const gitOptions: GitOptions = {
@@ -54,3 +70,6 @@ void fragment;
 const badZsh: ZshOptions = { enable: "yes" };
 
 void badZsh;
+
+// @ts-expect-error known NixOS option has the wrong value type
+nixos.raw({ networking: { hostName: 123 } });

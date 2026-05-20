@@ -9,9 +9,14 @@ interface InitOptions {
 export async function init(cwd: string, opts: InitOptions): Promise<void> {
   await mkdir(cwd, { recursive: true });
   await writeIfAllowed(join(cwd, "winix.config.ts"), CONFIG, opts.force);
+  await writeIfAllowed(join(cwd, "tsconfig.json"), TSCONFIG, opts.force);
   await writeIfAllowed(join(cwd, "package.json"), PACKAGE_JSON, opts.force);
   await writeIfAllowed(join(cwd, ".gitignore"), GITIGNORE, opts.force);
   console.log("✓ Initialized Winix project");
+  console.log("");
+  console.log("Next steps:");
+  console.log("  npm install");
+  console.log("  winix types generate   (for typed autocomplete)");
 }
 
 async function writeIfAllowed(path: string, content: string, force: boolean): Promise<void> {
@@ -49,11 +54,28 @@ const PACKAGE_JSON = `{
   "scripts": {
     "check": "winix check",
     "apply": "winix apply",
-    "switch": "winix switch"
+    "switch": "winix switch",
+    "types": "winix types generate"
   }
 }
 `;
 
 const GITIGNORE = `.winix/
 node_modules/
+`;
+
+const TSCONFIG = `{
+  "compilerOptions": {
+    "strict": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "esnext",
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "**/*.ts",
+    ".winix/types/generated/index.d.ts"
+  ]
+}
 `;

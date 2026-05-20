@@ -1,4 +1,4 @@
-import type { Fragment, LazyFragment } from "../core/types.ts";
+import type { Fragment, LazyFragment, NixExpr } from "../core/types.ts";
 import type { PackageRef } from "../types/index.ts";
 import { feature, getEvalContext } from "../sdk/index.ts";
 import { nix } from "./nix.ts";
@@ -27,6 +27,7 @@ function accountFragment(username: string, opts: AccountOpts): Fragment {
   const homeDirectory =
     opts.homeDirectory ?? (isDarwin ? `/Users/${username}` : `/home/${username}`);
   const shell = normalizeShell(opts.shell);
+  const nixosShellProgram = nixosShellProgramFor(opts.shell);
   const groups = unique([
     ...(opts.admin && isNixos ? ["wheel"] : []),
     ...(opts.groups ?? []),
@@ -57,6 +58,11 @@ function accountFragment(username: string, opts: AccountOpts): Fragment {
           },
           ...(shell && { defaultUserShell: shell }),
         },
+        ...(nixosShellProgram && {
+          programs: {
+            [nixosShellProgram]: { enable: true },
+          },
+        }),
         ...(opts.wslDefault &&
           isWsl && {
             wsl: {
@@ -85,6 +91,26 @@ function accountFragment(username: string, opts: AccountOpts): Fragment {
 function normalizeShell(shell: AccountOpts["shell"]): PackageRef | undefined {
   if (!shell) return undefined;
   return typeof shell === "string" ? nix.pkg(shell) : shell;
+}
+
+function nixosShellProgramFor(shell: AccountOpts["shell"]): string | undefined {
+  const name = shellName(shell);
+  return name === "zsh" || name === "fish" ? name : undefined;
+}
+
+function shellName(shell: AccountOpts["shell"]): string | undefined {
+  if (typeof shell === "string") return shell;
+  if (isNixExpr(shell)) return shell.expr.match(/^pkgs\.([A-Za-z0-9_-]+)$/)?.[1];
+  return undefined;
+}
+
+function isNixExpr(value: unknown): value is NixExpr {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as Partial<NixExpr>).__winixNixExpr === true &&
+    typeof (value as Partial<NixExpr>).expr === "string"
+  );
 }
 
 function unique(values: string[]): string[] {

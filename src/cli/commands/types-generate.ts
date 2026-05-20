@@ -22,7 +22,8 @@ export async function typesGenerate(cwd: string, opts: TypesGenerateOptions): Pr
   console.log(`  → ${relativeToCwd(cwd, result.outputDir)}/index.d.ts`);
   console.log(`  Cache: ${result.fromCache ? "reused" : "updated"} (${relativeToCwd(cwd, result.cachePath)})`);
   console.log("");
-  console.log("Add `.winix/types/generated/index.d.ts` to your tsconfig include if it is not already included.");
+  console.log("\nGenerated types override the bundled nixos-unstable snapshot.");
+  console.log("Add `.winix/types/generated/index.d.ts` to your tsconfig include if not already present.");
 }
 
 function relativeToCwd(cwd: string, path: string): string {

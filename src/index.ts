@@ -51,4 +51,4 @@ export type { EvaluatedHost } from "./evaluator/index.ts";
 export { generateNix } from "./backends/nix/index.ts";
 export type { NixOutput } from "./backends/nix/index.ts";
 export { account, darwin, home, nix, nixos, overlay, platforms } from "./helpers/index.ts";
-export type { AccountOpts, ActivationOpts, DarwinHelper, DarwinPlatformOpts, HomeHelper, NixGcHelperOpts, NixNamespace, NixosHelper, NixosPlatformOpts, OverlayHelper, PkgHelper, PlatformsHelper, ScriptHelper, SysctlSettings } from "./helpers/index.ts";
+export type { AccountOpts, ActivationOpts, DarwinHelper, DarwinPlatformOpts, DarwinProgramOptions, DarwinServiceOptions, HomeHelper, HomeProgramOptions, HomeServiceOptions, NixGcHelperOpts, NixNamespace, NixosHelper, NixosPlatformOpts, NixosProgramOptions, NixosServiceOptions, OverlayHelper, PkgHelper, PlatformsHelper, ScriptHelper, SysctlSettings } from "./helpers/index.ts";

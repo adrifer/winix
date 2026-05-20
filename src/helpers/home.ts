@@ -1,9 +1,32 @@
+import { normalizeArgs } from "./utils.ts";
 import type { Fragment, NixExpr } from "../core/types.ts";
-import type { PackageRef, XdgFile } from "../types/index.ts";
+import type { HomeOptions, PackageRef, XdgFile } from "../types/index.ts";
+
+/**
+ * Map of Home Manager program names to their option types.
+ * Starts empty; augmented by generated types.
+ */
+export interface HomeProgramOptions {}
+
+/**
+ * Map of Home Manager service names to their option types.
+ * Starts empty; augmented by generated types.
+ */
+export interface HomeServiceOptions {}
 
 export interface HomeHelper {
-  program<T extends ProgramOpts = ProgramOpts>(name: string, opts?: T): Fragment;
-  service<T extends ProgramOpts = ProgramOpts>(name: string, opts?: T): Fragment;
+  program<K extends string>(
+    name: K,
+    opts?: K extends keyof HomeProgramOptions
+      ? Omit<HomeProgramOptions[K], "enable">
+      : Record<string, unknown>
+  ): Fragment;
+  service<K extends string>(
+    name: K,
+    opts?: K extends keyof HomeServiceOptions
+      ? Omit<HomeServiceOptions[K], "enable">
+      : Record<string, unknown>
+  ): Fragment;
   env(vars: Record<string, string>): Fragment;
   path(paths: string[]): Fragment;
   path(...paths: string[]): Fragment;
@@ -11,7 +34,7 @@ export interface HomeHelper {
   packages(...packages: PackageRef[]): Fragment;
   configFile(name: string, opts: XdgFile): Fragment;
   configFiles(files: Record<string, XdgFile>): Fragment;
-  raw(config: string | Record<string, unknown>): Fragment;
+  raw(config: string | HomeOptions): Fragment;
   activation(name: string, opts: ActivationOpts): Fragment;
 }
 
@@ -74,6 +97,3 @@ export const home: HomeHelper = {
   },
 };
 
-function normalizeArgs<T>(args: T[] | [T[]]): T[] {
-  return Array.isArray(args[0]) ? (args[0] as T[]) : (args as T[]);
-}
