@@ -38,7 +38,7 @@ declare module "winix" {
         package?: string | NixExpr;
       };
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       silent?: boolean;
     };
     fish: {
@@ -49,7 +49,7 @@ declare module "winix" {
       package?: string | NixExpr;
       promptInit?: string;
       shellAbbrs?: Record<string, string>;
-      shellAliases?: unknown;
+      shellAliases?: Record<string, unknown>;
       shellInit?: string;
       useBabelfish?: boolean;
       vendor?: {
@@ -98,7 +98,7 @@ declare module "winix" {
       enable?: boolean;
       enableSensible?: boolean;
       extraKnownPlugins?: Record<string, string | NixExpr>;
-      plugins?: unknown[] | NixExpr;
+      plugins?: Record<string, unknown>[] | NixExpr;
       vimConfig?: string;
       vimOptions?: {
         "<name>"?: Record<string, unknown>;
@@ -121,7 +121,7 @@ declare module "winix" {
       loginShellInit?: string;
       promptInit?: string;
       shellInit?: string;
-      variables?: Record<string, unknown>;
+      variables?: Record<string, string | string[]>;
     };
   }
 
@@ -143,7 +143,7 @@ declare module "winix" {
         "on-focused-monitor-changed"?: string[] | NixExpr;
         "on-window-detected"?: Record<string, unknown>;
         "start-at-login"?: boolean;
-        "workspace-to-monitor-force-assignment"?: Record<string, unknown>;
+        "workspace-to-monitor-force-assignment"?: Record<string, number | string | string[]>;
       };
     };
     autossh: {
@@ -162,9 +162,9 @@ declare module "winix" {
         package?: string | NixExpr;
         preCommands?: string;
         privateSshKeyPath?: string | null;
-        runtimePackages?: unknown[] | NixExpr;
+        runtimePackages?: (string | NixExpr | string)[];
         shell?: string;
-        tags?: Record<string, unknown>;
+        tags?: Record<string, string | string[]>;
         tokenPath?: string;
       };
     };
@@ -190,10 +190,10 @@ declare module "winix" {
     "dnscrypt-proxy": {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     dnsmasq: {
-      addresses?: unknown;
+      addresses?: Record<string, unknown>;
       bind?: string;
       enable?: boolean;
       package?: string;
@@ -210,25 +210,25 @@ declare module "winix" {
       enable?: boolean;
       logSize?: number;
       package?: string;
-      port?: unknown;
+      port?: number;
       silent?: boolean;
-      verbosity?: unknown;
+      verbosity?: number;
     };
     "github-runners": {
       "<name>"?: {
         enable?: boolean;
         ephemeral?: boolean;
-        extraEnvironment?: unknown;
+        extraEnvironment?: Record<string, unknown>;
         extraLabels?: string[] | NixExpr;
         extraPackages?: (string | NixExpr)[] | NixExpr;
         group?: string | null;
         name?: string | null;
         noDefaultLabels?: boolean;
-        nodeRuntimes?: unknown;
+        nodeRuntimes?: unknown[] | NixExpr;
         package?: string | NixExpr;
         replace?: boolean;
         runnerGroup?: string | null;
-        serviceOverrides?: unknown;
+        serviceOverrides?: Record<string, unknown>;
         tokenFile?: string;
         url?: string;
         user?: string | null;
@@ -264,8 +264,8 @@ declare module "winix" {
         baseDirectory?: string;
         binaryCachesPath?: string;
         clusterJoinTokenPath?: string;
-        concurrentTasks?: unknown;
-        labels?: unknown;
+        concurrentTasks?: number | "auto";
+        labels?: Record<string, unknown>;
         secretsJsonPath?: string;
         staticSecretsDirectory?: string;
         workDirectory?: string;
@@ -380,7 +380,7 @@ declare module "winix" {
       package?: string | NixExpr;
       port?: number;
       recoveryConfig?: string | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string>;
     };
     privoxy: {
       confdir?: string | null;
@@ -417,7 +417,7 @@ declare module "winix" {
       skhdConfig?: string;
     };
     spacebar: {
-      config?: unknown;
+      config?: Record<string, unknown>;
       enable?: boolean;
       extraConfig?: string;
       package?: string;
@@ -425,12 +425,12 @@ declare module "winix" {
     spotifyd: {
       enable?: boolean;
       package?: string;
-      settings?: unknown | null;
+      settings?: Record<string, unknown> | null;
     };
     "synapse-bt": {
       downloadDir?: string;
       enable?: boolean;
-      extraConfig?: unknown;
+      extraConfig?: Record<string, unknown>;
       package?: string | NixExpr;
       port?: number;
     };
@@ -461,18 +461,18 @@ declare module "winix" {
       configUrl?: string | null;
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
-      extraConfig?: unknown;
+      extraConfig?: Record<string, unknown>;
       package?: string | NixExpr;
     };
     trezord: {
       emulator?: {
         enable?: boolean;
-        port?: unknown;
+        port?: number;
       };
       enable?: boolean;
     };
     yabai: {
-      config?: unknown;
+      config?: Record<string, unknown>;
       enable?: boolean;
       enableScriptingAddition?: boolean;
       extraConfig?: string;

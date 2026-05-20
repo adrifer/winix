@@ -8,7 +8,7 @@ declare module "winix" {
     abaddon: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     abook: {
       enable?: boolean;
@@ -16,20 +16,20 @@ declare module "winix" {
       package?: string | NixExpr | null;
     };
     "acd-cli": {
-      cacheSettings?: Record<string, unknown>;
-      clientSettings?: Record<string, unknown>;
-      cliSettings?: Record<string, unknown>;
+      cacheSettings?: Record<string, Record<string, unknown>>;
+      clientSettings?: Record<string, Record<string, unknown>>;
+      cliSettings?: Record<string, Record<string, unknown>>;
       enable?: boolean;
-      fuseSettings?: Record<string, unknown>;
+      fuseSettings?: Record<string, Record<string, unknown>>;
       package?: string | NixExpr | null;
     };
     aerc: {
       enable?: boolean;
-      extraAccounts?: unknown;
-      extraBinds?: unknown;
-      extraConfig?: unknown;
+      extraAccounts?: string | Record<string, string | Record<string, unknown>>;
+      extraBinds?: string | Record<string, string | Record<string, unknown>>;
+      extraConfig?: string | Record<string, string | Record<string, unknown>>;
       package?: string | NixExpr | null;
-      stylesets?: Record<string, unknown>;
+      stylesets?: Record<string, string | Record<string, string | Record<string, unknown>>>;
       templates?: Record<string, string>;
     };
     aerospace: {
@@ -39,7 +39,7 @@ declare module "winix" {
         keepAlive?: boolean;
       };
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     afew: {
       enable?: boolean;
@@ -47,7 +47,7 @@ declare module "winix" {
       package?: string | NixExpr | null;
     };
     ahoviewer: {
-      config?: unknown;
+      config?: string;
       enable?: boolean;
       package?: string | NixExpr | null;
       plugins?: (string | NixExpr)[] | NixExpr;
@@ -55,35 +55,35 @@ declare module "winix" {
     aiac: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     aichat: {
-      agents?: Record<string, unknown>;
+      agents?: Record<string, Record<string, unknown>>;
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "aider-chat": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     airlift: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     alacritty: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       theme?: string | null;
       themePackage?: string | NixExpr;
     };
     algia: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     aliae: {
       configLocation?: string;
@@ -93,12 +93,12 @@ declare module "winix" {
       enableNushellIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     alistral: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     alot: {
       bindings?: {
@@ -113,52 +113,52 @@ declare module "winix" {
       extraConfig?: string;
       hooks?: string;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, string | number | boolean>;
       tags?: {
         "<name>"?: Record<string, unknown>;
       };
     };
     am2rlauncher: {
-      config?: unknown;
+      config?: string;
       enable?: boolean;
       package?: string | NixExpr | null;
     };
     amber: {
-      ambrSettings?: unknown;
-      ambsSettings?: unknown;
+      ambrSettings?: Record<string, unknown>;
+      ambsSettings?: Record<string, unknown>;
       enable?: boolean;
       package?: string | NixExpr | null;
     };
     amfora: {
-      bookmarks?: unknown;
+      bookmarks?: string;
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     amoco: {
-      config?: unknown;
+      config?: string;
       enable?: boolean;
       package?: string | NixExpr | null;
     };
     amp: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     andcli: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     animdl: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "anime-downloader": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     anki: {
       addons?: (string | NixExpr)[] | NixExpr;
@@ -170,7 +170,7 @@ declare module "winix" {
       hideBottomBarMode?: "always" | "fullscreen" | null;
       hideTopBar?: boolean | null;
       hideTopBarMode?: "always" | "fullscreen" | null;
-      language?: unknown;
+      language?: string;
       legacyImportExport?: boolean | null;
       minimalistMode?: boolean | null;
       package?: string | NixExpr;
@@ -181,11 +181,11 @@ declare module "winix" {
       spacebarRatesCard?: boolean | null;
       style?: "anki" | "native" | null;
       theme?: "dark" | "followSystem" | "light" | null;
-      uiScale?: unknown | null;
+      uiScale?: number | null;
       videoDriver?: "angle" | "d3d11" | "metal" | "opengl" | "software" | "vulkan" | null;
     };
     antigravity: {
-      argvSettings?: unknown;
+      argvSettings?: string | Record<string, unknown>;
       enable?: boolean;
       mutableExtensionsDir?: boolean;
       package?: string | NixExpr | null;
@@ -194,15 +194,15 @@ declare module "winix" {
       };
     };
     anup: {
-      config?: unknown;
+      config?: string;
       enable?: boolean;
       package?: string | NixExpr | null;
     };
     "anvil-editor": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
-      style?: unknown;
+      settings?: Record<string, unknown>;
+      style?: Record<string, unknown>;
     };
     anyrun: {
       config?: {
@@ -214,26 +214,26 @@ declare module "winix" {
         layer?: "background" | "bottom" | "overlay" | "top";
         margin?: number;
         maxEntries?: number | null;
-        plugins?: unknown[] | null;
+        plugins?: (string | NixExpr | string)[] | null;
         showResultsImmediately?: boolean;
         width?: Record<string, unknown>;
         x?: Record<string, unknown>;
         y?: Record<string, unknown>;
       };
       enable?: boolean;
-      extraConfigFiles?: unknown;
+      extraConfigFiles?: Record<string, unknown>;
       extraCss?: string | null;
       package?: string | NixExpr | null;
     };
     aperture: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     aphorme: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     aria2: {
       enable?: boolean;
@@ -246,17 +246,17 @@ declare module "winix" {
     aria2p: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     asciinema: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     ashell: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown | null;
+      settings?: Record<string, unknown> | null;
       systemd?: {
         enable?: boolean;
         target?: string;
@@ -265,7 +265,7 @@ declare module "winix" {
     astroid: {
       enable?: boolean;
       externalEditor?: string | null;
-      extraConfig?: unknown;
+      extraConfig?: Record<string, unknown>;
       package?: string | NixExpr | null;
       pollScript?: string;
     };
@@ -274,7 +274,7 @@ declare module "winix" {
       extraPackages?: (string | NixExpr)[] | NixExpr;
       finalPackage?: string | NixExpr;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, string | number>;
     };
     atuin: {
       daemon?: {
@@ -290,7 +290,7 @@ declare module "winix" {
       forceOverwriteSettings?: boolean;
       package?: string | NixExpr;
       settings?: unknown;
-      themes?: Record<string, unknown>;
+      themes?: Record<string, Record<string, unknown> | string>;
     };
     autojump: {
       enable?: boolean;
@@ -320,7 +320,7 @@ declare module "winix" {
     bacon: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     bash: {
       bashrcExtra?: string;
@@ -336,7 +336,7 @@ declare module "winix" {
       logoutExtra?: string;
       package?: string | NixExpr | null;
       profileExtra?: string;
-      sessionVariables?: unknown;
+      sessionVariables?: Record<string, string | number | boolean | null>;
       shellAliases?: Record<string, string>;
       shellOptions?: string[] | NixExpr;
     };
@@ -346,7 +346,7 @@ declare module "winix" {
       package?: string | NixExpr | null;
     };
     bat: {
-      config?: Record<string, unknown>;
+      config?: Record<string, string | string[] | boolean>;
       enable?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr;
@@ -363,20 +363,20 @@ declare module "winix" {
         enableStats?: boolean;
         enableUpdate?: boolean;
         host?: string;
-        port?: unknown;
+        port?: number;
       };
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     bemenu: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, string | number | boolean>;
     };
     bluetuith: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     borgmatic: {
       backups?: {
@@ -388,7 +388,7 @@ declare module "winix" {
     bottom: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     boxxy: {
       enable?: boolean;
@@ -410,7 +410,7 @@ declare module "winix" {
       settings?: {
         modal?: boolean;
         skin?: Record<string, string>;
-        verbs?: Record<string, unknown>[] | NixExpr;
+        verbs?: (Record<string, boolean | string | string[]>)[] | NixExpr;
       };
     };
     browserpass: {
@@ -422,14 +422,14 @@ declare module "winix" {
       enable?: boolean;
       extraConfig?: string;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
-      themes?: unknown;
+      settings?: Record<string, boolean | number | string>;
+      themes?: Record<string, string>;
     };
     bun: {
       enable?: boolean;
       enableGitIntegration?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     calibre: {
       enable?: boolean;
@@ -449,25 +449,25 @@ declare module "winix" {
       cargoHome?: string | null;
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     cava: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     cavalier: {
       enable?: boolean;
       package?: string | NixExpr | null;
       settings?: {
-        cava?: Record<string, unknown>;
-        general?: unknown;
+        cava?: Record<string, Record<string, unknown>>;
+        general?: Record<string, unknown>;
       };
     };
     chawan: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     chromium: {
       commandLineArgs?: string[] | NixExpr;
@@ -481,31 +481,31 @@ declare module "winix" {
       package?: string | NixExpr | null;
     };
     "claude-code": {
-      agents?: Record<string, unknown>;
+      agents?: Record<string, string>;
       agentsDir?: string | null;
-      commands?: Record<string, unknown>;
+      commands?: Record<string, string>;
       commandsDir?: string | null;
       configDir?: string;
-      context?: unknown;
+      context?: string;
       enable?: boolean;
       enableMcpIntegration?: boolean;
       hooks?: Record<string, string>;
       hooksDir?: string | null;
-      lspServers?: Record<string, unknown>;
-      marketplaces?: Record<string, unknown>;
-      mcpServers?: Record<string, unknown>;
-      outputStyles?: Record<string, unknown>;
+      lspServers?: Record<string, Record<string, unknown>>;
+      marketplaces?: Record<string, string | NixExpr | string>;
+      mcpServers?: Record<string, Record<string, unknown>>;
+      outputStyles?: Record<string, string>;
       package?: string | NixExpr | null;
-      plugins?: unknown[] | NixExpr;
-      rules?: Record<string, unknown>;
+      plugins?: (string | NixExpr | string)[];
+      rules?: Record<string, string>;
       rulesDir?: string | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       skills?: unknown;
     };
     "clock-rs": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     cmus: {
       enable?: boolean;
@@ -514,12 +514,12 @@ declare module "winix" {
       theme?: string;
     };
     codex: {
-      context?: unknown;
+      context?: string;
       enable?: boolean;
       enableMcpIntegration?: boolean;
       package?: string | NixExpr | null;
-      rules?: Record<string, unknown>;
-      settings?: unknown | null;
+      rules?: Record<string, string>;
+      settings?: Record<string, unknown> | null;
       skills?: unknown;
     };
     "command-not-found": {
@@ -533,14 +533,14 @@ declare module "winix" {
     };
     cudatext: {
       enable?: boolean;
-      hotkeys?: unknown;
-      lexerHotkeys?: Record<string, unknown>;
-      lexerSettings?: Record<string, unknown>;
+      hotkeys?: Record<string, unknown>;
+      lexerHotkeys?: Record<string, Record<string, unknown>>;
+      lexerSettings?: Record<string, Record<string, unknown>>;
       package?: string | NixExpr | null;
-      userSettings?: unknown;
+      userSettings?: Record<string, unknown>;
     };
     cursor: {
-      argvSettings?: unknown;
+      argvSettings?: string | Record<string, unknown>;
       enable?: boolean;
       mutableExtensionsDir?: boolean;
       package?: string | NixExpr | null;
@@ -555,7 +555,7 @@ declare module "winix" {
       package?: string | NixExpr | null;
     };
     dbeaver: {
-      dataSourcesSettings?: unknown;
+      dataSourcesSettings?: Record<string, unknown>;
       enable?: boolean;
       package?: string | NixExpr | null;
       settings?: Record<string, Record<string, string>>;
@@ -564,18 +564,18 @@ declare module "winix" {
       enable?: boolean;
       enableGitIntegration?: boolean;
       enableJujutsuIntegration?: boolean;
-      options?: Record<string, unknown>;
+      options?: Record<string, string | boolean | number | Record<string, string | boolean | number>>;
       package?: string | NixExpr;
     };
     desktoppr: {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        color?: unknown;
-        picture?: unknown | null;
+        color?: string;
+        picture?: string | null;
         scale?: "center" | "fill" | "fit" | "stretch";
         setOnlyOnce?: boolean;
-        sha256?: unknown | null;
+        sha256?: string | null;
       };
     };
     "diff-highlight": {
@@ -587,7 +587,7 @@ declare module "winix" {
       enable?: boolean;
       enableGitIntegration?: boolean;
       pagerOpts?: string[] | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, string | boolean | number>;
     };
     difftastic: {
       enable?: boolean;
@@ -598,7 +598,7 @@ declare module "winix" {
       jujutsu?: {
         enable?: boolean;
       };
-      options?: Record<string, unknown>;
+      options?: Record<string, string | number | boolean | (string | number | boolean)[]>;
       package?: string | NixExpr;
     };
     dircolors: {
@@ -612,7 +612,7 @@ declare module "winix" {
       settings?: Record<string, string>;
     };
     direnv: {
-      config?: unknown;
+      config?: Record<string, unknown>;
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableFishIntegration?: boolean;
@@ -647,7 +647,7 @@ declare module "winix" {
       };
     };
     distrobox: {
-      containers?: Record<string, unknown>;
+      containers?: Record<string, Record<string, unknown>>;
       enable?: boolean;
       enableSystemdUnit?: boolean;
       package?: string | NixExpr | null;
@@ -659,12 +659,12 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     earthly: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     ec: {
       enable?: boolean;
@@ -681,8 +681,8 @@ declare module "winix" {
     "element-desktop": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      profiles?: Record<string, unknown>;
-      settings?: unknown;
+      profiles?: Record<string, Record<string, unknown>>;
+      settings?: Record<string, unknown>;
     };
     emacs: {
       enable?: boolean;
@@ -695,11 +695,11 @@ declare module "winix" {
       enable?: boolean;
       equicord?: {
         extraQuickCss?: string;
-        settings?: unknown;
-        themes?: Record<string, unknown>;
+        settings?: Record<string, unknown>;
+        themes?: Record<string, string>;
       };
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     eww: {
       enable?: boolean;
@@ -723,7 +723,7 @@ declare module "winix" {
       git?: boolean;
       icons?: "always" | "auto" | "never";
       package?: string | NixExpr | null;
-      theme?: unknown;
+      theme?: Record<string, unknown>;
     };
     "fabric-ai": {
       enable?: boolean;
@@ -736,7 +736,7 @@ declare module "winix" {
     fastfetch: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     fd: {
       enable?: boolean;
@@ -748,12 +748,12 @@ declare module "winix" {
     feedr: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     feh: {
-      buttons?: Record<string, unknown | null>;
+      buttons?: Record<string, string | number | (string | number)[] | null>;
       enable?: boolean;
-      keybindings?: Record<string, unknown | null>;
+      keybindings?: Record<string, string | string[] | null>;
       package?: string | NixExpr | null;
       themes?: Record<string, string[]>;
     };
@@ -766,7 +766,7 @@ declare module "winix" {
       nativeMessagingHosts?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr | null;
       pkcs11Modules?: (string | NixExpr)[] | NixExpr;
-      policies?: Record<string, unknown>;
+      policies?: Record<string, Record<string, unknown>>;
       profiles?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -777,7 +777,7 @@ declare module "winix" {
       profiles?: {
         "<name>"?: Record<string, unknown>;
       };
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     fish: {
       binds?: {
@@ -808,8 +808,8 @@ declare module "winix" {
     flashspace: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      profiles?: unknown;
-      settings?: unknown;
+      profiles?: Record<string, unknown>;
+      settings?: Record<string, unknown>;
     };
     floorp: {
       darwinDefaultsId?: string | null;
@@ -820,7 +820,7 @@ declare module "winix" {
       nativeMessagingHosts?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr | null;
       pkcs11Modules?: (string | NixExpr)[] | NixExpr;
-      policies?: Record<string, unknown>;
+      policies?: Record<string, Record<string, unknown>>;
       profiles?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -829,7 +829,7 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr | null;
       settings?: Record<string, unknown>;
-      themes?: Record<string, unknown>;
+      themes?: Record<string, Record<string, unknown> | string>;
     };
     foot: {
       enable?: boolean;
@@ -838,29 +838,29 @@ declare module "winix" {
         enable?: boolean;
         systemdTarget?: string;
       };
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     formiko: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     freetube: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "fresh-editor": {
       defaultEditor?: boolean;
       enable?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     fuzzel: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     fzf: {
       changeDirWidgetCommand?: string | null;
@@ -884,7 +884,7 @@ declare module "winix" {
     "gallery-dl": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     gcc: {
       colors?: Record<string, string>;
@@ -895,13 +895,13 @@ declare module "winix" {
       commands?: {
         "<name>"?: Record<string, unknown>;
       };
-      context?: Record<string, unknown>;
+      context?: Record<string, string>;
       defaultModel?: string | null;
       enable?: boolean;
       enableMcpIntegration?: boolean;
       package?: string | NixExpr | null;
-      policies?: Record<string, unknown>;
-      settings?: unknown;
+      policies?: Record<string, string | Record<string, unknown>>;
+      settings?: Record<string, unknown>;
       skills?: unknown;
     };
     gh: {
@@ -911,7 +911,7 @@ declare module "winix" {
         enable?: boolean;
         hosts?: string[] | NixExpr;
       };
-      hosts?: unknown;
+      hosts?: Record<string, unknown>;
       package?: string | NixExpr;
       settings?: {
         aliases?: Record<string, string>;
@@ -922,7 +922,7 @@ declare module "winix" {
     "gh-dash": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     ghostty: {
       clearDefaultKeybinds?: boolean;
@@ -969,7 +969,7 @@ declare module "winix" {
     "git-cliff": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "git-credential-keepassxc": {
       enable?: boolean;
@@ -992,20 +992,20 @@ declare module "winix" {
     "github-copilot-cli": {
       agents?: unknown;
       configDir?: string;
-      context?: unknown;
+      context?: string;
       enable?: boolean;
       enableMcpIntegration?: boolean;
-      lspServers?: Record<string, unknown>;
-      mcpServers?: Record<string, unknown>;
+      lspServers?: Record<string, Record<string, unknown>>;
+      mcpServers?: Record<string, Record<string, unknown>>;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
       skills?: unknown;
     };
     gitui: {
       enable?: boolean;
-      keyConfig?: unknown;
+      keyConfig?: string;
       package?: string | NixExpr;
-      theme?: unknown;
+      theme?: string;
     };
     "gnome-shell": {
       enable?: boolean;
@@ -1029,8 +1029,8 @@ declare module "winix" {
     go: {
       enable?: boolean;
       env?: {
-        GOPATH?: unknown;
-        GOPRIVATE?: unknown;
+        GOPATH?: string | string[] | NixExpr;
+        GOPRIVATE?: string | string[] | NixExpr;
       };
       package?: string | NixExpr | null;
       packages?: Record<string, string>;
@@ -1055,9 +1055,9 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     gpg: {
-      dirmngrSettings?: Record<string, unknown>;
+      dirmngrSettings?: Record<string, string | boolean | string[]>;
       enable?: boolean;
-      gpgsmSettings?: Record<string, unknown>;
+      gpgsmSettings?: Record<string, string | boolean | string[]>;
       homedir?: string;
       mutableKeys?: boolean;
       mutableTrust?: boolean;
@@ -1065,8 +1065,8 @@ declare module "winix" {
       publicKeys?: {
         "*"?: Record<string, unknown>;
       };
-      scdaemonSettings?: Record<string, unknown>;
-      settings?: Record<string, unknown>;
+      scdaemonSettings?: Record<string, string | boolean | string[]>;
+      settings?: Record<string, string | boolean | string[]>;
     };
     gradle: {
       enable?: boolean;
@@ -1091,23 +1091,23 @@ declare module "winix" {
     grype: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "gurk-rs": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     halloy: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
-      themes?: Record<string, unknown>;
+      settings?: Record<string, unknown>;
+      themes?: Record<string, Record<string, unknown> | string>;
     };
     havoc: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     helix: {
       defaultEditor?: boolean;
@@ -1117,8 +1117,8 @@ declare module "winix" {
       ignores?: string[] | NixExpr;
       languages?: unknown;
       package?: string | NixExpr;
-      settings?: unknown;
-      themes?: Record<string, unknown>;
+      settings?: Record<string, unknown>;
+      themes?: Record<string, Record<string, unknown> | string>;
     };
     hexchat: {
       channels?: {
@@ -1149,7 +1149,7 @@ declare module "winix" {
     htop: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string | (number | string)[]>;
     };
     hwatch: {
       enable?: boolean;
@@ -1159,7 +1159,7 @@ declare module "winix" {
     hyfetch: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     hyprlock: {
       enable?: boolean;
@@ -1172,7 +1172,7 @@ declare module "winix" {
     hyprpanel: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       systemd?: {
         enable?: boolean;
       };
@@ -1185,7 +1185,7 @@ declare module "winix" {
     "i3bar-river": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     i3blocks: {
       bars?: Record<string, unknown>;
@@ -1195,7 +1195,7 @@ declare module "winix" {
     i3status: {
       enable?: boolean;
       enableDefault?: boolean;
-      general?: Record<string, unknown>;
+      general?: Record<string, boolean | number | string>;
       modules?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -1211,18 +1211,18 @@ declare module "winix" {
     iamb: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     imv: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, Record<string, unknown>>;
+      settings?: Record<string, Record<string, boolean | number | string>>;
     };
     infat: {
       autoActivate?: boolean;
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     info: {
       enable?: boolean;
@@ -1231,7 +1231,7 @@ declare module "winix" {
     inori: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "intelli-shell": {
       enable?: boolean;
@@ -1240,7 +1240,7 @@ declare module "winix" {
       enableNushellIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       shellHotkeys?: Record<string, string>;
     };
     ion: {
@@ -1268,15 +1268,15 @@ declare module "winix" {
     };
     jjui: {
       configDir?: string;
-      configLua?: unknown | null;
+      configLua?: string | null;
       enable?: boolean;
       package?: string | NixExpr | null;
-      plugins?: Record<string, unknown>;
-      settings?: unknown;
+      plugins?: Record<string, string>;
+      settings?: Record<string, unknown>;
     };
     "joplin-desktop": {
       enable?: boolean;
-      extraConfig?: unknown;
+      extraConfig?: Record<string, unknown>;
       general?: {
         editor?: string | null;
       };
@@ -1288,11 +1288,11 @@ declare module "winix" {
     };
     joshuto: {
       enable?: boolean;
-      keymap?: unknown;
-      mimetype?: unknown;
+      keymap?: Record<string, unknown>;
+      mimetype?: Record<string, unknown>;
       package?: string | NixExpr;
-      settings?: unknown;
-      theme?: unknown;
+      settings?: Record<string, unknown>;
+      theme?: Record<string, unknown>;
     };
     jq: {
       colors?: Record<string, unknown> | null;
@@ -1302,28 +1302,28 @@ declare module "winix" {
     jqp: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     jrnl: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     jujutsu: {
       ediff?: boolean;
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     k9s: {
-      aliases?: unknown;
+      aliases?: Record<string, unknown>;
       enable?: boolean;
-      hotKeys?: unknown;
+      hotKeys?: Record<string, unknown>;
       package?: string | NixExpr | null;
-      plugins?: unknown;
-      settings?: unknown;
-      skins?: Record<string, unknown>;
-      views?: unknown;
+      plugins?: Record<string, unknown>;
+      settings?: Record<string, unknown>;
+      skins?: Record<string, Record<string, unknown> | string>;
+      views?: Record<string, unknown>;
     };
     kakoune: {
       colorSchemePackage?: string | NixExpr | null;
@@ -1335,13 +1335,13 @@ declare module "winix" {
         colorScheme?: string | null;
         hooks?: Record<string, unknown>;
         incrementalSearch?: boolean;
-        indentWidth?: unknown | null;
+        indentWidth?: number | null;
         keyMappings?: Record<string, unknown>;
         numberLines?: Record<string, unknown>;
         scrollOff?: Record<string, unknown>;
         showMatching?: boolean;
         showWhitespace?: Record<string, unknown>;
-        tabStop?: unknown | null;
+        tabStop?: number | null;
         ui?: Record<string, unknown>;
         wrapLines?: Record<string, unknown>;
       };
@@ -1356,7 +1356,7 @@ declare module "winix" {
       autostart?: boolean;
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     keychain: {
       agents?: string[] | NixExpr;
@@ -1386,7 +1386,7 @@ declare module "winix" {
         weeknumbers?: "left" | "off" | "right";
       };
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     khard: {
       enable?: boolean;
@@ -1398,10 +1398,10 @@ declare module "winix" {
     kickoff: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     kiro: {
-      argvSettings?: unknown;
+      argvSettings?: string | Record<string, unknown>;
       enable?: boolean;
       mutableExtensionsDir?: boolean;
       package?: string | NixExpr | null;
@@ -1420,7 +1420,7 @@ declare module "winix" {
       diffConfig?: {
         extraConfig?: string;
         keybindings?: Record<string, string>;
-        settings?: Record<string, unknown>;
+        settings?: Record<string, string | boolean | number>;
       };
       enable?: boolean;
       enableGitIntegration?: boolean;
@@ -1429,13 +1429,13 @@ declare module "winix" {
       font?: {
         name?: string;
         package?: string | NixExpr | null;
-        size?: unknown | null;
+        size?: number | null;
       };
       keybindings?: Record<string, string>;
       mouseBindings?: Record<string, string>;
       package?: string | NixExpr | null;
-      quickAccessTerminalConfig?: Record<string, unknown>;
-      settings?: Record<string, unknown>;
+      quickAccessTerminalConfig?: Record<string, string | boolean | number>;
+      settings?: Record<string, string | boolean | number>;
       shellIntegration?: {
         enableBashIntegration?: boolean;
         enableFishIntegration?: boolean;
@@ -1455,14 +1455,14 @@ declare module "winix" {
     kraftkit: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     kubecolor: {
       enable?: boolean;
       enableAlias?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     kubeswitch: {
       commandName?: string;
@@ -1471,22 +1471,22 @@ declare module "winix" {
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     lapce: {
       channel?: "nightly" | "stable";
       enable?: boolean;
-      keymaps?: unknown;
+      keymaps?: Record<string, unknown>;
       package?: string | NixExpr | null;
       plugins?: {
         "*"?: Record<string, unknown>;
       };
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     lazydocker: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     lazygit: {
       enable?: boolean;
@@ -1495,13 +1495,13 @@ declare module "winix" {
       enableNushellIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       shellWrapperName?: string;
     };
     lazysql: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     lazyworktree: {
       enable?: boolean;
@@ -1509,14 +1509,14 @@ declare module "winix" {
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       shellWrapperName?: string;
     };
     ledger: {
       enable?: boolean;
       extraConfig?: string;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string | string[]>;
     };
     less: {
       config?: string;
@@ -1539,7 +1539,7 @@ declare module "winix" {
         keybinding?: string | null;
         source?: string | null;
       };
-      settings?: Record<string, unknown>;
+      settings?: Record<string, string | number | (string | number)[] | boolean>;
     };
     librewolf: {
       darwinDefaultsId?: string | null;
@@ -1550,11 +1550,11 @@ declare module "winix" {
       nativeMessagingHosts?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr | null;
       pkcs11Modules?: (string | NixExpr)[] | NixExpr;
-      policies?: Record<string, unknown>;
+      policies?: Record<string, Record<string, unknown>>;
       profiles?: {
         "<name>"?: Record<string, unknown>;
       };
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string>;
     };
     lieer: {
       enable?: boolean;
@@ -1563,17 +1563,17 @@ declare module "winix" {
     "looking-glass-client": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     lsd: {
-      colors?: unknown;
+      colors?: Record<string, unknown> | string;
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
-      icons?: unknown;
+      icons?: Record<string, unknown> | string;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     lutris: {
       defaultWinePackage?: string | NixExpr | null;
@@ -1623,8 +1623,8 @@ declare module "winix" {
       enable?: boolean;
       enableSessionWide?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
-      settingsPerApplication?: Record<string, Record<string, unknown>>;
+      settings?: Record<string, boolean | number | string | (number | string)[]>;
+      settingsPerApplication?: Record<string, Record<string, boolean | number | string | (number | string)[]>>;
     };
     matplotlib: {
       config?: Record<string, unknown>;
@@ -1639,12 +1639,12 @@ declare module "winix" {
     };
     mc: {
       enable?: boolean;
-      extensionSettings?: Record<string, unknown>;
-      fileHighlightSettings?: Record<string, unknown>;
-      keymapSettings?: Record<string, unknown>;
+      extensionSettings?: Record<string, Record<string, unknown>>;
+      fileHighlightSettings?: Record<string, Record<string, unknown>>;
+      keymapSettings?: Record<string, Record<string, unknown>>;
       package?: string | NixExpr | null;
-      panelsSettings?: Record<string, unknown>;
-      settings?: Record<string, unknown>;
+      panelsSettings?: Record<string, Record<string, unknown>>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     mcfly: {
       enable?: boolean;
@@ -1652,7 +1652,7 @@ declare module "winix" {
       enableFishIntegration?: boolean;
       enableLightTheme?: boolean;
       enableZshIntegration?: boolean;
-      fuzzySearchFactor?: unknown;
+      fuzzySearchFactor?: number;
       fzf?: {
         enable?: boolean;
       };
@@ -1660,11 +1660,11 @@ declare module "winix" {
       keyScheme?: "emacs" | "vim";
       mcflyFzfPackage?: string | NixExpr;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     mcp: {
       enable?: boolean;
-      servers?: unknown;
+      servers?: Record<string, unknown>;
     };
     meli: {
       enable?: boolean;
@@ -1691,7 +1691,7 @@ declare module "winix" {
     micro: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "microsoft-edge": {
       nativeMessagingHosts?: (string | NixExpr)[] | NixExpr;
@@ -1702,13 +1702,13 @@ declare module "winix" {
       enableFishIntegration?: boolean;
       enableNushellIntegration?: boolean;
       enableZshIntegration?: boolean;
-      globalConfig?: unknown;
+      globalConfig?: Record<string, unknown>;
       package?: string | NixExpr | null;
     };
     "mistral-vibe": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     mods: {
       enable?: boolean;
@@ -1716,19 +1716,19 @@ declare module "winix" {
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     mpv: {
       bindings?: Record<string, string>;
-      config?: Record<string, unknown>;
+      config?: Record<string, string | number | boolean | (string | number | boolean)[]>;
       defaultProfiles?: string[] | NixExpr;
       enable?: boolean;
       extraInput?: string;
       extraMakeWrapperArgs?: string[] | NixExpr;
       includes?: string[] | NixExpr;
       package?: string | NixExpr;
-      profiles?: Record<string, Record<string, unknown>>;
-      scriptOpts?: Record<string, Record<string, unknown>>;
+      profiles?: Record<string, Record<string, string | number | boolean | (string | number | boolean)[]>>;
+      scriptOpts?: Record<string, Record<string, string | number | boolean | (string | number | boolean)[]>>;
       scripts?: (string | NixExpr)[] | NixExpr;
     };
     mpvpaper: {
@@ -1740,7 +1740,7 @@ declare module "winix" {
     mr: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     msmtp: {
       configContent?: string;
@@ -1759,12 +1759,12 @@ declare module "winix" {
     "mullvad-vpn": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     mypy: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     navi: {
       enable?: boolean;
@@ -1772,21 +1772,21 @@ declare module "winix" {
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     ncmpcpp: {
       bindings?: {
         "*"?: Record<string, unknown>;
       };
       enable?: boolean;
-      mpdMusicDir?: unknown | null;
+      mpdMusicDir?: string | null;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string>;
     };
     ncspot: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     ne: {
       automaticPreferences?: Record<string, string>;
@@ -1825,7 +1825,7 @@ declare module "winix" {
     neovide: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     neovim: {
       autowrapRuntimeDeps?: boolean;
@@ -1833,7 +1833,7 @@ declare module "winix" {
         enable?: boolean;
         package?: string | NixExpr;
         pluginConfig?: string;
-        settings?: unknown;
+        settings?: Record<string, unknown>;
       };
       defaultEditor?: boolean;
       enable?: boolean;
@@ -1885,21 +1885,21 @@ declare module "winix" {
     };
     nh: {
       clean?: {
-        dates?: unknown;
+        dates?: string;
         enable?: boolean;
-        extraArgs?: unknown;
+        extraArgs?: string;
       };
-      darwinFlake?: unknown | null;
+      darwinFlake?: string | null;
       enable?: boolean;
-      flake?: unknown | null;
-      homeFlake?: unknown | null;
-      osFlake?: unknown | null;
+      flake?: string | null;
+      homeFlake?: string | null;
+      osFlake?: string | null;
       package?: string | NixExpr;
     };
     nheko: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     "nix-index": {
       enable?: boolean;
@@ -1912,13 +1912,13 @@ declare module "winix" {
     "nix-init": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "nix-search-tv": {
       enable?: boolean;
       enableTelevisionIntegration?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "nix-your-shell": {
       enable?: boolean;
@@ -1983,12 +1983,12 @@ declare module "winix" {
     };
     numbat: {
       enable?: boolean;
-      initFile?: unknown | null;
+      initFile?: string | null;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     nushell: {
-      configDir?: unknown;
+      configDir?: string;
       configFile?: {
         source?: string | null;
         text?: string;
@@ -2019,7 +2019,7 @@ declare module "winix" {
       };
     };
     nyxt: {
-      config?: unknown;
+      config?: string;
       enable?: boolean;
       package?: string | NixExpr | null;
     };
@@ -2033,8 +2033,8 @@ declare module "winix" {
         enable?: boolean;
       };
       defaultSettings?: {
-        app?: unknown;
-        appearance?: unknown;
+        app?: Record<string, unknown>;
+        appearance?: Record<string, unknown>;
         communityPlugins?: Record<string, unknown>;
         corePlugins?: Record<string, unknown>;
         cssSnippets?: Record<string, unknown>;
@@ -2051,22 +2051,22 @@ declare module "winix" {
     offlineimap: {
       enable?: boolean;
       extraConfig?: {
-        default?: Record<string, unknown>;
-        general?: Record<string, unknown>;
-        mbnames?: Record<string, unknown>;
+        default?: Record<string, string | number | boolean>;
+        general?: Record<string, string | number | boolean>;
+        mbnames?: Record<string, string | number | boolean>;
       };
       package?: string | NixExpr;
       pythonFile?: string;
     };
     "oh-my-posh": {
-      configFile?: unknown | null;
+      configFile?: string | null;
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableFishIntegration?: boolean;
       enableNushellIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       useTheme?: string | null;
     };
     onagre: {
@@ -2094,16 +2094,16 @@ declare module "winix" {
     opencode: {
       agents?: unknown;
       commands?: unknown;
-      context?: unknown;
+      context?: string;
       enable?: boolean;
       enableMcpIntegration?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       skills?: unknown;
       themes?: unknown;
       tools?: unknown;
-      tui?: unknown;
+      tui?: Record<string, unknown>;
       web?: {
         enable?: boolean;
         environmentFile?: string | null;
@@ -2119,11 +2119,11 @@ declare module "winix" {
     opkssh: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     pandoc: {
       citationStyles?: string[] | NixExpr;
-      defaults?: unknown;
+      defaults?: Record<string, unknown>;
       defaultsFile?: string;
       enable?: boolean;
       finalPackage?: string | NixExpr;
@@ -2136,7 +2136,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string>;
     };
     parallel: {
       enable?: boolean;
@@ -2161,7 +2161,7 @@ declare module "winix" {
       enableZshIntegration?: boolean;
       options?: string[] | NixExpr;
       package?: string | NixExpr;
-      rules?: Record<string, unknown>;
+      rules?: Record<string, Record<string, unknown>>;
     };
     pazi: {
       enable?: boolean;
@@ -2174,7 +2174,7 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr | null;
       selectcmdPackage?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       snippets?: {
         "*"?: Record<string, unknown>;
       };
@@ -2182,14 +2182,14 @@ declare module "winix" {
     pgcli: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     pianobar: {
       enable?: boolean;
       package?: string | NixExpr | null;
       settings?: {
-        password_command?: unknown;
-        user?: unknown;
+        password_command?: string;
+        user?: string;
       };
     };
     pidgin: {
@@ -2212,7 +2212,7 @@ declare module "winix" {
     "piston-cli": {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     pls: {
       enable?: boolean;
@@ -2224,7 +2224,7 @@ declare module "winix" {
     poetry: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "powerline-go": {
       enable?: boolean;
@@ -2234,13 +2234,13 @@ declare module "winix" {
       newline?: boolean;
       package?: string | NixExpr;
       pathAliases?: Record<string, string> | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string | string[]>;
     };
     pqiv: {
       enable?: boolean;
       extraConfig?: string;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     prismlauncher: {
       enable?: boolean;
@@ -2270,12 +2270,12 @@ declare module "winix" {
     pylint: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     pyradio: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, string | number | boolean>;
       stations?: {
         "*"?: Record<string, unknown>;
       };
@@ -2287,13 +2287,13 @@ declare module "winix" {
     qalculate: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     qcal: {
-      defaultNumDays?: unknown;
+      defaultNumDays?: number;
       enable?: boolean;
       package?: string | NixExpr | null;
-      timezone?: unknown;
+      timezone?: string;
     };
     quickshell: {
       activeConfig?: string | null;
@@ -2311,7 +2311,7 @@ declare module "winix" {
       enableDefaultBindings?: boolean;
       extraConfig?: string;
       greasemonkey?: (string | NixExpr)[] | NixExpr;
-      keyBindings?: Record<string, Record<string, unknown | null>>;
+      keyBindings?: Record<string, Record<string, string | null>>;
       keyMappings?: Record<string, string>;
       loadAutoconfig?: boolean;
       package?: string | NixExpr | null;
@@ -2335,15 +2335,15 @@ declare module "winix" {
       };
     };
     "radio-active": {
-      aliases?: Record<string, unknown>;
+      aliases?: Record<string, string>;
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, Record<string, unknown>>;
+      settings?: Record<string, Record<string, string>>;
     };
     "radio-cli": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     ranger: {
       aliases?: Record<string, string>;
@@ -2358,7 +2358,7 @@ declare module "winix" {
       rifle?: {
         "*"?: Record<string, unknown>;
       };
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string>;
     };
     rbenv: {
       enable?: boolean;
@@ -2377,7 +2377,7 @@ declare module "winix" {
         base_url?: string | null;
         email?: string;
         identity_url?: string | null;
-        lock_timeout?: unknown;
+        lock_timeout?: number;
         pinentry?: string | NixExpr | null;
       };
     };
@@ -2394,7 +2394,7 @@ declare module "winix" {
       enable?: boolean;
       extraConfig?: string;
       includeSystemConfig?: boolean;
-      variables?: Record<string, unknown>;
+      variables?: Record<string, string | number | boolean>;
     };
     rectangle: {
       defaults?: Record<string, unknown>;
@@ -2407,7 +2407,7 @@ declare module "winix" {
     retext: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     retroarch: {
       cores?: {
@@ -2427,8 +2427,8 @@ declare module "winix" {
     rio: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
-      themes?: Record<string, unknown>;
+      settings?: Record<string, unknown>;
+      themes?: Record<string, Record<string, unknown> | string>;
     };
     ripgrep: {
       arguments?: string[] | NixExpr;
@@ -2446,7 +2446,7 @@ declare module "winix" {
       enable?: boolean;
       extraConfig?: string;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, string | number | boolean>;
     };
     rmpc: {
       config?: string;
@@ -2454,7 +2454,7 @@ declare module "winix" {
       package?: string | NixExpr | null;
     };
     rofi: {
-      configPath?: unknown;
+      configPath?: string;
       cycle?: boolean | null;
       enable?: boolean;
       extraConfig?: Record<string, unknown>;
@@ -2473,7 +2473,7 @@ declare module "winix" {
       };
       plugins?: (string | NixExpr)[] | NixExpr;
       terminal?: string | null;
-      theme?: unknown | null;
+      theme?: string | Record<string, unknown> | null;
       xoffset?: number;
       yoffset?: number;
     };
@@ -2485,7 +2485,7 @@ declare module "winix" {
     ruff: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     sagemath: {
       configDir?: string;
@@ -2505,7 +2505,7 @@ declare module "winix" {
     satty: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     sbt: {
       baseUserConfigPath?: string;
@@ -2531,7 +2531,7 @@ declare module "winix" {
     screen: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      screenrc?: unknown | null;
+      screenrc?: string | null;
     };
     "script-directory": {
       enable?: boolean;
@@ -2573,24 +2573,24 @@ declare module "winix" {
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     sherlock: {
-      aliases?: unknown;
+      aliases?: Record<string, unknown>;
       enable?: boolean;
       ignore?: string;
-      launchers?: unknown;
+      launchers?: Record<string, unknown>;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       style?: string;
       systemd?: {
         enable?: boolean;
       };
     };
     sioyek: {
-      bindings?: Record<string, unknown>;
+      bindings?: Record<string, string | string[]>;
       config?: {
-        startup_commands?: unknown;
+        startup_commands?: string | string[] | NixExpr;
       };
       enable?: boolean;
       package?: string | NixExpr;
@@ -2611,8 +2611,8 @@ declare module "winix" {
       sbarLuaPackage?: string | NixExpr | null;
       service?: {
         enable?: boolean;
-        errorLogFile?: unknown | null;
-        outLogFile?: unknown | null;
+        errorLogFile?: string | null;
+        outLogFile?: string | null;
       };
     };
     skim: {
@@ -2635,7 +2635,7 @@ declare module "winix" {
       extraCompileFlags?: string[] | null;
       package?: string | NixExpr | null;
       region?: "eu" | "jp" | "us" | null;
-      settings?: Record<string, unknown> | null;
+      settings?: Record<string, string | number | boolean | string[]> | null;
     };
     smug: {
       enable?: boolean;
@@ -2645,17 +2645,17 @@ declare module "winix" {
       };
     };
     "spotify-player": {
-      actions?: unknown[] | NixExpr;
+      actions?: Record<string, unknown>[] | NixExpr;
       enable?: boolean;
-      keymaps?: unknown[] | NixExpr;
+      keymaps?: Record<string, unknown>[] | NixExpr;
       package?: string | NixExpr | null;
-      settings?: unknown;
-      themes?: unknown[] | NixExpr;
+      settings?: Record<string, unknown>;
+      themes?: Record<string, unknown>[] | NixExpr;
     };
     sqls: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     ssh: {
       enable?: boolean;
@@ -2681,7 +2681,7 @@ declare module "winix" {
       extraPackages?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr;
       presets?: string[] | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     streamlink: {
       enable?: boolean;
@@ -2689,63 +2689,63 @@ declare module "winix" {
       plugins?: {
         "<name>"?: Record<string, unknown>;
       };
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string | (number | string)[]>;
     };
     superfile: {
       enable?: boolean;
       firstUseCheck?: boolean;
-      hotkeys?: unknown;
+      hotkeys?: Record<string, unknown>;
       metadataPackage?: string | NixExpr | null;
       package?: string | NixExpr | null;
       pinnedFolders?: {
         "*"?: Record<string, unknown>;
       };
-      settings?: unknown;
-      themes?: Record<string, unknown>;
+      settings?: Record<string, unknown>;
+      themes?: Record<string, Record<string, unknown> | string>;
       zoxidePackage?: string | NixExpr | null;
     };
     swappy: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     "sway-easyfocus": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     swayimg: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     swaylock: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string>;
     };
     swayr: {
       enable?: boolean;
       extraConfig?: string;
       package?: string | NixExpr;
-      settings?: unknown | null;
+      settings?: Record<string, unknown> | null;
       systemd?: {
         enable?: boolean;
         target?: string;
       };
     };
     t3code: {
-      clientSettings?: unknown;
+      clientSettings?: Record<string, unknown>;
       enable?: boolean;
-      keybindings?: unknown;
+      keybindings?: Record<string, unknown>;
       mutableClientSettings?: boolean;
       mutableKeybindings?: boolean;
       mutableUserSettings?: boolean;
       package?: string | NixExpr | null;
-      userSettings?: unknown;
+      userSettings?: Record<string, unknown>;
     };
     taskwarrior: {
-      colorTheme?: unknown | null;
+      colorTheme?: string | null;
       config?: Record<string, unknown>;
       dataLocation?: string;
       enable?: boolean;
@@ -2761,14 +2761,14 @@ declare module "winix" {
       };
     };
     television: {
-      channels?: Record<string, unknown>;
+      channels?: Record<string, Record<string, unknown>>;
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableFishIntegration?: boolean;
       enableNushellIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     terminator: {
       config?: Record<string, unknown>;
@@ -2822,7 +2822,7 @@ declare module "winix" {
     "tex-fmt": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     texlive: {
       enable?: boolean;
@@ -2836,7 +2836,7 @@ declare module "winix" {
       languagePacks?: string[] | NixExpr;
       nativeMessagingHosts?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr;
-      policies?: Record<string, unknown>;
+      policies?: Record<string, Record<string, unknown>>;
       profiles?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -2856,7 +2856,7 @@ declare module "winix" {
     tiny: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     tirith: {
       allowlist?: string[] | NixExpr;
@@ -2865,7 +2865,7 @@ declare module "winix" {
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr;
-      policy?: unknown;
+      policy?: Record<string, unknown>;
     };
     tmate: {
       dsaFingerprint?: string | null;
@@ -2873,20 +2873,20 @@ declare module "winix" {
       extraConfig?: string;
       host?: string | null;
       package?: string | NixExpr;
-      port?: unknown | null;
+      port?: number | null;
       rsaFingerprint?: string | null;
     };
     tmux: {
       aggressiveResize?: boolean;
-      baseIndex?: unknown;
+      baseIndex?: number;
       clock24?: boolean;
       customPaneNavigationAndResize?: boolean;
       disableConfirmationPrompt?: boolean;
       enable?: boolean;
-      escapeTime?: unknown;
+      escapeTime?: number;
       extraConfig?: string;
       focusEvents?: boolean;
-      historyLimit?: unknown;
+      historyLimit?: number;
       keyMode?: "emacs" | "vi";
       mouse?: boolean;
       newSession?: boolean;
@@ -2895,7 +2895,7 @@ declare module "winix" {
         "*"?: Record<string, unknown>;
       };
       prefix?: string | null;
-      resizeAmount?: unknown;
+      resizeAmount?: number;
       reverseSplit?: boolean;
       secureSocket?: boolean;
       sensibleOnTop?: boolean;
@@ -2905,7 +2905,7 @@ declare module "winix" {
       tmuxinator?: {
         enable?: boolean;
         package?: string | NixExpr | null;
-        projects?: Record<string, unknown>;
+        projects?: Record<string, Record<string, unknown>>;
       };
       tmuxp?: {
         enable?: boolean;
@@ -2920,43 +2920,43 @@ declare module "winix" {
     tofi: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, string | number | boolean>;
     };
     topgrade: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "translate-shell": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | string | string[]>;
     };
     "tray-tui": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     trippy: {
       enable?: boolean;
       forceUserConfig?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     ttyper: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "twitch-tui": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     ty: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     urxvt: {
       enable?: boolean;
@@ -2968,7 +2968,7 @@ declare module "winix" {
       scroll?: {
         bar?: Record<string, unknown>;
         keepPosition?: boolean;
-        lines?: unknown;
+        lines?: number;
         scrollOnKeystroke?: boolean;
         scrollOnOutput?: boolean;
       };
@@ -2978,7 +2978,7 @@ declare module "winix" {
     uv: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     vdirsyncer: {
       enable?: boolean;
@@ -2988,11 +2988,11 @@ declare module "winix" {
     vesktop: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       vencord?: {
         extraQuickCss?: string;
-        settings?: unknown;
-        themes?: Record<string, unknown>;
+        settings?: Record<string, unknown>;
+        themes?: Record<string, string>;
         useSystem?: boolean;
       };
     };
@@ -3000,13 +3000,13 @@ declare module "winix" {
       enable?: boolean;
       extensions?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       systemd?: {
         autoStart?: boolean;
         enable?: boolean;
         target?: string;
       };
-      themes?: unknown;
+      themes?: Record<string, unknown>;
       useLayerShell?: boolean;
     };
     vifm: {
@@ -3020,18 +3020,18 @@ declare module "winix" {
       extraConfig?: string;
       package?: string | NixExpr;
       packageConfigurable?: string | NixExpr;
-      plugins?: unknown[] | NixExpr;
+      plugins?: (string | string | NixExpr)[];
       settings?: Record<string, unknown>;
     };
     "vim-vint": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     vinegar: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     visidata: {
       enable?: boolean;
@@ -3043,18 +3043,18 @@ declare module "winix" {
     };
     vivid: {
       activeTheme?: string | null;
-      colorMode?: unknown | null;
+      colorMode?: string | "24-bit" | "8-bit" | null;
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableFishIntegration?: boolean;
       enableNushellIntegration?: boolean;
       enableZshIntegration?: boolean;
-      filetypes?: unknown;
+      filetypes?: Record<string, unknown>;
       package?: string | NixExpr | null;
-      themes?: Record<string, unknown>;
+      themes?: Record<string, string | Record<string, unknown>>;
     };
     vscode: {
-      argvSettings?: unknown;
+      argvSettings?: string | Record<string, unknown>;
       enable?: boolean;
       haskell?: {
         enable?: boolean;
@@ -3067,7 +3067,7 @@ declare module "winix" {
       };
     };
     vscodium: {
-      argvSettings?: unknown;
+      argvSettings?: string | Record<string, unknown>;
       enable?: boolean;
       mutableExtensionsDir?: boolean;
       package?: string | NixExpr | null;
@@ -3089,7 +3089,7 @@ declare module "winix" {
       finalPackage?: string | NixExpr;
       homePage?: string;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, string | number>;
       siteconf?: {
         "*"?: Record<string, unknown>;
       };
@@ -3099,7 +3099,7 @@ declare module "winix" {
     wallust: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     watson: {
       enable?: boolean;
@@ -3107,20 +3107,20 @@ declare module "winix" {
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     waveterm: {
-      bookmarks?: unknown;
+      bookmarks?: Record<string, unknown>;
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
-      themes?: unknown;
+      settings?: Record<string, unknown>;
+      themes?: Record<string, unknown>;
     };
     waybar: {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      style?: unknown | null;
+      style?: string | null;
       systemd?: {
         enable?: boolean;
         enableDebug?: boolean;
@@ -3131,15 +3131,15 @@ declare module "winix" {
     waylogout: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string>;
     };
     wayprompt: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     wezterm: {
-      colorSchemes?: Record<string, unknown>;
+      colorSchemes?: Record<string, Record<string, unknown>>;
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableZshIntegration?: boolean;
@@ -3148,7 +3148,7 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     windsurf: {
-      argvSettings?: unknown;
+      argvSettings?: string | Record<string, unknown>;
       enable?: boolean;
       mutableExtensionsDir?: boolean;
       package?: string | NixExpr | null;
@@ -3159,8 +3159,8 @@ declare module "winix" {
     wleave: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
-      style?: unknown | null;
+      settings?: Record<string, unknown>;
+      style?: string | null;
     };
     wlogout: {
       enable?: boolean;
@@ -3168,18 +3168,18 @@ declare module "winix" {
         "*"?: Record<string, unknown>;
       };
       package?: string | NixExpr | null;
-      style?: unknown | null;
+      style?: string | null;
     };
     wofi: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
-      style?: unknown | null;
+      settings?: Record<string, unknown>;
+      style?: string | null;
     };
     workstyle: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       systemd?: {
         debug?: boolean;
         enable?: boolean;
@@ -3195,12 +3195,12 @@ declare module "winix" {
       enable?: boolean;
       extraConfig?: string;
       package?: string | NixExpr | null;
-      plugins?: Record<string, unknown> | null;
+      plugins?: Record<string, string | NixExpr | string> | null;
     };
     yambar: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       systemd?: {
         enable?: boolean;
         target?: string;
@@ -3208,7 +3208,7 @@ declare module "winix" {
     };
     yarn: {
       enable?: boolean;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     yazi: {
       enable?: boolean;
@@ -3217,29 +3217,29 @@ declare module "winix" {
       enableNushellIntegration?: boolean;
       enableZshIntegration?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
-      flavors?: Record<string, unknown>;
-      initLua?: unknown | null;
-      keymap?: unknown;
+      flavors?: Record<string, string | string | NixExpr>;
+      initLua?: string | null;
+      keymap?: Record<string, unknown>;
       package?: string | NixExpr | null;
       plugins?: {
         "<name>"?: Record<string, unknown>;
       };
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       shellWrapperName?: string;
-      theme?: unknown;
-      vfs?: unknown;
+      theme?: Record<string, unknown>;
+      vfs?: Record<string, unknown>;
     };
     yofi: {
       blacklist?: string[] | NixExpr;
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "yt-dlp": {
       enable?: boolean;
       extraConfig?: string;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string | (boolean | number | string)[]>;
     };
     "z-lua": {
       enable?: boolean;
@@ -3253,13 +3253,13 @@ declare module "winix" {
     zapzap: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     zathura: {
       enable?: boolean;
       extraConfig?: string;
       mappings?: Record<string, string>;
-      options?: Record<string, unknown>;
+      options?: Record<string, string | boolean | number>;
       package?: string | NixExpr;
     };
     "zed-editor": {
@@ -3274,11 +3274,11 @@ declare module "winix" {
       mutableUserSettings?: boolean;
       mutableUserTasks?: boolean;
       package?: string | NixExpr | null;
-      themes?: Record<string, unknown>;
-      userDebug?: unknown;
-      userKeymaps?: unknown;
-      userSettings?: unknown;
-      userTasks?: unknown;
+      themes?: Record<string, Record<string, unknown> | string>;
+      userDebug?: Record<string, unknown>;
+      userKeymaps?: Record<string, unknown>;
+      userSettings?: Record<string, unknown>;
+      userTasks?: Record<string, unknown>;
     };
     zellij: {
       attachExistingSession?: boolean;
@@ -3288,15 +3288,15 @@ declare module "winix" {
       enableZshIntegration?: boolean;
       exitShellOnExit?: boolean;
       extraConfig?: string;
-      layouts?: Record<string, unknown>;
+      layouts?: Record<string, Record<string, unknown> | string>;
       package?: string | NixExpr;
-      settings?: unknown;
-      themes?: Record<string, unknown>;
+      settings?: Record<string, unknown>;
+      themes?: Record<string, Record<string, unknown> | string>;
     };
     zk: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     zoxide: {
       enable?: boolean;
@@ -3350,7 +3350,7 @@ declare module "winix" {
         searchUpKey?: unknown;
       };
       initContent?: string;
-      localVariables?: unknown;
+      localVariables?: Record<string, unknown>;
       loginExtra?: string;
       logoutExtra?: string;
       "oh-my-zsh"?: {
@@ -3393,7 +3393,7 @@ declare module "winix" {
         utility?: Record<string, unknown>;
       };
       profileExtra?: string;
-      sessionVariables?: unknown;
+      sessionVariables?: Record<string, string | number | boolean | null>;
       setOptions?: string[] | NixExpr;
       shellAliases?: Record<string, string>;
       shellGlobalAliases?: Record<string, string>;
@@ -3428,7 +3428,7 @@ declare module "winix" {
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       watchers?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -3460,7 +3460,7 @@ declare module "winix" {
     avizo: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     awww: {
       enable?: boolean;
@@ -3514,15 +3514,15 @@ declare module "winix" {
       iconType?: "notification" | "standard" | "symbolic" | null;
       lowLevelPercent?: number | null;
       package?: string | NixExpr;
-      updateIntervalSeconds?: unknown | null;
+      updateIntervalSeconds?: number | null;
     };
     clipcat: {
-      ctlSettings?: unknown;
-      daemonSettings?: unknown;
+      ctlSettings?: Record<string, unknown>;
+      daemonSettings?: Record<string, unknown>;
       enable?: boolean;
       enableSystemdUnit?: boolean;
       enableZshIntegration?: boolean;
-      menuSettings?: unknown;
+      menuSettings?: Record<string, unknown>;
       package?: string | NixExpr;
     };
     cliphist: {
@@ -3554,10 +3554,10 @@ declare module "winix" {
         scaleY?: number;
         type?: "basic" | "kitty" | "sixel";
       };
-      keyBindings?: unknown;
+      keyBindings?: Record<string, unknown>;
       package?: string | NixExpr | null;
       systemdTarget?: string;
-      theme?: unknown;
+      theme?: Record<string, unknown>;
     };
     colima: {
       bashPackage?: string | NixExpr;
@@ -3579,8 +3579,8 @@ declare module "winix" {
       enable?: boolean;
       environment?: Record<string, string>;
       package?: string | NixExpr;
-      preset?: unknown;
-      protocols?: unknown;
+      preset?: string;
+      protocols?: string[] | NixExpr;
     };
     conky: {
       enable?: boolean;
@@ -3594,11 +3594,11 @@ declare module "winix" {
       systemdTarget?: string;
     };
     darkman: {
-      darkModeScripts?: Record<string, unknown>;
+      darkModeScripts?: Record<string, string>;
       enable?: boolean;
-      lightModeScripts?: Record<string, unknown>;
+      lightModeScripts?: Record<string, string>;
       package?: string | NixExpr | null;
-      scripts?: Record<string, unknown>;
+      scripts?: Record<string, string>;
       settings?: Record<string, unknown>;
     };
     davmail: {
@@ -3618,7 +3618,7 @@ declare module "winix" {
       path?: string;
     };
     dunst: {
-      configFile?: unknown | null;
+      configFile?: string | null;
       enable?: boolean;
       iconTheme?: {
         name?: string;
@@ -3633,20 +3633,20 @@ declare module "winix" {
     };
     "dwm-status": {
       enable?: boolean;
-      extraConfig?: unknown;
+      extraConfig?: Record<string, unknown>;
       order?: ("audio" | "backlight" | "battery" | "cpu_load" | "network" | "time")[] | NixExpr;
       package?: string | NixExpr;
     };
     easyeffects: {
       enable?: boolean;
-      extraPresets?: Record<string, Record<string, unknown>> | null;
+      extraPresets?: Record<string, Record<string, Record<string, unknown>>> | null;
       package?: string | NixExpr;
       preset?: string;
     };
     elephant: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     emacs: {
       client?: {
@@ -3660,12 +3660,12 @@ declare module "winix" {
       socketActivation?: {
         enable?: boolean;
       };
-      startWithUserSession?: unknown;
+      startWithUserSession?: boolean | "graphical";
     };
     espanso: {
-      configs?: unknown;
+      configs?: Record<string, unknown>;
       enable?: boolean;
-      matches?: unknown;
+      matches?: Record<string, unknown>;
       package?: string | NixExpr;
       "package-wayland"?: string | NixExpr | null;
       waylandSupport?: boolean;
@@ -3675,7 +3675,7 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr;
       serverUrl?: string;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, string | number>;
     };
     exo: {
       enable?: boolean;
@@ -3686,7 +3686,7 @@ declare module "winix" {
     flameshot: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     fluidsynth: {
       enable?: boolean;
@@ -3696,25 +3696,25 @@ declare module "winix" {
       soundService?: "jack" | "pipewire-pulse" | "pulseaudio";
     };
     fnott: {
-      configFile?: unknown;
+      configFile?: string;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     fusuma: {
       enable?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     gammastep: {
       dawnTime?: string | null;
       duskTime?: string | null;
       enable?: boolean;
       enableVerboseLogging?: boolean;
-      latitude?: unknown | null;
-      longitude?: unknown | null;
+      latitude?: string | number | null;
+      longitude?: string | number | null;
       package?: string | NixExpr;
       provider?: "geoclue2" | "manual";
       settings?: Record<string, unknown>;
@@ -3739,7 +3739,7 @@ declare module "winix" {
     glance: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "gnome-keyring": {
       components?: ("pkcs11" | "secrets" | "ssh")[] | NixExpr;
@@ -3773,7 +3773,7 @@ declare module "winix" {
       enable?: boolean;
       executeAfter?: string[] | NixExpr;
       package?: string | NixExpr;
-      rules?: Record<string, unknown>[] | NixExpr;
+      rules?: (Record<string, string | boolean | number | string[]>)[] | NixExpr;
     };
     "gromit-mpx": {
       enable?: boolean;
@@ -3805,9 +3805,9 @@ declare module "winix" {
       databasePath?: string;
       enable?: boolean;
       listenAddress?: string;
-      maxConcurrentIndexers?: unknown;
+      maxConcurrentIndexers?: number;
       package?: string | NixExpr;
-      repositories?: Record<string, unknown>;
+      repositories?: Record<string, Record<string, unknown>>;
     };
     hypridle: {
       enable?: boolean;
@@ -3834,8 +3834,8 @@ declare module "winix" {
     hyprshell: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
-      style?: unknown;
+      settings?: Record<string, unknown>;
+      style?: string;
       systemd?: {
         args?: string;
         enable?: boolean;
@@ -3860,17 +3860,17 @@ declare module "winix" {
     };
     jankyborders: {
       enable?: boolean;
-      errorLogFile?: unknown | null;
-      outLogFile?: unknown | null;
+      errorLogFile?: string | null;
+      outLogFile?: string | null;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     "jellyfin-mpv-shim": {
       enable?: boolean;
       mpvBindings?: Record<string, string> | null;
-      mpvConfig?: Record<string, unknown> | null;
+      mpvConfig?: Record<string, string | number | boolean> | null;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     kanshi: {
       enable?: boolean;
@@ -3927,7 +3927,7 @@ declare module "winix" {
     "listenbrainz-mpd": {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "local-ai": {
       enable?: boolean;
@@ -3946,7 +3946,7 @@ declare module "winix" {
       enable?: boolean;
       frequency?: string;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "lxqt-policykit-agent": {
       enable?: boolean;
@@ -3991,10 +3991,10 @@ declare module "winix" {
       extraArgs?: string[] | NixExpr;
       extraConfig?: string;
       generatedConfig?: string;
-      musicDirectory?: unknown;
+      musicDirectory?: string;
       network?: {
         listenAddress?: string;
-        port?: unknown;
+        port?: number;
         startWhenNeeded?: boolean;
       };
       package?: string | NixExpr;
@@ -4003,7 +4003,7 @@ declare module "winix" {
     "mpd-discord-rpc": {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "mpd-mpris": {
       enable?: boolean;
@@ -4011,7 +4011,7 @@ declare module "winix" {
         host?: string | null;
         network?: string | null;
         password?: string | null;
-        port?: unknown | null;
+        port?: number | null;
         useLocal?: boolean;
       };
       package?: string | NixExpr;
@@ -4022,7 +4022,7 @@ declare module "winix" {
         host?: string;
         musicDirectory?: string | null;
         password?: string | null;
-        port?: unknown;
+        port?: number;
       };
       multimediaKeys?: boolean;
       notifications?: boolean;
@@ -4050,7 +4050,7 @@ declare module "winix" {
       journalInterval?: number;
       package?: string | NixExpr;
       passwordFile?: string | null;
-      port?: unknown;
+      port?: number;
       proxy?: string | null;
       verbose?: number;
     };
@@ -4083,7 +4083,7 @@ declare module "winix" {
       environmentVariables?: Record<string, string>;
       host?: string;
       package?: string | NixExpr;
-      port?: unknown;
+      port?: number;
     };
     "opensnitch-ui": {
       enable?: boolean;
@@ -4093,7 +4093,7 @@ declare module "winix" {
       enable?: boolean;
       network?: {
         listenAddress?: string;
-        port?: unknown;
+        port?: number;
         startWhenNeeded?: boolean;
       };
       package?: string | NixExpr;
@@ -4105,7 +4105,7 @@ declare module "winix" {
     pantalaimon: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
     };
     parcellite: {
       enable?: boolean;
@@ -4128,29 +4128,29 @@ declare module "winix" {
       };
       enable?: boolean;
       httpAuth?: string | null;
-      port?: unknown;
+      port?: number;
     };
     picom: {
-      activeOpacity?: unknown;
+      activeOpacity?: number;
       backend?: "egl" | "glx" | "xr_glx_hybrid" | "xrender";
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       extraConfig?: string;
       fade?: boolean;
-      fadeDelta?: unknown;
+      fadeDelta?: number;
       fadeExclude?: string[] | NixExpr;
-      fadeSteps?: unknown;
-      inactiveOpacity?: unknown;
-      menuOpacity?: unknown;
+      fadeSteps?: number[] | number;
+      inactiveOpacity?: number;
+      menuOpacity?: number;
       opacityRules?: string[] | NixExpr;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       shadow?: boolean;
       shadowExclude?: string[] | NixExpr;
-      shadowOffsets?: unknown;
-      shadowOpacity?: unknown;
+      shadowOffsets?: number[] | NixExpr;
+      shadowOpacity?: number;
       vSync?: boolean;
-      wintypes?: unknown;
+      wintypes?: Record<string, unknown>;
     };
     pimsync: {
       configFile?: string | null;
@@ -4159,17 +4159,17 @@ declare module "winix" {
       verbosity?: "debug" | "error" | "info" | "trace" | "warn";
     };
     pipewire: {
-      clientConfigs?: Record<string, unknown>;
+      clientConfigs?: Record<string, Record<string, unknown>>;
       configPackages?: (string | NixExpr)[] | NixExpr;
-      configs?: Record<string, unknown>;
+      configs?: Record<string, Record<string, unknown>>;
       enable?: boolean;
       extraLadspaPackages?: (string | NixExpr)[] | NixExpr;
       extraLv2Packages?: (string | NixExpr)[] | NixExpr;
-      jackConfigs?: Record<string, unknown>;
-      pulseConfigs?: Record<string, unknown>;
+      jackConfigs?: Record<string, Record<string, unknown>>;
+      pulseConfigs?: Record<string, Record<string, unknown>>;
       wireplumber?: {
         configPackages?: (string | NixExpr)[] | NixExpr;
-        configs?: Record<string, unknown>;
+        configs?: Record<string, Record<string, unknown>>;
         enable?: boolean;
         scriptPackages?: (string | NixExpr)[] | NixExpr;
         scripts?: Record<string, string>;
@@ -4199,7 +4199,7 @@ declare module "winix" {
     "plex-mpv-shim": {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     podman: {
       autoUpdate?: {
@@ -4226,11 +4226,11 @@ declare module "winix" {
       };
       package?: string | NixExpr;
       settings?: {
-        containers?: unknown;
+        containers?: Record<string, unknown>;
         mounts?: string[] | NixExpr;
-        policy?: unknown;
+        policy?: Record<string, unknown>;
         registries?: Record<string, unknown>;
-        storage?: unknown;
+        storage?: Record<string, unknown>;
       };
       useDefaultMachine?: boolean;
       volumes?: {
@@ -4267,7 +4267,7 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     psd: {
-      backupLimit?: unknown;
+      backupLimit?: number;
       browsers?: string[] | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
@@ -4277,7 +4277,7 @@ declare module "winix" {
     pueue: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     pulseeffects: {
       enable?: boolean;
@@ -4288,7 +4288,7 @@ declare module "winix" {
       node?: {
         args?: string;
         enable?: boolean;
-        environment?: Record<string, unknown | null>;
+        environment?: Record<string, string | string | NixExpr | null>;
         lazy?: Record<string, unknown>;
         package?: string | NixExpr;
       };
@@ -4313,8 +4313,8 @@ declare module "winix" {
       duskTime?: string | null;
       enable?: boolean;
       enableVerboseLogging?: boolean;
-      latitude?: unknown | null;
-      longitude?: unknown | null;
+      latitude?: string | number | null;
+      longitude?: string | number | null;
       package?: string | NixExpr;
       provider?: "geoclue2" | "manual";
       settings?: Record<string, unknown>;
@@ -4336,7 +4336,7 @@ declare module "winix" {
     rescrobbled: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     restic: {
       backups?: {
@@ -4377,25 +4377,25 @@ declare module "winix" {
     shikane: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     shpool: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       systemd?: boolean;
     };
     signaturepdf: {
       enable?: boolean;
-      extraConfig?: Record<string, unknown>;
+      extraConfig?: Record<string, string | number | boolean>;
       package?: string | NixExpr;
-      port?: unknown;
+      port?: number;
     };
     skhd: {
-      config?: unknown | null;
+      config?: string | null;
       enable?: boolean;
-      errorLogFile?: unknown | null;
-      outLogFile?: unknown | null;
+      errorLogFile?: string | null;
+      outLogFile?: string | null;
       package?: string | NixExpr;
     };
     snixembed: {
@@ -4406,10 +4406,10 @@ declare module "winix" {
     spotifyd: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     "ssh-agent": {
-      defaultMaximumIdentityLifetime?: unknown | null;
+      defaultMaximumIdentityLifetime?: number | null;
       enable?: boolean;
       package?: string | NixExpr;
       pkcs11Whitelist?: string[] | NixExpr;
@@ -4422,7 +4422,7 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     stalonetray: {
-      config?: Record<string, unknown | null>;
+      config?: Record<string, string | boolean | number | null>;
       enable?: boolean;
       extraConfig?: string;
       package?: string | NixExpr;
@@ -4449,8 +4449,8 @@ declare module "winix" {
     swaync: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
-      style?: unknown | null;
+      settings?: Record<string, unknown>;
+      style?: string | null;
     };
     swayosd: {
       enable?: boolean;
@@ -4462,7 +4462,7 @@ declare module "winix" {
       enable?: boolean;
       extraConfig?: string;
       extraOptions?: string[] | NixExpr;
-      keybindings?: Record<string, unknown | null>;
+      keybindings?: Record<string, string | null>;
       package?: string | NixExpr;
     };
     syncthing: {
@@ -4473,7 +4473,7 @@ declare module "winix" {
       guiAddress?: string;
       guiCredentials?: {
         passwordFile?: string;
-        username?: unknown;
+        username?: string;
       };
       key?: string | null;
       overrideDevices?: boolean;
@@ -4493,8 +4493,8 @@ declare module "winix" {
     syshud: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
-      style?: unknown | null;
+      settings?: Record<string, unknown>;
+      style?: string | null;
     };
     "systembus-notify": {
       enable?: boolean;
@@ -4531,7 +4531,7 @@ declare module "winix" {
     trayer: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown | null>;
+      settings?: Record<string, string | boolean | number | null>;
     };
     trayscale: {
       enable?: boolean;
@@ -4539,28 +4539,28 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     twmn: {
-      duration?: unknown;
+      duration?: number;
       enable?: boolean;
-      extraConfig?: unknown;
+      extraConfig?: Record<string, unknown>;
       host?: string;
       icons?: {
         critical?: string | null;
         info?: string | null;
         warning?: string | null;
       };
-      port?: unknown;
+      port?: number;
       screen?: number | null;
       soundCommand?: string;
       text?: {
         color?: string;
         font?: Record<string, unknown>;
-        maxLength?: unknown | null;
+        maxLength?: number | null;
       };
       window?: {
         alwaysOnTop?: boolean;
         animation?: Record<string, unknown>;
         color?: string;
-        height?: unknown;
+        height?: number;
         offset?: Record<string, unknown>;
         opacity?: number;
         position?: "bc" | "bl" | "bottom_center" | "bottom_left" | "bottom_right" | "br" | "c" | "center" | "tc" | "tl" | "top_center" | "top_left" | "top_right" | "tr";
@@ -4571,7 +4571,7 @@ declare module "winix" {
       enable?: boolean;
       notify?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       tray?: "always" | "auto" | "never";
     };
     unclutter: {
@@ -4603,12 +4603,12 @@ declare module "winix" {
       enable?: boolean;
       enableElephantIntegration?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       systemd?: {
         enable?: boolean;
       };
       theme?: {
-        layout?: Record<string, unknown>;
+        layout?: Record<string, string>;
         name?: string;
         style?: string;
       };
@@ -4616,14 +4616,14 @@ declare module "winix" {
     "way-displays": {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown | null;
+      settings?: Record<string, unknown> | null;
       systemdTarget?: string;
     };
     wayle: {
       autoInstallDependencies?: boolean;
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     wayvnc: {
       autoStart?: boolean;
@@ -4631,7 +4631,7 @@ declare module "winix" {
       package?: string | NixExpr;
       settings?: {
         address?: string;
-        port?: unknown;
+        port?: number;
       };
       systemdTarget?: string;
     };
@@ -4644,9 +4644,9 @@ declare module "winix" {
     };
     wlsunset: {
       enable?: boolean;
-      gamma?: unknown;
-      latitude?: unknown | null;
-      longitude?: unknown | null;
+      gamma?: string | number;
+      latitude?: string | number | null;
+      longitude?: string | number | null;
       output?: string | null;
       package?: string | NixExpr;
       sunrise?: string | null;
@@ -4660,7 +4660,7 @@ declare module "winix" {
     wluma: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
       systemd?: {
         enable?: boolean;
         target?: string | null;
@@ -4669,13 +4669,13 @@ declare module "winix" {
     wob: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, Record<string, unknown>>;
       systemd?: boolean;
     };
     wpaperd: {
       enable?: boolean;
       package?: string | NixExpr | null;
-      settings?: unknown;
+      settings?: Record<string, unknown>;
     };
     xcape: {
       enable?: boolean;
@@ -4702,12 +4702,12 @@ declare module "winix" {
     xscreensaver: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string>;
     };
     xsettingsd: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, unknown>;
+      settings?: Record<string, boolean | number | string>;
     };
     xsuspender: {
       debug?: boolean;
