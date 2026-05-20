@@ -261,6 +261,9 @@ function insertOption(root: TypeNode, path: string[], type: string): void {
 function emitInlineObject(node: TypeNode, indent: number): string {
   if (node.children.size === 0 && node.type) return inlineType(node.type);
   if (node.children.size === 0) return "Record<string, unknown>";
+  if (node.children.size === 1 && node.children.has("*")) {
+    return "Record<string, unknown> | Record<string, unknown>[] | NixExpr";
+  }
 
   const pad = "  ".repeat(indent);
   const innerPad = "  ".repeat(indent + 1);
@@ -290,7 +293,14 @@ function inlineType(type: string): string {
   if (/\[\]$/.test(result) && !result.includes("NixExpr")) {
     result = `${result} | NixExpr`;
   }
+  if (isStringLike(result) && !result.includes("NixExpr")) {
+    result = `${result} | NixExpr`;
+  }
   return result;
+}
+
+function isStringLike(type: string): boolean {
+  return type === "string" || /(^|\| )string($| \|)/.test(type) || /^"[^"]+"( \| "[^"]+")*$/.test(type);
 }
 
 function quoteProperty(key: string): string {

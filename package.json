@@ -7,8 +7,8 @@
   "types": "./index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./index.d.ts"
+      "types": "./index.d.ts",
+      "import": "./dist/index.js"
     },
     "./types": {
       "import": "./dist/types/index.js",
@@ -23,7 +23,8 @@
   },
   "files": [
     "dist",
-    "types/bundled",
+    "types",
+    "index.d.ts",
     "README.md"
   ],
   "scripts": {

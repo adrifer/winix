@@ -61,7 +61,7 @@ declare module "winix" {
     atuin: {
       daemon?: {
         enable?: boolean;
-        logLevel?: "debug" | "error" | "info" | "trace" | "warn";
+        logLevel?: "debug" | "error" | "info" | "trace" | "warn" | NixExpr;
       };
       enable?: boolean;
       enableBashIntegration?: boolean;
@@ -96,13 +96,13 @@ declare module "winix" {
       };
       enable?: boolean;
       enableLsColors?: boolean;
-      interactiveShellInit?: string;
-      loginShellInit?: string;
-      logout?: string;
-      lsColorsFile?: string | null;
-      promptInit?: string;
+      interactiveShellInit?: string | NixExpr;
+      loginShellInit?: string | NixExpr;
+      logout?: string | NixExpr;
+      lsColorsFile?: string | null | NixExpr;
+      promptInit?: string | NixExpr;
       shellAliases?: Record<string, string | null>;
-      shellInit?: string;
+      shellInit?: string | NixExpr;
       undistractMe?: {
         enable?: boolean;
         playSound?: boolean;
@@ -139,24 +139,24 @@ declare module "winix" {
     };
     "captive-browser": {
       bindInterface?: boolean;
-      browser?: string;
-      "dhcp-dns"?: string;
+      browser?: string | NixExpr;
+      "dhcp-dns"?: string | NixExpr;
       enable?: boolean;
-      interface?: string;
+      interface?: string | NixExpr;
       package?: string | NixExpr;
-      "socks5-addr"?: string;
+      "socks5-addr"?: string | NixExpr;
     };
     ccache: {
-      cacheDir?: string;
+      cacheDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      owner?: string;
+      group?: string | NixExpr;
+      owner?: string | NixExpr;
       packageNames?: string[] | NixExpr;
       trace?: boolean;
     };
     cdemu: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       gui?: boolean;
       "image-analyzer"?: boolean;
     };
@@ -165,13 +165,13 @@ declare module "winix" {
     };
     chromium: {
       defaultSearchProviderEnabled?: boolean | null;
-      defaultSearchProviderSearchURL?: string | null;
-      defaultSearchProviderSuggestURL?: string | null;
+      defaultSearchProviderSearchURL?: string | null | NixExpr;
+      defaultSearchProviderSuggestURL?: string | null | NixExpr;
       enable?: boolean;
       enablePlasmaBrowserIntegration?: boolean;
       extensions?: string[] | null;
       extraOpts?: Record<string, unknown>;
-      homepageLocation?: string | null;
+      homepageLocation?: string | null | NixExpr;
       initialPrefs?: Record<string, unknown>;
       plasmaBrowserIntegrationPackage?: string | NixExpr;
     };
@@ -182,7 +182,7 @@ declare module "winix" {
     "clash-verge": {
       autoStart?: boolean;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       serviceMode?: boolean;
       tunMode?: boolean;
@@ -191,7 +191,7 @@ declare module "winix" {
       enable?: boolean;
     };
     "command-not-found": {
-      dbPath?: string;
+      dbPath?: string | NixExpr;
       enable?: boolean;
     };
     coolercontrol: {
@@ -226,7 +226,7 @@ declare module "winix" {
         autoUse?: boolean;
         enable?: boolean;
       };
-      direnvrcExtra?: string;
+      direnvrcExtra?: string | NixExpr;
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableFishIntegration?: boolean;
@@ -263,7 +263,7 @@ declare module "winix" {
       systemd?: {
         enable?: boolean;
         restartIfChanged?: boolean;
-        target?: string;
+        target?: string | NixExpr;
       };
     };
     droidcam: {
@@ -274,7 +274,7 @@ declare module "winix" {
       package?: string | NixExpr;
       systemd?: {
         enable?: boolean;
-        target?: string;
+        target?: string | NixExpr;
       };
     };
     "dublin-traceroute": {
@@ -283,7 +283,7 @@ declare module "winix" {
     };
     dwl: {
       enable?: boolean;
-      extraSessionCommands?: string;
+      extraSessionCommands?: string | NixExpr;
       package?: string | NixExpr;
     };
     "ente-auth": {
@@ -317,7 +317,7 @@ declare module "winix" {
       "theme-package"?: string | NixExpr | null;
     };
     firefox: {
-      autoConfig?: string;
+      autoConfig?: string | NixExpr;
       autoConfigFiles?: string[] | NixExpr;
       enable?: boolean;
       languagePacks?: ("ach" | "af" | "an" | "ar" | "ast" | "az" | "be" | "bg" | "bn" | "br" | "bs" | "ca" | "ca-valencia" | "cak" | "cs" | "cy" | "da" | "de" | "dsb" | "el" | "en-CA" | "en-GB" | "en-US" | "eo" | "es-AR" | "es-CL" | "es-ES" | "es-MX" | "et" | "eu" | "fa" | "ff" | "fi" | "fr" | "fur" | "fy-NL" | "ga-IE" | "gd" | "gl" | "gn" | "gu-IN" | "he" | "hi-IN" | "hr" | "hsb" | "hu" | "hy-AM" | "ia" | "id" | "is" | "it" | "ja" | "ka" | "kab" | "kk" | "km" | "kn" | "ko" | "lij" | "lt" | "lv" | "mk" | "mr" | "ms" | "my" | "nb-NO" | "ne-NP" | "nl" | "nn-NO" | "oc" | "pa-IN" | "pl" | "pt-BR" | "pt-PT" | "rm" | "ro" | "ru" | "sat" | "sc" | "sco" | "si" | "sk" | "skr" | "sl" | "son" | "sq" | "sr" | "sv-SE" | "szl" | "ta" | "te" | "tg" | "th" | "tl" | "tr" | "trs" | "uk" | "ur" | "uz" | "vi" | "xh" | "zh-CN" | "zh-TW")[] | NixExpr;
@@ -327,7 +327,7 @@ declare module "winix" {
       package?: string | NixExpr;
       policies?: Record<string, unknown>;
       preferences?: Record<string, boolean | number | string>;
-      preferencesStatus?: "clear" | "default" | "locked" | "user";
+      preferencesStatus?: "clear" | "default" | "locked" | "user" | NixExpr;
       wrapperConfig?: Record<string, unknown>;
     };
     firejail: {
@@ -338,13 +338,13 @@ declare module "winix" {
       enable?: boolean;
       extraCompletionPackages?: (string | NixExpr)[] | NixExpr;
       generateCompletions?: boolean;
-      interactiveShellInit?: string;
-      loginShellInit?: string;
+      interactiveShellInit?: string | NixExpr;
+      loginShellInit?: string | NixExpr;
       package?: string | NixExpr;
-      promptInit?: string;
+      promptInit?: string | NixExpr;
       shellAbbrs?: Record<string, string>;
       shellAliases?: Record<string, string | null>;
-      shellInit?: string;
+      shellInit?: string | NixExpr;
       useBabelfish?: boolean;
       vendor?: {
         completions?: Record<string, unknown>;
@@ -371,7 +371,7 @@ declare module "winix" {
       enableZshIntegration?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, Record<string, unknown>>;
-      theme?: string | null;
+      theme?: string | null | NixExpr;
       xdg?: {
         serverAutostart?: boolean;
       };
@@ -409,7 +409,7 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     git: {
-      attributes?: string;
+      attributes?: string | NixExpr;
       config?: unknown;
       enable?: boolean;
       lfs?: {
@@ -461,7 +461,7 @@ declare module "winix" {
       enable?: boolean;
       modules?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr;
-      style?: string | null;
+      style?: string | null | NixExpr;
     };
     haguichi: {
       enable?: boolean;
@@ -533,7 +533,7 @@ declare module "winix" {
     };
     "k40-whisperer": {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
     };
     kbdlight: {
@@ -553,7 +553,7 @@ declare module "winix" {
       package?: string | NixExpr | null;
     };
     kubeswitch: {
-      commandName?: string;
+      commandName?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
@@ -572,11 +572,11 @@ declare module "winix" {
     less: {
       clearDefaultCommands?: boolean;
       commands?: Record<string, string>;
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       envVariables?: Record<string, string>;
-      lessclose?: string | null;
-      lessopen?: string | null;
+      lessclose?: string | null | NixExpr;
+      lessopen?: string | null | NixExpr;
       lineEditingKeys?: Record<string, string>;
       package?: string | NixExpr;
     };
@@ -613,7 +613,7 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     miriway: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
     };
     mosh: {
@@ -631,7 +631,7 @@ declare module "winix" {
       accounts?: Record<string, Record<string, unknown>>;
       defaults?: Record<string, unknown>;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       package?: string | NixExpr;
       setSendmail?: boolean;
     };
@@ -641,13 +641,13 @@ declare module "winix" {
     };
     nano: {
       enable?: boolean;
-      nanorc?: string;
+      nanorc?: string | NixExpr;
       package?: string | NixExpr;
       syntaxHighlight?: boolean;
     };
     "nautilus-open-any-terminal": {
       enable?: boolean;
-      terminal?: string | null;
+      terminal?: string | null | NixExpr;
     };
     nbd: {
       enable?: boolean;
@@ -675,12 +675,12 @@ declare module "winix" {
     };
     nh: {
       clean?: {
-        dates?: string;
+        dates?: string | NixExpr;
         enable?: boolean;
-        extraArgs?: string;
+        extraArgs?: string | NixExpr;
       };
       enable?: boolean;
-      flake?: string | null;
+      flake?: string | null | NixExpr;
       package?: string | NixExpr;
     };
     niri: {
@@ -715,7 +715,7 @@ declare module "winix" {
       enable?: boolean;
       forceAutostart?: boolean;
       package?: string | NixExpr;
-      repository?: string;
+      repository?: string | NixExpr;
     };
     "nm-applet": {
       enable?: boolean;
@@ -724,7 +724,7 @@ declare module "winix" {
     };
     nncp: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       secrets?: string[] | NixExpr;
       settings?: Record<string, unknown>;
@@ -735,7 +735,7 @@ declare module "winix" {
     };
     npm: {
       enable?: boolean;
-      npmrc?: string;
+      npmrc?: string | NixExpr;
       package?: string | NixExpr;
     };
     "ns-usbloader": {
@@ -788,7 +788,7 @@ declare module "winix" {
     };
     "pay-respects": {
       aiIntegration?: boolean | Record<string, unknown>;
-      alias?: string;
+      alias?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       runtimeRules?: Record<string, unknown>[] | NixExpr;
@@ -807,10 +807,10 @@ declare module "winix" {
     proxychains: {
       chain?: {
         length?: number | null;
-        type?: "dynamic" | "random" | "strict";
+        type?: "dynamic" | "random" | "strict" | NixExpr;
       };
       enable?: boolean;
-      localnet?: string;
+      localnet?: string | NixExpr;
       package?: string | NixExpr;
       proxies?: {
         "<name>"?: Record<string, unknown>;
@@ -839,24 +839,24 @@ declare module "winix" {
     regreet: {
       cageArgs?: string[] | NixExpr;
       cursorTheme?: {
-        name?: string;
+        name?: string | NixExpr;
         package?: string | NixExpr;
       };
       enable?: boolean;
-      extraCss?: string;
+      extraCss?: string | NixExpr;
       font?: {
-        name?: string;
+        name?: string | NixExpr;
         package?: string | NixExpr;
         size?: number;
       };
       iconTheme?: {
-        name?: string;
+        name?: string | NixExpr;
         package?: string | NixExpr;
       };
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
       theme?: {
-        name?: string;
+        name?: string | NixExpr;
         package?: string | NixExpr;
       };
     };
@@ -874,7 +874,7 @@ declare module "winix" {
     };
     rush: {
       enable?: boolean;
-      global?: string;
+      global?: string | NixExpr;
       package?: string | NixExpr;
       rules?: Record<string, string>;
       shell?: string | NixExpr | string;
@@ -884,7 +884,7 @@ declare module "winix" {
       enable?: boolean;
       enableMotdInSSHD?: boolean;
       order?: string[] | NixExpr;
-      refreshInterval?: string;
+      refreshInterval?: string | NixExpr;
       settings?: Record<string, Record<string, unknown>>;
     };
     "ryzen-monitor-ng": {
@@ -902,7 +902,7 @@ declare module "winix" {
     screen: {
       enable?: boolean;
       package?: string | NixExpr;
-      screenrc?: string;
+      screenrc?: string | NixExpr;
     };
     seahorse: {
       enable?: boolean;
@@ -939,12 +939,12 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     ssh: {
-      agentPKCS11Whitelist?: string | null;
-      agentTimeout?: string | null;
-      askPassword?: string;
+      agentPKCS11Whitelist?: string | null | NixExpr;
+      agentTimeout?: string | null | NixExpr;
+      askPassword?: string | NixExpr;
       ciphers?: string[] | null;
       enableAskPassword?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       forwardX11?: boolean | null;
       hostKeyAlgorithms?: string[] | NixExpr;
       kexAlgorithms?: string[] | null;
@@ -1015,7 +1015,7 @@ declare module "winix" {
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
       extraPackages?: (string | NixExpr)[] | NixExpr;
-      extraSessionCommands?: string;
+      extraSessionCommands?: string | NixExpr;
       package?: string | NixExpr | null;
       wrapperFeatures?: {
         base?: boolean;
@@ -1061,7 +1061,7 @@ declare module "winix" {
       package?: string | NixExpr;
       policies?: Record<string, unknown>;
       preferences?: Record<string, boolean | number | string>;
-      preferencesStatus?: "clear" | "default" | "locked" | "user";
+      preferencesStatus?: "clear" | "default" | "locked" | "user" | NixExpr;
     };
     tmux: {
       aggressiveResize?: boolean;
@@ -1070,18 +1070,18 @@ declare module "winix" {
       customPaneNavigationAndResize?: boolean;
       enable?: boolean;
       escapeTime?: number;
-      extraConfig?: string;
-      extraConfigBeforePlugins?: string;
+      extraConfig?: string | NixExpr;
+      extraConfigBeforePlugins?: string | NixExpr;
       historyLimit?: number;
-      keyMode?: "emacs" | "vi";
+      keyMode?: "emacs" | "vi" | NixExpr;
       newSession?: boolean;
       package?: string | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
       resizeAmount?: number;
       reverseSplit?: boolean;
       secureSocket?: boolean;
-      shortcut?: string;
-      terminal?: string;
+      shortcut?: string | NixExpr;
+      terminal?: string | NixExpr;
       withUtempter?: boolean;
     };
     traceroute: {
@@ -1091,8 +1091,8 @@ declare module "winix" {
       enable?: boolean;
     };
     tsmClient: {
-      defaultServername?: string | null;
-      dsmSysText?: string;
+      defaultServername?: string | null | NixExpr;
+      dsmSysText?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       servers?: {
@@ -1133,7 +1133,7 @@ declare module "winix" {
     vivid: {
       enable?: boolean;
       package?: string | NixExpr;
-      theme?: string;
+      theme?: string | NixExpr;
     };
     vscode: {
       defaultEditor?: boolean;
@@ -1148,7 +1148,7 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr;
       systemd?: {
-        target?: string;
+        target?: string | NixExpr;
       };
     };
     wayfire: {
@@ -1177,9 +1177,7 @@ declare module "winix" {
     whois: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: {
-        "*"?: Record<string, unknown>;
-      };
+      settings?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
     };
     winbox: {
       enable?: boolean;
@@ -1216,7 +1214,7 @@ declare module "winix" {
         enable?: boolean;
         package?: string | NixExpr;
       };
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       extraPackages?: unknown;
       package?: string | NixExpr;
@@ -1235,17 +1233,17 @@ declare module "winix" {
     "xss-lock": {
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      lockerCommand?: string;
+      lockerCommand?: string | NixExpr;
     };
     xwayland: {
-      defaultFontPath?: string;
+      defaultFontPath?: string | NixExpr;
       enable?: boolean;
-      package?: string;
+      package?: string | NixExpr;
     };
     yazi: {
       enable?: boolean;
       flavors?: Record<string, string | string | NixExpr>;
-      initLua?: string | null;
+      initLua?: string | null | NixExpr;
       package?: string | NixExpr;
       plugins?: Record<string, string | string | NixExpr>;
       settings?: {
@@ -1257,7 +1255,7 @@ declare module "winix" {
     };
     ydotool: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
     };
     "yubikey-manager": {
       enable?: boolean;
@@ -1290,7 +1288,7 @@ declare module "winix" {
         async?: boolean;
         enable?: boolean;
         extraConfig?: Record<string, string>;
-        highlightStyle?: string;
+        highlightStyle?: string | NixExpr;
         strategy?: ("completion" | "history" | "match_prev_cmd")[] | NixExpr;
       };
       enable?: boolean;
@@ -1298,24 +1296,24 @@ declare module "winix" {
       enableCompletion?: boolean;
       enableGlobalCompInit?: boolean;
       enableLsColors?: boolean;
-      histFile?: string;
+      histFile?: string | NixExpr;
       histSize?: number;
-      interactiveShellInit?: string;
-      loginShellInit?: string;
+      interactiveShellInit?: string | NixExpr;
+      loginShellInit?: string | NixExpr;
       ohMyZsh?: {
-        cacheDir?: string;
-        custom?: string | null;
+        cacheDir?: string | NixExpr;
+        custom?: string | null | NixExpr;
         customPkgs?: (string | NixExpr)[] | NixExpr;
         enable?: boolean;
         package?: string | NixExpr;
         plugins?: string[] | NixExpr;
-        preLoaded?: string;
-        theme?: string;
+        preLoaded?: string | NixExpr;
+        theme?: string | NixExpr;
       };
-      promptInit?: string;
+      promptInit?: string | NixExpr;
       setOptions?: string[] | NixExpr;
       shellAliases?: Record<string, string | null>;
-      shellInit?: string;
+      shellInit?: string | NixExpr;
       syntaxHighlighting?: {
         enable?: boolean;
         highlighters?: ("brackets" | "cursor" | "line" | "main" | "pattern" | "regexp" | "root")[] | NixExpr;
@@ -1332,10 +1330,10 @@ declare module "winix" {
 
   interface NixosServiceOptions {
     _3proxy: {
-      confFile?: string;
+      confFile?: string | NixExpr;
       denyPrivate?: boolean;
       enable?: boolean;
-      extraConfig?: string | null;
+      extraConfig?: string | null | NixExpr;
       privateRanges?: string[] | NixExpr;
       resolution?: {
         nscache?: number;
@@ -1343,10 +1341,8 @@ declare module "winix" {
         nserver?: string[] | NixExpr;
         nsrecord?: Record<string, string>;
       };
-      services?: {
-        "*"?: Record<string, unknown>;
-      };
-      usersFile?: string | null;
+      services?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      usersFile?: string | null | NixExpr;
     };
     a2boot: {
       enable?: boolean;
@@ -1365,49 +1361,47 @@ declare module "winix" {
       };
     };
     acpid: {
-      acEventCommands?: string;
+      acEventCommands?: string | NixExpr;
       enable?: boolean;
       handlers?: {
         "<name>"?: Record<string, unknown>;
       };
-      lidEventCommands?: string;
+      lidEventCommands?: string | NixExpr;
       logEvents?: boolean;
-      powerEventCommands?: string;
+      powerEventCommands?: string | NixExpr;
     };
     activemq: {
-      baseDir?: string;
-      configurationDir?: string;
-      configurationURI?: string;
+      baseDir?: string | NixExpr;
+      configurationDir?: string | NixExpr;
+      configurationURI?: string | NixExpr;
       enable?: boolean;
-      extraJavaOptions?: string;
+      extraJavaOptions?: string | NixExpr;
       javaProperties?: Record<string, unknown>;
     };
     actkbd: {
-      bindings?: {
-        "*"?: Record<string, unknown>;
-      };
+      bindings?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
     };
     actual: {
       enable?: boolean;
-      group?: string | null;
+      group?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
-        dataDir?: string;
-        hostname?: string;
+        dataDir?: string | NixExpr;
+        hostname?: string | NixExpr;
         port?: number;
-        serverFiles?: string;
-        userFiles?: string;
+        serverFiles?: string | NixExpr;
+        userFiles?: string | NixExpr;
       };
-      user?: string | null;
+      user?: string | null | NixExpr;
     };
     adguardhome: {
       allowDHCP?: boolean;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      host?: string;
+      host?: string | NixExpr;
       mutableSettings?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -1418,72 +1412,72 @@ declare module "winix" {
     };
     aerospike: {
       enable?: boolean;
-      extraConfig?: string;
-      networkConfig?: string;
+      extraConfig?: string | NixExpr;
+      networkConfig?: string | NixExpr;
       package?: string | NixExpr;
-      workDir?: string;
+      workDir?: string | NixExpr;
     };
     aesmd: {
       enable?: boolean;
       environment?: Record<string, string>;
       package?: string | NixExpr;
-      quoteProviderLibrary?: string | null;
+      quoteProviderLibrary?: string | null | NixExpr;
       settings?: {
         defaultQuotingType?: "ecdsa_256" | "epid_linkable" | "epid_unlinkable" | null;
-        proxy?: string | null;
+        proxy?: string | null | NixExpr;
         proxyType?: "default" | "direct" | "manual" | null;
-        whitelistUrl?: string | null;
+        whitelistUrl?: string | null | NixExpr;
       };
     };
     agate: {
       addresses?: string[] | NixExpr;
-      certificatesDir?: string;
-      contentDir?: string;
+      certificatesDir?: string | NixExpr;
+      contentDir?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       hostnames?: string[] | NixExpr;
-      language?: string | null;
+      language?: string | null | NixExpr;
       onlyTls_1_3?: boolean;
       package?: string | NixExpr;
     };
     agorakit: {
-      appKeyFile?: string;
-      appURL?: string;
+      appKeyFile?: string | NixExpr;
+      appURL?: string | NixExpr;
       config?: Record<string, unknown>;
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        user?: string;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      hostName?: string;
+      group?: string | NixExpr;
+      hostName?: string | NixExpr;
       mail?: {
-        driver?: "sendmail" | "smtp";
+        driver?: "sendmail" | "smtp" | NixExpr;
         encryption?: "tls" | null;
-        from?: string;
-        fromName?: string;
-        host?: string;
-        passwordFile?: string | null;
+        from?: string | NixExpr;
+        fromName?: string | NixExpr;
+        host?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        user?: string | null;
+        user?: string | null | NixExpr;
       };
-      maxUploadSize?: string;
+      maxUploadSize?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -1496,31 +1490,31 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       phpPackage?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
-      user?: string;
+      user?: string | NixExpr;
     };
     airsonic: {
-      contextPath?: string;
+      contextPath?: string | NixExpr;
       enable?: boolean;
-      home?: string;
+      home?: string | NixExpr;
       jre?: string | NixExpr;
       jvmOptions?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       maxMemory?: number;
       port?: number;
       transcoders?: string[] | NixExpr;
-      user?: string;
-      virtualHost?: string | null;
-      war?: string;
+      user?: string | NixExpr;
+      virtualHost?: string | null | NixExpr;
+      war?: string | NixExpr;
     };
     akkoma: {
       config?: {
@@ -1530,8 +1524,8 @@ declare module "winix" {
         ":web_push_encryption"?: Record<string, unknown>;
       };
       dist?: {
-        address?: string;
-        cookie?: string | null;
+        address?: string | NixExpr;
+        cookie?: string | null | NixExpr;
         epmdPort?: number;
         extraFlags?: string[] | NixExpr;
         portMax?: number;
@@ -1543,25 +1537,25 @@ declare module "winix" {
       frontends?: {
         "<name>"?: Record<string, unknown>;
       };
-      group?: string;
+      group?: string | NixExpr;
       initDb?: {
         enable?: boolean;
-        password?: string | null;
-        username?: string;
+        password?: string | null | NixExpr;
+        username?: string | NixExpr;
       };
       initSecrets?: boolean;
       installWrapper?: boolean;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -1574,26 +1568,26 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     alerta: {
       authenticationRequired?: boolean;
-      bind?: string;
+      bind?: string | NixExpr;
       corsOrigins?: string[] | NixExpr;
-      databaseName?: string;
-      databaseUrl?: string;
+      databaseName?: string | NixExpr;
+      databaseUrl?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      logDir?: string;
+      extraConfig?: string | NixExpr;
+      logDir?: string | NixExpr;
       port?: number;
       signupEnabled?: boolean;
     };
@@ -1603,35 +1597,35 @@ declare module "winix" {
       settings?: Record<string, Record<string, unknown>>;
     };
     alloy: {
-      configPath?: string;
+      configPath?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraFlags?: string[] | NixExpr;
       package?: string | NixExpr;
     };
     alps: {
-      bindIP?: string;
+      bindIP?: string | NixExpr;
       enable?: boolean;
       imaps?: {
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
       port?: number;
       smtps?: {
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
-      theme?: "alps" | "sourcehut";
+      theme?: "alps" | "sourcehut" | NixExpr;
     };
     "amazon-cloudwatch-agent": {
       commonConfiguration?: Record<string, unknown>;
-      commonConfigurationFile?: string;
+      commonConfigurationFile?: string | NixExpr;
       configuration?: Record<string, unknown>;
-      configurationFile?: string;
+      configurationFile?: string | NixExpr;
       enable?: boolean;
-      mode?: string;
+      mode?: string | NixExpr;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     "amazon-ssm-agent": {
       enable?: boolean;
@@ -1639,11 +1633,11 @@ declare module "winix" {
     };
     amule: {
       amuleWebPackage?: string | NixExpr;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      ExternalConnectPasswordFile?: string | null;
+      ExternalConnectPasswordFile?: string | null | NixExpr;
       extraArgs?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       openExternalConnectPort?: boolean;
       openPeerPorts?: boolean;
       openWebServerPort?: boolean;
@@ -1653,8 +1647,8 @@ declare module "winix" {
         ExternalConnect?: Record<string, unknown>;
         WebServer?: Record<string, unknown>;
       };
-      user?: string;
-      WebServerPasswordFile?: string | null;
+      user?: string | NixExpr;
+      WebServerPasswordFile?: string | null | NixExpr;
     };
     ananicy: {
       enable?: boolean;
@@ -1666,42 +1660,40 @@ declare module "winix" {
       settings?: Record<string, number | boolean | string>;
     };
     angrr: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       enableNixGcIntegration?: boolean;
       extraArgs?: string[] | NixExpr;
-      logLevel?: "debug" | "error" | "info" | "off" | "trace" | "warn";
+      logLevel?: "debug" | "error" | "info" | "off" | "trace" | "warn" | NixExpr;
       package?: string | NixExpr;
       settings?: {
-        "owned-only"?: "auto" | "false" | "true";
+        "owned-only"?: "auto" | "false" | "true" | NixExpr;
         "profile-policies"?: Record<string, unknown>;
         "temporary-root-policies"?: Record<string, unknown>;
         touch?: Record<string, unknown>;
       };
       timer?: {
-        dates?: string;
+        dates?: string | NixExpr;
         enable?: boolean;
       };
     };
     "anki-sync-server": {
-      address?: string;
-      baseDirectory?: string;
+      address?: string | NixExpr;
+      baseDirectory?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      users?: {
-        "*"?: Record<string, unknown>;
-      };
+      users?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
     };
     anubis: {
       defaultOptions?: {
         enable?: boolean;
         extraFlags?: string[] | NixExpr;
-        group?: string;
+        group?: string | NixExpr;
         policy?: Record<string, unknown>;
         settings?: Record<string, unknown>;
-        user?: string;
+        user?: string | NixExpr;
       };
       instances?: {
         "<name>"?: Record<string, unknown>;
@@ -1711,25 +1703,25 @@ declare module "winix" {
     "anuko-time-tracker": {
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
-        user?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      hostname?: string;
+      hostname?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -1742,42 +1734,42 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       settings?: {
-        defaultCurrency?: string;
-        defaultLanguage?: string;
+        defaultCurrency?: string | NixExpr;
+        defaultLanguage?: string | NixExpr;
         email?: Record<string, unknown>;
         emailRequired?: boolean;
         exportDecimalDuration?: boolean;
-        forumLink?: string;
-        helpLink?: string;
+        forumLink?: string | NixExpr;
+        helpLink?: string | NixExpr;
         multiorgMode?: boolean;
         reportFooter?: boolean;
         weekendStartDay?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "apache-kafka": {
-      clusterId?: string | null;
+      clusterId?: string | null | NixExpr;
       configFiles?: {
-        log4jProperties?: string;
-        serverProperties?: string;
+        log4jProperties?: string | NixExpr;
+        serverProperties?: string | NixExpr;
       };
       enable?: boolean;
       formatLogDirs?: boolean;
       formatLogDirsIgnoreFormatted?: boolean;
       jre?: string | NixExpr;
       jvmOptions?: string[] | NixExpr;
-      log4jProperties?: string;
+      log4jProperties?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
         "broker.id"?: number | null;
@@ -1786,13 +1778,13 @@ declare module "winix" {
       };
     };
     apcupsd: {
-      configText?: string;
+      configText?: string | NixExpr;
       enable?: boolean;
       hooks?: Record<string, string>;
     };
     arbtt: {
       enable?: boolean;
-      logFile?: string;
+      logFile?: string | NixExpr;
       package?: string | NixExpr;
       sampleRate?: number;
     };
@@ -1800,9 +1792,9 @@ declare module "winix" {
       bots?: {
         "<name>"?: Record<string, unknown>;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      ipcPasswordFile?: string | null;
+      ipcPasswordFile?: string | null | NixExpr;
       ipcSettings?: Record<string, unknown>;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
@@ -1812,18 +1804,18 @@ declare module "winix" {
       };
     };
     aria2: {
-      downloadDirPermission?: string;
+      downloadDirPermission?: string | NixExpr;
       enable?: boolean;
       openPorts?: boolean;
-      rpcSecretFile?: string;
-      serviceUMask?: string;
+      rpcSecretFile?: string | NixExpr;
+      serviceUMask?: string | NixExpr;
       settings?: {
-        "conf-path"?: string;
-        dir?: string;
+        "conf-path"?: string | NixExpr;
+        dir?: string | NixExpr;
         "enable-rpc"?: boolean;
         "listen-port"?: Record<string, number>[] | NixExpr;
         "rpc-listen-port"?: number;
-        "save-session"?: string;
+        "save-session"?: string | NixExpr;
       };
     };
     armagetronad: {
@@ -1837,67 +1829,67 @@ declare module "winix" {
       hold_timeout?: number;
       hrm?: boolean;
       lafayette?: boolean;
-      layout?: string;
+      layout?: string | NixExpr;
       long_hold_timeout?: number;
       lt?: boolean;
       mac?: boolean;
       num?: boolean;
       package?: string | NixExpr;
-      run?: string;
+      run?: string | NixExpr;
       tap_timeout?: number;
       vim?: boolean;
       wide?: boolean;
     };
     artalk: {
       allowModify?: boolean;
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
-      user?: string;
-      workdir?: string;
+      user?: string | NixExpr;
+      workdir?: string | NixExpr;
     };
     asterisk: {
       confFiles?: Record<string, string>;
       enable?: boolean;
       extraArguments?: string[] | NixExpr;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       package?: string | NixExpr;
       useTheseDefaultConfFiles?: string[] | NixExpr;
     };
     asusd: {
       animeConfig?: {
-        source?: string | null;
-        text?: string | null;
+        source?: string | null | NixExpr;
+        text?: string | null | NixExpr;
       };
       asusdConfig?: {
-        source?: string | null;
-        text?: string | null;
+        source?: string | null | NixExpr;
+        text?: string | null | NixExpr;
       };
       auraConfigs?: {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
       fanCurvesConfig?: {
-        source?: string | null;
-        text?: string | null;
+        source?: string | null | NixExpr;
+        text?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       profileConfig?: {
-        source?: string | null;
-        text?: string | null;
+        source?: string | null | NixExpr;
+        text?: string | null | NixExpr;
       };
       userLedModesConfig?: {
-        source?: string | null;
-        text?: string | null;
+        source?: string | null | NixExpr;
+        text?: string | null | NixExpr;
       };
     };
     atalkd: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       interfaces?: {
         "<name>"?: Record<string, unknown>;
@@ -1910,49 +1902,49 @@ declare module "winix" {
     atftpd: {
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      root?: string;
+      root?: string | NixExpr;
     };
     athens: {
-      basicAuthPass?: string | null;
-      basicAuthUser?: string | null;
-      cloudRuntime?: "GCP" | "none";
-      downloadMode?: "async" | "async_redirect" | "none" | "redirect" | "sync";
-      downloadURL?: string;
+      basicAuthPass?: string | null | NixExpr;
+      basicAuthUser?: string | null | NixExpr;
+      cloudRuntime?: "GCP" | "none" | NixExpr;
+      downloadMode?: "async" | "async_redirect" | "none" | "redirect" | "sync" | NixExpr;
+      downloadURL?: string | NixExpr;
       enable?: boolean;
       enablePprof?: boolean;
       extraConfig?: Record<string, unknown>;
-      filterFile?: string | null;
+      filterFile?: string | null | NixExpr;
       forceSSL?: boolean;
-      githubToken?: string | null;
-      globalEndpoint?: string;
+      githubToken?: string | null | NixExpr;
+      globalEndpoint?: string | NixExpr;
       goBinary?: string | NixExpr;
       goBinaryEnvVars?: Record<string, unknown>;
-      goEnv?: "development" | "production";
-      goGetDir?: string | null;
+      goEnv?: "development" | "production" | NixExpr;
+      goGetDir?: string | null | NixExpr;
       goGetWorkers?: number;
-      hgrcPath?: string | null;
+      hgrcPath?: string | null | NixExpr;
       index?: {
         mysql?: Record<string, unknown>;
         postgres?: Record<string, unknown>;
       };
-      indexType?: "memory" | "mysql" | "none" | "postgres";
+      indexType?: "memory" | "mysql" | "none" | "postgres" | NixExpr;
       logLevel?: "debug" | "error" | "fatal" | "info" | "panic" | "trace" | "warning" | null;
-      netrcPath?: string | null;
-      networkMode?: "fallback" | "offline" | "strict";
+      netrcPath?: string | null | NixExpr;
+      networkMode?: "fallback" | "offline" | "strict" | NixExpr;
       noSumPatterns?: string[] | NixExpr;
       package?: string | NixExpr;
-      pathPrefix?: string | null;
+      pathPrefix?: string | null | NixExpr;
       port?: number;
       pprofPort?: number;
       protocolWorkers?: number;
-      robotsFile?: string | null;
+      robotsFile?: string | null | NixExpr;
       shutdownTimeout?: number;
       singleFlight?: {
         etcd?: Record<string, unknown>;
         redis?: Record<string, unknown>;
         redisSentinel?: Record<string, unknown>;
       };
-      singleFlightType?: "azureblob" | "etcd" | "gcp" | "memory" | "redis" | "redis-sentinel";
+      singleFlightType?: "azureblob" | "etcd" | "gcp" | "memory" | "redis" | "redis-sentinel" | NixExpr;
       statsExporter?: "prometheus" | null;
       storage?: {
         azureblob?: Record<string, unknown>;
@@ -1963,49 +1955,49 @@ declare module "winix" {
         mongo?: Record<string, unknown>;
         s3?: Record<string, unknown>;
       };
-      storageType?: "azureblob" | "disk" | "external" | "gcp" | "memory" | "mongo" | "s3";
+      storageType?: "azureblob" | "disk" | "external" | "gcp" | "memory" | "mongo" | "s3" | NixExpr;
       sumDBs?: string[] | NixExpr;
       timeout?: number;
-      tlsCertFile?: string | null;
-      tlsKeyFile?: string | null;
+      tlsCertFile?: string | null | NixExpr;
+      tlsKeyFile?: string | null | NixExpr;
       traceExporter?: "datadog" | "jaeger" | null;
-      traceExporterURL?: string | null;
-      unixSocket?: string | null;
-      validatorHook?: string | null;
+      traceExporterURL?: string | null | NixExpr;
+      unixSocket?: string | null | NixExpr;
+      validatorHook?: string | null | NixExpr;
     };
     atticd: {
       enable?: boolean;
-      environmentFile?: string | null;
-      group?: string;
-      mode?: "api-server" | "garbage-collector" | "monolithic";
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
+      mode?: "api-server" | "garbage-collector" | "monolithic" | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     atuin: {
       database?: {
         createLocally?: boolean;
-        uri?: string | null;
+        uri?: string | null | NixExpr;
       };
       enable?: boolean;
-      environmentFile?: string | null;
-      host?: string;
+      environmentFile?: string | null | NixExpr;
+      host?: string | NixExpr;
       maxHistoryLength?: number;
       openFirewall?: boolean;
       openRegistration?: boolean;
       package?: string | NixExpr;
-      path?: string;
+      path?: string | NixExpr;
       port?: number;
     };
     audiobookshelf: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      host?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     authelia: {
       instances?: {
@@ -2027,15 +2019,15 @@ declare module "winix" {
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      secretFile?: string;
+      secretFile?: string | NixExpr;
       settings?: {
         checkForUpdates?: boolean;
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
     };
     autofs: {
-      autoMaster?: string;
+      autoMaster?: string | NixExpr;
       debug?: boolean;
       enable?: boolean;
       timeout?: number;
@@ -2045,19 +2037,19 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     automx2: {
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, unknown>;
     };
     automysqlbackup: {
-      calendar?: string;
+      calendar?: string | NixExpr;
       enable?: boolean;
       settings?: Record<string, string | number | boolean | string[]>;
     };
     autorandr: {
-      defaultTarget?: string;
+      defaultTarget?: string | NixExpr;
       enable?: boolean;
       hooks?: {
         postswitch?: Record<string, string>;
@@ -2071,9 +2063,7 @@ declare module "winix" {
       };
     };
     autossh: {
-      sessions?: {
-        "*"?: Record<string, unknown>;
-      };
+      sessions?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
     };
     "autossh-ng": {
       sessions?: {
@@ -2087,8 +2077,8 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        suspend_cmd?: string;
-        wakeup_cmd?: string;
+        suspend_cmd?: string | NixExpr;
+        wakeup_cmd?: string | NixExpr;
       };
       wakeups?: {
         "<name>"?: Record<string, unknown>;
@@ -2106,11 +2096,11 @@ declare module "winix" {
       cacheEntriesMax?: number | null;
       debug?: boolean;
       denyInterfaces?: string[] | null;
-      domainName?: string;
+      domainName?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraServiceFiles?: Record<string, string>;
-      hostName?: string;
+      hostName?: string | NixExpr;
       ipv4?: boolean;
       ipv6?: boolean;
       nssmdns4?: boolean;
@@ -2132,13 +2122,13 @@ declare module "winix" {
       configs?: {
         "<name>"?: Record<string, unknown>;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      updateAt?: string | null;
+      updateAt?: string | null | NixExpr;
     };
     ax25: {
       axlisten?: {
-        config?: string;
+        config?: string | NixExpr;
         enable?: boolean;
         package?: string | NixExpr;
       };
@@ -2152,24 +2142,24 @@ declare module "winix" {
     };
     babeld: {
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       interfaceDefaults?: Record<string, unknown> | null;
       interfaces?: Record<string, Record<string, unknown>>;
     };
     "bacula-dir": {
       enable?: boolean;
-      extraConfig?: string;
-      extraDirectorConfig?: string;
-      extraMessagesConfig?: string;
-      name?: string;
-      password?: string;
+      extraConfig?: string | NixExpr;
+      extraDirectorConfig?: string | NixExpr;
+      extraMessagesConfig?: string | NixExpr;
+      name?: string | NixExpr;
+      password?: string | NixExpr;
       port?: number;
       tls?: {
         allowedCN?: string[] | NixExpr;
-        caCertificateFile?: string | null;
-        certificate?: string | null;
+        caCertificateFile?: string | null | NixExpr;
+        certificate?: string | null | NixExpr;
         enable?: boolean;
-        key?: string;
+        key?: string | NixExpr;
         require?: boolean | null;
         verifyPeer?: boolean | null;
       };
@@ -2179,16 +2169,16 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
-      extraClientConfig?: string;
-      extraMessagesConfig?: string;
-      name?: string;
+      extraClientConfig?: string | NixExpr;
+      extraMessagesConfig?: string | NixExpr;
+      name?: string | NixExpr;
       port?: number;
       tls?: {
         allowedCN?: string[] | NixExpr;
-        caCertificateFile?: string | null;
-        certificate?: string | null;
+        caCertificateFile?: string | null | NixExpr;
+        certificate?: string | null | NixExpr;
         enable?: boolean;
-        key?: string;
+        key?: string | NixExpr;
         require?: boolean | null;
         verifyPeer?: boolean | null;
       };
@@ -2204,46 +2194,46 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
-      extraMessagesConfig?: string;
-      extraStorageConfig?: string;
-      name?: string;
+      extraMessagesConfig?: string | NixExpr;
+      extraStorageConfig?: string | NixExpr;
+      name?: string | NixExpr;
       port?: number;
       tls?: {
         allowedCN?: string[] | NixExpr;
-        caCertificateFile?: string | null;
-        certificate?: string | null;
+        caCertificateFile?: string | null | NixExpr;
+        certificate?: string | null | NixExpr;
         enable?: boolean;
-        key?: string;
+        key?: string | NixExpr;
         require?: boolean | null;
         verifyPeer?: boolean | null;
       };
     };
     baikal: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       phpPackage?: string | NixExpr;
-      pool?: string;
-      user?: string;
-      virtualHost?: string | null;
+      pool?: string | NixExpr;
+      user?: string | NixExpr;
+      virtualHost?: string | null | NixExpr;
     };
     bamf: {
       enable?: boolean;
     };
     bazarr: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       listenPort?: number;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     bcachefs: {
       autoScrub?: {
         enable?: boolean;
         fileSystems?: string[] | NixExpr;
-        interval?: string;
+        interval?: string | NixExpr;
       };
     };
     bcg: {
@@ -2251,30 +2241,30 @@ declare module "winix" {
       automaticRenameGenericNodes?: boolean;
       automaticRenameKitNodes?: boolean;
       automaticRenameNodes?: boolean;
-      baseTopicPrefix?: string;
-      device?: string;
+      baseTopicPrefix?: string | NixExpr;
+      device?: string | NixExpr;
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
       mqtt?: {
-        cafile?: string | null;
-        certfile?: string | null;
-        host?: string;
-        keyfile?: string | null;
-        password?: string | null;
+        cafile?: string | null | NixExpr;
+        certfile?: string | null | NixExpr;
+        host?: string | NixExpr;
+        keyfile?: string | null | NixExpr;
+        password?: string | null | NixExpr;
         port?: number;
-        username?: string | null;
+        username?: string | null | NixExpr;
       };
-      name?: string | null;
+      name?: string | null | NixExpr;
       package?: string | NixExpr;
       qosNodeMessages?: number;
       rename?: Record<string, string>;
       retainNodeMessages?: boolean;
-      verbose?: "CRITICAL" | "DEBUG" | "ERROR" | "INFO" | "WARNING";
+      verbose?: "CRITICAL" | "DEBUG" | "ERROR" | "INFO" | "WARNING" | NixExpr;
     };
     beanstalkd: {
       enable?: boolean;
       listen?: {
-        address?: string;
+        address?: string | NixExpr;
         port?: number;
       };
       openFirewall?: boolean;
@@ -2282,10 +2272,10 @@ declare module "winix" {
     bee: {
       daemonNiceLevel?: number;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     beesd: {
       filesystems?: {
@@ -2293,7 +2283,7 @@ declare module "winix" {
       };
     };
     below: {
-      cgroupFilterOut?: string | null;
+      cgroupFilterOut?: string | null | NixExpr;
       collect?: {
         diskStats?: boolean;
         exitStats?: boolean;
@@ -2303,8 +2293,8 @@ declare module "winix" {
         enable?: boolean;
       };
       dirs?: {
-        log?: string | null;
-        store?: string | null;
+        log?: string | null | NixExpr;
+        store?: string | null | NixExpr;
       };
       enable?: boolean;
       retention?: {
@@ -2317,7 +2307,7 @@ declare module "winix" {
         enable?: boolean;
         virtualHost?: Record<string, unknown>;
       };
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
       nginx?: {
         enable?: boolean;
@@ -2335,54 +2325,54 @@ declare module "winix" {
       agent?: {
         enable?: boolean;
         environment?: Record<string, unknown>;
-        environmentFile?: string | null;
+        environmentFile?: string | null | NixExpr;
         extraPath?: (string | NixExpr)[] | NixExpr;
         openFirewall?: boolean;
         package?: string | NixExpr;
         smartmon?: Record<string, unknown>;
       };
       hub?: {
-        dataDir?: string;
+        dataDir?: string | NixExpr;
         enable?: boolean;
         environment?: Record<string, string>;
-        environmentFile?: string | null;
-        host?: string;
+        environmentFile?: string | null | NixExpr;
+        host?: string | NixExpr;
         package?: string | NixExpr;
         port?: number;
       };
     };
     biboumi: {
-      credentialsFile?: string;
+      credentialsFile?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
         admin?: string[] | NixExpr;
-        ca_file?: string;
-        db_name?: string | null;
-        hostname?: string;
+        ca_file?: string | NixExpr;
+        db_name?: string | null | NixExpr;
+        hostname?: string | NixExpr;
         identd_port?: number;
         log_level?: number;
-        password?: string | null;
+        password?: string | null | NixExpr;
         persistent_by_default?: boolean;
-        policy_directory?: string;
+        policy_directory?: string | NixExpr;
         port?: number;
         realname_customization?: boolean;
         realname_from_jid?: boolean;
-        xmpp_server_ip?: string;
+        xmpp_server_ip?: string | NixExpr;
       };
     };
     bind: {
       blockedNetworks?: string[] | NixExpr;
       cacheNetworks?: string[] | NixExpr;
       checkConfig?: boolean;
-      configFile?: string;
-      directory?: string;
+      configFile?: string | NixExpr;
+      directory?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      extraConfig?: string;
-      extraOptions?: string;
-      forward?: "first" | "only";
+      extraConfig?: string | NixExpr;
+      extraOptions?: string | NixExpr;
+      forward?: "first" | "only" | NixExpr;
       forwarders?: string[] | NixExpr;
       ipv4Only?: boolean;
       listenOn?: string[] | NixExpr;
@@ -2397,46 +2387,46 @@ declare module "winix" {
     bird: {
       autoReload?: boolean;
       checkConfig?: boolean;
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
-      preCheckConfig?: string;
+      preCheckConfig?: string | NixExpr;
     };
     "bird-lg": {
       frontend?: {
         bgpMapInfo?: string[] | NixExpr;
-        dnsInterface?: string;
-        domain?: string;
+        dnsInterface?: string | NixExpr;
+        domain?: string | NixExpr;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
         listenAddresses?: string | string[] | NixExpr;
-        nameFilter?: string;
+        nameFilter?: string | NixExpr;
         navbar?: Record<string, unknown>;
-        netSpecificMode?: string;
+        netSpecificMode?: string | NixExpr;
         protocolFilter?: string[] | NixExpr;
         proxyPort?: number;
         servers?: string[] | NixExpr;
         timeout?: number;
-        titleBrand?: string;
-        whois?: string;
+        titleBrand?: string | NixExpr;
+        whois?: string | NixExpr;
       };
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       proxy?: {
         allowedIPs?: string[] | NixExpr;
-        birdSocket?: string;
+        birdSocket?: string | NixExpr;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
         listenAddresses?: string | string[] | NixExpr;
         traceroute?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     birdwatcher: {
       enable?: boolean;
       flags?: string[] | NixExpr;
       package?: string | NixExpr;
-      settings?: string;
+      settings?: string | NixExpr;
     };
     "bitbox-bridge": {
       enable?: boolean;
@@ -2446,39 +2436,39 @@ declare module "winix" {
     };
     bitcoind: {
       "<name>"?: {
-        configFile?: string | null;
-        dataDir?: string;
+        configFile?: string | null | NixExpr;
+        dataDir?: string | NixExpr;
         dbCache?: number | null;
         enable?: boolean;
         extraCmdlineOptions?: string[] | NixExpr;
-        extraConfig?: string;
-        group?: string;
+        extraConfig?: string | NixExpr;
+        group?: string | NixExpr;
         package?: string | NixExpr;
-        pidFile?: string;
+        pidFile?: string | NixExpr;
         port?: number | null;
         prune?: unknown | null;
         rpc?: Record<string, unknown>;
         testnet?: boolean;
-        user?: string;
+        user?: string | NixExpr;
       };
     };
     bitlbee: {
-      authBackend?: "pam" | "storage";
-      authMode?: "Closed" | "Open" | "Registered";
-      configDir?: string;
+      authBackend?: "pam" | "storage" | NixExpr;
+      authMode?: "Closed" | "Open" | "Registered" | NixExpr;
+      configDir?: string | NixExpr;
       enable?: boolean;
-      extraDefaults?: string;
-      extraSettings?: string;
-      hostName?: string;
-      interface?: string;
+      extraDefaults?: string | NixExpr;
+      extraSettings?: string | NixExpr;
+      hostName?: string | NixExpr;
+      interface?: string | NixExpr;
       libpurple_plugins?: (string | NixExpr)[] | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
       portNumber?: number;
-      protocols?: string;
+      protocols?: string | NixExpr;
     };
     bitmagnet: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -2487,61 +2477,61 @@ declare module "winix" {
         postgres?: Record<string, unknown>;
       };
       useLocalPostgresDB?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     "bitwarden-directory-connector-cli": {
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
-      interval?: string;
+      interval?: string | NixExpr;
       ldap?: {
         ad?: boolean;
-        hostname?: string;
+        hostname?: string | NixExpr;
         pagedSearch?: boolean;
         port?: number;
-        rootPath?: string;
+        rootPath?: string | NixExpr;
         ssl?: boolean;
         startTls?: boolean;
-        username?: string;
+        username?: string | NixExpr;
       };
       package?: string | NixExpr;
       secrets?: {
         bitwarden?: Record<string, unknown>;
-        ldap?: string;
+        ldap?: string | NixExpr;
       };
       sync?: {
-        creationDateAttribute?: string;
-        emailPrefixAttribute?: string;
-        emailSuffix?: string;
-        groupFilter?: string;
-        groupNameAttribute?: string;
-        groupObjectClass?: string;
-        groupPath?: string;
+        creationDateAttribute?: string | NixExpr;
+        emailPrefixAttribute?: string | NixExpr;
+        emailSuffix?: string | NixExpr;
+        groupFilter?: string | NixExpr;
+        groupNameAttribute?: string | NixExpr;
+        groupObjectClass?: string | NixExpr;
+        groupPath?: string | NixExpr;
         groups?: boolean;
         largeImport?: boolean;
-        memberAttribute?: string;
+        memberAttribute?: string | NixExpr;
         overwriteExisting?: boolean;
         removeDisabled?: boolean;
         useEmailPrefixSuffix?: boolean;
-        userEmailAttribute?: string;
-        userFilter?: string;
-        userObjectClass?: string;
-        userPath?: string;
+        userEmailAttribute?: string | NixExpr;
+        userFilter?: string | NixExpr;
+        userObjectClass?: string | NixExpr;
+        userPath?: string | NixExpr;
         users?: boolean;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "blackfire-agent": {
       enable?: boolean;
       settings?: {
-        "server-id"?: string;
-        "server-token"?: string;
+        "server-id"?: string | NixExpr;
+        "server-token"?: string | NixExpr;
       };
     };
     blendfarm: {
-      basicSecurityPasswordFile?: string | null;
+      basicSecurityPasswordFile?: string | null | NixExpr;
       blenderPackage?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       serverConfig?: {
@@ -2549,28 +2539,28 @@ declare module "winix" {
         BypassScriptUpdate?: boolean;
         Port?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "blockbook-frontend": {
       "<name>"?: {
-        certFile?: string | null;
-        coinName?: string;
-        configFile?: string | null;
-        cssDir?: string;
-        dataDir?: string;
+        certFile?: string | null | NixExpr;
+        coinName?: string | NixExpr;
+        configFile?: string | null | NixExpr;
+        cssDir?: string | NixExpr;
+        dataDir?: string | NixExpr;
         debug?: boolean;
         enable?: boolean;
         extraCmdLineOptions?: string[] | NixExpr;
         extraConfig?: Record<string, unknown>;
-        group?: string;
-        internal?: string | null;
-        messageQueueBinding?: string;
+        group?: string | NixExpr;
+        internal?: string | null | NixExpr;
+        messageQueueBinding?: string | NixExpr;
         package?: string | NixExpr;
-        public?: string | null;
+        public?: string | null | NixExpr;
         rpc?: Record<string, unknown>;
         sync?: boolean;
-        templateDir?: string;
-        user?: string;
+        templateDir?: string | NixExpr;
+        user?: string | NixExpr;
       };
     };
     blocky: {
@@ -2589,25 +2579,25 @@ declare module "winix" {
     };
     bluemap: {
       coreSettings?: {
-        data?: string;
+        data?: string | NixExpr;
         metrics?: boolean;
       };
-      defaultWorld?: string;
+      defaultWorld?: string | NixExpr;
       enable?: boolean;
       enableNginx?: boolean;
       enableRender?: boolean;
       eula?: boolean;
-      host?: string;
+      host?: string | NixExpr;
       maps?: {
         "<name>"?: Record<string, unknown>;
       };
-      onCalendar?: string;
+      onCalendar?: string | NixExpr;
       packs?: Record<string, unknown>;
       storage?: {
         "<name>"?: Record<string, unknown>;
       };
       webappSettings?: Record<string, unknown>;
-      webRoot?: string;
+      webRoot?: string | NixExpr;
       webserverSettings?: {
         enabled?: boolean;
       };
@@ -2623,55 +2613,53 @@ declare module "winix" {
         enable?: boolean;
       };
       settings?: {
-        LOG_ENABLED?: string | null;
-        PDS_BLOB_UPLOAD_LIMIT?: string;
-        PDS_BLOBSTORE_DISK_LOCATION?: string | null;
-        PDS_BSKY_APP_VIEW_DID?: string;
-        PDS_BSKY_APP_VIEW_URL?: string;
-        PDS_CRAWLERS?: string;
-        PDS_DATA_DIRECTORY?: string;
-        PDS_DID_PLC_URL?: string;
-        PDS_HOSTNAME?: string;
-        PDS_INVITE_REQUIRED?: string | null;
+        LOG_ENABLED?: string | null | NixExpr;
+        PDS_BLOB_UPLOAD_LIMIT?: string | NixExpr;
+        PDS_BLOBSTORE_DISK_LOCATION?: string | null | NixExpr;
+        PDS_BSKY_APP_VIEW_DID?: string | NixExpr;
+        PDS_BSKY_APP_VIEW_URL?: string | NixExpr;
+        PDS_CRAWLERS?: string | NixExpr;
+        PDS_DATA_DIRECTORY?: string | NixExpr;
+        PDS_DID_PLC_URL?: string | NixExpr;
+        PDS_HOSTNAME?: string | NixExpr;
+        PDS_INVITE_REQUIRED?: string | null | NixExpr;
         PDS_PORT?: number;
-        PDS_RATE_LIMITS_ENABLED?: string | null;
-        PDS_REPORT_SERVICE_DID?: string;
-        PDS_REPORT_SERVICE_URL?: string;
+        PDS_RATE_LIMITS_ENABLED?: string | null | NixExpr;
+        PDS_REPORT_SERVICE_DID?: string | NixExpr;
+        PDS_REPORT_SERVICE_URL?: string | NixExpr;
       };
     };
     boinc: {
       allowRemoteGuiRpc?: boolean;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraEnvPackages?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr;
     };
     bonsaid: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
       package?: string | NixExpr;
-      settings?: {
-        "*"?: Record<string, unknown>;
-      };
+      settings?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
     };
     bookstack: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      hostname?: string;
-      maxUploadSize?: string;
+      group?: string | NixExpr;
+      hostname?: string | NixExpr;
+      maxUploadSize?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -2684,24 +2672,24 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       settings?: {
-        APP_KEY_FILE?: string;
-        APP_URL?: string;
-        DB_HOST?: string;
-        DB_PASSWORD_FILE?: string | null;
+        APP_KEY_FILE?: string | NixExpr;
+        APP_URL?: string | NixExpr;
+        DB_HOST?: string | NixExpr;
+        DB_PASSWORD_FILE?: string | null | NixExpr;
         DB_PORT?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     borgbackup: {
       jobs?: {
@@ -2724,17 +2712,17 @@ declare module "winix" {
       };
     };
     bosun: {
-      checkFrequency?: string;
+      checkFrequency?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      group?: string;
-      influxHost?: string | null;
-      ledisDir?: string;
-      listenAddress?: string;
-      opentsdbHost?: string | null;
+      extraConfig?: string | NixExpr;
+      group?: string | NixExpr;
+      influxHost?: string | null | NixExpr;
+      ledisDir?: string | NixExpr;
+      listenAddress?: string | NixExpr;
+      opentsdbHost?: string | null | NixExpr;
       package?: string | NixExpr;
-      stateFile?: string;
-      user?: string;
+      stateFile?: string | NixExpr;
+      user?: string | NixExpr;
     };
     botamusique: {
       enable?: boolean;
@@ -2757,7 +2745,7 @@ declare module "winix" {
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
       web?: {
-        host?: string;
+        host?: string | NixExpr;
         openFirewall?: boolean;
         port?: number;
       };
@@ -2767,22 +2755,20 @@ declare module "winix" {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
-      ioSchedulingClass?: "best-effort" | "idle" | "realtime";
+      ioSchedulingClass?: "best-effort" | "idle" | "realtime" | NixExpr;
       niceness?: number;
-      sshAccess?: {
-        "*"?: Record<string, unknown>;
-      };
+      sshAccess?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
     };
     btrfs: {
       autoScrub?: {
         enable?: boolean;
         fileSystems?: string[] | NixExpr;
-        interval?: string;
-        limit?: string | null;
+        interval?: string | NixExpr;
+        limit?: string | null | NixExpr;
       };
     };
     buffyboard: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
       package?: string | NixExpr;
@@ -2794,65 +2780,65 @@ declare module "winix" {
       };
     };
     "buildbot-master": {
-      buildbotDir?: string;
-      buildbotUrl?: string;
+      buildbotDir?: string | NixExpr;
+      buildbotUrl?: string | NixExpr;
       builders?: string[] | NixExpr;
       changeSource?: string[] | NixExpr;
       configurators?: string[] | NixExpr;
-      dbUrl?: string;
+      dbUrl?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraGroups?: string[] | NixExpr;
-      extraImports?: string;
+      extraImports?: string | NixExpr;
       factorySteps?: string[] | NixExpr;
-      group?: string;
-      home?: string;
-      listenAddress?: string;
-      masterCfg?: string;
+      group?: string | NixExpr;
+      home?: string | NixExpr;
+      listenAddress?: string | NixExpr;
+      masterCfg?: string | NixExpr;
       package?: string | NixExpr;
       packages?: (string | NixExpr)[] | NixExpr;
-      pbPort?: string | number;
+      pbPort?: string | number | NixExpr;
       port?: number;
       pythonPackages?: unknown;
       reporters?: string[] | NixExpr;
       schedulers?: string[] | NixExpr;
-      title?: string;
-      titleUrl?: string;
-      user?: string;
+      title?: string | NixExpr;
+      titleUrl?: string | NixExpr;
+      user?: string | NixExpr;
       workers?: string[] | NixExpr;
     };
     "buildbot-worker": {
-      adminMessage?: string | null;
-      buildbotDir?: string;
+      adminMessage?: string | null | NixExpr;
+      buildbotDir?: string | NixExpr;
       enable?: boolean;
       extraGroups?: string[] | NixExpr;
-      group?: string;
-      home?: string;
-      hostMessage?: string | null;
+      group?: string | NixExpr;
+      home?: string | NixExpr;
+      hostMessage?: string | null | NixExpr;
       keepalive?: number;
-      masterUrl?: string;
+      masterUrl?: string | NixExpr;
       package?: string | NixExpr;
       packages?: (string | NixExpr)[] | NixExpr;
-      user?: string;
-      workerPass?: string;
-      workerPassFile?: string;
-      workerUser?: string;
+      user?: string | NixExpr;
+      workerPass?: string | NixExpr;
+      workerPassFile?: string | NixExpr;
+      workerUser?: string | NixExpr;
     };
     "buildkite-agents": {
       "<name>"?: {
-        dataDir?: string;
+        dataDir?: string | NixExpr;
         enable?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         extraGroups?: string[] | NixExpr;
         hooks?: Record<string, string>;
-        hooksPath?: string;
-        name?: string;
+        hooksPath?: string | NixExpr;
+        name?: string | NixExpr;
         package?: string | NixExpr;
-        privateSshKeyPath?: string | null;
+        privateSshKeyPath?: string | null | NixExpr;
         runtimePackages?: (string | NixExpr)[] | NixExpr;
-        shell?: string;
+        shell?: string | NixExpr;
         tags?: Record<string, string | string[]>;
-        tokenPath?: string;
+        tokenPath?: string | NixExpr;
       };
     };
     byedpi: {
@@ -2861,62 +2847,62 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     "c2fmzq-server": {
-      bindIP?: string;
+      bindIP?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
-      passphraseFile?: string;
+      passphraseFile?: string | NixExpr;
       port?: number;
       settings?: {
-        database?: string;
+        database?: string | NixExpr;
         verbose?: number;
       };
     };
     cachefilesd: {
-      cacheDir?: string;
+      cacheDir?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
     };
     "cachix-agent": {
-      credentialsFile?: string;
+      credentialsFile?: string | NixExpr;
       enable?: boolean;
-      host?: string | null;
-      name?: string;
+      host?: string | null | NixExpr;
+      name?: string | NixExpr;
       package?: string | NixExpr;
-      profile?: string | null;
+      profile?: string | null | NixExpr;
       verbose?: boolean;
     };
     "cachix-watch-store": {
-      cacheName?: string;
-      cachixTokenFile?: string;
+      cacheName?: string | NixExpr;
+      cachixTokenFile?: string | NixExpr;
       compressionLevel?: number | null;
       enable?: boolean;
-      host?: string | null;
+      host?: string | null | NixExpr;
       jobs?: number | null;
       package?: string | NixExpr;
-      signingKeyFile?: string | null;
+      signingKeyFile?: string | null | NixExpr;
       verbose?: boolean;
     };
     caddy: {
-      acmeCA?: string | null;
-      adapter?: string | null;
-      configFile?: string;
-      dataDir?: string;
-      email?: string | null;
+      acmeCA?: string | null | NixExpr;
+      adapter?: string | null | NixExpr;
+      configFile?: string | NixExpr;
+      dataDir?: string | NixExpr;
+      email?: string | null | NixExpr;
       enable?: boolean;
       enableReload?: boolean;
-      environmentFile?: string | null;
-      extraConfig?: string;
-      globalConfig?: string;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      extraConfig?: string | NixExpr;
+      globalConfig?: string | NixExpr;
+      group?: string | NixExpr;
       httpPort?: number | null;
       httpsPort?: number | null;
-      logDir?: string;
-      logFormat?: string;
+      logDir?: string | NixExpr;
+      logFormat?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       resume?: boolean;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
       virtualHosts?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -2924,125 +2910,123 @@ declare module "winix" {
     cadvisor: {
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       port?: number;
-      storageDriver?: string | null;
-      storageDriverDb?: string;
-      storageDriverHost?: string;
-      storageDriverPassword?: string;
-      storageDriverPasswordFile?: string;
+      storageDriver?: string | null | NixExpr;
+      storageDriverDb?: string | NixExpr;
+      storageDriverHost?: string | NixExpr;
+      storageDriverPassword?: string | NixExpr;
+      storageDriverPasswordFile?: string | NixExpr;
       storageDriverSecure?: boolean;
-      storageDriverUser?: string;
+      storageDriverUser?: string | NixExpr;
     };
     cage: {
       enable?: boolean;
       environment?: Record<string, string>;
       extraArguments?: string[] | NixExpr;
       package?: string | NixExpr;
-      program?: string;
-      user?: string;
+      program?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "calibre-server": {
       auth?: {
         enable?: boolean;
-        mode?: "auto" | "basic" | "digest";
-        userDb?: string | null;
+        mode?: "auto" | "basic" | "digest" | NixExpr;
+        userDb?: string | null | NixExpr;
       };
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      group?: string;
-      host?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       libraries?: string[] | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     "calibre-web": {
       calibrePackage?: string | NixExpr;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       listen?: {
-        ip?: string;
+        ip?: string | NixExpr;
         port?: number;
       };
       openFirewall?: boolean;
       options?: {
-        calibreLibrary?: string | null;
+        calibreLibrary?: string | null | NixExpr;
         enableBookConversion?: boolean;
         enableBookUploading?: boolean;
         enableKepubify?: boolean;
         reverseProxyAuth?: Record<string, unknown>;
       };
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     canaille: {
       enable?: boolean;
-      jwtPrivateKeyFile?: string | null;
-      ldapBindPasswordFile?: string | null;
+      jwtPrivateKeyFile?: string | null | NixExpr;
+      ldapBindPasswordFile?: string | null | NixExpr;
       package?: string | NixExpr;
-      secretKeyFile?: string;
+      secretKeyFile?: string | NixExpr;
       settings?: {
         CANAILLE?: Record<string, unknown>;
         CANAILLE_LDAP?: Record<string, unknown>;
         CANAILLE_OIDC?: Record<string, unknown>;
         CANAILLE_SQL?: Record<string, unknown>;
-        PREFERRED_URL_SCHEME?: "http" | "https";
-        SECRET_KEY?: string | null;
-        SERVER_NAME?: string;
+        PREFERRED_URL_SCHEME?: "http" | "https" | NixExpr;
+        SECRET_KEY?: string | null | NixExpr;
+        SERVER_NAME?: string | NixExpr;
       };
-      smtpPasswordFile?: string | null;
+      smtpPasswordFile?: string | null | NixExpr;
     };
     "canto-daemon": {
       enable?: boolean;
     };
     cassandra: {
       allowClients?: boolean;
-      clusterName?: string;
+      clusterName?: string | NixExpr;
       enable?: boolean;
       extraConfig?: Record<string, unknown>;
-      extraEnvSh?: string;
-      fullRepairInterval?: string | null;
+      extraEnvSh?: string | NixExpr;
+      fullRepairInterval?: string | null | NixExpr;
       fullRepairOptions?: string[] | NixExpr;
-      group?: string;
-      heapNewSize?: string | null;
-      homeDir?: string;
-      incrementalRepairInterval?: string | null;
+      group?: string | NixExpr;
+      heapNewSize?: string | null | NixExpr;
+      homeDir?: string | NixExpr;
+      incrementalRepairInterval?: string | null | NixExpr;
       incrementalRepairOptions?: string[] | NixExpr;
       jmxPort?: number;
-      jmxRoles?: {
-        "*"?: Record<string, unknown>;
-      };
-      jmxRolesFile?: string | null;
+      jmxRoles?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      jmxRolesFile?: string | null | NixExpr;
       jvmOpts?: string[] | NixExpr;
-      listenAddress?: string | null;
-      listenInterface?: string | null;
-      logbackConfig?: string;
+      listenAddress?: string | null | NixExpr;
+      listenInterface?: string | null | NixExpr;
+      logbackConfig?: string | NixExpr;
       mallocArenaMax?: number | null;
-      maxHeapSize?: string | null;
+      maxHeapSize?: string | null | NixExpr;
       package?: string | NixExpr;
       remoteJmx?: boolean;
-      rpcAddress?: string | null;
-      rpcInterface?: string | null;
+      rpcAddress?: string | null | NixExpr;
+      rpcInterface?: string | null | NixExpr;
       seedAddresses?: string[] | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     castopod: {
       configureNginx?: boolean;
       database?: {
         createLocally?: boolean;
-        hostname?: string;
-        name?: string;
-        passwordFile?: string | null;
-        user?: string;
+        hostname?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
-      localDomain?: string;
-      maxUploadSize?: string;
+      environmentFile?: string | null | NixExpr;
+      localDomain?: string | NixExpr;
+      maxUploadSize?: string | NixExpr;
       package?: string | NixExpr;
       poolSettings?: Record<string, string | number | boolean>;
       settings?: Record<string, string | number | boolean>;
@@ -3067,18 +3051,18 @@ declare module "winix" {
       enable?: boolean;
       extraConfig?: Record<string, string>;
       global?: {
-        authClientRequired?: "cephx" | "none";
-        authClusterRequired?: "cephx" | "none";
-        authServiceRequired?: "cephx" | "none";
-        clusterName?: string;
-        clusterNetwork?: string | null;
-        fsid?: string;
+        authClientRequired?: "cephx" | "none" | NixExpr;
+        authClusterRequired?: "cephx" | "none" | NixExpr;
+        authServiceRequired?: "cephx" | "none" | NixExpr;
+        clusterName?: string | NixExpr;
+        clusterNetwork?: string | null | NixExpr;
+        fsid?: string | NixExpr;
         maxOpenFiles?: number;
-        mgrModulePath?: string;
-        monHost?: string | null;
-        monInitialMembers?: string | null;
-        publicNetwork?: string | null;
-        rgwMimeTypesFile?: string | null;
+        mgrModulePath?: string | NixExpr;
+        monHost?: string | null | NixExpr;
+        monInitialMembers?: string | null | NixExpr;
+        publicNetwork?: string | null | NixExpr;
+        rgwMimeTypesFile?: string | null | NixExpr;
       };
       mds?: {
         daemons?: string[] | NixExpr;
@@ -3111,15 +3095,15 @@ declare module "winix" {
       };
     };
     certmgr: {
-      defaultRemote?: string;
+      defaultRemote?: string | NixExpr;
       enable?: boolean;
-      metricsAddress?: string;
+      metricsAddress?: string | NixExpr;
       metricsPort?: number;
       package?: string | NixExpr;
-      renewInterval?: string;
+      renewInterval?: string | NixExpr;
       specs?: Record<string, unknown>;
-      svcManager?: "circus" | "command" | "dummy" | "openrc" | "systemd" | "sysv";
-      validMin?: string;
+      svcManager?: "circus" | "command" | "dummy" | "openrc" | "systemd" | "sysv" | NixExpr;
+      validMin?: string | NixExpr;
     };
     certspotter: {
       emailRecipients?: string[] | NixExpr;
@@ -3127,55 +3111,55 @@ declare module "winix" {
       extraFlags?: string[] | NixExpr;
       hooks?: string[] | NixExpr;
       package?: string | NixExpr;
-      sendmailPath?: string | null;
+      sendmailPath?: string | null | NixExpr;
       startAtEnd?: boolean;
       watchlist?: string[] | NixExpr;
     };
     cfdyndns: {
-      apikeyFile?: string | null;
-      apiTokenFile?: string | null;
-      email?: string;
+      apikeyFile?: string | null | NixExpr;
+      apiTokenFile?: string | null | NixExpr;
+      email?: string | NixExpr;
       enable?: boolean;
       records?: string[] | NixExpr;
     };
     cfssl: {
-      address?: string;
-      ca?: string;
-      caBundle?: string | null;
-      caKey?: string;
-      configFile?: string | null;
-      dataDir?: string;
-      dbConfig?: string | null;
-      disable?: string | null;
+      address?: string | NixExpr;
+      ca?: string | NixExpr;
+      caBundle?: string | null | NixExpr;
+      caKey?: string | NixExpr;
+      configFile?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
+      dbConfig?: string | null | NixExpr;
+      disable?: string | null | NixExpr;
       enable?: boolean;
-      intBundle?: string | null;
-      intDir?: string | null;
+      intBundle?: string | null | NixExpr;
+      intDir?: string | null | NixExpr;
       logLevel?: number;
-      metadata?: string | null;
-      mutualTlsCa?: string | null;
-      mutualTlsClientCert?: string | null;
-      mutualTlsClientKey?: string | null;
-      mutualTlsCn?: string | null;
+      metadata?: string | null | NixExpr;
+      mutualTlsCa?: string | null | NixExpr;
+      mutualTlsClientCert?: string | null | NixExpr;
+      mutualTlsClientKey?: string | null | NixExpr;
+      mutualTlsCn?: string | null | NixExpr;
       port?: number;
-      remote?: string | null;
-      responder?: string | null;
-      responderKey?: string | null;
-      tlsCert?: string | null;
-      tlsKey?: string | null;
-      tlsRemoteCa?: string | null;
+      remote?: string | null | NixExpr;
+      responder?: string | null | NixExpr;
+      responderKey?: string | null | NixExpr;
+      tlsCert?: string | null | NixExpr;
+      tlsKey?: string | null | NixExpr;
+      tlsRemoteCa?: string | null | NixExpr;
     };
     cgit: {
       "<name>"?: {
         enable?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         gitHttpBackend?: Record<string, unknown>;
-        group?: string;
+        group?: string | NixExpr;
         nginx?: Record<string, unknown>;
         package?: string | NixExpr;
         repos?: Record<string, Record<string, boolean | number | string>>;
-        scanPath?: string | null;
-        settings?: Record<string, boolean | number | string | (boolean | number | string)[]>;
-        user?: string;
+        scanPath?: string | null | NixExpr;
+        settings?: Record<string, boolean | number | string | (boolean | number | string)[]> | NixExpr;
+        user?: string | NixExpr;
       };
     };
     cgminer: {
@@ -3184,21 +3168,21 @@ declare module "winix" {
       hardware?: (Record<string, string | number>)[] | NixExpr;
       package?: string | NixExpr;
       pools?: Record<string, string>[] | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     "changedetection-io": {
-      baseURL?: string | null;
+      baseURL?: string | null | NixExpr;
       behindProxy?: boolean;
       chromePort?: number;
-      datastorePath?: string;
+      datastorePath?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
-      group?: string;
-      listenAddress?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       playwrightSupport?: boolean;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
       webDriverSupport?: boolean;
     };
     "chhoto-url": {
@@ -3207,48 +3191,48 @@ declare module "winix" {
       package?: string | NixExpr;
       settings?: {
         allow_capital_letters?: boolean;
-        cache_control_header?: string | null;
-        custom_landing_directory?: string | null;
-        db_url?: string;
+        cache_control_header?: string | null | NixExpr;
+        custom_landing_directory?: string | null | NixExpr;
+        db_url?: string | NixExpr;
         disable_frontend?: boolean;
         hash_algorithm?: "Argon2" | null;
         port?: number;
         public_mode?: boolean;
         public_mode_expiry_delay?: number | null;
-        redirect_method?: "PERMANENT" | "TEMPORARY";
-        site_url?: string | null;
+        redirect_method?: "PERMANENT" | "TEMPORARY" | NixExpr;
+        site_url?: string | null | NixExpr;
         slug_length?: number;
-        slug_style?: "Pair" | "UID";
+        slug_style?: "Pair" | "UID" | NixExpr;
         try_longer_slugs?: boolean;
       };
     };
     "chisel-server": {
-      authfile?: string | null;
-      backend?: string | null;
+      authfile?: string | null | NixExpr;
+      backend?: string | null | NixExpr;
       enable?: boolean;
-      host?: string | null;
-      keepalive?: string | null;
+      host?: string | null | NixExpr;
+      keepalive?: string | null | NixExpr;
       port?: number | null;
       reverse?: boolean;
       socks5?: boolean;
     };
     chromadb: {
-      dbpath?: string;
+      dbpath?: string | NixExpr;
       enable?: boolean;
-      host?: string;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     chrony: {
       autotrimThreshold?: number;
-      directory?: string;
+      directory?: string | NixExpr;
       dispatcherScript?: boolean;
       enable?: boolean;
       enableMemoryLocking?: boolean;
       enableNTS?: boolean;
       enableRTCTrimming?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraFlags?: string[] | NixExpr;
       initstepslew?: {
         enabled?: boolean;
@@ -3260,7 +3244,7 @@ declare module "winix" {
         threshold?: number;
       };
       package?: string | NixExpr;
-      serverOption?: "iburst" | "offline";
+      serverOption?: "iburst" | "offline" | NixExpr;
       servers?: string[] | NixExpr;
     };
     cinnamon: {
@@ -3271,19 +3255,19 @@ declare module "winix" {
     cjdns: {
       addExtraHosts?: boolean;
       admin?: {
-        bind?: string;
+        bind?: string | NixExpr;
       };
       authorizedPasswords?: string[] | NixExpr;
-      confFile?: string | null;
+      confFile?: string | null | NixExpr;
       enable?: boolean;
       ETHInterface?: {
         beacon?: number;
-        bind?: string;
+        bind?: string | NixExpr;
         connectTo?: Record<string, unknown>;
       };
       extraConfig?: Record<string, unknown>;
       UDPInterface?: {
-        bind?: string;
+        bind?: string | NixExpr;
         connectTo?: Record<string, unknown>;
       };
     };
@@ -3293,24 +3277,24 @@ declare module "winix" {
       };
       daemon?: {
         enable?: boolean;
-        settings?: Record<string, boolean | number | string | string[]>;
+        settings?: Record<string, boolean | number | string | string[]> | NixExpr;
       };
       fangfrisch?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
         settings?: Record<string, unknown>;
       };
       package?: string | NixExpr;
       scanner?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
         scanDirectories?: string[] | NixExpr;
       };
       updater?: {
         enable?: boolean;
         frequency?: number;
-        interval?: string;
-        settings?: Record<string, boolean | number | string | string[]>;
+        interval?: string | NixExpr;
+        settings?: Record<string, boolean | number | string | string[]> | NixExpr;
       };
     };
     clatd: {
@@ -3321,15 +3305,15 @@ declare module "winix" {
     };
     clickhouse: {
       enable?: boolean;
-      extraServerConfig?: string;
-      extraUsersConfig?: string;
+      extraServerConfig?: string | NixExpr;
+      extraUsersConfig?: string | NixExpr;
       package?: string | NixExpr;
       serverConfig?: Record<string, unknown>;
       usersConfig?: Record<string, unknown>;
     };
     clight: {
       enable?: boolean;
-      settings?: Record<string, number | string | boolean | (number | string | boolean)[] | Record<string, number | string | boolean | (number | string | boolean)[]> | null>;
+      settings?: Record<string, number | string | boolean | (number | string | boolean)[] | Record<string, number | string | boolean | (number | string | boolean)[]> | null> | NixExpr;
       temperature?: {
         day?: number;
         night?: number;
@@ -3347,7 +3331,7 @@ declare module "winix" {
       btrfs?: {
         enable?: boolean;
       };
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       ext4?: {
         enable?: boolean;
@@ -3362,39 +3346,39 @@ declare module "winix" {
       };
     };
     "cloudflare-ddns": {
-      cacheExpiration?: string;
-      credentialsFile?: string;
+      cacheExpiration?: string | NixExpr;
+      credentialsFile?: string | NixExpr;
       deleteOnStop?: boolean;
-      detectionTimeout?: string;
+      detectionTimeout?: string | NixExpr;
       domains?: string[] | NixExpr;
       enable?: boolean;
-      group?: string;
-      healthchecks?: string | null;
+      group?: string | NixExpr;
+      healthchecks?: string | null | NixExpr;
       ip4Domains?: string[] | null;
       ip6Domains?: string[] | null;
       package?: string | NixExpr;
       provider?: {
-        ipv4?: string;
-        ipv6?: string;
+        ipv4?: string | NixExpr;
+        ipv6?: string | NixExpr;
       };
-      proxied?: string;
-      recordComment?: string;
+      proxied?: string | NixExpr;
+      recordComment?: string | NixExpr;
       shoutrrr?: string[] | null;
       ttl?: number;
-      updateCron?: string;
+      updateCron?: string | NixExpr;
       updateOnStart?: boolean;
-      updateTimeout?: string;
-      uptimeKuma?: string | null;
-      user?: string;
-      wafListDescription?: string;
+      updateTimeout?: string | NixExpr;
+      uptimeKuma?: string | null | NixExpr;
+      user?: string | NixExpr;
+      wafListDescription?: string | NixExpr;
       wafLists?: string[] | NixExpr;
     };
     "cloudflare-dyndns": {
-      apiTokenFile?: string;
+      apiTokenFile?: string | NixExpr;
       deleteMissing?: boolean;
       domains?: string[] | NixExpr;
       enable?: boolean;
-      frequency?: string | null;
+      frequency?: string | null | NixExpr;
       ipv4?: boolean;
       ipv6?: boolean;
       package?: string | NixExpr;
@@ -3404,11 +3388,11 @@ declare module "winix" {
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      rootDir?: string;
+      rootDir?: string | NixExpr;
       udpPort?: number;
     };
     cloudflared: {
-      certificateFile?: string | null;
+      certificateFile?: string | null | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       tunnels?: {
@@ -3416,64 +3400,64 @@ declare module "winix" {
       };
     };
     cloudlog: {
-      baseUrl?: string;
+      baseUrl?: string | NixExpr;
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
-        user?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       "update-clublog-scp"?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
       };
       "update-dok"?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
       };
       "update-lotw-users"?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
       };
       "update-sota"?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
       };
       "update-wwff"?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
       };
       "upload-clublog"?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
       };
       "upload-lotw"?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
       };
       "upload-qrz"?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
       };
-      user?: string;
-      virtualHost?: string | null;
+      user?: string | NixExpr;
+      virtualHost?: string | null | NixExpr;
     };
     cntlm: {
-      configText?: string;
-      domain?: string;
+      configText?: string | NixExpr;
+      domain?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      netbios_hostname?: string;
+      extraConfig?: string | NixExpr;
+      netbios_hostname?: string | NixExpr;
       noproxy?: string[] | NixExpr;
-      password?: string;
+      password?: string | NixExpr;
       port?: number[] | NixExpr;
       proxy?: string[] | NixExpr;
-      username?: string;
+      username?: string | NixExpr;
     };
     cockpit: {
       "allowed-origins"?: string[] | NixExpr;
@@ -3486,97 +3470,95 @@ declare module "winix" {
       showBanner?: boolean;
     };
     cockroachdb: {
-      cache?: string;
-      certsDir?: string | null;
+      cache?: string | NixExpr;
+      certsDir?: string | null | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       http?: {
-        address?: string;
+        address?: string | NixExpr;
         port?: number;
       };
       insecure?: boolean;
-      join?: string | null;
+      join?: string | null | NixExpr;
       listen?: {
-        address?: string;
+        address?: string | NixExpr;
         port?: number;
       };
-      locality?: string | null;
-      maxSqlMemory?: string;
+      locality?: string | null | NixExpr;
+      maxSqlMemory?: string | NixExpr;
       openPorts?: boolean;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     cocoon: {
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
       package?: string | NixExpr;
       settings?: {
-        COCOON_ADDR?: string;
-        COCOON_CONTACT_EMAIL?: string;
-        COCOON_DATABASE_URL?: string | null;
-        COCOON_DB_NAME?: string;
-        COCOON_DB_TYPE?: string;
-        COCOON_DID?: string | null;
-        COCOON_HOSTNAME?: string | null;
-        COCOON_JWK_PATH?: string;
-        COCOON_RELAYS?: string;
-        COCOON_ROTATION_KEY_PATH?: string;
-        COCOON_SESSION_COOKIE_KEY?: string;
+        COCOON_ADDR?: string | NixExpr;
+        COCOON_CONTACT_EMAIL?: string | NixExpr;
+        COCOON_DATABASE_URL?: string | null | NixExpr;
+        COCOON_DB_NAME?: string | NixExpr;
+        COCOON_DB_TYPE?: string | NixExpr;
+        COCOON_DID?: string | null | NixExpr;
+        COCOON_HOSTNAME?: string | null | NixExpr;
+        COCOON_JWK_PATH?: string | NixExpr;
+        COCOON_RELAYS?: string | NixExpr;
+        COCOON_ROTATION_KEY_PATH?: string | NixExpr;
+        COCOON_SESSION_COOKIE_KEY?: string | NixExpr;
       };
     };
     "code-server": {
-      auth?: "none" | "password";
+      auth?: "none" | "password" | NixExpr;
       disableFileDownloads?: boolean;
       disableGettingStartedOverride?: boolean;
       disableTelemetry?: boolean;
       disableUpdateCheck?: boolean;
       disableWorkspaceTrust?: boolean;
       enable?: boolean;
-      extensionsDir?: string | null;
+      extensionsDir?: string | null | NixExpr;
       extraArguments?: string[] | NixExpr;
       extraEnvironment?: Record<string, string>;
       extraGroups?: string[] | NixExpr;
       extraPackages?: (string | NixExpr)[] | NixExpr;
-      group?: string;
-      hashedPassword?: string;
-      host?: string;
+      group?: string | NixExpr;
+      hashedPassword?: string | NixExpr;
+      host?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      proxyDomain?: string | null;
-      socket?: string | null;
-      socketMode?: string | null;
-      user?: string;
-      userDataDir?: string | null;
+      proxyDomain?: string | null | NixExpr;
+      socket?: string | null | NixExpr;
+      socketMode?: string | null | NixExpr;
+      user?: string | NixExpr;
+      userDataDir?: string | null | NixExpr;
     };
     coder: {
-      accessUrl?: string | null;
+      accessUrl?: string | null | NixExpr;
       database?: {
         createLocally?: boolean;
-        database?: string;
-        host?: string;
-        password?: string | null;
-        sslmode?: string | null;
-        username?: string;
+        database?: string | NixExpr;
+        host?: string | NixExpr;
+        password?: string | null | NixExpr;
+        sslmode?: string | null | NixExpr;
+        username?: string | NixExpr;
       };
       enable?: boolean;
       environment?: {
         extra?: Record<string, unknown>;
-        file?: string | null;
+        file?: string | null | NixExpr;
       };
-      group?: string;
-      homeDir?: string;
-      listenAddress?: string;
+      group?: string | NixExpr;
+      homeDir?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
-      tlsCert?: string | null;
-      tlsKey?: string | null;
-      user?: string;
-      wildcardAccessUrl?: string | null;
+      tlsCert?: string | null | NixExpr;
+      tlsKey?: string | null | NixExpr;
+      user?: string | NixExpr;
+      wildcardAccessUrl?: string | null | NixExpr;
     };
     "collabora-online": {
-      aliasGroups?: {
-        "*"?: Record<string, unknown>;
-      };
+      aliasGroups?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       package?: string | NixExpr;
@@ -3586,14 +3568,14 @@ declare module "winix" {
     collectd: {
       autoLoadPlugin?: boolean;
       buildMinimalPackage?: boolean;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       finalPackage?: unknown;
       include?: string[] | NixExpr;
       package?: string | NixExpr;
       plugins?: Record<string, string>;
-      user?: string | null;
+      user?: string | null | NixExpr;
       validateConfig?: boolean;
     };
     colord: {
@@ -3602,46 +3584,46 @@ declare module "winix" {
     commafeed: {
       enable?: boolean;
       environment?: Record<string, boolean | number | string>;
-      environmentFile?: string | null;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     compton: Record<string, unknown>;
     confd: {
-      backend?: "consul" | "etcd" | "redis" | "zookeeper";
-      confDir?: string;
+      backend?: "consul" | "etcd" | "redis" | "zookeeper" | NixExpr;
+      confDir?: string | NixExpr;
       enable?: boolean;
       interval?: number;
-      logLevel?: "debug" | "info";
+      logLevel?: "debug" | "info" | NixExpr;
       nodes?: string[] | NixExpr;
       package?: string | NixExpr;
-      prefix?: string;
+      prefix?: string | NixExpr;
       watch?: boolean;
     };
     conman: {
-      config?: string | null;
-      configFile?: string | null;
+      config?: string | null | NixExpr;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
     connman: {
       enable?: boolean;
       enableVPN?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraFlags?: string[] | NixExpr;
       networkInterfaceBlacklist?: string[] | NixExpr;
       package?: string | NixExpr;
       wifi?: {
-        backend?: "iwd" | "wpa_supplicant";
+        backend?: "iwd" | "wpa_supplicant" | NixExpr;
       };
     };
     consul: {
       alerts?: {
-        consulAddr?: string;
+        consulAddr?: string | NixExpr;
         enable?: boolean;
-        listenAddr?: string;
+        listenAddr?: string | NixExpr;
         package?: string | NixExpr;
         watchChecks?: boolean;
         watchEvents?: boolean;
@@ -3650,11 +3632,11 @@ declare module "winix" {
       enable?: boolean;
       extraConfig?: Record<string, unknown>;
       extraConfigFiles?: string[] | NixExpr;
-      forceAddrFamily?: "any" | "ipv4" | "ipv6";
+      forceAddrFamily?: "any" | "ipv4" | "ipv6" | NixExpr;
       forceIpv4?: boolean | null;
       interface?: {
-        advertise?: string | null;
-        bind?: string | null;
+        advertise?: string | null | NixExpr;
+        bind?: string | null | NixExpr;
       };
       leaveOnStop?: boolean;
       package?: string | NixExpr;
@@ -3667,61 +3649,59 @@ declare module "winix" {
     };
     convos: {
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       listenPort?: number;
       reverseProxy?: boolean;
     };
     "cook-cli": {
       autoStart?: boolean;
-      basePath?: string;
+      basePath?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     coredns: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       package?: string | NixExpr;
     };
     corerad: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     corosync: {
-      clusterName?: string;
+      clusterName?: string | NixExpr;
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      nodelist?: {
-        "*"?: Record<string, unknown>;
-      };
+      nodelist?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       package?: string | NixExpr;
     };
     corteza: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       settings?: {
         HTTP_WEBAPP_ENABLED?: boolean;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     coturn: {
       "alt-listening-port"?: number;
       "alt-tls-listening-port"?: number;
-      cert?: string | null;
-      "cli-ip"?: string;
-      "cli-password"?: string | null;
+      cert?: string | null | NixExpr;
+      "cli-ip"?: string | NixExpr;
+      "cli-password"?: string | null | NixExpr;
       "cli-port"?: number;
-      "dh-file"?: string | null;
+      "dh-file"?: string | null | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       "listening-ips"?: string[] | NixExpr;
       "listening-port"?: number;
       "lt-cred-mech"?: boolean;
@@ -3735,45 +3715,45 @@ declare module "winix" {
       "no-tls"?: boolean;
       "no-udp"?: boolean;
       "no-udp-relay"?: boolean;
-      pkey?: string | null;
-      realm?: string;
+      pkey?: string | null | NixExpr;
+      realm?: string | NixExpr;
       "relay-ips"?: string[] | NixExpr;
       "secure-stun"?: boolean;
-      "static-auth-secret"?: string | null;
-      "static-auth-secret-file"?: string | null;
+      "static-auth-secret"?: string | null | NixExpr;
+      "static-auth-secret-file"?: string | null | NixExpr;
       "tls-listening-port"?: number;
       "use-auth-secret"?: boolean;
     };
     couchdb: {
-      adminPass?: string | null;
-      adminUser?: string;
-      argsFile?: string;
-      bindAddress?: string;
-      configFile?: string;
-      databaseDir?: string;
+      adminPass?: string | null | NixExpr;
+      adminUser?: string | NixExpr;
+      argsFile?: string | NixExpr;
+      bindAddress?: string | NixExpr;
+      configFile?: string | NixExpr;
+      databaseDir?: string | NixExpr;
       enable?: boolean;
       extraConfig?: Record<string, unknown>;
       extraConfigFiles?: string[] | NixExpr;
-      group?: string;
-      logFile?: string;
+      group?: string | NixExpr;
+      logFile?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      uriFile?: string;
-      user?: string;
-      viewIndexDir?: string;
+      uriFile?: string | NixExpr;
+      user?: string | NixExpr;
+      viewIndexDir?: string | NixExpr;
     };
     "cpuminer-cryptonight": {
       enable?: boolean;
-      pass?: string;
+      pass?: string | NixExpr;
       threads?: number;
-      url?: string;
-      user?: string;
+      url?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "cpupower-gui": {
       enable?: boolean;
     };
     "crab-hole": {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -3789,38 +3769,38 @@ declare module "winix" {
       debug?: boolean;
       enable?: boolean;
       openFirewall?: boolean;
-      pass?: string;
+      pass?: string | NixExpr;
       ports?: number[] | NixExpr;
     };
     cron: {
       cronFiles?: string[] | NixExpr;
       enable?: boolean;
-      mailto?: string | null;
+      mailto?: string | null | NixExpr;
       systemCronJobs?: string[] | NixExpr;
     };
     "cross-seed": {
-      configDir?: string;
+      configDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
         dataDirs?: string[] | NixExpr;
         linkDirs?: string[] | NixExpr;
-        outputDir?: string | null;
+        outputDir?: string | null | NixExpr;
         port?: number;
-        torrentDir?: string | null;
+        torrentDir?: string | null | NixExpr;
       };
-      settingsFile?: string | null;
+      settingsFile?: string | null | NixExpr;
       useGenConfigDefaults?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     "crossfire-server": {
       configFiles?: Record<string, string>;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     crossmacro: {
       daemonPackage?: string | NixExpr;
@@ -3831,11 +3811,11 @@ declare module "winix" {
     crowdsec: {
       autoUpdateService?: boolean;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       hub?: {
         appSecConfigs?: string[] | NixExpr;
         appSecRules?: string[] | NixExpr;
-        branch?: string;
+        branch?: string | NixExpr;
         collections?: string[] | NixExpr;
         parsers?: string[] | NixExpr;
         postOverflows?: string[] | NixExpr;
@@ -3851,7 +3831,7 @@ declare module "winix" {
         profiles?: Record<string, unknown>[] | NixExpr;
         scenarios?: Record<string, unknown>[] | NixExpr;
       };
-      name?: string;
+      name?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -3861,23 +3841,23 @@ declare module "winix" {
         lapi?: Record<string, unknown>;
         simulation?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "crowdsec-firewall-bouncer": {
       createRulesets?: boolean;
       enable?: boolean;
       package?: string | NixExpr;
       registerBouncer?: {
-        bouncerName?: string;
+        bouncerName?: string | NixExpr;
         enable?: boolean;
       };
       secrets?: {
-        apiKeyPath?: string | null;
+        apiKeyPath?: string | null | NixExpr;
       };
       settings?: {
-        api_key?: string | null;
-        api_url?: string;
-        mode?: string;
+        api_key?: string | null | NixExpr;
+        api_url?: string | NixExpr;
+        mode?: string | NixExpr;
       };
     };
     cryptpad: {
@@ -3887,19 +3867,19 @@ declare module "winix" {
       settings?: {
         adminKeys?: string[] | NixExpr;
         blockDailyCheck?: boolean;
-        httpAddress?: string;
+        httpAddress?: string | NixExpr;
         httpPort?: number;
-        httpSafeOrigin?: string | null;
-        httpUnsafeOrigin?: string;
-        installMethod?: string;
-        logLevel?: string;
+        httpSafeOrigin?: string | null | NixExpr;
+        httpUnsafeOrigin?: string | NixExpr;
+        installMethod?: string | NixExpr;
+        logLevel?: string | NixExpr;
         logToStdout?: boolean;
         maxWorkers?: number | null;
         websocketPort?: number;
       };
     };
     "cyrus-imap": {
-      cyrusConfigFile?: string | null;
+      cyrusConfigFile?: string | null | NixExpr;
       cyrusSettings?: {
         DAEMON?: unknown;
         EVENTS?: unknown;
@@ -3908,23 +3888,23 @@ declare module "winix" {
       };
       debug?: boolean;
       enable?: boolean;
-      group?: string | null;
-      imapdConfigFile?: string | null;
+      group?: string | null | NixExpr;
+      imapdConfigFile?: string | null | NixExpr;
       imapdSettings?: {
-        configdirectory?: string;
-        idlesocket?: string;
-        lmtpsocket?: string;
-        notifysocket?: string;
+        configdirectory?: string | NixExpr;
+        idlesocket?: string | NixExpr;
+        lmtpsocket?: string | NixExpr;
+        notifysocket?: string | NixExpr;
       };
       listenQueue?: number;
-      tmpDBDir?: string;
-      user?: string | null;
+      tmpDBDir?: string | NixExpr;
+      user?: string | null | NixExpr;
     };
     dae: {
       assets?: string[] | NixExpr;
-      assetsPath?: string;
-      config?: string | null;
-      configFile?: string | null;
+      assetsPath?: string | NixExpr;
+      config?: string | null | NixExpr;
+      configFile?: string | null | NixExpr;
       disableTxChecksumIpGeneric?: boolean;
       enable?: boolean;
       openFirewall?: {
@@ -3934,16 +3914,16 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     dante: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
     };
     darkhttpd: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       hideServerId?: boolean;
       port?: number;
-      rootDir?: string;
+      rootDir?: string | NixExpr;
     };
     das_watchdog: {
       enable?: boolean;
@@ -3954,65 +3934,65 @@ declare module "winix" {
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
       virtualHost?: {
-        domain?: string;
+        domain?: string | NixExpr;
         enableNginx?: boolean;
       };
     };
     "datadog-agent": {
-      apiKeyFile?: string;
+      apiKeyFile?: string | NixExpr;
       checks?: Record<string, Record<string, unknown>>;
-      ddUrl?: string | null;
+      ddUrl?: string | null | NixExpr;
       diskCheck?: Record<string, unknown>;
       enable?: boolean;
       enableLiveProcessCollection?: boolean;
       enableTraceAgent?: boolean;
       extraConfig?: Record<string, unknown>;
       extraIntegrations?: Record<string, unknown>;
-      hostname?: string | null;
+      hostname?: string | null | NixExpr;
       logLevel?: "DEBUG" | "ERROR" | "INFO" | "WARN" | null;
       networkCheck?: Record<string, unknown>;
       package?: string | NixExpr;
       processAgentPackage?: string | NixExpr;
-      site?: string | null;
+      site?: string | null | NixExpr;
       tags?: string[] | null;
     };
     davfs2: {
-      davGroup?: string;
-      davUser?: string;
+      davGroup?: string | NixExpr;
+      davUser?: string | NixExpr;
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
     davis: {
-      adminLogin?: string;
-      adminPasswordFile?: string;
-      appSecretFile?: string;
+      adminLogin?: string | NixExpr;
+      adminPasswordFile?: string | NixExpr;
+      appSecretFile?: string | NixExpr;
       config?: Record<string, unknown>;
       database?: {
         createLocally?: boolean;
-        driver?: "mysql" | "postgresql" | "sqlite";
-        name?: string | null;
-        urlFile?: string | null;
+        driver?: "mysql" | "postgresql" | "sqlite" | NixExpr;
+        name?: string | null | NixExpr;
+        urlFile?: string | null | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      hostname?: string;
+      group?: string | NixExpr;
+      hostname?: string | NixExpr;
       mail?: {
-        dsn?: string | null;
-        dsnFile?: string | null;
-        inviteFromAddress?: string | null;
+        dsn?: string | null | NixExpr;
+        dsnFile?: string | null | NixExpr;
+        inviteFromAddress?: string | null | NixExpr;
       };
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -4025,82 +4005,82 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
-      user?: string;
+      user?: string | NixExpr;
     };
     davmail: {
       config?: Record<string, unknown>;
       enable?: boolean;
-      url?: string;
+      url?: string | NixExpr;
     };
     dawarich: {
       automaticMigrations?: boolean;
       configureNginx?: boolean;
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number | null;
-        user?: string;
+        user?: string | NixExpr;
       };
       enable?: boolean;
       environment?: Record<string, string | string | NixExpr | null>;
       extraEnvFiles?: string[] | NixExpr;
-      group?: string;
-      localDomain?: string;
+      group?: string | NixExpr;
+      localDomain?: string | NixExpr;
       package?: string | NixExpr;
       redis?: {
         createLocally?: boolean;
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
-      secretKeyBaseFile?: string | null;
+      secretKeyBaseFile?: string | null | NixExpr;
       sidekiqProcesses?: {
         "<name>"?: Record<string, unknown>;
       };
       sidekiqThreads?: number;
       smtp?: {
-        fromAddress?: string | null;
-        host?: string | null;
-        passwordFile?: string | null;
+        fromAddress?: string | null | NixExpr;
+        host?: string | null | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        user?: string | null;
+        user?: string | null | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
       webPort?: number;
     };
     "db-rest": {
       enable?: boolean;
-      group?: string;
-      host?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       redis?: {
         createLocally?: boolean;
         enable?: boolean;
-        host?: string | null;
-        passwordFile?: string | null;
+        host?: string | null | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number | null;
-        user?: string | null;
+        user?: string | null | NixExpr;
         useSSL?: boolean;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     dbus: {
-      apparmor?: "disabled" | "enabled" | "required";
+      apparmor?: "disabled" | "enabled" | "required" | NixExpr;
       brokerPackage?: string | NixExpr;
       dbusPackage?: string | NixExpr;
-      implementation?: "broker" | "dbus";
+      implementation?: "broker" | "dbus" | NixExpr;
       packages?: string[] | NixExpr;
     };
     ddccontrol: {
@@ -4108,25 +4088,25 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     ddclient: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       domains?: string[] | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      interval?: string;
+      extraConfig?: string | NixExpr;
+      interval?: string | NixExpr;
       package?: string | NixExpr;
-      passwordFile?: string | null;
-      protocol?: string;
+      passwordFile?: string | null | NixExpr;
+      protocol?: string | NixExpr;
       quiet?: boolean;
-      script?: string;
-      secretsFile?: string | null;
-      server?: string;
+      script?: string | NixExpr;
+      secretsFile?: string | null | NixExpr;
+      server?: string | NixExpr;
       ssl?: boolean;
-      use?: string;
-      username?: string;
-      usev4?: string;
-      usev6?: string;
+      use?: string | NixExpr;
+      username?: string | NixExpr;
+      usev4?: string | NixExpr;
+      usev6?: string | NixExpr;
       verbose?: boolean;
-      zone?: string;
+      zone?: string | NixExpr;
     };
     "ddns-updater": {
       enable?: boolean;
@@ -4137,27 +4117,27 @@ declare module "winix" {
       allowRebootSystem?: boolean;
       allowRestartService?: boolean;
       allowSetSystemTime?: boolean;
-      device?: string | null;
+      device?: string | null | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       httpPort?: number;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       wsPort?: number;
     };
     deluge: {
-      authFile?: string;
+      authFile?: string | NixExpr;
       config?: Record<string, unknown>;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       declarative?: boolean;
       enable?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
-      group?: string;
-      openFilesLimit?: number | string;
+      group?: string | NixExpr;
+      openFilesLimit?: number | string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
       web?: {
         enable?: boolean;
         openFirewall?: boolean;
@@ -4166,7 +4146,7 @@ declare module "winix" {
     };
     dendrite: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       httpPort?: number | null;
       httpsPort?: number | null;
       loadCredential?: string[] | NixExpr;
@@ -4184,66 +4164,66 @@ declare module "winix" {
         sync_api?: Record<string, unknown>;
         user_api?: Record<string, unknown>;
       };
-      tlsCert?: string | null;
-      tlsKey?: string | null;
+      tlsCert?: string | null | NixExpr;
+      tlsKey?: string | null | NixExpr;
     };
     "dependency-track": {
       database?: {
         createLocally?: boolean;
-        databaseName?: string;
-        passwordFile?: string;
-        type?: "h2" | "manual" | "postgresql";
-        username?: string;
+        databaseName?: string | NixExpr;
+        passwordFile?: string | NixExpr;
+        type?: "h2" | "manual" | "postgresql" | NixExpr;
+        username?: string | NixExpr;
       };
       enable?: boolean;
       frontend?: {
-        baseUrl?: string;
+        baseUrl?: string | NixExpr;
       };
       javaArgs?: string[] | NixExpr;
       ldap?: {
-        bindPasswordFile?: string;
+        bindPasswordFile?: string | NixExpr;
       };
-      logLevel?: "DEBUG" | "ERROR" | "INFO" | "TRACE" | "WARN";
+      logLevel?: "DEBUG" | "ERROR" | "INFO" | "TRACE" | "WARN" | NixExpr;
       nginx?: {
-        domain?: string;
+        domain?: string | NixExpr;
         enable?: boolean;
       };
       oidc?: {
-        clientId?: string;
+        clientId?: string | NixExpr;
         enable?: boolean;
-        flow?: "code" | "implicit";
-        issuer?: string;
-        loginButtonText?: string;
-        scope?: string;
+        flow?: "code" | "implicit" | NixExpr;
+        issuer?: string | NixExpr;
+        loginButtonText?: string | NixExpr;
+        scope?: string | NixExpr;
         teams?: Record<string, unknown>;
         teamSynchronization?: boolean;
-        usernameClaim?: string;
+        usernameClaim?: string | NixExpr;
         userProvisioning?: boolean;
       };
       package?: string | NixExpr;
       port?: number;
       settings?: {
-        "alpine.data.directory"?: string;
-        "alpine.database.driver"?: "com.microsoft.sqlserver.jdbc.SQLServerDriver" | "com.mysql.cj.jdbc.Driver" | "org.h2.Driver" | "org.postgresql.Driver";
-        "alpine.database.mode"?: "embedded" | "external" | "server";
-        "alpine.database.url"?: string;
-        "alpine.database.username"?: string;
+        "alpine.data.directory"?: string | NixExpr;
+        "alpine.database.driver"?: "com.microsoft.sqlserver.jdbc.SQLServerDriver" | "com.mysql.cj.jdbc.Driver" | "org.h2.Driver" | "org.postgresql.Driver" | NixExpr;
+        "alpine.database.mode"?: "embedded" | "external" | "server" | NixExpr;
+        "alpine.database.url"?: string | NixExpr;
+        "alpine.database.username"?: string | NixExpr;
         "alpine.ldap.enabled"?: boolean;
-        "alpine.oidc.client.id"?: string;
+        "alpine.oidc.client.id"?: string | NixExpr;
         "alpine.oidc.enabled"?: boolean;
-        "alpine.oidc.issuer"?: string;
+        "alpine.oidc.issuer"?: string | NixExpr;
         "alpine.oidc.team.synchronization"?: boolean;
-        "alpine.oidc.teams.claim"?: string;
-        "alpine.oidc.teams.default"?: string | null;
+        "alpine.oidc.teams.claim"?: string | NixExpr;
+        "alpine.oidc.teams.default"?: string | null | NixExpr;
         "alpine.oidc.user.provisioning"?: boolean;
-        "alpine.oidc.username.claim"?: string;
+        "alpine.oidc.username.claim"?: string | NixExpr;
       };
     };
     desktopManager: {
       budgie?: {
         enable?: boolean;
         extraGSettingsOverridePackages?: string[] | NixExpr;
-        extraGSettingsOverrides?: string;
+        extraGSettingsOverrides?: string | NixExpr;
         extraPlugins?: (string | NixExpr)[] | NixExpr;
         sessionPath?: (string | NixExpr)[] | NixExpr;
       };
@@ -4256,7 +4236,7 @@ declare module "winix" {
         debug?: boolean;
         enable?: boolean;
         extraGSettingsOverridePackages?: string[] | NixExpr;
-        extraGSettingsOverrides?: string;
+        extraGSettingsOverrides?: string | NixExpr;
         flashback?: Record<string, unknown>;
         sessionPath?: (string | NixExpr)[] | NixExpr;
       };
@@ -4267,7 +4247,7 @@ declare module "winix" {
         debug?: boolean;
         enable?: boolean;
         extraGSettingsOverridePackages?: string[] | NixExpr;
-        extraGSettingsOverrides?: string;
+        extraGSettingsOverrides?: string | NixExpr;
         extraSwitchboardPlugs?: (string | NixExpr)[] | NixExpr | null;
         extraWingpanelIndicators?: (string | NixExpr)[] | NixExpr | null;
         sessionPath?: (string | NixExpr)[] | NixExpr;
@@ -4284,36 +4264,36 @@ declare module "winix" {
     "devpi-server": {
       enable?: boolean;
       extraPackages?: unknown;
-      host?: string;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      primaryUrl?: string;
+      primaryUrl?: string | NixExpr;
       replica?: boolean;
-      secretFile?: string | null;
+      secretFile?: string | null | NixExpr;
     };
     dex: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     "deye-dummycloud": {
       enable?: boolean;
-      mqttBrokerUrl?: string;
-      mqttPassword?: string;
-      mqttUsername?: string;
+      mqttBrokerUrl?: string | NixExpr;
+      mqttPassword?: string | NixExpr;
+      mqttUsername?: string | NixExpr;
     };
     dgraph: {
       alpha?: {
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
       zero?: {
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
     };
@@ -4328,39 +4308,39 @@ declare module "winix" {
       exportall?: boolean;
       exportopts?: string[] | NixExpr;
       exports?: string[] | NixExpr;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       listen?: string[] | NixExpr;
-      logdest?: string;
+      logdest?: string | NixExpr;
       nwthreads?: number;
-      squashuser?: string;
+      squashuser?: string | NixExpr;
       statfsPassthru?: boolean;
       userdb?: boolean;
     };
     discourse: {
       admin?: {
-        email?: string;
-        fullName?: string;
-        passwordFile?: string;
+        email?: string | NixExpr;
+        fullName?: string | NixExpr;
+        passwordFile?: string | NixExpr;
         skipCreate?: boolean;
-        username?: string;
+        username?: string | NixExpr;
       };
       backendSettings?: Record<string, string | number | boolean | null>;
       database?: {
         createLocally?: boolean;
-        host?: string | null;
+        host?: string | null | NixExpr;
         ignorePostgresqlVersion?: boolean;
-        name?: string;
-        passwordFile?: string | null;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         pool?: number;
-        username?: string;
+        username?: string | NixExpr;
       };
       enable?: boolean;
       enableACME?: boolean;
-      hostname?: string;
+      hostname?: string | NixExpr;
       mail?: {
-        contactEmailAddress?: string;
+        contactEmailAddress?: string | NixExpr;
         incoming?: Record<string, unknown>;
-        notificationEmailAddress?: string;
+        notificationEmailAddress?: string | NixExpr;
         outgoing?: Record<string, unknown>;
       };
       nginx?: {
@@ -4370,15 +4350,15 @@ declare module "winix" {
       plugins?: (string | NixExpr)[] | NixExpr;
       redis?: {
         dbNumber?: number;
-        host?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         useSSL?: boolean;
       };
-      secretKeyBaseFile?: string | null;
+      secretKeyBaseFile?: string | null | NixExpr;
       sidekiqProcesses?: number;
       siteSettings?: Record<string, unknown>;
-      sslCertificate?: string | null;
-      sslCertificateKey?: string | null;
+      sslCertificate?: string | null | NixExpr;
+      sslCertificateKey?: string | null | NixExpr;
       unicornTimeout?: number;
     };
     disnix: {
@@ -4392,17 +4372,17 @@ declare module "winix" {
     displayManager: {
       autoLogin?: {
         enable?: boolean;
-        user?: string | null;
+        user?: string | null | NixExpr;
       };
       "cosmic-greeter"?: {
         enable?: boolean;
         package?: string | NixExpr;
       };
-      defaultSession?: string;
+      defaultSession?: string | NixExpr;
       "dms-greeter"?: {
         compositor?: Record<string, unknown>;
         configFiles?: string[] | NixExpr;
-        configHome?: string | null;
+        configHome?: string | null | NixExpr;
         enable?: boolean;
         logs?: Record<string, unknown>;
         package?: string | NixExpr;
@@ -4412,7 +4392,7 @@ declare module "winix" {
       gdm?: {
         autoLogin?: Record<string, unknown>;
         autoSuspend?: boolean;
-        banner?: string | null;
+        banner?: string | null | NixExpr;
         debug?: boolean;
         enable?: boolean;
         extraPackages?: (string | NixExpr)[] | NixExpr;
@@ -4422,8 +4402,8 @@ declare module "winix" {
       generic?: {
         enable?: boolean;
         environment?: Record<string, unknown>;
-        execCmd?: string | null;
-        preStart?: string;
+        execCmd?: string | null | NixExpr;
+        preStart?: string | NixExpr;
       };
       hiddenUsers?: string[] | NixExpr;
       lemurs?: {
@@ -4452,9 +4432,9 @@ declare module "winix" {
         extraPackages?: (string | NixExpr)[] | NixExpr;
         package?: string | NixExpr;
         settings?: Record<string, Record<string, unknown>>;
-        setupScript?: string;
-        stopScript?: string;
-        theme?: string;
+        setupScript?: string | NixExpr;
+        stopScript?: string | NixExpr;
+        theme?: string | NixExpr;
         wayland?: Record<string, unknown>;
       };
       sessionPackages?: unknown[] | NixExpr;
@@ -4479,9 +4459,9 @@ declare module "winix" {
       domains?: string[] | NixExpr;
       enable?: boolean;
       keySize?: number;
-      listen?: string;
-      relay?: string;
-      selector?: string;
+      listen?: string | NixExpr;
+      relay?: string | NixExpr;
+      selector?: string | NixExpr;
     };
     dleyna: {
       enable?: boolean;
@@ -4491,10 +4471,10 @@ declare module "winix" {
       domainServers?: Record<string, string[]>;
       enable?: boolean;
       forwardOnly?: boolean;
-      ip?: string;
+      ip?: string | NixExpr;
     };
     "dnscrypt-proxy": {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
@@ -4504,14 +4484,14 @@ declare module "winix" {
       dnscrypt?: {
         certLifetime?: number;
         enable?: boolean;
-        listenAddress?: string;
+        listenAddress?: string | NixExpr;
         listenPort?: number;
-        providerKey?: string | null;
-        providerName?: string;
+        providerKey?: string | null | NixExpr;
+        providerName?: string | NixExpr;
       };
       enable?: boolean;
-      extraConfig?: string;
-      listenAddress?: string;
+      extraConfig?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       listenPort?: number;
     };
     dnsmasq: {
@@ -4534,73 +4514,73 @@ declare module "winix" {
       enable?: boolean;
     };
     dockerRegistry: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       enableDelete?: boolean;
       enableGarbageCollect?: boolean;
       enableRedisCache?: boolean;
       extraConfig?: Record<string, unknown>;
-      garbageCollectDates?: string;
-      listenAddress?: string;
+      garbageCollectDates?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      redisPassword?: string;
-      redisUrl?: string;
-      storagePath?: string | null;
+      redisPassword?: string | NixExpr;
+      redisUrl?: string | NixExpr;
+      storagePath?: string | null | NixExpr;
     };
     "docling-serve": {
       enable?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
-      host?: string;
+      environmentFile?: string | null | NixExpr;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     documize: {
-      cert?: string | null;
-      db?: string;
-      dbtype?: "mariadb" | "mysql" | "percona" | "postgresql" | "sqlserver";
+      cert?: string | null | NixExpr;
+      db?: string | NixExpr;
+      dbtype?: "mariadb" | "mysql" | "percona" | "postgresql" | "sqlserver" | NixExpr;
       enable?: boolean;
       forcesslport?: number | null;
-      key?: string | null;
-      location?: string | null;
+      key?: string | null | NixExpr;
+      location?: string | null | NixExpr;
       offline?: boolean;
       package?: string | NixExpr;
       port?: number;
-      salt?: string | null;
-      stateDirectoryName?: string;
+      salt?: string | null | NixExpr;
+      stateDirectoryName?: string | NixExpr;
     };
     docuseal: {
       enable?: boolean;
       extraConfig?: Record<string, unknown>;
       extraEnvFiles?: string[] | NixExpr;
-      host?: string;
+      host?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       redis?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
         port?: number;
       };
-      secretKeyBaseFile?: string;
+      secretKeyBaseFile?: string | NixExpr;
     };
     docuum: {
       deletionChunkSize?: number;
       enable?: boolean;
       keep?: string[] | NixExpr;
-      minAge?: string | null;
-      threshold?: string;
+      minAge?: string | null | NixExpr;
+      threshold?: string | NixExpr;
     };
     "doh-proxy-rust": {
       enable?: boolean;
       flags?: string[] | NixExpr;
     };
     "doh-server": {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -4608,53 +4588,53 @@ declare module "winix" {
         ecs_use_precise_ip?: boolean;
         listen?: string[] | NixExpr;
         log_guessed_client_ip?: boolean;
-        path?: string;
+        path?: string | NixExpr;
         timeout?: number;
         tries?: number;
         upstream?: string[] | NixExpr;
         verbose?: boolean;
       };
-      useACMEHost?: string | null;
+      useACMEHost?: string | null | NixExpr;
     };
     dokuwiki: {
       sites?: {
         "<name>"?: Record<string, unknown>;
       };
-      webserver?: "caddy" | "nginx";
+      webserver?: "caddy" | "nginx" | NixExpr;
     };
     dolibarr: {
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        type?: "mysql" | "postgresql";
-        user?: string;
+        type?: "mysql" | "postgresql" | NixExpr;
+        user?: string | NixExpr;
       };
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       h2o?: {
         acme?: Record<string, unknown>;
-        host?: string | null;
+        host?: string | null | NixExpr;
         http?: Record<string, unknown>;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
+        serverName?: string | null | NixExpr;
         settings?: Record<string, unknown>;
         tls?: Record<string, unknown>;
       };
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -4667,27 +4647,27 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       settings?: Record<string, boolean | number | string>;
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     domoticz: {
-      bind?: string;
+      bind?: string | NixExpr;
       enable?: boolean;
       port?: number;
     };
     dovecot2: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       createMailUser?: boolean;
       enable?: boolean;
       enablePAM?: boolean;
@@ -4702,20 +4682,20 @@ declare module "winix" {
       package?: string | NixExpr;
       settings?: {
         auth_mechanisms?: unknown;
-        base_dir?: string;
-        default_internal_group?: string;
-        default_internal_user?: string;
-        dovecot_config_version?: string | null;
-        dovecot_storage_version?: string | null;
-        mail_plugin_dir?: string;
+        base_dir?: string | NixExpr;
+        default_internal_group?: string | NixExpr;
+        default_internal_user?: string | NixExpr;
+        dovecot_config_version?: string | null | NixExpr;
+        dovecot_storage_version?: string | null | NixExpr;
+        mail_plugin_dir?: string | NixExpr;
         maildir_copy_with_hardlinks?: boolean;
         "passdb pam"?: Record<string, unknown>;
         plugin?: Record<string, unknown>;
-        sendmail_path?: string;
+        sendmail_path?: string | NixExpr;
         sieve_global_extensions?: unknown | null;
-        sieve_pipe_bin_dir?: string | null;
+        sieve_pipe_bin_dir?: string | null | NixExpr;
         sieve_plugins?: unknown | null;
-        sieve_script_bin_path?: string | null;
+        sieve_script_bin_path?: string | null | NixExpr;
         "userdb passwd"?: Record<string, unknown>;
       };
       showPAMFailure?: boolean;
@@ -4727,7 +4707,7 @@ declare module "winix" {
       };
     };
     dragonflydb: {
-      bind?: string | null;
+      bind?: string | null | NixExpr;
       cacheMode?: boolean | null;
       dbNum?: number | null;
       enable?: boolean;
@@ -4735,8 +4715,8 @@ declare module "winix" {
       maxMemory?: number | null;
       memcachePort?: number | null;
       port?: number;
-      requirePass?: string | null;
-      user?: string;
+      requirePass?: string | null | NixExpr;
+      user?: string | NixExpr;
     };
     drasl: {
       enable?: boolean;
@@ -4750,19 +4730,19 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr;
       secrets?: {
-        accessToken?: string | null;
+        accessToken?: string | null | NixExpr;
         pantalaimon?: Record<string, unknown>;
         web?: Record<string, unknown>;
       };
       settings?: {
-        dataPath?: string;
-        homeserverUrl?: string;
-        managementRoom?: string;
-        rawHomeserverUrl?: string;
+        dataPath?: string | NixExpr;
+        homeserverUrl?: string | NixExpr;
+        managementRoom?: string | NixExpr;
+        rawHomeserverUrl?: string | NixExpr;
       };
     };
     drbd: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
     };
     druid: {
@@ -4770,7 +4750,7 @@ declare module "winix" {
         config?: Record<string, unknown>;
         enable?: boolean;
         jdk?: string | NixExpr;
-        jvmArgs?: string;
+        jvmArgs?: string | NixExpr;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
       };
@@ -4780,7 +4760,7 @@ declare module "winix" {
         config?: Record<string, unknown>;
         enable?: boolean;
         jdk?: string | NixExpr;
-        jvmArgs?: string;
+        jvmArgs?: string | NixExpr;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
       };
@@ -4790,17 +4770,17 @@ declare module "winix" {
         config?: Record<string, unknown>;
         enable?: boolean;
         jdk?: string | NixExpr;
-        jvmArgs?: string;
+        jvmArgs?: string | NixExpr;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
         segmentLocations?: Record<string, unknown>;
       };
-      log4j?: string;
+      log4j?: string | NixExpr;
       middleManager?: {
         config?: Record<string, unknown>;
         enable?: boolean;
         jdk?: string | NixExpr;
-        jvmArgs?: string;
+        jvmArgs?: string | NixExpr;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
       };
@@ -4808,7 +4788,7 @@ declare module "winix" {
         config?: Record<string, unknown>;
         enable?: boolean;
         jdk?: string | NixExpr;
-        jvmArgs?: string;
+        jvmArgs?: string | NixExpr;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
       };
@@ -4817,7 +4797,7 @@ declare module "winix" {
         config?: Record<string, unknown>;
         enable?: boolean;
         jdk?: string | NixExpr;
-        jvmArgs?: string;
+        jvmArgs?: string | NixExpr;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
       };
@@ -4828,36 +4808,36 @@ declare module "winix" {
       sites?: {
         "<name>"?: Record<string, unknown>;
       };
-      webserver?: "caddy" | "nginx";
+      webserver?: "caddy" | "nginx" | NixExpr;
     };
     dsnet: {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        ExternalHostname?: string | null;
-        ExternalIP?: string | null;
-        ExternalIP6?: string | null;
-        IP?: string | null;
-        IP6?: string | null;
-        Network?: string | null;
-        Network6?: string | null;
+        ExternalHostname?: string | null | NixExpr;
+        ExternalIP?: string | null | NixExpr;
+        ExternalIP6?: string | null | NixExpr;
+        IP?: string | null | NixExpr;
+        IP6?: string | null | NixExpr;
+        Network?: string | null | NixExpr;
+        Network6?: string | null | NixExpr;
         Networks?: string[] | null;
       };
     };
     dspam: {
-      domainSocket?: string | null;
+      domainSocket?: string | null | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      group?: string;
-      maintenanceInterval?: string | null;
-      storageDriver?: string;
-      user?: string;
+      extraConfig?: string | NixExpr;
+      group?: string | NixExpr;
+      maintenanceInterval?: string | null | NixExpr;
+      storageDriver?: string | NixExpr;
+      user?: string | NixExpr;
     };
     duckdns: {
       domains?: string[] | null;
-      domainsFile?: string | null;
+      domainsFile?: string | null | NixExpr;
       enable?: boolean;
-      tokenFile?: string;
+      tokenFile?: string | NixExpr;
     };
     duckling: {
       enable?: boolean;
@@ -4876,32 +4856,32 @@ declare module "winix" {
       settings?: Record<string, Record<string, unknown>>;
     };
     duplicati: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      interface?: string;
+      interface?: string | NixExpr;
       package?: string | NixExpr;
-      parameters?: string;
-      parametersFile?: string | null;
+      parameters?: string | NixExpr;
+      parametersFile?: string | null | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     duplicity: {
       cleanup?: {
-        maxAge?: string | null;
+        maxAge?: string | null | NixExpr;
         maxFull?: number | null;
         maxIncr?: number | null;
       };
       enable?: boolean;
       exclude?: string[] | NixExpr;
-      excludeFileList?: string | null;
+      excludeFileList?: string | null | NixExpr;
       extraFlags?: string[] | NixExpr;
-      frequency?: string | null;
-      fullIfOlderThan?: string;
+      frequency?: string | null | NixExpr;
+      fullIfOlderThan?: string | NixExpr;
       include?: string[] | NixExpr;
-      includeFileList?: string | null;
-      root?: string;
-      secretFile?: string | null;
-      targetUrl?: string;
+      includeFileList?: string | null | NixExpr;
+      root?: string | NixExpr;
+      secretFile?: string | null | NixExpr;
+      targetUrl?: string | NixExpr;
     };
     "dwm-status": {
       enable?: boolean;
@@ -4919,7 +4899,7 @@ declare module "winix" {
       extraContainerPaths?: string[] | NixExpr;
       extraContainerProperties?: Record<string, unknown>;
       extraModulePaths?: string[] | NixExpr;
-      package?: string;
+      package?: string | NixExpr;
       properties?: Record<string, unknown>;
     };
     "e-imzo": {
@@ -4935,7 +4915,7 @@ declare module "winix" {
       freeMemThreshold?: number;
       freeSwapKillThreshold?: number | null;
       freeSwapThreshold?: number;
-      killHook?: string | null;
+      killHook?: string | null | NixExpr;
       package?: string | NixExpr;
       reportInterval?: number;
     };
@@ -4948,42 +4928,42 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     ebusd: {
-      configpath?: string;
-      device?: string;
+      configpath?: string | NixExpr;
+      device?: string | NixExpr;
       enable?: boolean;
       extraArguments?: string[] | NixExpr;
       logs?: {
-        all?: "debug" | "error" | "info" | "none" | "notice";
-        bus?: "debug" | "error" | "info" | "none" | "notice";
-        device?: "debug" | "error" | "info" | "none" | "notice";
-        main?: "debug" | "error" | "info" | "none" | "notice";
-        network?: "debug" | "error" | "info" | "none" | "notice";
-        other?: "debug" | "error" | "info" | "none" | "notice";
-        update?: "debug" | "error" | "info" | "none" | "notice";
+        all?: "debug" | "error" | "info" | "none" | "notice" | NixExpr;
+        bus?: "debug" | "error" | "info" | "none" | "notice" | NixExpr;
+        device?: "debug" | "error" | "info" | "none" | "notice" | NixExpr;
+        main?: "debug" | "error" | "info" | "none" | "notice" | NixExpr;
+        network?: "debug" | "error" | "info" | "none" | "notice" | NixExpr;
+        other?: "debug" | "error" | "info" | "none" | "notice" | NixExpr;
+        update?: "debug" | "error" | "info" | "none" | "notice" | NixExpr;
       };
       mqtt?: {
         enable?: boolean;
         "home-assistant"?: boolean;
-        host?: string;
-        password?: string;
+        host?: string | NixExpr;
+        password?: string | NixExpr;
         port?: number;
         retain?: boolean;
-        user?: string;
+        user?: string | NixExpr;
       };
       package?: string | NixExpr;
       port?: number;
       readonly?: boolean;
-      scanconfig?: string;
+      scanconfig?: string | NixExpr;
     };
     echoip: {
       enable?: boolean;
       enablePortLookup?: boolean;
       enableReverseHostnameLookups?: boolean;
       extraArgs?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
-      remoteIpHeader?: string | null;
-      virtualHost?: string | null;
+      remoteIpHeader?: string | null | NixExpr;
+      virtualHost?: string | null | NixExpr;
     };
     "ecs-agent": {
       enable?: boolean;
@@ -4995,26 +4975,26 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     ejabberd: {
-      configFile?: string | null;
-      ctlConfig?: string;
+      configFile?: string | null | NixExpr;
+      ctlConfig?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       imagemagick?: boolean;
       loadDumps?: string[] | NixExpr;
-      logsDir?: string;
+      logsDir?: string | NixExpr;
       package?: string | NixExpr;
-      spoolDir?: string;
-      user?: string;
+      spoolDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     elasticsearch: {
-      cluster_name?: string;
-      dataDir?: string;
+      cluster_name?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraCmdLineOptions?: string[] | NixExpr;
-      extraConf?: string;
+      extraConf?: string | NixExpr;
       extraJavaOptions?: string[] | NixExpr;
-      listenAddress?: string;
-      logging?: string;
+      listenAddress?: string | NixExpr;
+      logging?: string | NixExpr;
       package?: string | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
       port?: number;
@@ -5023,10 +5003,10 @@ declare module "winix" {
       tcp_port?: number;
     };
     "elasticsearch-curator": {
-      actionYAML?: string;
+      actionYAML?: string | NixExpr;
       enable?: boolean;
       hosts?: string[] | NixExpr;
-      interval?: string;
+      interval?: string | NixExpr;
       port?: number;
     };
     elephant: {
@@ -5049,33 +5029,33 @@ declare module "winix" {
     "endlessh-go": {
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       prometheus?: {
         enable?: boolean;
-        listenAddress?: string;
+        listenAddress?: string | NixExpr;
         port?: number;
       };
     };
     engelsystem: {
       createDatabase?: boolean;
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     ente: {
       api?: {
-        domain?: string;
+        domain?: string | NixExpr;
         enable?: boolean;
         enableLocalDB?: boolean;
-        group?: string;
+        group?: string | NixExpr;
         nginx?: Record<string, unknown>;
         package?: string | NixExpr;
         settings?: Record<string, unknown>;
-        user?: string;
+        user?: string | NixExpr;
       };
       web?: {
         domains?: Record<string, unknown>;
@@ -5085,7 +5065,7 @@ declare module "winix" {
     };
     envfs: {
       enable?: boolean;
-      extraFallbackPathCommands?: string;
+      extraFallbackPathCommands?: string | NixExpr;
       package?: string | NixExpr;
     };
     envoy: {
@@ -5096,8 +5076,8 @@ declare module "winix" {
     };
     epgstation: {
       database?: {
-        name?: string;
-        passwordFile?: string;
+        name?: string | NixExpr;
+        passwordFile?: string | NixExpr;
       };
       enable?: boolean;
       ffmpeg?: string | NixExpr;
@@ -5108,7 +5088,7 @@ declare module "winix" {
         concurrentEncodeNum?: number;
         encode?: Record<string, unknown>[] | NixExpr;
         encodeProcessNum?: number;
-        mirakurunPath?: string;
+        mirakurunPath?: string | NixExpr;
         port?: number;
         socketioPort?: number;
       };
@@ -5121,22 +5101,22 @@ declare module "winix" {
     };
     ergo: {
       api?: {
-        keyHash?: string | null;
+        keyHash?: string | null | NixExpr;
         listen?: Record<string, unknown>;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       listen?: {
-        ip?: string;
+        ip?: string | NixExpr;
         port?: number;
       };
       openFirewall?: boolean;
       testnet?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     ergochat: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       openFilesLimit?: number;
       settings?: Record<string, unknown>;
@@ -5145,7 +5125,7 @@ declare module "winix" {
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       package?: string | NixExpr;
-      secretJwtPath?: string;
+      secretJwtPath?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     errbot: {
@@ -5154,13 +5134,13 @@ declare module "winix" {
       };
     };
     ersatztv: {
-      baseUrl?: string;
+      baseUrl?: string | NixExpr;
       enable?: boolean;
       environment?: Record<string, string | number | boolean | string | NixExpr>;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     esdm: {
       enable?: boolean;
@@ -5172,12 +5152,12 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     esphome: {
-      address?: string;
+      address?: string | NixExpr;
       allowedDevices?: string[] | NixExpr;
       enable?: boolean;
       enableUnixSocket?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -5185,30 +5165,30 @@ declare module "winix" {
     };
     etcd: {
       advertiseClientUrls?: string[] | NixExpr;
-      certFile?: string | null;
+      certFile?: string | null | NixExpr;
       clientCertAuth?: boolean;
-      dataDir?: string;
-      discovery?: string;
+      dataDir?: string | NixExpr;
+      discovery?: string | NixExpr;
       enable?: boolean;
       extraConf?: Record<string, string>;
       initialAdvertisePeerUrls?: string[] | NixExpr;
       initialCluster?: string[] | NixExpr;
-      initialClusterState?: "existing" | "new";
-      initialClusterToken?: string;
-      keyFile?: string | null;
+      initialClusterState?: "existing" | "new" | NixExpr;
+      initialClusterToken?: string | NixExpr;
+      keyFile?: string | null | NixExpr;
       listenClientUrls?: string[] | NixExpr;
       listenPeerUrls?: string[] | NixExpr;
-      name?: string;
+      name?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      peerCertFile?: string | null;
+      peerCertFile?: string | null | NixExpr;
       peerClientCertAuth?: boolean;
-      peerKeyFile?: string | null;
-      peerTrustedCaFile?: string | null;
-      trustedCaFile?: string | null;
+      peerKeyFile?: string | null | NixExpr;
+      peerTrustedCaFile?: string | null | NixExpr;
+      trustedCaFile?: string | null | NixExpr;
     };
     "etebase-server": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -5218,8 +5198,8 @@ declare module "winix" {
         database?: Record<string, unknown>;
         global?: Record<string, unknown>;
       };
-      unixSocket?: string | null;
-      user?: string;
+      unixSocket?: string | null | NixExpr;
+      user?: string | NixExpr;
     };
     "eternal-terminal": {
       enable?: boolean;
@@ -5229,17 +5209,17 @@ declare module "winix" {
       verbosity?: number;
     };
     "etesync-dav": {
-      apiUrl?: string;
+      apiUrl?: string | NixExpr;
       enable?: boolean;
-      host?: string;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       port?: number;
-      sslCertificate?: string | null;
-      sslCertificateKey?: string | null;
+      sslCertificate?: string | null | NixExpr;
+      sslCertificateKey?: string | null | NixExpr;
     };
     evcc: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraArgs?: string[] | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
@@ -5251,20 +5231,20 @@ declare module "winix" {
     evremap: {
       enable?: boolean;
       settings?: {
-        device_name?: string;
+        device_name?: string | NixExpr;
         dual_role?: Record<string, unknown>;
-        phys?: string | null;
+        phys?: string | null | NixExpr;
         remap?: Record<string, unknown>;
       };
     };
     exim: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      queueRunnerInterval?: string;
-      spoolDir?: string;
-      user?: string;
+      queueRunnerInterval?: string | NixExpr;
+      spoolDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     expressvpn: {
       enable?: boolean;
@@ -5273,43 +5253,43 @@ declare module "winix" {
       admins?: string[] | NixExpr;
       allowedPlayers?: string[] | NixExpr;
       "autosave-interval"?: number | null;
-      bind?: string;
-      configFile?: string;
-      description?: string | null;
+      bind?: string | NixExpr;
+      configFile?: string | NixExpr;
+      description?: string | null | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       extraSettings?: Record<string, unknown>;
-      extraSettingsFile?: string | null;
-      "game-name"?: string | null;
-      "game-password"?: string | null;
+      extraSettingsFile?: string | null | NixExpr;
+      "game-name"?: string | null | NixExpr;
+      "game-password"?: string | null | NixExpr;
       lan?: boolean;
       loadLatestSave?: boolean;
       mods?: (string | NixExpr)[] | NixExpr;
-      "mods-dat"?: string | null;
+      "mods-dat"?: string | null | NixExpr;
       nonBlockingSaving?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      password?: string | null;
+      password?: string | null | NixExpr;
       port?: number;
       public?: boolean;
       requireUserVerification?: boolean;
-      saveName?: string;
-      stateDirName?: string;
-      token?: string | null;
-      username?: string | null;
+      saveName?: string | NixExpr;
+      stateDirName?: string | NixExpr;
+      token?: string | null | NixExpr;
+      username?: string | null | NixExpr;
     };
     fail2ban: {
-      banaction?: string;
-      "banaction-allports"?: string;
-      bantime?: string;
+      banaction?: string | NixExpr;
+      "banaction-allports"?: string | NixExpr;
+      bantime?: string | NixExpr;
       "bantime-increment"?: {
         enable?: boolean;
-        factor?: string | null;
-        formula?: string | null;
-        maxtime?: string | null;
-        multipliers?: string | null;
+        factor?: string | null | NixExpr;
+        formula?: string | null | NixExpr;
+        maxtime?: string | null | NixExpr;
+        multipliers?: string | null | NixExpr;
         overalljails?: boolean | null;
-        rndtime?: string | null;
+        rndtime?: string | null | NixExpr;
       };
       daemonSettings?: Record<string, Record<string, unknown>>;
       enable?: boolean;
@@ -5350,7 +5330,7 @@ declare module "winix" {
       enable?: boolean;
       maxSerialJobs?: number;
       queuelen?: number | null;
-      systab?: string;
+      systab?: string | NixExpr;
     };
     fedimintd: {
       "<name>"?: {
@@ -5358,7 +5338,7 @@ declare module "winix" {
         api_ws?: Record<string, unknown>;
         bitcoin?: Record<string, unknown>;
         consensus?: Record<string, unknown>;
-        dataDir?: string;
+        dataDir?: string | NixExpr;
         enable?: boolean;
         environment?: Record<string, string>;
         nginx?: Record<string, unknown>;
@@ -5369,18 +5349,18 @@ declare module "winix" {
     };
     fediwall: {
       enable?: boolean;
-      hostName?: string;
+      hostName?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -5393,13 +5373,13 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       settings?: {
@@ -5419,11 +5399,11 @@ declare module "winix" {
     felix: {
       bundles?: (string | NixExpr)[] | NixExpr;
       enable?: boolean;
-      group?: string;
-      user?: string;
+      group?: string | NixExpr;
+      user?: string | NixExpr;
     };
     ferm: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
@@ -5431,17 +5411,17 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        FERRETDB_HANDLER?: "pg" | "sqlite";
-        FERRETDB_POSTGRESQL_URL?: string;
-        FERRETDB_SQLITE_URL?: string;
-        FERRETDB_TELEMETRY?: "disable" | "enable";
+        FERRETDB_HANDLER?: "pg" | "sqlite" | NixExpr;
+        FERRETDB_POSTGRESQL_URL?: string | NixExpr;
+        FERRETDB_SQLITE_URL?: string | NixExpr;
+        FERRETDB_TELEMETRY?: "disable" | "enable" | NixExpr;
       };
     };
     fider: {
       database?: {
-        url?: string;
+        url?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFiles?: string[] | NixExpr;
@@ -5462,65 +5442,65 @@ declare module "winix" {
     };
     filebrowser: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
-        address?: string;
-        "cache-dir"?: string;
-        database?: string;
+        address?: string | NixExpr;
+        "cache-dir"?: string | NixExpr;
+        database?: string | NixExpr;
         port?: number;
-        root?: string;
+        root?: string | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     firebird: {
-      baseDir?: string;
+      baseDir?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     "firefly-iii": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       enableNginx?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       settings?: {
-        APP_ENV?: "local" | "production" | "testing";
-        APP_KEY_FILE?: string;
-        APP_URL?: string;
-        DB_CONNECTION?: "mysql" | "pgsql" | "sqlite";
-        DB_HOST?: string;
+        APP_ENV?: "local" | "production" | "testing" | NixExpr;
+        APP_KEY_FILE?: string | NixExpr;
+        APP_URL?: string | NixExpr;
+        DB_CONNECTION?: "mysql" | "pgsql" | "sqlite" | NixExpr;
+        DB_HOST?: string | NixExpr;
         DB_PORT?: number | null;
       };
-      user?: string;
-      virtualHost?: string;
+      user?: string | NixExpr;
+      virtualHost?: string | NixExpr;
     };
     "firefly-iii-data-importer": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       enableNginx?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       settings?: Record<string, unknown>;
-      user?: string;
-      virtualHost?: string;
+      user?: string | NixExpr;
+      virtualHost?: string | NixExpr;
     };
     "firefox-syncserver": {
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        user?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
-      logLevel?: string;
+      logLevel?: string | NixExpr;
       package?: string | NixExpr;
-      secrets?: string;
+      secrets?: string | NixExpr;
       settings?: {
         port?: number;
         tokenserver?: Record<string, unknown>;
@@ -5530,12 +5510,12 @@ declare module "winix" {
         enable?: boolean;
         enableNginx?: boolean;
         enableTLS?: boolean;
-        hostname?: string;
-        url?: string;
+        hostname?: string | NixExpr;
+        url?: string | NixExpr;
       };
     };
     fireqos: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
     };
     firewalld: {
@@ -5549,16 +5529,16 @@ declare module "winix" {
       settings?: {
         CleanupModulesOnExit?: boolean;
         CleanupOnExit?: boolean;
-        DefaultZone?: string;
-        FirewallBackend?: "iptables" | "nftables";
+        DefaultZone?: string | NixExpr;
+        FirewallBackend?: "iptables" | "nftables" | NixExpr;
         FlushAllOnReload?: boolean;
         IndividualCalls?: boolean;
-        IPv6_rpfilter?: "loose" | "loose-forward" | "no" | "strict" | "strict-forward";
-        LogDenied?: "all" | "broadcast" | "multicast" | "off" | "unicast";
+        IPv6_rpfilter?: "loose" | "loose-forward" | "no" | "strict" | "strict-forward" | NixExpr;
+        LogDenied?: "all" | "broadcast" | "multicast" | "off" | "unicast" | NixExpr;
         NftablesCounters?: boolean;
-        NftablesFlowtable?: string;
+        NftablesFlowtable?: string | NixExpr;
         NftablesTableOwner?: boolean;
-        ReloadPolicy?: "," | "ACCEPT" | "DROP" | "REJECT";
+        ReloadPolicy?: "," | "ACCEPT" | "DROP" | "REJECT" | NixExpr;
         RFC3964_IPv4?: boolean;
         StrictForwardPorts?: boolean;
       };
@@ -5568,44 +5548,44 @@ declare module "winix" {
     };
     firezone: {
       gateway?: {
-        apiUrl?: string;
+        apiUrl?: string | NixExpr;
         enable?: boolean;
         enableTelemetry?: boolean;
-        logLevel?: string;
-        name?: string;
+        logLevel?: string | NixExpr;
+        name?: string | NixExpr;
         package?: string | NixExpr;
-        tokenFile?: string;
+        tokenFile?: string | NixExpr;
       };
       "gui-client"?: {
         allowedUsers?: string[] | NixExpr;
         enable?: boolean;
-        logLevel?: string;
-        name?: string;
+        logLevel?: string | NixExpr;
+        name?: string | NixExpr;
         package?: string | NixExpr;
       };
       "headless-client"?: {
-        apiUrl?: string;
+        apiUrl?: string | NixExpr;
         enable?: boolean;
         enableTelemetry?: boolean;
-        logLevel?: string;
-        name?: string;
+        logLevel?: string | NixExpr;
+        name?: string | NixExpr;
         package?: string | NixExpr;
-        tokenFile?: string;
+        tokenFile?: string | NixExpr;
       };
       relay?: {
-        apiUrl?: string;
+        apiUrl?: string | NixExpr;
         enable?: boolean;
         enableTelemetry?: boolean;
         highestPort?: number;
-        logLevel?: string;
+        logLevel?: string | NixExpr;
         lowestPort?: number;
-        name?: string;
+        name?: string | NixExpr;
         openFirewall?: boolean;
         package?: string | NixExpr;
         port?: number;
-        publicIpv4?: string | null;
-        publicIpv6?: string | null;
-        tokenFile?: string;
+        publicIpv4?: string | null | NixExpr;
+        publicIpv6?: string | null | NixExpr;
+        tokenFile?: string | NixExpr;
       };
       server?: {
         api?: Record<string, unknown>;
@@ -5626,23 +5606,23 @@ declare module "winix" {
       backend?: Record<string, unknown>;
       enable?: boolean;
       etcd?: {
-        caFile?: string | null;
-        certFile?: string | null;
+        caFile?: string | null | NixExpr;
+        certFile?: string | null | NixExpr;
         endpoints?: string[] | NixExpr;
-        keyFile?: string | null;
-        prefix?: string;
+        keyFile?: string | null | NixExpr;
+        prefix?: string | NixExpr;
       };
       extraNetworkConfig?: Record<string, unknown>;
-      iface?: string | null;
-      kubeconfig?: string | null;
-      network?: string;
-      nodeName?: string | null;
+      iface?: string | null | NixExpr;
+      kubeconfig?: string | null | NixExpr;
+      network?: string | NixExpr;
+      nodeName?: string | null | NixExpr;
       package?: string | NixExpr;
-      publicIp?: string | null;
-      storageBackend?: "etcd" | "kubernetes";
+      publicIp?: string | null | NixExpr;
+      storageBackend?: "etcd" | "kubernetes" | NixExpr;
       subnetLen?: number;
-      subnetMax?: string | null;
-      subnetMin?: string | null;
+      subnetMax?: string | null | NixExpr;
+      subnetMin?: string | null | NixExpr;
     };
     flaresolverr: {
       enable?: boolean;
@@ -5651,68 +5631,68 @@ declare module "winix" {
       port?: number;
     };
     flarum: {
-      adminEmail?: string;
-      adminUser?: string;
-      baseUrl?: string;
+      adminEmail?: string | NixExpr;
+      adminUser?: string | NixExpr;
+      baseUrl?: string | NixExpr;
       createDatabaseLocally?: boolean;
       database?: Record<string, string | boolean | number>;
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
-      forumTitle?: string;
-      group?: string;
-      initialAdminPassword?: string;
+      forumTitle?: string | NixExpr;
+      group?: string | NixExpr;
+      initialAdminPassword?: string | NixExpr;
       package?: string | NixExpr;
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     flatpak: {
       enable?: boolean;
       package?: string | NixExpr;
     };
     flexget: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
-      homeDir?: string;
-      interval?: string;
+      homeDir?: string | NixExpr;
+      interval?: string | NixExpr;
       package?: string | NixExpr;
       systemScheduler?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     flood: {
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      host?: string;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     "fluent-bit": {
-      configurationFile?: string;
+      configurationFile?: string | NixExpr;
       enable?: boolean;
-      graceLimit?: number | string | null;
+      graceLimit?: number | string | null | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     fluentd: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       plugins?: string[] | NixExpr;
     };
     fluidd: {
       enable?: boolean;
-      hostName?: string;
+      hostName?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -5725,13 +5705,13 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
     };
@@ -5741,80 +5721,80 @@ declare module "winix" {
       extraArgs?: string[] | NixExpr;
       package?: string | NixExpr;
       team?: number;
-      user?: string | null;
+      user?: string | null | NixExpr;
     };
     forgejo: {
-      customDir?: string;
+      customDir?: string | NixExpr;
       database?: {
         createDatabase?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
-        path?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
+        path?: string | NixExpr;
         port?: number;
-        socket?: string | null;
-        type?: "mysql" | "postgres" | "sqlite3";
-        user?: string;
+        socket?: string | null | NixExpr;
+        type?: "mysql" | "postgres" | "sqlite3" | NixExpr;
+        user?: string | NixExpr;
       };
       dump?: {
-        age?: string;
-        backupDir?: string;
+        age?: string | NixExpr;
+        backupDir?: string | NixExpr;
         enable?: boolean;
-        file?: string | null;
-        interval?: string;
-        type?: "tar" | "tar.br" | "tar.bz2" | "tar.gz" | "tar.lz4" | "tar.sz" | "tar.xz" | "tar.zst" | "zip";
+        file?: string | null | NixExpr;
+        interval?: string | NixExpr;
+        type?: "tar" | "tar.br" | "tar.bz2" | "tar.gz" | "tar.lz4" | "tar.sz" | "tar.xz" | "tar.zst" | "zip" | NixExpr;
       };
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       lfs?: {
-        contentDir?: string;
+        contentDir?: string | NixExpr;
         enable?: boolean;
       };
       package?: string | NixExpr;
-      repositoryRoot?: string;
+      repositoryRoot?: string | NixExpr;
       secrets?: Record<string, unknown>;
       settings?: {
         log?: Record<string, unknown>;
         server?: Record<string, unknown>;
         session?: Record<string, unknown>;
       };
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
       useWizard?: boolean;
     };
     foundationdb: {
       backupProcesses?: number;
       class?: "stateless" | "storage" | "transaction" | null;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraReadWritePaths?: string[] | NixExpr;
-      group?: string;
-      listenAddress?: string;
+      group?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       listenPortStart?: number;
       locality?: {
-        datacenterId?: string | null;
-        dataHall?: string | null;
-        machineId?: string | null;
-        zoneId?: string | null;
+        datacenterId?: string | null | NixExpr;
+        dataHall?: string | null | NixExpr;
+        machineId?: string | null | NixExpr;
+        zoneId?: string | null | NixExpr;
       };
-      logDir?: string;
-      logSize?: string;
-      maxLogSize?: string;
-      memory?: string;
+      logDir?: string | NixExpr;
+      logSize?: string | NixExpr;
+      maxLogSize?: string | NixExpr;
+      memory?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      pidfile?: string;
-      publicAddress?: string;
+      pidfile?: string | NixExpr;
+      publicAddress?: string | NixExpr;
       restartDelay?: number;
       serverProcesses?: number;
-      storageMemory?: string;
+      storageMemory?: string | NixExpr;
       tls?: {
-        allowedPeers?: string;
-        certificate?: string;
-        key?: string;
+        allowedPeers?: string | NixExpr;
+        certificate?: string | NixExpr;
+        key?: string | NixExpr;
       };
-      traceFormat?: "json" | "xml";
-      user?: string;
+      traceFormat?: "json" | "xml" | NixExpr;
+      user?: string | NixExpr;
     };
     fprintd: {
       enable?: boolean;
@@ -5833,17 +5813,17 @@ declare module "winix" {
       enable?: boolean;
       openFirewall?: boolean;
       settings?: {
-        Announce?: "IPv4" | "IPv6" | "none";
+        Announce?: "IPv4" | "IPv6" | "none" | NixExpr;
         auth?: boolean;
-        Database?: string | null;
+        Database?: string | null | NixExpr;
         debug?: number;
         "exit-on-end"?: boolean;
         Guests?: boolean;
         Newusers?: boolean;
         port?: number;
         quitidle?: number | null;
-        read?: string;
-        saves?: string | null;
+        read?: string | NixExpr;
+        saves?: string | null | NixExpr;
       };
     };
     freefall: {
@@ -5856,14 +5836,14 @@ declare module "winix" {
       nice?: number;
     };
     freeradius: {
-      configDir?: string;
+      configDir?: string | NixExpr;
       debug?: boolean;
       enable?: boolean;
       package?: string | NixExpr;
     };
     freeswitch: {
       configDir?: Record<string, string>;
-      configTemplate?: string;
+      configTemplate?: string | NixExpr;
       enable?: boolean;
       enableReload?: boolean;
       package?: string | NixExpr;
@@ -5872,35 +5852,35 @@ declare module "winix" {
       api?: {
         enable?: boolean;
       };
-      authType?: "form" | "http_auth" | "none";
-      baseUrl?: string;
+      authType?: "form" | "http_auth" | "none" | NixExpr;
+      baseUrl?: string | NixExpr;
       database?: {
-        host?: string | null;
-        name?: string | null;
-        passFile?: string | null;
+        host?: string | null | NixExpr;
+        name?: string | null | NixExpr;
+        passFile?: string | null | NixExpr;
         port?: number | null;
-        tableprefix?: string | null;
-        type?: "mysql" | "pgsql" | "sqlite";
-        user?: string | null;
+        tableprefix?: string | null | NixExpr;
+        type?: "mysql" | "pgsql" | "sqlite" | NixExpr;
+        user?: string | null | NixExpr;
       };
-      dataDir?: string;
-      defaultUser?: string;
+      dataDir?: string | NixExpr;
+      defaultUser?: string | NixExpr;
       enable?: boolean;
       extensions?: (string | NixExpr)[] | NixExpr;
-      language?: string;
+      language?: string | NixExpr;
       package?: string | NixExpr;
-      passwordFile?: string | null;
-      pool?: string | null;
-      user?: string;
-      virtualHost?: string;
-      webserver?: "caddy" | "nginx";
+      passwordFile?: string | null | NixExpr;
+      pool?: string | null | NixExpr;
+      user?: string | NixExpr;
+      virtualHost?: string | NixExpr;
+      webserver?: "caddy" | "nginx" | NixExpr;
     };
     frigate: {
       checkConfig?: boolean;
       enable?: boolean;
-      hostname?: string;
+      hostname?: string | NixExpr;
       package?: string | NixExpr;
-      preCheckConfig?: string;
+      preCheckConfig?: string | NixExpr;
       settings?: {
         cameras?: Record<string, unknown>;
         database?: Record<string, unknown>;
@@ -5910,11 +5890,11 @@ declare module "winix" {
       vaapiDriver?: "i965" | "iHD" | "nouveau" | "nvidia" | "radeonsi" | "vdpau" | null;
     };
     "froide-govplan": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      hostName?: string;
+      hostName?: string | NixExpr;
       package?: string | NixExpr;
-      secretKeyFile?: string | null;
+      secretKeyFile?: string | null | NixExpr;
       settings?: {
         ALLOWED_HOSTS?: string[] | NixExpr;
       };
@@ -5941,8 +5921,8 @@ declare module "winix" {
         extraOptions?: string[] | NixExpr;
         options?: string[] | NixExpr;
       };
-      config?: string;
-      configFile?: string | null;
+      config?: string | NixExpr;
+      configFile?: string | null | NixExpr;
       eigrpd?: {
         enable?: boolean;
         extraOptions?: string[] | NixExpr;
@@ -6034,18 +6014,18 @@ declare module "winix" {
     };
     fstrim: {
       enable?: boolean;
-      interval?: string;
+      interval?: string | NixExpr;
     };
     fusionInventory: {
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       servers?: string[] | NixExpr;
     };
     fwupd: {
       daemonSettings?: {
         DisabledDevices?: string[] | NixExpr;
         DisabledPlugins?: string[] | NixExpr;
-        EspLocation?: string;
+        EspLocation?: string | NixExpr;
       };
       enable?: boolean;
       extraRemotes?: string[] | NixExpr;
@@ -6062,62 +6042,62 @@ declare module "winix" {
       earlySetup?: boolean;
       enable?: boolean;
       package?: string | NixExpr;
-      profile?: string | null;
+      profile?: string | null | NixExpr;
     };
     galene: {
-      certFile?: string | null;
-      dataDir?: string;
+      certFile?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      groupsDir?: string;
-      httpAddress?: string;
+      group?: string | NixExpr;
+      groupsDir?: string | NixExpr;
+      httpAddress?: string | NixExpr;
       httpPort?: number;
       insecure?: boolean;
-      keyFile?: string | null;
+      keyFile?: string | null | NixExpr;
       package?: string | NixExpr;
-      recordingsDir?: string;
-      stateDir?: string;
-      staticDir?: string;
-      turnAddress?: string;
-      user?: string;
+      recordingsDir?: string | NixExpr;
+      stateDir?: string | NixExpr;
+      staticDir?: string | NixExpr;
+      turnAddress?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "gammu-smsd": {
       backend?: {
         files?: Record<string, unknown>;
-        service?: "files" | "null" | "sql";
+        service?: "files" | "null" | "sql" | NixExpr;
         sql?: Record<string, unknown>;
       };
       device?: {
-        connection?: string;
-        group?: string;
-        path?: string;
-        pin?: string | null;
+        connection?: string | NixExpr;
+        group?: string | NixExpr;
+        path?: string | NixExpr;
+        pin?: string | null | NixExpr;
         synchronizeTime?: boolean;
       };
       enable?: boolean;
       extraConfig?: {
-        gammu?: string;
-        smsd?: string;
+        gammu?: string | NixExpr;
+        smsd?: string | NixExpr;
       };
       log?: {
-        file?: string;
-        format?: "binary" | "errors" | "errorsdate" | "nothing" | "text" | "textall" | "textalldate";
+        file?: string | NixExpr;
+        format?: "binary" | "errors" | "errorsdate" | "nothing" | "text" | "textall" | "textalldate" | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     gancio: {
       enable?: boolean;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -6130,42 +6110,42 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
       settings?: {
-        baseurl?: string;
+        baseurl?: string | NixExpr;
         db?: Record<string, unknown>;
-        hostname?: string;
-        log_level?: "debug" | "error" | "info" | "warning";
-        log_path?: string;
+        hostname?: string | NixExpr;
+        log_level?: "debug" | "error" | "info" | "warning" | NixExpr;
+        log_path?: string | NixExpr;
         server?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
       userLocale?: Record<string, Record<string, Record<string, string>>>;
     };
     garage: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraEnvironment?: Record<string, string>;
-      logLevel?: "debug" | "error" | "info" | "trace" | "warn";
+      logLevel?: "debug" | "error" | "info" | "trace" | "warn" | NixExpr;
       package?: string | NixExpr;
       settings?: {
         data_dir?: string | Record<string, unknown>[] | NixExpr;
-        metadata_dir?: string;
+        metadata_dir?: string | NixExpr;
       };
     };
     gatus: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -6179,10 +6159,10 @@ declare module "winix" {
       enable?: boolean;
       openFirewall?: boolean;
       settings?: {
-        base_path?: string;
-        bind?: string;
+        base_path?: string | NixExpr;
+        bind?: string | NixExpr;
         db_adapter?: "mysql" | "mysql2" | "postgres" | "sqlite3" | null;
-        db_url?: string | null;
+        db_url?: string | null | NixExpr;
       };
     };
     geoclue2: {
@@ -6197,47 +6177,47 @@ declare module "winix" {
       enableNmea?: boolean;
       enableStatic?: boolean;
       enableWifi?: boolean;
-      geoProviderUrl?: string;
+      geoProviderUrl?: string | NixExpr;
       package?: string | NixExpr;
       staticAccuracy?: number;
       staticAltitude?: number;
       staticLatitude?: number;
       staticLongitude?: number;
-      submissionNick?: string;
-      submissionUrl?: string;
+      submissionNick?: string | NixExpr;
+      submissionUrl?: string | NixExpr;
       submitData?: boolean;
       whitelistedAgents?: string[] | NixExpr;
     };
     geoipupdate: {
       enable?: boolean;
-      interval?: string;
+      interval?: string | NixExpr;
       settings?: {
         AccountID?: number;
-        DatabaseDirectory?: string;
+        DatabaseDirectory?: string | NixExpr;
         EditionIDs?: (string | number)[] | NixExpr;
-        LicenseKey?: string | Record<string, string>;
+        LicenseKey?: string | Record<string, string> | NixExpr;
       };
     };
     geph: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
     gerbil: {
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       port?: number;
     };
     gerrit: {
       builtinPlugins?: ("codemirror-editor" | "commit-message-length-validator" | "delete-project" | "download-commands" | "gitiles" | "hooks" | "plugin-manager" | "replication" | "reviewnotes" | "singleusergroup" | "webhooks")[] | NixExpr;
       enable?: boolean;
-      jvmHeapLimit?: string;
+      jvmHeapLimit?: string | NixExpr;
       jvmOpts?: string[] | NixExpr;
       jvmPackage?: string | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
       replicationSettings?: Record<string, Record<string, string | boolean | number | (string | boolean | number)[] | Record<string, string | boolean | number | (string | boolean | number)[]>>>;
-      serverId?: string;
+      serverId?: string | NixExpr;
       settings?: Record<string, Record<string, string | boolean | number | (string | boolean | number)[] | Record<string, string | boolean | number | (string | boolean | number)[]>>>;
     };
     geth: {
@@ -6245,25 +6225,25 @@ declare module "winix" {
         authrpc?: Record<string, unknown>;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
-        gcmode?: "archive" | "full";
+        gcmode?: "archive" | "full" | NixExpr;
         http?: Record<string, unknown>;
         maxpeers?: number;
         metrics?: Record<string, unknown>;
         network?: "holesky" | "sepolia" | null;
         package?: string | NixExpr;
         port?: number;
-        syncmode?: "fast" | "full" | "light" | "snap";
+        syncmode?: "fast" | "full" | "light" | "snap" | NixExpr;
         websocket?: Record<string, unknown>;
       };
     };
     getty: {
       autologinOnce?: boolean;
-      autologinUser?: string | null;
+      autologinUser?: string | null | NixExpr;
       extraArgs?: string[] | NixExpr;
-      greetingLine?: string;
-      helpLine?: string;
-      loginOptions?: string | null;
-      loginProgram?: string;
+      greetingLine?: string | NixExpr;
+      helpLine?: string | NixExpr;
+      loginOptions?: string | null | NixExpr;
+      loginProgram?: string | NixExpr;
     };
     ghostunnel: {
       enable?: boolean;
@@ -6273,62 +6253,62 @@ declare module "winix" {
       };
     };
     gitDaemon: {
-      basePath?: string;
+      basePath?: string | NixExpr;
       enable?: boolean;
       exportAll?: boolean;
-      group?: string;
-      listenAddress?: string;
-      options?: string;
+      group?: string | NixExpr;
+      listenAddress?: string | NixExpr;
+      options?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       repositories?: string[] | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     gitea: {
-      appName?: string;
-      camoHmacKeyFile?: string | null;
+      appName?: string | NixExpr;
+      camoHmacKeyFile?: string | null | NixExpr;
       captcha?: {
         enable?: boolean;
         requireForExternalRegistration?: boolean;
         requireForLogin?: boolean;
-        secretFile?: string | null;
-        siteKey?: string | null;
-        type?: "cfturnstile" | "hcaptcha" | "image" | "mcaptcha" | "recaptcha";
-        url?: string | null;
+        secretFile?: string | null | NixExpr;
+        siteKey?: string | null | NixExpr;
+        type?: "cfturnstile" | "hcaptcha" | "image" | "mcaptcha" | "recaptcha" | NixExpr;
+        url?: string | null | NixExpr;
       };
-      customDir?: string;
+      customDir?: string | NixExpr;
       database?: {
         createDatabase?: boolean;
-        host?: string;
-        name?: string;
-        password?: string;
-        passwordFile?: string | null;
-        path?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        password?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
+        path?: string | NixExpr;
         port?: number;
-        socket?: string | null;
-        type?: "mysql" | "postgres" | "sqlite3";
-        user?: string;
+        socket?: string | null | NixExpr;
+        type?: "mysql" | "postgres" | "sqlite3" | NixExpr;
+        user?: string | NixExpr;
       };
       dump?: {
-        backupDir?: string;
+        backupDir?: string | NixExpr;
         enable?: boolean;
-        file?: string | null;
-        interval?: string;
-        type?: "rar" | "sz" | "tar" | "tar.br" | "tar.bz2" | "tar.gz" | "tar.lz4" | "tar.xz" | "tar.zst" | "zip";
+        file?: string | null | NixExpr;
+        interval?: string | NixExpr;
+        type?: "rar" | "sz" | "tar" | "tar.br" | "tar.bz2" | "tar.gz" | "tar.lz4" | "tar.xz" | "tar.zst" | "zip" | NixExpr;
       };
       enable?: boolean;
-      extraConfig?: string | null;
-      group?: string;
+      extraConfig?: string | null | NixExpr;
+      group?: string | NixExpr;
       lfs?: {
-        contentDir?: string;
+        contentDir?: string | NixExpr;
         enable?: boolean;
       };
-      mailerPasswordFile?: string | null;
-      metricsTokenFile?: string | null;
-      minioAccessKeyId?: string | null;
-      minioSecretAccessKey?: string | null;
+      mailerPasswordFile?: string | null | NixExpr;
+      metricsTokenFile?: string | null | NixExpr;
+      minioAccessKeyId?: string | null | NixExpr;
+      minioSecretAccessKey?: string | null | NixExpr;
       package?: string | NixExpr;
-      repositoryRoot?: string;
+      repositoryRoot?: string | NixExpr;
       settings?: {
         log?: Record<string, unknown>;
         mailer?: Record<string, unknown>;
@@ -6336,8 +6316,8 @@ declare module "winix" {
         service?: Record<string, unknown>;
         session?: Record<string, unknown>;
       };
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "gitea-actions-runner": {
       instances?: {
@@ -6352,49 +6332,49 @@ declare module "winix" {
         extraEnvironment?: Record<string, unknown>;
         extraLabels?: string[] | NixExpr;
         extraPackages?: (string | NixExpr)[] | NixExpr;
-        group?: string | null;
-        name?: string | null;
+        group?: string | null | NixExpr;
+        name?: string | null | NixExpr;
         noDefaultLabels?: boolean;
         nodeRuntimes?: unknown[] | NixExpr;
         package?: string | NixExpr;
         replace?: boolean;
-        runnerGroup?: string | null;
+        runnerGroup?: string | null | NixExpr;
         serviceOverrides?: Record<string, unknown>;
-        tokenFile?: string;
-        tokenType?: "access" | "auto" | "registration";
-        url?: string;
-        user?: string | null;
-        workDir?: string | null;
+        tokenFile?: string | NixExpr;
+        tokenType?: "access" | "auto" | "registration" | NixExpr;
+        url?: string | NixExpr;
+        user?: string | null | NixExpr;
+        workDir?: string | null | NixExpr;
       };
     };
     gitlab: {
       backup?: {
         keepTime?: number;
-        path?: string;
-        skip?: "artifacts" | "builds" | "db" | "lfs" | "pages" | "registry" | "repositories" | "tar" | "uploads";
+        path?: string | NixExpr;
+        skip?: "artifacts" | "builds" | "db" | "lfs" | "pages" | "registry" | "repositories" | "tar" | "uploads" | NixExpr;
         startAt?: string | string[] | NixExpr;
         uploadOptions?: Record<string, unknown>;
       };
       databaseCreateLocally?: boolean;
-      databaseHost?: string;
-      databaseName?: string;
-      databasePasswordFile?: string | null;
+      databaseHost?: string | NixExpr;
+      databaseName?: string | NixExpr;
+      databasePasswordFile?: string | null | NixExpr;
       databasePool?: number;
-      databaseUsername?: string;
+      databaseUsername?: string | NixExpr;
       enable?: boolean;
       extraConfig?: Record<string, unknown>;
       extraDatabaseConfig?: Record<string, unknown>;
       extraEnv?: Record<string, string>;
-      extraGitlabRb?: string;
+      extraGitlabRb?: string | NixExpr;
       extraShellConfig?: Record<string, unknown>;
-      group?: string;
-      host?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       https?: boolean;
-      initialRootEmail?: string;
-      initialRootPasswordFile?: string | null;
+      initialRootEmail?: string | NixExpr;
+      initialRootPasswordFile?: string | null | NixExpr;
       logrotate?: {
         enable?: boolean;
-        frequency?: string;
+        frequency?: string | NixExpr;
         keep?: number;
       };
       packages?: {
@@ -6414,63 +6394,63 @@ declare module "winix" {
         threadsMin?: number;
         workers?: number;
       };
-      redisUrl?: string;
+      redisUrl?: string | NixExpr;
       registry?: {
-        certFile?: string;
+        certFile?: string | NixExpr;
         defaultForProjects?: boolean;
         enable?: boolean;
-        externalAddress?: string;
+        externalAddress?: string | NixExpr;
         externalPort?: number;
-        host?: string;
-        issuer?: string;
-        keyFile?: string;
+        host?: string | NixExpr;
+        issuer?: string | NixExpr;
+        keyFile?: string | NixExpr;
         package?: string | NixExpr;
         port?: number;
-        serviceName?: string;
+        serviceName?: string | NixExpr;
       };
       secrets?: {
-        activeRecordDeterministicKeyFile?: string | null;
-        activeRecordPrimaryKeyFile?: string | null;
-        activeRecordSaltFile?: string | null;
-        dbFile?: string | null;
-        jwsFile?: string | null;
-        otpFile?: string | null;
-        secretFile?: string | null;
+        activeRecordDeterministicKeyFile?: string | null | NixExpr;
+        activeRecordPrimaryKeyFile?: string | null | NixExpr;
+        activeRecordSaltFile?: string | null | NixExpr;
+        dbFile?: string | null | NixExpr;
+        jwsFile?: string | null | NixExpr;
+        otpFile?: string | null | NixExpr;
+        secretFile?: string | null | NixExpr;
       };
       sidekiq?: {
         concurrency?: number | null;
         memoryKiller?: Record<string, unknown>;
       };
       smtp?: {
-        address?: string;
-        authentication?: string | null;
-        domain?: string;
+        address?: string | NixExpr;
+        authentication?: string | null | NixExpr;
+        domain?: string | NixExpr;
         enable?: boolean;
         enableStartTLSAuto?: boolean;
-        opensslVerifyMode?: string;
-        passwordFile?: string | null;
+        opensslVerifyMode?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
         tls?: boolean;
-        username?: string | null;
+        username?: string | null | NixExpr;
       };
-      statePath?: string;
-      user?: string;
+      statePath?: string | NixExpr;
+      user?: string | NixExpr;
       workhorse?: {
         config?: Record<string, unknown>;
       };
     };
     "gitlab-runner": {
       "clear-docker-cache"?: {
-        dates?: string;
+        dates?: string | NixExpr;
         enable?: boolean;
         flags?: string[] | NixExpr;
         package?: unknown;
       };
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
       gracefulTermination?: boolean;
-      gracefulTimeout?: string;
+      gracefulTimeout?: string | NixExpr;
       package?: string | NixExpr;
       services?: {
         "<name>"?: Record<string, unknown>;
@@ -6478,34 +6458,34 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     gitolite: {
-      adminPubkey?: string;
+      adminPubkey?: string | NixExpr;
       commonHooks?: string[] | NixExpr;
-      dataDir?: string;
-      description?: string;
+      dataDir?: string | NixExpr;
+      description?: string | NixExpr;
       enable?: boolean;
       enableGitAnnex?: boolean;
-      extraGitoliteRc?: string;
-      group?: string;
-      user?: string;
+      extraGitoliteRc?: string | NixExpr;
+      group?: string | NixExpr;
+      user?: string | NixExpr;
     };
     gitwatch: {
       "<name>"?: {
-        branch?: string | null;
+        branch?: string | null | NixExpr;
         enable?: boolean;
-        message?: string | null;
-        path?: string;
-        remote?: string | null;
-        user?: string;
+        message?: string | null | NixExpr;
+        path?: string | NixExpr;
+        remote?: string | null | NixExpr;
+        user?: string | NixExpr;
       };
     };
     gitweb: {
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       gitwebTheme?: boolean;
-      projectroot?: string;
+      projectroot?: string | NixExpr;
     };
     glance: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -6526,10 +6506,10 @@ declare module "winix" {
       };
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       nginx?: {
         createLocally?: boolean;
-        domain?: string;
+        domain?: string | NixExpr;
       };
       package?: string | NixExpr;
       redis?: {
@@ -6539,42 +6519,42 @@ declare module "winix" {
         ENABLE_OBSERVABILITY_API?: boolean;
         ENABLE_ORGANIZATION_CREATION?: boolean;
         ENABLE_USER_REGISTRATION?: boolean;
-        GLITCHTIP_DOMAIN?: string | null;
+        GLITCHTIP_DOMAIN?: string | null | NixExpr;
         GLITCHTIP_ENABLE_MCP?: boolean;
         GRANIAN_WORKERS?: number;
       };
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     glpiAgent: {
       enable?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, boolean | number | string | string[]>;
-      stateDir?: string;
+      settings?: Record<string, boolean | number | string | string[]> | NixExpr;
+      stateDir?: string | NixExpr;
     };
     glusterfs: {
       enable?: boolean;
       enableGlustereventsd?: boolean;
       extraFlags?: string[] | NixExpr;
-      killMode?: "control-group" | "mixed" | "none" | "process";
-      logLevel?: "CRITICAL" | "DEBUG" | "ERROR" | "INFO" | "NONE" | "TRACE" | "WARNING";
-      stopKillTimeout?: string;
+      killMode?: "control-group" | "mixed" | "none" | "process" | NixExpr;
+      logLevel?: "CRITICAL" | "DEBUG" | "ERROR" | "INFO" | "NONE" | "TRACE" | "WARNING" | NixExpr;
+      stopKillTimeout?: string | NixExpr;
       tlsSettings?: {
-        caCert?: string;
-        tlsKeyPath?: string;
-        tlsPem?: string;
+        caCert?: string | NixExpr;
+        tlsKeyPath?: string | NixExpr;
+        tlsPem?: string | NixExpr;
       };
       useRpcbind?: boolean;
     };
     gmediarender: {
-      audioDevice?: string | null;
-      audioSink?: string | null;
+      audioDevice?: string | null | NixExpr;
+      audioSink?: string | null | NixExpr;
       enable?: boolean;
-      friendlyName?: string | null;
+      friendlyName?: string | null | NixExpr;
       initialVolume?: number | null;
       package?: string | NixExpr;
       port?: number | null;
-      uuid?: string | null;
+      uuid?: string | null | NixExpr;
     };
     gnome: {
       "at-spi2-core"?: {
@@ -6647,8 +6627,8 @@ declare module "winix" {
     "gns3-server": {
       auth?: {
         enable?: boolean;
-        passwordFile?: string | null;
-        user?: string | null;
+        passwordFile?: string | null | NixExpr;
+        user?: string | null | NixExpr;
       };
       dynamips?: {
         enable?: boolean;
@@ -6657,14 +6637,14 @@ declare module "winix" {
       enable?: boolean;
       log?: {
         debug?: boolean;
-        file?: string | null;
+        file?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
       ssl?: {
-        certFile?: string | null;
+        certFile?: string | null | NixExpr;
         enable?: boolean;
-        keyFile?: string | null;
+        keyFile?: string | null | NixExpr;
       };
       ubridge?: {
         enable?: boolean;
@@ -6677,7 +6657,7 @@ declare module "winix" {
     };
     gnunet: {
       enable?: boolean;
-      extraOptions?: string;
+      extraOptions?: string | NixExpr;
       fileSharing?: {
         quota?: number;
       };
@@ -6701,17 +6681,17 @@ declare module "winix" {
     "go-camo": {
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      keyFile?: string;
-      listen?: string | null;
-      sslCert?: string | null;
-      sslKey?: string | null;
-      sslListen?: string | null;
+      keyFile?: string | NixExpr;
+      listen?: string | null | NixExpr;
+      sslCert?: string | null | NixExpr;
+      sslKey?: string | null | NixExpr;
+      sslListen?: string | null | NixExpr;
     };
     "go-csp-collector": {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        "output-format"?: "json" | "text";
+        "output-format"?: "json" | "text" | NixExpr;
         port?: number;
       };
     };
@@ -6719,21 +6699,21 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        HOST?: string;
+        HOST?: string | NixExpr;
         PORT?: number;
       };
     };
     "go-neb": {
-      baseUrl?: string;
-      bindAddress?: string;
+      baseUrl?: string | NixExpr;
+      bindAddress?: string | NixExpr;
       config?: Record<string, unknown>;
       enable?: boolean;
-      secretFile?: string | null;
+      secretFile?: string | null | NixExpr;
     };
     "go-shadowsocks2": {
       server?: {
         enable?: boolean;
-        listenAddress?: string;
+        listenAddress?: string | NixExpr;
       };
     };
     go2rtc: {
@@ -6746,7 +6726,7 @@ declare module "winix" {
       };
     };
     goatcounter: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       package?: string | NixExpr;
@@ -6758,35 +6738,35 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     "gocd-agent": {
-      agentConfig?: string;
+      agentConfig?: string | NixExpr;
       enable?: boolean;
       environment?: Record<string, string>;
       extraGroups?: string[] | NixExpr;
       extraOptions?: string[] | NixExpr;
-      goServer?: string;
-      group?: string;
-      initialJavaHeapSize?: string;
-      maxJavaHeapMemory?: string;
+      goServer?: string | NixExpr;
+      group?: string | NixExpr;
+      initialJavaHeapSize?: string | NixExpr;
+      maxJavaHeapMemory?: string | NixExpr;
       packages?: (string | NixExpr)[] | NixExpr;
       startupOptions?: string[] | NixExpr;
-      user?: string;
-      workDir?: string;
+      user?: string | NixExpr;
+      workDir?: string | NixExpr;
     };
     "gocd-server": {
       enable?: boolean;
       environment?: Record<string, string>;
       extraGroups?: string[] | NixExpr;
       extraOptions?: string[] | NixExpr;
-      group?: string;
-      initialJavaHeapSize?: string;
-      listenAddress?: string;
-      maxJavaHeapMemory?: string;
+      group?: string | NixExpr;
+      initialJavaHeapSize?: string | NixExpr;
+      listenAddress?: string | NixExpr;
+      maxJavaHeapMemory?: string | NixExpr;
       packages?: (string | NixExpr)[] | NixExpr;
       port?: number;
       sslPort?: number;
       startupOptions?: string[] | NixExpr;
-      user?: string;
-      workDir?: string;
+      user?: string | NixExpr;
+      workDir?: string | NixExpr;
     };
     godns: {
       enable?: boolean;
@@ -6796,38 +6776,38 @@ declare module "winix" {
     };
     goeland: {
       enable?: boolean;
-      schedule?: string;
+      schedule?: string | NixExpr;
       settings?: Record<string, unknown>;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     gokapi: {
       enable?: boolean;
       environment?: {
-        GOKAPI_CONFIG_DIR?: string;
-        GOKAPI_CONFIG_FILE?: string;
-        GOKAPI_DATA_DIR?: string;
+        GOKAPI_CONFIG_DIR?: string | NixExpr;
+        GOKAPI_CONFIG_FILE?: string | NixExpr;
+        GOKAPI_DATA_DIR?: string | NixExpr;
         GOKAPI_PORT?: number;
       };
       mutableSettings?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      settingsFile?: string | null;
+      settingsFile?: string | null | NixExpr;
     };
     gollum: {
-      address?: string;
+      address?: string | NixExpr;
       allowUploads?: "dir" | "page" | null;
-      branch?: string;
+      branch?: string | NixExpr;
       emoji?: boolean;
       enable?: boolean;
-      extraConfig?: string;
-      group?: string;
+      extraConfig?: string | NixExpr;
+      group?: string | NixExpr;
       "h1-title"?: boolean;
       math?: boolean;
       "no-edit"?: boolean;
       package?: string | NixExpr;
       port?: number;
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
       "user-icons"?: "gravatar" | "identicon" | null;
     };
     gonic: {
@@ -6842,8 +6822,8 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     gotenberg: {
-      bindIP?: string | null;
-      bodyLimit?: string | null;
+      bindIP?: string | null | NixExpr;
+      bodyLimit?: string | null | NixExpr;
       chromium?: {
         autoStart?: boolean;
         disableJavascript?: boolean;
@@ -6852,14 +6832,14 @@ declare module "winix" {
         package?: string | NixExpr;
       };
       downloadFrom?: {
-        allowList?: string | null;
-        denyList?: string | null;
+        allowList?: string | null | NixExpr;
+        denyList?: string | null | NixExpr;
         disable?: boolean;
         maxRetries?: number;
       };
       enable?: boolean;
       enableBasicAuth?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraArgs?: string[] | NixExpr;
       extraFontPackages?: (string | NixExpr)[] | NixExpr;
       libreoffice?: {
@@ -6869,7 +6849,7 @@ declare module "winix" {
         package?: string | NixExpr;
         restartAfter?: number;
       };
-      logLevel?: "debug" | "error" | "info" | "warn";
+      logLevel?: "debug" | "error" | "info" | "warn" | NixExpr;
       package?: string | NixExpr;
       pdfEngines?: {
         convert?: "libreoffice-pdfengine"[] | NixExpr;
@@ -6879,29 +6859,29 @@ declare module "winix" {
         writeMetadata?: "exiftool"[] | NixExpr;
       };
       port?: number;
-      rootPath?: string;
-      timeout?: string | null;
+      rootPath?: string | NixExpr;
+      timeout?: string | null | NixExpr;
     };
     gotify: {
       enable?: boolean;
       environment?: Record<string, string | number>;
       environmentFiles?: string[] | NixExpr;
       package?: string | NixExpr;
-      stateDirectoryName?: string;
+      stateDirectoryName?: string | NixExpr;
     };
     gotosocial: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
       setupPostgresqlDB?: boolean;
     };
     goupile: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       enableSandbox?: boolean;
-      hostName?: string;
+      hostName?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
         Data?: Record<string, unknown>;
@@ -6910,10 +6890,10 @@ declare module "winix" {
     };
     govee2mqtt: {
       enable?: boolean;
-      environmentFile?: string;
-      group?: string;
+      environmentFile?: string | NixExpr;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     "goxlr-utility": {
       autoStart?: {
@@ -6924,7 +6904,7 @@ declare module "winix" {
     };
     gpm: {
       enable?: boolean;
-      protocol?: string;
+      protocol?: string | NixExpr;
     };
     gpsd: {
       debugLevel?: number;
@@ -6937,7 +6917,7 @@ declare module "winix" {
       readonly?: boolean;
     };
     grafana: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       declarativePlugins?: string[] | null;
       enable?: boolean;
       openFirewall?: boolean;
@@ -6960,15 +6940,15 @@ declare module "winix" {
       };
     };
     grafana_reporter: {
-      addr?: string;
+      addr?: string | NixExpr;
       enable?: boolean;
       grafana?: {
-        addr?: string;
+        addr?: string | NixExpr;
         port?: number;
-        protocol?: "http" | "https";
+        protocol?: "http" | "https" | NixExpr;
       };
       port?: number;
-      templateDir?: string;
+      templateDir?: string | NixExpr;
     };
     "grafana-image-renderer": {
       enable?: boolean;
@@ -6982,71 +6962,71 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        address?: string;
-        bauthPass?: string | null;
-        bauthUser?: string | null;
+        address?: string | NixExpr;
+        bauthPass?: string | null | NixExpr;
+        bauthUser?: string | null | NixExpr;
         markdown?: boolean;
-        ntfyBAuthPass?: string | null;
-        ntfyBAuthUser?: string | null;
-        ntfyUrl?: string;
+        ntfyBAuthPass?: string | null | NixExpr;
+        ntfyBAuthUser?: string | null | NixExpr;
+        ntfyUrl?: string | NixExpr;
         port?: number;
       };
     };
     graphite: {
       carbon?: {
-        aggregationRules?: string | null;
-        blacklist?: string | null;
-        config?: string;
+        aggregationRules?: string | null | NixExpr;
+        blacklist?: string | null | NixExpr;
+        config?: string | NixExpr;
         enableAggregator?: boolean;
         enableCache?: boolean;
         enableRelay?: boolean;
-        relayRules?: string | null;
-        rewriteRules?: string | null;
-        storageAggregation?: string | null;
-        storageSchemas?: string | null;
-        whitelist?: string | null;
+        relayRules?: string | null | NixExpr;
+        rewriteRules?: string | null | NixExpr;
+        storageAggregation?: string | null | NixExpr;
+        storageSchemas?: string | null | NixExpr;
+        whitelist?: string | null | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       seyren?: {
         enable?: boolean;
         extraConfig?: Record<string, string>;
-        graphiteUrl?: string;
-        mongoUrl?: string;
+        graphiteUrl?: string | NixExpr;
+        mongoUrl?: string | NixExpr;
         port?: number;
-        seyrenUrl?: string;
+        seyrenUrl?: string | NixExpr;
       };
       web?: {
         enable?: boolean;
-        extraConfig?: string;
-        listenAddress?: string;
+        extraConfig?: string | NixExpr;
+        listenAddress?: string | NixExpr;
         port?: number;
       };
     };
     grav: {
       enable?: boolean;
-      maxUploadSize?: string;
+      maxUploadSize?: string | NixExpr;
       package?: string | NixExpr;
       phpPackage?: string | NixExpr;
-      pool?: string;
-      root?: string;
+      pool?: string | NixExpr;
+      root?: string | NixExpr;
       systemSettings?: Record<string, unknown>;
-      virtualHost?: string | null;
+      virtualHost?: string | null | NixExpr;
     };
     graylog: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       elasticsearchHosts?: string[] | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       isMaster?: boolean;
-      messageJournalDir?: string;
-      mongodbUri?: string;
-      nodeIdFile?: string;
+      messageJournalDir?: string | NixExpr;
+      mongodbUri?: string | NixExpr;
+      nodeIdFile?: string | NixExpr;
       package?: string | NixExpr;
-      passwordSecret?: string;
+      passwordSecret?: string | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
-      rootPasswordSha2?: string;
-      rootUsername?: string;
-      user?: string;
+      rootPasswordSha2?: string | NixExpr;
+      rootUsername?: string | NixExpr;
+      user?: string | NixExpr;
     };
     greenclip: {
       enable?: boolean;
@@ -7060,36 +7040,36 @@ declare module "winix" {
       useTextGreeter?: boolean;
     };
     grocy: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      hostName?: string;
+      extraConfig?: string | NixExpr;
+      hostName?: string | NixExpr;
       nginx?: {
         enableSSL?: boolean;
       };
       package?: string | NixExpr;
       phpfpm?: {
-        settings?: Record<string, number | string | boolean>;
+        settings?: Record<string, number | string | boolean> | NixExpr;
       };
       settings?: {
         calendar?: Record<string, unknown>;
-        culture?: "bg_BG" | "ca" | "cs" | "da" | "de" | "el_GR" | "en" | "en_GB" | "es" | "et_EE" | "fi" | "fr" | "he_IL" | "hu" | "it" | "ja" | "ko_KR" | "lt" | "nl" | "no" | "pl" | "pt_BR" | "pt_PT" | "ro_RO" | "ru" | "sk_SK" | "sl" | "sv_SE" | "ta" | "tr" | "uk" | "zh_CN" | "zh_TW";
-        currency?: string;
-        entryPage?: "batteries" | "calendar" | "chores" | "equipment" | "mealplan" | "recipes" | "shoppinglist" | "stock" | "tasks";
+        culture?: "bg_BG" | "ca" | "cs" | "da" | "de" | "el_GR" | "en" | "en_GB" | "es" | "et_EE" | "fi" | "fr" | "he_IL" | "hu" | "it" | "ja" | "ko_KR" | "lt" | "nl" | "no" | "pl" | "pt_BR" | "pt_PT" | "ro_RO" | "ru" | "sk_SK" | "sl" | "sv_SE" | "ta" | "tr" | "uk" | "zh_CN" | "zh_TW" | NixExpr;
+        currency?: string | NixExpr;
+        entryPage?: "batteries" | "calendar" | "chores" | "equipment" | "mealplan" | "recipes" | "shoppinglist" | "stock" | "tasks" | NixExpr;
       };
     };
     "guacamole-client": {
       enable?: boolean;
       enableWebserver?: boolean;
-      logbackXml?: string | null;
+      logbackXml?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      userMappingXml?: string | null;
+      userMappingXml?: string | null | NixExpr;
     };
     "guacamole-server": {
       enable?: boolean;
       extraEnvironment?: Record<string, string>;
-      host?: string;
+      host?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
     };
@@ -7097,11 +7077,11 @@ declare module "winix" {
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       gc?: {
-        dates?: string;
+        dates?: string | NixExpr;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
       };
-      group?: string;
+      group?: string | NixExpr;
       nrBuildUsers?: number;
       package?: string | NixExpr;
       publish?: {
@@ -7109,10 +7089,10 @@ declare module "winix" {
         extraArgs?: string[] | NixExpr;
         generateKeyPair?: boolean;
         port?: number;
-        user?: string;
+        user?: string | NixExpr;
       };
-      stateDir?: string;
-      storeDir?: string;
+      stateDir?: string | NixExpr;
+      storeDir?: string | NixExpr;
       substituters?: {
         authorizedKeys?: string[] | NixExpr;
         urls?: string[] | NixExpr;
@@ -7123,26 +7103,26 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     gvpe: {
-      configFile?: string | null;
-      configText?: string | null;
-      customIFSetup?: string;
+      configFile?: string | null | NixExpr;
+      configText?: string | null | NixExpr;
+      customIFSetup?: string | NixExpr;
       enable?: boolean;
-      ipAddress?: string | null;
-      nodename?: string | null;
-      subnet?: string | null;
+      ipAddress?: string | null | NixExpr;
+      nodename?: string | null | NixExpr;
+      subnet?: string | null | NixExpr;
     };
     h2o: {
       defaultHTTPListenPort?: number;
       defaultTLSListenPort?: number;
       defaultTLSRecommendations?: "intermediate" | "modern" | "old" | null;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       hosts?: {
         "<name>"?: Record<string, unknown>;
       };
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     hadoop: {
       containerExecutorCfg?: Record<string, unknown>;
@@ -7157,9 +7137,9 @@ declare module "winix" {
         package?: string | NixExpr;
         regionServer?: Record<string, unknown>;
         rest?: Record<string, unknown>;
-        rootdir?: string;
+        rootdir?: string | NixExpr;
         thrift?: Record<string, unknown>;
-        zookeeperQuorum?: string | null;
+        zookeeperQuorum?: string | null | NixExpr;
       };
       hbaseSite?: Record<string, unknown>;
       hbaseSiteDefault?: Record<string, unknown>;
@@ -7173,7 +7153,7 @@ declare module "winix" {
       hdfsSite?: Record<string, unknown>;
       hdfsSiteDefault?: Record<string, unknown>;
       httpfsSite?: Record<string, unknown>;
-      log4jProperties?: string;
+      log4jProperties?: string | NixExpr;
       mapredSite?: Record<string, unknown>;
       mapredSiteDefault?: Record<string, unknown>;
       package?: string | NixExpr;
@@ -7195,7 +7175,7 @@ declare module "winix" {
         enable?: boolean;
         package?: string | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     hans: {
       clients?: {
@@ -7203,18 +7183,18 @@ declare module "winix" {
       };
       server?: {
         enable?: boolean;
-        extraConfig?: string;
-        ip?: string;
-        passwordFile?: string;
+        extraConfig?: string | NixExpr;
+        ip?: string | NixExpr;
+        passwordFile?: string | NixExpr;
         respondToSystemPings?: boolean;
       };
     };
     haproxy: {
-      config?: string | null;
+      config?: string | null | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     hardware: {
       argonone?: {
@@ -7237,7 +7217,7 @@ declare module "winix" {
       lcd?: {
         client?: Record<string, unknown>;
         server?: Record<string, unknown>;
-        serverHost?: string;
+        serverHost?: string | NixExpr;
         serverPort?: number;
       };
       openrgb?: {
@@ -7245,10 +7225,10 @@ declare module "winix" {
         motherboard?: "amd" | "intel" | null;
         package?: string | NixExpr;
         server?: Record<string, unknown>;
-        startupProfile?: string | null;
+        startupProfile?: string | null | NixExpr;
       };
       pommed?: {
-        configFile?: string | null;
+        configFile?: string | null | NixExpr;
         enable?: boolean;
       };
     };
@@ -7256,15 +7236,15 @@ declare module "winix" {
       cache?: {
         enable?: boolean;
         settings?: Record<string, unknown>;
-        signKeyPath?: string | null;
+        signKeyPath?: string | null | NixExpr;
         signKeyPaths?: string[] | NixExpr;
       };
       daemon?: {
-        dbPath?: string;
+        dbPath?: string | NixExpr;
         enable?: boolean;
-        logLevel?: string;
-        socketPath?: string;
-        storeDir?: string;
+        logLevel?: string | NixExpr;
+        socketPath?: string | NixExpr;
+        storeDir?: string | NixExpr;
       };
       package?: string | NixExpr;
     };
@@ -7277,11 +7257,11 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        HATSU_DATABASE_URL?: string;
-        HATSU_DOMAIN?: string;
-        HATSU_LISTEN_HOST?: string;
+        HATSU_DATABASE_URL?: string | NixExpr;
+        HATSU_DOMAIN?: string | NixExpr;
+        HATSU_LISTEN_HOST?: string | NixExpr;
         HATSU_LISTEN_PORT?: number;
-        HATSU_PRIMARY_ACCOUNT?: string;
+        HATSU_PRIMARY_ACCOUNT?: string | NixExpr;
       };
     };
     haveged: {
@@ -7291,19 +7271,19 @@ declare module "winix" {
     haven: {
       blastrRelays?: string[] | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       importRelays?: string[] | NixExpr;
       package?: string | NixExpr;
       settings?: unknown;
     };
     "hbase-standalone": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      logDir?: string;
+      group?: string | NixExpr;
+      logDir?: string | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, string | number | boolean>;
-      user?: string;
+      user?: string | NixExpr;
     };
     hdapsd: {
       enable?: boolean;
@@ -7316,13 +7296,13 @@ declare module "winix" {
       };
     };
     headphones: {
-      configFile?: string;
-      dataDir?: string;
+      configFile?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      host?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     headplane: {
       agent?: {
@@ -7339,133 +7319,133 @@ declare module "winix" {
       };
     };
     headscale: {
-      address?: string;
-      configFile?: string;
+      address?: string | NixExpr;
+      configFile?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       settings?: {
         database?: Record<string, unknown>;
         derp?: Record<string, unknown>;
         dns?: Record<string, unknown>;
-        ephemeral_node_inactivity_timeout?: string;
+        ephemeral_node_inactivity_timeout?: string | NixExpr;
         log?: Record<string, unknown>;
         noise?: Record<string, unknown>;
         oidc?: Record<string, unknown>;
         policy?: Record<string, unknown>;
         prefixes?: Record<string, unknown>;
-        server_url?: string;
-        tls_cert_path?: string | null;
-        tls_key_path?: string | null;
-        tls_letsencrypt_challenge_type?: "HTTP-01" | "TLS-ALPN-01";
-        tls_letsencrypt_hostname?: string | null;
-        tls_letsencrypt_listen?: string | null;
+        server_url?: string | NixExpr;
+        tls_cert_path?: string | null | NixExpr;
+        tls_key_path?: string | null | NixExpr;
+        tls_letsencrypt_challenge_type?: "HTTP-01" | "TLS-ALPN-01" | NixExpr;
+        tls_letsencrypt_hostname?: string | null | NixExpr;
+        tls_letsencrypt_listen?: string | null | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     healthchecks: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      listenAddress?: string;
+      group?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       settings?: {
         ALLOWED_HOSTS?: string[] | NixExpr;
-        DB?: "mysql" | "postgres" | "sqlite";
-        DB_NAME?: string;
+        DB?: "mysql" | "postgres" | "sqlite" | NixExpr;
+        DB_NAME?: string | NixExpr;
         DEBUG?: boolean;
         REGISTRATION_OPEN?: boolean;
-        SECRET_KEY_FILE?: string | null;
+        SECRET_KEY_FILE?: string | null | NixExpr;
       };
-      settingsFile?: string | null;
-      user?: string;
+      settingsFile?: string | null | NixExpr;
+      user?: string | NixExpr;
     };
     heapster: {
       enable?: boolean;
-      extraOpts?: string;
+      extraOpts?: string | NixExpr;
       package?: string | NixExpr;
-      sink?: string;
-      source?: string;
+      sink?: string | NixExpr;
+      source?: string | NixExpr;
     };
     heartbeat: {
       enable?: boolean;
-      extraConfig?: string;
-      name?: string;
+      extraConfig?: string | NixExpr;
+      name?: string | NixExpr;
       package?: string | NixExpr;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
       tags?: string[] | NixExpr;
     };
     hebbot: {
-      botPasswordFile?: string;
+      botPasswordFile?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
       templates?: {
-        project?: string;
-        report?: string;
-        section?: string;
+        project?: string | NixExpr;
+        report?: string | NixExpr;
+        section?: string | NixExpr;
       };
     };
     hedgedoc: {
       configureNginx?: boolean;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: {
         allowGravatar?: boolean;
         allowOrigin?: string[] | NixExpr;
         db?: Record<string, unknown>;
-        domain?: string | null;
-        host?: string | null;
-        path?: string | null;
+        domain?: string | null | NixExpr;
+        host?: string | null | NixExpr;
+        path?: string | null | NixExpr;
         port?: number;
         protocolUseSSL?: boolean;
-        uploadsPath?: string;
-        urlPath?: string | null;
+        uploadsPath?: string | NixExpr;
+        urlPath?: string | null | NixExpr;
         useSSL?: boolean;
       };
     };
     heisenbridge: {
-      address?: string;
+      address?: string | NixExpr;
       debug?: boolean;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      homeserver?: string;
+      homeserver?: string | NixExpr;
       identd?: {
         enable?: boolean;
         port?: number;
       };
       namespaces?: Record<string, unknown>;
-      owner?: string | null;
+      owner?: string | null | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      registrationUrl?: string;
+      registrationUrl?: string | NixExpr;
     };
     "hercules-ci-agent": {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        apiBaseUrl?: string;
-        baseDirectory?: string;
-        binaryCachesPath?: string;
-        clusterJoinTokenPath?: string;
+        apiBaseUrl?: string | NixExpr;
+        baseDirectory?: string | NixExpr;
+        binaryCachesPath?: string | NixExpr;
+        clusterJoinTokenPath?: string | NixExpr;
         concurrentTasks?: number | "auto";
         labels?: Record<string, unknown>;
-        secretsJsonPath?: string;
-        staticSecretsDirectory?: string;
-        workDirectory?: string;
+        secretsJsonPath?: string | NixExpr;
+        staticSecretsDirectory?: string | NixExpr;
+        workDirectory?: string | NixExpr;
       };
     };
     "hickory-dns": {
-      configFile?: string;
+      configFile?: string | NixExpr;
       debug?: boolean;
       enable?: boolean;
       package?: string | NixExpr;
       quiet?: boolean;
       settings?: {
-        directory?: string;
+        directory?: string | NixExpr;
         listen_addrs_ipv4?: string[] | NixExpr;
         listen_addrs_ipv6?: string[] | NixExpr;
         listen_port?: number;
@@ -7473,28 +7453,28 @@ declare module "winix" {
       };
     };
     hitch: {
-      backend?: string;
-      ciphers?: string;
+      backend?: string | NixExpr;
+      ciphers?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       frontend?: string | string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       "ocsp-stapling"?: {
         enabled?: boolean;
       };
       "pem-files"?: string[] | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     "hledger-web": {
-      allow?: "add" | "edit" | "sandstorm" | "view";
-      baseUrl?: string | null;
+      allow?: "add" | "edit" | "sandstorm" | "view" | NixExpr;
+      baseUrl?: string | null | NixExpr;
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      host?: string;
+      host?: string | NixExpr;
       journalFiles?: string[] | NixExpr;
       port?: number;
       serveApi?: boolean;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     hockeypuck: {
       enable?: boolean;
@@ -7502,26 +7482,26 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     "hologram-agent": {
-      dialAddress?: string;
+      dialAddress?: string | NixExpr;
       enable?: boolean;
-      httpPort?: string;
+      httpPort?: string | NixExpr;
     };
     "hologram-server": {
-      awsAccount?: string;
-      awsDefaultRole?: string;
+      awsAccount?: string | NixExpr;
+      awsDefaultRole?: string | NixExpr;
       cacheTimeoutSeconds?: number;
       enable?: boolean;
       enableLdapRoles?: boolean;
-      groupClassAttr?: string;
-      ldapBaseDN?: string;
-      ldapBindDN?: string;
-      ldapBindPassword?: string;
-      ldapHost?: string;
+      groupClassAttr?: string | NixExpr;
+      ldapBaseDN?: string | NixExpr;
+      ldapBindDN?: string | NixExpr;
+      ldapBindPassword?: string | NixExpr;
+      ldapHost?: string | NixExpr;
       ldapInsecure?: boolean;
-      ldapUserAttr?: string;
-      listenAddress?: string;
-      roleAttr?: string;
-      statsAddress?: string;
+      ldapUserAttr?: string | NixExpr;
+      listenAddress?: string | NixExpr;
+      roleAttr?: string | NixExpr;
+      statsAddress?: string | NixExpr;
     };
     "home-assistant": {
       blueprints?: {
@@ -7534,7 +7514,7 @@ declare module "winix" {
         http?: Record<string, unknown>;
         lovelace?: Record<string, unknown>;
       };
-      configDir?: string;
+      configDir?: string | NixExpr;
       configWritable?: boolean;
       customComponents?: unknown[] | NixExpr;
       customLovelaceModules?: (string | NixExpr)[] | NixExpr;
@@ -7544,19 +7524,19 @@ declare module "winix" {
       extraComponents?: ("3_day_blinds" | "abode" | "acaia" | "accuweather" | "acer_projector" | "acmeda" | "acomax" | "actiontec" | "actron_air" | "adax" | "adguard" | "ads" | "advantage_air" | "aemet" | "aep_ohio" | "aep_texas" | "aftership" | "agent_dvr" | "ai_task" | "air_quality" | "airgradient" | "airly" | "airnow" | "airobot" | "airos" | "airpatrol" | "airq" | "airthings" | "airthings_ble" | "airtouch4" | "airtouch5" | "airvisual" | "airvisual_pro" | "airzone" | "airzone_cloud" | "aladdin_connect" | "alarm_control_panel" | "alarmdecoder" | "alert" | "alexa" | "alexa_devices" | "alpha_vantage" | "altruist" | "amazon_polly" | "amberelectric" | "ambient_network" | "ambient_station" | "amcrest" | "amp_motorization" | "ampio" | "analytics" | "analytics_insights" | "android_ip_webcam" | "androidtv" | "androidtv_remote" | "anel_pwrctrl" | "anglian_water" | "anova" | "anthemav" | "anthropic" | "anwb_energie" | "aosmith" | "apache_kafka" | "apcupsd" | "api" | "apollo_automation" | "appalachianpower" | "apple_tv" | "application_credentials" | "apprise" | "aprilaire" | "aprs" | "apsystems" | "aquacell" | "aqualogic" | "aquostv" | "aranet" | "arcam_fmj" | "arest" | "arris_tg2492lg" | "artsound" | "aruba" | "arve" | "arwn" | "aseko_pool_live" | "assist_pipeline" | "assist_satellite" | "asuswrt" | "atag" | "aten_pe" | "atlanticcityelectric" | "atome" | "august" | "august_ble" | "aurora" | "aurora_abb_powerone" | "aussie_broadband" | "autarco" | "auth" | "automation" | "autoskope" | "avea" | "avion" | "awair" | "aws" | "aws_s3" | "axis" | "azure_data_explorer" | "azure_devops" | "azure_event_hub" | "azure_service_bus" | "azure_storage" | "backblaze_b2" | "backup" | "baf" | "baidu" | "balay" | "balboa" | "bang_olufsen" | "battery" | "bauknecht" | "bayesian" | "bbox" | "beewi_smartclim" | "bge" | "binary_sensor" | "bitcoin" | "bizkaibus" | "blackbird" | "blebox" | "blink" | "bliss_automation" | "bloc_blinds" | "blockchain" | "blue_current" | "bluemaestro" | "blueprint" | "bluesound" | "bluetooth" | "bluetooth_adapters" | "bluetooth_le_tracker" | "bmw_connected_drive" | "bond" | "bosch_alarm" | "bosch_shc" | "brands" | "brandt" | "braviatv" | "brel_home" | "bring" | "broadlink" | "brother" | "brottsplatskartan" | "browser" | "brunt" | "bryant_evolution" | "bsblan" | "bswitch" | "bt_home_hub_5" | "bt_smarthub" | "bthome" | "bticino" | "bubendorff" | "buienradar" | "burbank_water_and_power" | "button" | "caldav" | "calendar" | "cambridge_audio" | "camera" | "canary" | "casper_glow" | "cast" | "ccm15" | "cert_expiry" | "chacon_dio" | "channels" | "chess_com" | "cisco_ios" | "cisco_mobility_express" | "cisco_webex_teams" | "citybikes" | "clementine" | "clickatell" | "clicksend" | "clicksend_tts" | "climate" | "cloud" | "cloudflare" | "cloudflare_r2" | "cmus" | "co2signal" | "coautilities" | "coinbase" | "color_extractor" | "comed" | "comed_hourly_pricing" | "comelit" | "comfoconnect" | "command_line" | "compensation" | "compit" | "concord232" | "coned" | "config" | "configurator" | "constructa" | "control4" | "conversation" | "cookidoo" | "coolmaster" | "cosori" | "counter" | "cover" | "cozytouch" | "cppm_tracker" | "cpuspeed" | "cribl" | "crownstone" | "currencylayer" | "cync" | "dacia" | "daikin" | "danfoss_air" | "datadog" | "date" | "datetime" | "ddwrt" | "deako" | "debugpy" | "deconz" | "decora_wifi" | "decorquip" | "default_config" | "delijn" | "delmarva" | "deluge" | "demo" | "denon" | "denon_rs232" | "denonavr" | "derivative" | "devialet" | "device_automation" | "device_sun_light_trigger" | "device_tracker" | "devolo_home_control" | "devolo_home_network" | "dexcom" | "dhcp" | "diagnostics" | "dialogflow" | "diaz" | "digital_loggers" | "digital_ocean" | "directv" | "discogs" | "discord" | "discovergy" | "dlink" | "dlna_dmr" | "dlna_dms" | "dnsip" | "doods" | "door" | "doorbell" | "doorbird" | "dooya" | "dormakaba_dkey" | "downloader" | "dremel_3d_printer" | "drop_connect" | "dropbox" | "droplet" | "dsmr" | "dsmr_reader" | "dublin_bus_transport" | "duckdns" | "duco" | "dunehd" | "duotecno" | "duquesne_light" | "dwd_weather_warnings" | "dynalite" | "eafm" | "earn_e_p1" | "eastron" | "easyenergy" | "ebox" | "ebusd" | "ecoal_boiler" | "ecobee" | "ecoforest" | "econet" | "ecovacs" | "ecowitt" | "edimax" | "edl21" | "efergy" | "egardia" | "egauge" | "eheimdigital" | "eight_sleep" | "ekeybionyx" | "electrasmart" | "electric_kiwi" | "elevenlabs" | "elgato" | "eliqonline" | "elkm1" | "elmax" | "elv" | "elvia" | "emby" | "emoncms" | "emoncms_history" | "emonitor" | "emulated_hue" | "emulated_kasa" | "emulated_roku" | "energenie_power_sockets" | "energie_vanons" | "energy" | "energyid" | "energyzero" | "enigma2" | "enocean" | "enphase_envoy" | "entur_public_transport" | "environment_canada" | "envisalink" | "ephember" | "epic_games_store" | "epion" | "epson" | "eq3btsmart" | "escea" | "esera_onewire" | "esphome" | "essent" | "etherscan" | "eufy" | "eufylife_ble" | "eurotronic_cometblue" | "event" | "evergy" | "everlights" | "evil_genius_labs" | "evohome" | "ezviz" | "faa_delays" | "facebook" | "fail2ban" | "familyhub" | "fan" | "fastdotcom" | "feedreader" | "ffmpeg" | "ffmpeg_motion" | "ffmpeg_noise" | "fibaro" | "fido" | "file" | "file_upload" | "filesize" | "filter" | "fing" | "fints" | "fire_tv" | "firefly_iii" | "fireservicerota" | "firmata" | "fish_audio" | "fitbit" | "fivem" | "fixer" | "fjaraskupan" | "fleetgo" | "flexit" | "flexit_bacnet" | "flexom" | "flic" | "flipr" | "flo" | "flock" | "flume" | "fluss" | "flux" | "flux_led" | "folder" | "folder_watcher" | "foobot" | "forecast_solar" | "forked_daapd" | "fortios" | "foscam" | "foursquare" | "frankever" | "free_mobile" | "freebox" | "freedns" | "freedompro" | "freshr" | "fressnapf_tracker" | "fritz" | "fritzbox" | "fritzbox_callmonitor" | "fronius" | "frontend" | "frontier_silicon" | "fujitsu_anywair" | "fujitsu_fglair" | "fully_kiosk" | "fumis" | "futurenow" | "fyta" | "gaggenau" | "garadget" | "garage_door" | "garages_amsterdam" | "gardena_bluetooth" | "gate" | "gaviota" | "gc100" | "gdacs" | "generic" | "generic_hygrostat" | "generic_thermostat" | "geniushub" | "gentex_homelink" | "geo_json_events" | "geo_location" | "geo_rss_events" | "geocaching" | "geofency" | "geonetnz_quakes" | "geonetnz_volcano" | "ghost" | "gios" | "github" | "gitlab_ci" | "gitter" | "glances" | "go2rtc" | "goalzero" | "gogogate2" | "goodwe" | "google" | "google_air_quality" | "google_assistant" | "google_assistant_sdk" | "google_cloud" | "google_drive" | "google_generative_ai_conversation" | "google_mail" | "google_maps" | "google_photos" | "google_pubsub" | "google_sheets" | "google_tasks" | "google_translate" | "google_travel_time" | "google_weather" | "google_wifi" | "govee_ble" | "govee_light_local" | "gpsd" | "gpslogger" | "graphite" | "gree" | "green_planet_energy" | "greeneye_monitor" | "greenwave" | "group" | "growatt_server" | "gtfs" | "guardian" | "habitica" | "hanna" | "hardkernel" | "hardware" | "harman_kardon_avr" | "harmony" | "harvey" | "hassio" | "havana_shade" | "haveibeenpwned" | "hddtemp" | "hdfury" | "hdmi_cec" | "heatmiser" | "hegel" | "heicko" | "heiwa" | "heos" | "here_travel_time" | "hexaom" | "hi_kumo" | "hikvision" | "hikvisioncam" | "hisense_aehw4a1" | "history" | "history_stats" | "hitron_coda" | "hive" | "hko" | "hlk_sw16" | "holiday" | "home_connect" | "home_plus_control" | "homeassistant" | "homeassistant_alerts" | "homeassistant_connect_zbt2" | "homeassistant_green" | "homeassistant_hardware" | "homeassistant_sky_connect" | "homeassistant_yellow" | "homee" | "homekit" | "homekit_controller" | "homematic" | "homematicip_cloud" | "homevolt" | "homewizard" | "homeworks" | "honeywell" | "honeywell_string_lights" | "horizon" | "hp_ilo" | "hr_energy_qube" | "html5" | "http" | "huawei_lte" | "hue" | "hue_ble" | "huisbaasje" | "humidifier" | "humidity" | "hunterdouglas_powerview" | "hurrican_shutters_wholesale" | "husqvarna_automower" | "husqvarna_automower_ble" | "huum" | "hvv_departures" | "hydrawise" | "hyperion" | "hypontech" | "ialarm" | "iammeter" | "iaqualink" | "ibeacon" | "icloud" | "idasen_desk" | "idrive_e2" | "idteck_prox" | "ifttt" | "iglo" | "igloohome" | "ign_sismologia" | "ihc" | "illuminance" | "image" | "image_processing" | "image_upload" | "imap" | "imeon_inverter" | "imgw_pib" | "immich" | "improv_ble" | "incomfort" | "indevolt" | "indianamichiganpower" | "inels" | "influxdb" | "infrared" | "inkbird" | "input_boolean" | "input_button" | "input_datetime" | "input_number" | "input_select" | "input_text" | "inspired_shades" | "insteon" | "integration" | "intelliclima" | "intellifire" | "intent" | "intent_script" | "intesishome" | "iometer" | "ios" | "iotawatt" | "iotty" | "iperf3" | "ipma" | "ipp" | "iqvia" | "irish_rail_transport" | "irm_kmi" | "iron_os" | "isal" | "iskra" | "islamic_prayer_times" | "ismartwindow" | "israel_rail" | "iss" | "ista_ecotrend" | "isy994" | "itach" | "itunes" | "ituran" | "izone" | "jellyfin" | "jewish_calendar" | "joaoapps_join" | "juicenet" | "justnimbus" | "jvc_projector" | "kaiser_nienhaus" | "kaiterra" | "kaleidescape" | "kankun" | "keba" | "keenetic_ndms2" | "kef" | "kegtron" | "kentuckypower" | "keyboard_remote" | "keymitt_ble" | "kiosker" | "kira" | "kitchen_sink" | "kiwi" | "kmtronic" | "knocki" | "knx" | "kodi" | "konnected" | "konnected_esphome" | "kostal_plenticore" | "kraken" | "krispol" | "kulersky" | "kwb" | "labs" | "lacrosse" | "lacrosse_view" | "lamarzocco" | "lametric" | "landisgyr_heat_meter" | "lannouncer" | "lastfm" | "launch_library" | "laundrify" | "lawn_mower" | "lcn" | "ld2410_ble" | "leaone" | "led_ble" | "legrand" | "lektrico" | "letpot" | "levoit" | "lg_infrared" | "lg_netcast" | "lg_soundbar" | "lg_thinq" | "libre_hardware_monitor" | "lichess" | "lidarr" | "liebherr" | "life360" | "lifx" | "lifx_cloud" | "light" | "lightwave" | "limitlessled" | "linak" | "linkedgo" | "linkplay" | "linksys_smart" | "linode" | "linux_battery" | "linx" | "litejet" | "litterrobot" | "livisi" | "llamalab_automate" | "local_calendar" | "local_file" | "local_ip" | "local_todo" | "locative" | "lock" | "logbook" | "logentries" | "logger" | "lojack" | "london_air" | "london_underground" | "lookin" | "loqed" | "lovelace" | "luci" | "luftdaten" | "lunatone" | "lupusec" | "lutron" | "lutron_caseta" | "luxaflex" | "lw12wifi" | "lyric" | "madeco" | "madvr" | "mailgun" | "manual" | "manual_mqtt" | "marantz" | "martec" | "marytts" | "mastodon" | "matrix" | "matter" | "maxcube" | "maytag" | "mazda" | "mcp" | "mcp_server" | "mealie" | "meater" | "medcom_ble" | "media_extractor" | "media_player" | "media_source" | "mediaroom" | "melcloud" | "melissa" | "melnor" | "meraki" | "message_bird" | "met" | "met_eireann" | "meteo_france" | "meteo_lt" | "meteoalarm" | "meteoclimatic" | "metoffice" | "mfi" | "microbees" | "microsoft" | "microsoft_face" | "microsoft_face_detect" | "microsoft_face_identify" | "miele" | "mijndomein_energie" | "mikrotik" | "mill" | "min_max" | "minecraft_server" | "minio" | "mjpeg" | "moat" | "mobile_app" | "mochad" | "modbus" | "modem_callerid" | "modern_forms" | "moehlenhoff_alpha2" | "moisture" | "mold_indicator" | "monarch_money" | "monessen" | "monoprice" | "monzo" | "moon" | "mopeka" | "motion" | "motion_blinds" | "motionblinds_ble" | "motioneye" | "motionmount" | "mpd" | "mqtt" | "mqtt_eventstream" | "mqtt_json" | "mqtt_room" | "mqtt_statestream" | "msteams" | "mta" | "mullvad" | "music_assistant" | "mutesync" | "mvglive" | "my" | "myneomitis" | "myq" | "mysensors" | "mystrom" | "mythicbeastsdns" | "myuplink" | "nad" | "nam" | "namecheapdns" | "nanoleaf" | "nasweb" | "national_grid_us" | "neato" | "nederlandse_spoorwegen" | "neff" | "neo" | "ness_alarm" | "nest" | "netatmo" | "netdata" | "netgear" | "netgear_lte" | "netio" | "network" | "neurio_energy" | "nexia" | "nexity" | "nextbus" | "nextcloud" | "nextdns" | "nfandroidtv" | "nibe_heatpump" | "nice_go" | "nightscout" | "niko_home_control" | "nilu" | "nina" | "nintendo_parental_controls" | "nissan_leaf" | "nmap_tracker" | "nmbs" | "no_ip" | "noaa_tides" | "nobo_hub" | "nordpool" | "norway_air" | "notify" | "notify_events" | "notion" | "novy_cooker_hood" | "nrgkick" | "nsw_fuel_station" | "nsw_rural_fire_service_feed" | "ntfy" | "nuheat" | "nuki" | "numato" | "number" | "nut" | "nutrichef" | "nws" | "nx584" | "nyt_games" | "nzbget" | "oasa_telematics" | "obihai" | "occupancy" | "octoprint" | "oem" | "ogemray" | "ohmconnect" | "ohme" | "ollama" | "ombi" | "omie" | "omnilogic" | "onboarding" | "oncue" | "ondilo_ico" | "onedrive" | "onedrive_for_business" | "onewire" | "onkyo" | "onvif" | "open_meteo" | "open_router" | "openai_conversation" | "openalpr_cloud" | "opendisplay" | "openerz" | "openevse" | "openexchangerates" | "opengarage" | "openhardwaremonitor" | "openhome" | "openrgb" | "opensensemap" | "opensky" | "opentherm_gw" | "openuv" | "openweathermap" | "opnsense" | "opower" | "opple" | "oralb" | "oru" | "oru_opower" | "orvibo" | "osoenergy" | "osramlightify" | "otbr" | "otp" | "ourgroceries" | "overkiz" | "overseerr" | "ovo_energy" | "owntracks" | "p1_monitor" | "palazzetti" | "panasonic_bluray" | "panasonic_viera" | "panel_custom" | "paperless_ngx" | "pcs_lighting" | "peblar" | "peco" | "peco_opower" | "pegel_online" | "pencom" | "pepco" | "permobil" | "persistent_notification" | "person" | "pge" | "pglab" | "philips_js" | "pi_hole" | "picnic" | "picotts" | "pinecil" | "ping" | "pioneer" | "piper" | "pitsos" | "pjlink" | "plaato" | "plant" | "playstation_network" | "plex" | "plugwise" | "plum_lightpad" | "pocketcasts" | "point" | "pooldose" | "poolsense" | "portainer" | "portlandgeneral" | "power" | "powerfox" | "powerfox_local" | "powerwall" | "prana" | "private_ble_device" | "probe_plus" | "profiler" | "profilo" | "progettihwsw" | "proliphix" | "prometheus" | "prosegur" | "prowl" | "proximity" | "proxmoxve" | "proxy" | "prusalink" | "ps4" | "pse" | "psoklahoma" | "pterodactyl" | "pulseaudio_loopback" | "pure_energie" | "purpleair" | "push" | "pushbullet" | "pushover" | "pushsafer" | "pvoutput" | "pvpc_hourly_pricing" | "pyload" | "python_script" | "qbittorrent" | "qbus" | "qingping" | "qld_bushfire" | "qnap" | "qnap_qsw" | "qrcode" | "quadrafire" | "quantum_gateway" | "qvr_pro" | "qwikswitch" | "rabbitair" | "rachio" | "radarr" | "radio_browser" | "radio_frequency" | "radiotherm" | "rainbird" | "raincloud" | "rainforest_eagle" | "rainforest_raven" | "rainmachine" | "random" | "rapt_ble" | "raspberry_pi" | "raspyrfm" | "raven_rock_mfg" | "rdw" | "recollect_waste" | "recorder" | "recovery_mode" | "recswitch" | "reddit" | "redgtech" | "refoss" | "rehlko" | "rejseplanen" | "remember_the_milk" | "remote" | "remote_calendar" | "remote_rpi_gpio" | "renault" | "renson" | "reolink" | "repairs" | "repetier" | "rest" | "rest_command" | "rexel" | "rflink" | "rfxtrx" | "rhasspy" | "ridwell" | "ring" | "ripple" | "risco" | "rituals_perfume_genie" | "rmvtransport" | "roborock" | "rocketchat" | "roku" | "romy" | "roomba" | "roon" | "route53" | "route_b_smart_meter" | "rova" | "rpi_power" | "rss_feed_template" | "rtorrent" | "ruckus_unleashed" | "russound_rio" | "russound_rnet" | "ruuvi_gateway" | "ruuvitag_ble" | "rympro" | "sabnzbd" | "saj" | "samsam" | "samsungtv" | "sanix" | "satel_integra" | "saunum" | "scene" | "schedule" | "schlage" | "schluter" | "scl" | "scrape" | "screenaway" | "screenlogic" | "script" | "scsgate" | "search" | "season" | "select" | "sendgrid" | "sense" | "sensibo" | "sensirion_ble" | "sensor" | "sensorblue" | "sensorpro" | "sensorpush" | "sensorpush_cloud" | "sensoterra" | "sentry" | "senz" | "serial" | "serial_pm" | "sesame" | "seven_segments" | "seventeentrack" | "sfr_box" | "sftp_storage" | "sharkiq" | "shell_command" | "shelly" | "shodan" | "shopping_list" | "sia" | "siemens" | "sigfox" | "sighthound" | "signal_messenger" | "simplefin" | "simplepush" | "simplisafe" | "simply_automated" | "simu" | "sinch" | "siren" | "sisyphus" | "sky_hub" | "sky_remote" | "skybeacon" | "skybell" | "slack" | "sleep_as_android" | "sleepiq" | "slide" | "slide_local" | "slimproto" | "sma" | "smappee" | "smarla" | "smart_blinds" | "smart_home" | "smart_meter_texas" | "smart_rollos" | "smarther" | "smartthings" | "smarttub" | "smarty" | "smhi" | "smlight" | "smtp" | "smud" | "snapcast" | "snmp" | "snoo" | "snooz" | "solaredge" | "solaredge_local" | "solarlog" | "solarman" | "solax" | "soma" | "somfy" | "somfy_mylink" | "sonarr" | "songpal" | "sonos" | "sony_projector" | "soundtouch" | "spaceapi" | "spc" | "speedtestdotnet" | "spider" | "splunk" | "spotify" | "sql" | "squeezebox" | "srp_energy" | "ssdp" | "starline" | "starlingbank" | "starlink" | "startca" | "statistics" | "statsd" | "steam_online" | "steamist" | "stiebel_eltron" | "stookwijzer" | "stream" | "streamlabswater" | "stt" | "subaru" | "suez_water" | "sun" | "sunricher_dali" | "sunweg" | "supervisord" | "supla" | "surepetcare" | "swepco" | "swiss_hydrological_data" | "swiss_public_transport" | "swisscom" | "switch" | "switch_as_x" | "switchbee" | "switchbot" | "switchbot_cloud" | "switcher_kis" | "switchmate" | "symfonisk" | "syncthing" | "syncthru" | "synology_chat" | "synology_dsm" | "synology_srm" | "syslog" | "system_bridge" | "system_health" | "system_log" | "systemmonitor" | "systemnexa2" | "tado" | "tag" | "tailscale" | "tailwind" | "tami4" | "tank_utility" | "tankerkoenig" | "tapsaff" | "tasmota" | "tautulli" | "tcp" | "technove" | "ted5000" | "tedee" | "telegram" | "telegram_bot" | "teleinfo" | "tellduslive" | "tellstick" | "telnet" | "teltonika" | "temper" | "temperature" | "template" | "tesla_fleet" | "tesla_wall_connector" | "teslemetry" | "tessie" | "text" | "thermador" | "thermobeacon" | "thermoplus" | "thermopro" | "thethingsnetwork" | "thingspeak" | "thinkingcleaner" | "thomson" | "thread" | "threshold" | "tibber" | "tikteck" | "tile" | "tilt_ble" | "tilt_pi" | "time" | "time_date" | "timer" | "tmb" | "tod" | "todo" | "todoist" | "togrill" | "tolo" | "tomato" | "tomorrowio" | "toon" | "torque" | "totalconnect" | "touchline" | "touchline_sl" | "tplink" | "tplink_lte" | "tplink_omada" | "tplink_tapo" | "traccar" | "traccar_server" | "trace" | "tractive" | "tradfri" | "trafikverket_camera" | "trafikverket_ferry" | "trafikverket_train" | "trafikverket_weatherstation" | "trane" | "transmission" | "transport_nsw" | "travisci" | "trend" | "triggercmd" | "trmnl" | "tts" | "tuya" | "twentemilieu" | "twilio" | "twilio_call" | "twilio_sms" | "twinkly" | "twitch" | "twitter" | "ubiwizz" | "ublockout" | "ubus" | "uhoo" | "uk_transport" | "ukraine_alarm" | "ultraloq" | "unifi" | "unifi_access" | "unifi_direct" | "unifi_discovery" | "unifiled" | "unifiprotect" | "universal" | "upb" | "upc_connect" | "upcloud" | "update" | "upnp" | "uprise_smart_shades" | "uptime" | "uptime_kuma" | "uptimerobot" | "usage_prediction" | "usb" | "usgs_earthquakes_feed" | "utility_meter" | "uvc" | "v2c" | "vacuum" | "vagner_pool" | "vallox" | "valve" | "vasttrafik" | "vegehub" | "velbus" | "velux" | "venstar" | "vera" | "verisure" | "vermont_castings" | "versasense" | "version" | "vesync" | "viaggiatreno" | "vicare" | "victron_ble" | "victron_gx" | "victron_remote_monitoring" | "vilfo" | "vivotek" | "vizio" | "vlc" | "vlc_telnet" | "vodafone_station" | "voicerss" | "voip" | "volkszaehler" | "volumio" | "volvo" | "volvooncall" | "w800rf32" | "wake_on_lan" | "wake_word" | "wallbox" | "waqi" | "water_heater" | "waterfurnace" | "watergate" | "watts" | "watttime" | "waze_travel_time" | "weather" | "weatherflow" | "weatherflow_cloud" | "weatherkit" | "web_rtc" | "webdav" | "webhook" | "webmin" | "webostv" | "websocket_api" | "weheat" | "wemo" | "whirlpool" | "whisper" | "whois" | "wiffi" | "wiim" | "wilight" | "window" | "wirelesstag" | "withings" | "wiz" | "wled" | "wmspro" | "wolflink" | "workday" | "worldclock" | "worldtidesinfo" | "worxlandroid" | "ws66i" | "wsdot" | "wyoming" | "x10" | "xbox" | "xeoma" | "xiaomi" | "xiaomi_aqara" | "xiaomi_ble" | "xiaomi_miio" | "xiaomi_tv" | "xmpp" | "xs1" | "yale" | "yale_smart_alarm" | "yalexs_ble" | "yamaha" | "yamaha_musiccast" | "yandex_transport" | "yandextts" | "yardian" | "yeelight" | "yeelightsunflower" | "yi" | "yolink" | "youless" | "youtube" | "zabbix" | "zamg" | "zbox_hub" | "zengge" | "zeroconf" | "zerproc" | "zestimate" | "zeversolar" | "zha" | "zhong_hong" | "ziggo_mediabox_xl" | "zimi" | "zinvolt" | "zodiac" | "zondergas" | "zone" | "zoneminder" | "zwave_js" | "zwave_me")[] | NixExpr;
       extraPackages?: unknown;
       lovelaceConfig?: Record<string, unknown> | null;
-      lovelaceConfigFile?: string | null;
+      lovelaceConfigFile?: string | null | NixExpr;
       lovelaceConfigWritable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       themes?: unknown[] | NixExpr;
     };
     "home-assistant-matter-hub": {
-      accessTokenFile?: string;
+      accessTokenFile?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
-        homeAssistantUrl?: string;
+        homeAssistantUrl?: string | NixExpr;
         httpPort?: number;
       };
     };
@@ -7565,32 +7545,32 @@ declare module "winix" {
         createLocally?: boolean;
       };
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     homebridge: {
       enable?: boolean;
-      environmentFile?: string | null;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
       openFirewall?: boolean;
-      pluginPath?: string;
+      pluginPath?: string | NixExpr;
       settings?: {
         accessories?: Record<string, unknown>;
         bridge?: Record<string, unknown>;
-        description?: string;
+        description?: string | NixExpr;
         platforms?: Record<string, unknown>;
       };
       uiSettings?: {
         log?: Record<string, unknown>;
-        name?: string;
-        platform?: string;
+        name?: string | NixExpr;
+        platform?: string | NixExpr;
         port?: number;
-        restart?: string;
+        restart?: string | NixExpr;
       };
-      user?: string;
-      userStoragePath?: string;
+      user?: string | NixExpr;
+      userStoragePath?: string | NixExpr;
     };
     homed: {
       enable?: boolean;
@@ -7600,10 +7580,10 @@ declare module "winix" {
       };
     };
     "homepage-dashboard": {
-      allowedHosts?: string;
+      allowedHosts?: string | NixExpr;
       bookmarks?: Record<string, unknown>;
-      customCSS?: string;
-      customJS?: string;
+      customCSS?: string | NixExpr;
+      customJS?: string | NixExpr;
       docker?: Record<string, unknown>;
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
@@ -7622,27 +7602,27 @@ declare module "winix" {
       settings?: Record<string, unknown>;
       virtualHost?: {
         caddy?: Record<string, unknown>;
-        domain?: string;
+        domain?: string | NixExpr;
         nginx?: Record<string, unknown>;
       };
     };
     honk: {
       enable?: boolean;
-      extraCSS?: string | null;
-      extraJS?: string | null;
-      host?: string;
+      extraCSS?: string | null | NixExpr;
+      extraJS?: string | null | NixExpr;
+      host?: string | NixExpr;
       package?: string | NixExpr;
-      passwordFile?: string;
+      passwordFile?: string | NixExpr;
       port?: number;
-      servername?: string;
-      username?: string;
+      servername?: string | NixExpr;
+      username?: string | NixExpr;
     };
     hoogle: {
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
       haskellPackages?: Record<string, unknown>;
-      home?: string;
-      host?: string;
+      home?: string | NixExpr;
+      host?: string | NixExpr;
       packages?: unknown;
       port?: number;
     };
@@ -7655,103 +7635,103 @@ declare module "winix" {
     };
     hound: {
       enable?: boolean;
-      group?: string;
-      home?: string;
-      listen?: string;
+      group?: string | NixExpr;
+      home?: string | NixExpr;
+      listen?: string | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     howdy: {
-      control?: string;
+      control?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, Record<string, unknown>>;
     };
     hqplayerd: {
       auth?: {
-        password?: string | null;
-        username?: string | null;
+        password?: string | null | NixExpr;
+        username?: string | null | NixExpr;
       };
-      config?: string | null;
+      config?: string | null | NixExpr;
       enable?: boolean;
-      licenseFile?: string | null;
+      licenseFile?: string | null | NixExpr;
       openFirewall?: boolean;
     };
     htpdate: {
       enable?: boolean;
-      extraOptions?: string;
-      proxy?: string;
+      extraOptions?: string | NixExpr;
+      proxy?: string | NixExpr;
       servers?: string[] | NixExpr;
     };
     httpd: {
-      adminAddr?: string | null;
-      configFile?: string;
-      customLogFormat?: string;
+      adminAddr?: string | null | NixExpr;
+      configFile?: string | NixExpr;
+      customLogFormat?: string | NixExpr;
       enable?: boolean;
       enableMellon?: boolean;
       enablePerl?: boolean;
       enablePHP?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraModules?: unknown[] | NixExpr;
-      group?: string;
-      logDir?: string;
-      logFormat?: "agent" | "combined" | "common" | "custom" | "none" | "referer";
+      group?: string | NixExpr;
+      logDir?: string | NixExpr;
+      logFormat?: "agent" | "combined" | "common" | "custom" | "none" | "referer" | NixExpr;
       logLevel?: "alert" | "crit" | "debug" | "emerg" | "error" | "info" | "notice" | "trace1" | "trace2" | "trace3" | "trace4" | "trace5" | "trace6" | "trace7" | "trace8" | "warn" | null;
       logPerVirtualHost?: boolean;
       maxClients?: number;
       maxRequestsPerChild?: number;
-      mpm?: "event" | "prefork" | "worker";
+      mpm?: "event" | "prefork" | "worker" | NixExpr;
       package?: string | NixExpr;
-      phpOptions?: string;
+      phpOptions?: string | NixExpr;
       phpPackage?: string | NixExpr;
-      sslCiphers?: string;
-      sslProtocols?: string;
-      user?: string;
+      sslCiphers?: string | NixExpr;
+      sslProtocols?: string | NixExpr;
+      user?: string | NixExpr;
       virtualHosts?: {
         "<name>"?: Record<string, unknown>;
       };
     };
     "https-dns-proxy": {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       port?: number;
       preferIPv4?: boolean;
       provider?: {
         ips?: string[] | NixExpr;
-        kind?: "cloudflare" | "custom" | "google" | "opendns" | "quad9";
-        url?: string;
+        kind?: "cloudflare" | "custom" | "google" | "opendns" | "quad9" | NixExpr;
+        url?: string | NixExpr;
       };
     };
     hydra: {
       buildMachinesFiles?: string[] | NixExpr;
-      dbi?: string;
+      dbi?: string | NixExpr;
       debugServer?: boolean;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraEnv?: Record<string, string>;
-      gcRootsDir?: string;
-      hydraURL?: string;
-      listenHost?: string;
-      logo?: string | null;
+      gcRootsDir?: string | NixExpr;
+      hydraURL?: string | NixExpr;
+      listenHost?: string | NixExpr;
+      logo?: string | null | NixExpr;
       maxServers?: number;
       maxSpareServers?: number;
       minimumDiskFree?: number;
       minimumDiskFreeEvaluator?: number;
       minSpareServers?: number;
-      notificationSender?: string;
+      notificationSender?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      smtpHost?: string | null;
-      tracker?: string;
+      smtpHost?: string | null | NixExpr;
+      tracker?: string | NixExpr;
       useSubstitutes?: boolean;
     };
     hylafax: {
-      areaCode?: string | null;
+      areaCode?: string | null | NixExpr;
       autostart?: boolean;
       commonModemConfig?: Record<string, unknown>;
-      countryCode?: string | null;
+      countryCode?: string | null | NixExpr;
       enable?: boolean;
       faxcron?: {
         enable?: Record<string, unknown>;
@@ -7760,23 +7740,23 @@ declare module "winix" {
         rcvDays?: number;
       };
       faxqclean?: {
-        archiving?: "always" | "as-flagged" | "never";
+        archiving?: "always" | "as-flagged" | "never" | NixExpr;
         docqMinutes?: number;
         doneqMinutes?: number;
         enable?: Record<string, unknown>;
       };
       faxqConfig?: Record<string, unknown>;
       hfaxdConfig?: Record<string, unknown>;
-      internationalPrefix?: string | null;
-      longDistancePrefix?: string | null;
+      internationalPrefix?: string | null | NixExpr;
+      longDistancePrefix?: string | null | NixExpr;
       modems?: {
         "<name>"?: Record<string, unknown>;
       };
       package?: string | NixExpr;
-      sendmailPath?: string;
-      spoolAreaPath?: string;
-      spoolExtraInit?: string;
-      userAccessFile?: string;
+      sendmailPath?: string | NixExpr;
+      spoolAreaPath?: string | NixExpr;
+      spoolExtraInit?: string | NixExpr;
+      userAccessFile?: string | NixExpr;
     };
     hypridle: {
       enable?: boolean;
@@ -7784,20 +7764,20 @@ declare module "winix" {
     };
     "hyprwhspr-rs": {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
     };
     i2p: {
       enable?: boolean;
     };
     i2pd: {
-      address?: string | null;
+      address?: string | null | NixExpr;
       addressbook?: {
-        defaulturl?: string;
+        defaulturl?: string | NixExpr;
         subscriptions?: string[] | NixExpr;
       };
       bandwidth?: number | null;
-      dataDir?: string | null;
+      dataDir?: string | null | NixExpr;
       enable?: boolean;
       enableIPv4?: boolean;
       enableIPv6?: boolean;
@@ -7805,11 +7785,11 @@ declare module "winix" {
         inbound?: Record<string, unknown>;
         outbound?: Record<string, unknown>;
       };
-      family?: string | null;
+      family?: string | null | NixExpr;
       floodfill?: boolean;
-      ifname?: string | null;
-      ifname4?: string | null;
-      ifname6?: string | null;
+      ifname?: string | null | NixExpr;
+      ifname4?: string | null | NixExpr;
+      ifname6?: string | null | NixExpr;
       inTunnels?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -7822,7 +7802,7 @@ declare module "winix" {
         transittunnels?: number;
       };
       logCLFTime?: boolean;
-      logLevel?: "debug" | "error" | "info" | "warn";
+      logLevel?: "debug" | "error" | "info" | "warn" | NixExpr;
       nat?: boolean;
       netid?: number;
       notransit?: boolean;
@@ -7832,7 +7812,7 @@ declare module "winix" {
         port?: number;
         published?: boolean;
       };
-      ntcpProxy?: string | null;
+      ntcpProxy?: string | null | NixExpr;
       outTunnels?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -7851,12 +7831,12 @@ declare module "winix" {
         socksProxy?: Record<string, unknown>;
       };
       reseed?: {
-        file?: string | null;
-        floodfill?: string | null;
-        proxy?: string | null;
+        file?: string | null | NixExpr;
+        floodfill?: string | null | NixExpr;
+        proxy?: string | null | NixExpr;
         urls?: string[] | NixExpr;
         verify?: boolean;
-        zipfile?: string | null;
+        zipfile?: string | null | NixExpr;
       };
       share?: number;
       ssu?: boolean;
@@ -7867,35 +7847,35 @@ declare module "winix" {
       };
       trust?: {
         enable?: boolean;
-        family?: string | null;
+        family?: string | null | NixExpr;
         hidden?: boolean;
         routers?: string[] | NixExpr;
       };
       upnp?: {
         enable?: boolean;
-        name?: string;
+        name?: string | NixExpr;
       };
       websocket?: {
-        address?: string;
+        address?: string | NixExpr;
         enable?: boolean;
-        name?: string;
+        name?: string | NixExpr;
         port?: number;
       };
       yggdrasil?: {
-        address?: string | null;
+        address?: string | null | NixExpr;
         enable?: boolean;
       };
     };
     icecast: {
       admin?: {
-        password?: string;
-        user?: string;
+        password?: string | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
-      extraConfig?: string;
-      hostname?: string | null;
+      extraConfig?: string | NixExpr;
+      hostname?: string | null | NixExpr;
       listen?: {
-        address?: string;
+        address?: string | NixExpr;
         port?: number;
       };
     };
@@ -7904,21 +7884,21 @@ declare module "winix" {
         cacheLimit?: number;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
-        hostname?: string | null;
+        hostname?: string | null | NixExpr;
         maxProcesses?: number | null;
-        netName?: string;
+        netName?: string | NixExpr;
         nice?: number;
         noRemote?: boolean;
         openBroadcast?: boolean;
         openFirewall?: boolean;
         package?: string | NixExpr;
-        schedulerHost?: string | null;
-        user?: string;
+        schedulerHost?: string | null | NixExpr;
+        user?: string | NixExpr;
       };
       scheduler?: {
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
-        netName?: string | null;
+        netName?: string | null | NixExpr;
         openFirewall?: boolean;
         openTelnet?: boolean;
         package?: string | NixExpr;
@@ -7941,16 +7921,16 @@ declare module "winix" {
         test?: Record<string, unknown>;
         translation?: Record<string, unknown>;
       };
-      pool?: string;
+      pool?: string | NixExpr;
       resources?: Record<string, unknown> | null;
       roles?: Record<string, unknown> | null;
-      timezone?: string;
-      virtualHost?: string | null;
+      timezone?: string | NixExpr;
+      virtualHost?: string | null | NixExpr;
     };
     ifm: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       port?: number;
       settings?: Record<string, unknown>;
     };
@@ -7961,14 +7941,14 @@ declare module "winix" {
     "iio-niri": {
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      niriUnit?: string;
+      niriUnit?: string | NixExpr;
       package?: string | NixExpr;
     };
     illum: {
       enable?: boolean;
     };
     imaginary: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       port?: number;
       settings?: {
@@ -7980,47 +7960,47 @@ declare module "winix" {
       database?: {
         createDB?: boolean;
         enable?: boolean;
-        host?: string;
-        name?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
         port?: number;
-        user?: string;
+        user?: string | NixExpr;
       };
       enable?: boolean;
       environment?: Record<string, unknown>;
-      group?: string;
-      host?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       "machine-learning"?: {
         enable?: boolean;
         environment?: Record<string, unknown>;
       };
-      mediaLocation?: string;
+      mediaLocation?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       redis?: {
         enable?: boolean;
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
-      secretsFile?: string | null;
+      secretsFile?: string | null | NixExpr;
       settings?: {
         newVersionCheck?: Record<string, unknown>;
         server?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "immich-kiosk": {
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
-        immich_url?: string;
+        immich_url?: string | NixExpr;
         kiosk?: Record<string, unknown>;
       };
     };
     "immich-public-proxy": {
       enable?: boolean;
-      immichUrl?: string;
+      immichUrl?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -8035,48 +8015,48 @@ declare module "winix" {
       };
     };
     inadyn: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
-      group?: string;
-      interval?: string;
-      logLevel?: "debug" | "err" | "info" | "none" | "notice" | "warning";
+      group?: string | NixExpr;
+      interval?: string | NixExpr;
+      logLevel?: "debug" | "err" | "info" | "none" | "notice" | "warning" | NixExpr;
       settings?: {
         "allow-ipv6"?: boolean;
         custom?: Record<string, unknown>;
         "forced-update"?: number;
         provider?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     incron: {
       allow?: string[] | null;
       deny?: string[] | null;
       enable?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
-      systab?: string;
+      systab?: string | NixExpr;
     };
     infinoted: {
-      certificateChain?: string | null;
-      certificateFile?: string | null;
+      certificateChain?: string | null | NixExpr;
+      certificateFile?: string | null | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      group?: string;
-      keyFile?: string | null;
+      extraConfig?: string | NixExpr;
+      group?: string | NixExpr;
+      keyFile?: string | null | NixExpr;
       package?: string | NixExpr;
-      passwordFile?: string | null;
+      passwordFile?: string | null | NixExpr;
       plugins?: string[] | NixExpr;
       port?: number;
-      rootDirectory?: string;
-      securityPolicy?: "allow-tls" | "no-tls" | "require-tls";
-      user?: string;
+      rootDirectory?: string | NixExpr;
+      securityPolicy?: "allow-tls" | "no-tls" | "require-tls" | NixExpr;
+      user?: string | NixExpr;
     };
     influxdb: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     influxdb2: {
       enable?: boolean;
@@ -8104,30 +8084,30 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     inspircd: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
     "interception-tools": {
       enable?: boolean;
       plugins?: (string | NixExpr)[] | NixExpr;
-      udevmonConfig?: string;
+      udevmonConfig?: string | NixExpr;
     };
     intune: {
       enable?: boolean;
     };
     invidious: {
-      address?: string;
+      address?: string | NixExpr;
       database?: {
         createLocally?: boolean;
-        host?: string | null;
-        passwordFile?: string | null;
+        host?: string | null | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
       };
-      domain?: string | null;
+      domain?: string | null | NixExpr;
       enable?: boolean;
-      extraSettingsFile?: string | null;
-      hmacKeyFile?: string | null;
+      extraSettingsFile?: string | null | NixExpr;
+      hmacKeyFile?: string | null | NixExpr;
       "http3-ytproxy"?: {
         enable?: boolean;
         package?: string | NixExpr;
@@ -8141,15 +8121,15 @@ declare module "winix" {
       settings?: Record<string, unknown>;
       "sig-helper"?: {
         enable?: boolean;
-        listenAddress?: string;
+        listenAddress?: string | NixExpr;
         package?: string | NixExpr;
       };
     };
     "invidious-router": {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       nginx?: {
-        domain?: string;
+        domain?: string | NixExpr;
         enable?: boolean;
         extraDomains?: string[] | NixExpr;
       };
@@ -8161,24 +8141,24 @@ declare module "winix" {
       sites?: {
         "<name>"?: Record<string, unknown>;
       };
-      webserver?: "caddy" | "nginx";
+      webserver?: "caddy" | "nginx" | NixExpr;
     };
     iodine: {
       clients?: {
         "<name>"?: Record<string, unknown>;
       };
       server?: {
-        domain?: string;
+        domain?: string | NixExpr;
         enable?: boolean;
-        extraConfig?: string;
-        ip?: string;
-        passwordFile?: string;
+        extraConfig?: string | NixExpr;
+        ip?: string | NixExpr;
+        passwordFile?: string | NixExpr;
       };
     };
     iperf3: {
       affinity?: number | null;
-      authorizedUsersFile?: string | null;
-      bind?: string | null;
+      authorizedUsersFile?: string | null | NixExpr;
+      bind?: string | null | NixExpr;
       debug?: boolean;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
@@ -8186,16 +8166,16 @@ declare module "winix" {
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      rsaPrivateKey?: string | null;
+      rsaPrivateKey?: string | null | NixExpr;
       verbose?: boolean;
     };
     "ipfs-cluster": {
-      consensus?: "crdt" | "raft";
-      dataDir?: string;
+      consensus?: "crdt" | "raft" | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       initPeers?: string[] | NixExpr;
       openSwarmPort?: boolean;
-      secretFile?: string | null;
+      secretFile?: string | null | NixExpr;
     };
     "ipp-usb": {
       enable?: boolean;
@@ -8208,20 +8188,20 @@ declare module "winix" {
       enable?: boolean;
     };
     ircdHybrid: {
-      adminEmail?: string;
-      certificate?: string | null;
-      description?: string;
+      adminEmail?: string | NixExpr;
+      certificate?: string | null | NixExpr;
+      description?: string | NixExpr;
       enable?: boolean;
       extraIPs?: string[] | NixExpr;
-      extraPort?: string;
-      rsaKey?: string | null;
-      serverName?: string;
-      sid?: string;
+      extraPort?: string | NixExpr;
+      rsaKey?: string | null | NixExpr;
+      serverName?: string | NixExpr;
+      sid?: string | NixExpr;
     };
     irkerd: {
       enable?: boolean;
-      listenAddress?: string;
-      nick?: string;
+      listenAddress?: string | NixExpr;
+      nick?: string | NixExpr;
       openPorts?: boolean;
     };
     irqbalance: {
@@ -8243,48 +8223,48 @@ declare module "winix" {
       jackd?: {
         enable?: boolean;
         extraOptions?: string[] | NixExpr;
-        session?: string;
+        session?: string | NixExpr;
       };
       loopback?: {
-        config?: string;
-        dmixConfig?: string;
+        config?: string | NixExpr;
+        dmixConfig?: string | NixExpr;
         enable?: boolean;
         index?: number;
-        session?: string;
+        session?: string | NixExpr;
       };
     };
     jackett: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     jboss: {
-      deployDir?: string;
+      deployDir?: string | NixExpr;
       enable?: boolean;
-      libUrl?: string;
-      logDir?: string;
-      serverDir?: string;
-      tempDir?: string;
+      libUrl?: string | NixExpr;
+      logDir?: string | NixExpr;
+      serverDir?: string | NixExpr;
+      tempDir?: string | NixExpr;
       useJK?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     jellyfin: {
-      cacheDir?: string;
-      configDir?: string;
-      dataDir?: string;
+      cacheDir?: string | NixExpr;
+      configDir?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       forceEncodingConfig?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       hardwareAcceleration?: {
-        device?: string | null;
+        device?: string | null | NixExpr;
         enable?: boolean;
-        type?: "amf" | "none" | "nvenc" | "qsv" | "rkmpp" | "v4l2m2m" | "vaapi";
+        type?: "amf" | "none" | "nvenc" | "qsv" | "rkmpp" | "v4l2m2m" | "vaapi" | NixExpr;
       };
-      logDir?: string;
+      logDir?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       transcoding?: {
@@ -8293,7 +8273,7 @@ declare module "winix" {
         enableIntelLowPowerEncoding?: boolean;
         enableSubtitleExtraction?: boolean;
         enableToneMapping?: boolean;
-        encodingPreset?: "auto" | "fast" | "faster" | "medium" | "slow" | "slower" | "superfast" | "ultrafast" | "veryfast" | "veryslow";
+        encodingPreset?: "auto" | "fast" | "faster" | "medium" | "slow" | "slower" | "superfast" | "ultrafast" | "veryfast" | "veryslow" | NixExpr;
         h264Crf?: number;
         h265Crf?: number;
         hardwareDecodingCodecs?: Record<string, unknown>;
@@ -8302,7 +8282,7 @@ declare module "winix" {
         threadCount?: number | null;
         throttleTranscoding?: boolean;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     jenkins: {
       enable?: boolean;
@@ -8310,86 +8290,86 @@ declare module "winix" {
       extraGroups?: string[] | NixExpr;
       extraJavaOptions?: string[] | NixExpr;
       extraOptions?: string[] | NixExpr;
-      group?: string;
-      home?: string;
+      group?: string | NixExpr;
+      home?: string | NixExpr;
       javaPackage?: string | NixExpr;
       jobBuilder?: {
-        accessToken?: string;
-        accessTokenFile?: string;
-        accessUser?: string;
+        accessToken?: string | NixExpr;
+        accessTokenFile?: string | NixExpr;
+        accessUser?: string | NixExpr;
         enable?: boolean;
         jsonJobs?: string[] | NixExpr;
         nixJobs?: Record<string, unknown>[] | NixExpr;
-        yamlJobs?: string;
+        yamlJobs?: string | NixExpr;
       };
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       packages?: (string | NixExpr)[] | NixExpr;
       plugins?: Record<string, string | NixExpr> | null;
       port?: number;
-      prefix?: string;
-      user?: string;
+      prefix?: string | NixExpr;
+      user?: string | NixExpr;
       withCLI?: boolean;
     };
     jenkinsSlave: {
       enable?: boolean;
-      group?: string;
-      home?: string;
+      group?: string | NixExpr;
+      home?: string | NixExpr;
       javaPackage?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     jibri: {
       config?: Record<string, unknown>;
       enable?: boolean;
-      finalizeScript?: string;
+      finalizeScript?: string | NixExpr;
       ignoreCert?: boolean;
       xmppEnvironments?: {
         "<name>"?: Record<string, unknown>;
       };
     };
     jicofo: {
-      bridgeMuc?: string;
-      componentPasswordFile?: string;
+      bridgeMuc?: string | NixExpr;
+      componentPasswordFile?: string | NixExpr;
       config?: Record<string, unknown>;
       enable?: boolean;
-      userDomain?: string;
-      userName?: string;
-      userPasswordFile?: string;
-      xmppDomain?: string | null;
-      xmppHost?: string;
+      userDomain?: string | NixExpr;
+      userName?: string | NixExpr;
+      userPasswordFile?: string | NixExpr;
+      xmppDomain?: string | null | NixExpr;
+      xmppHost?: string | NixExpr;
     };
     jigasi: {
-      bridgeMuc?: string;
-      componentPasswordFile?: string;
+      bridgeMuc?: string | NixExpr;
+      componentPasswordFile?: string | NixExpr;
       config?: Record<string, string>;
-      defaultJvbRoomName?: string;
+      defaultJvbRoomName?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
-      userDomain?: string;
-      userName?: string;
-      userPasswordFile?: string;
-      xmppDomain?: string | null;
-      xmppHost?: string;
+      environmentFile?: string | null | NixExpr;
+      userDomain?: string | NixExpr;
+      userName?: string | NixExpr;
+      userPasswordFile?: string | NixExpr;
+      xmppDomain?: string | null | NixExpr;
+      xmppHost?: string | NixExpr;
     };
     jirafeau: {
-      adminPasswordSha256?: string;
-      dataDir?: string;
+      adminPasswordSha256?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      hostName?: string;
+      extraConfig?: string | NixExpr;
+      hostName?: string | NixExpr;
       maxUploadSizeMegabytes?: number;
-      maxUploadTimeout?: string;
+      maxUploadTimeout?: string | NixExpr;
       nginxConfig?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -8402,13 +8382,13 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
@@ -8423,8 +8403,8 @@ declare module "winix" {
         enable?: boolean;
         port?: number;
       };
-      extraConfig?: string;
-      hostName?: string;
+      extraConfig?: string | NixExpr;
+      hostName?: string | NixExpr;
       interfaceConfig?: Record<string, unknown>;
       jibri?: {
         enable?: boolean;
@@ -8444,12 +8424,12 @@ declare module "winix" {
         lockdown?: boolean;
       };
       secureDomain?: {
-        authentication?: string;
+        authentication?: string | NixExpr;
         enable?: boolean;
       };
       videobridge?: {
         enable?: boolean;
-        passwordFile?: string | null;
+        passwordFile?: string | null | NixExpr;
       };
     };
     "jitsi-videobridge": {
@@ -8459,8 +8439,8 @@ declare module "winix" {
       extraProperties?: Record<string, string>;
       nat?: {
         harvesterAddresses?: string[] | NixExpr;
-        localAddress?: string | null;
-        publicAddress?: string | null;
+        localAddress?: string | null | NixExpr;
+        publicAddress?: string | null | NixExpr;
       };
       openFirewall?: boolean;
       xmppConfigs?: {
@@ -8478,7 +8458,7 @@ declare module "winix" {
     jmusicbot: {
       enable?: boolean;
       package?: string | NixExpr;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     "jotta-cli": {
       enable?: boolean;
@@ -8487,61 +8467,59 @@ declare module "winix" {
     };
     journalbeat: {
       enable?: boolean;
-      extraConfig?: string;
-      name?: string;
+      extraConfig?: string | NixExpr;
+      name?: string | NixExpr;
       package?: string | NixExpr;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
       tags?: string[] | NixExpr;
     };
     journald: {
       audit?: boolean | "keep";
-      console?: string;
-      extraConfig?: string;
+      console?: string | NixExpr;
+      extraConfig?: string | NixExpr;
       forwardToSyslog?: boolean;
       gateway?: {
-        cert?: string | null;
+        cert?: string | null | NixExpr;
         enable?: boolean;
-        key?: string | null;
+        key?: string | null | NixExpr;
         merge?: boolean;
         port?: number;
         system?: boolean;
-        trust?: string | null;
+        trust?: string | null | NixExpr;
         user?: boolean;
       };
       rateLimitBurst?: number;
-      rateLimitInterval?: string;
+      rateLimitInterval?: string | NixExpr;
       remote?: {
         enable?: boolean;
-        listen?: "http" | "https";
-        output?: string;
+        listen?: "http" | "https" | NixExpr;
+        output?: string | NixExpr;
         port?: number;
         settings?: Record<string, unknown>;
       };
-      storage?: "auto" | "none" | "persistent" | "volatile";
+      storage?: "auto" | "none" | "persistent" | "volatile" | NixExpr;
       upload?: {
         enable?: boolean;
         settings?: Record<string, unknown>;
       };
     };
     journaldriver: {
-      applicationCredentials?: string | null;
+      applicationCredentials?: string | null | NixExpr;
       enable?: boolean;
-      googleCloudProject?: string | null;
-      logLevel?: string;
-      logName?: string | null;
-      logStream?: string | null;
+      googleCloudProject?: string | null | NixExpr;
+      logLevel?: string | NixExpr;
+      logName?: string | null | NixExpr;
+      logStream?: string | null | NixExpr;
     };
     journalwatch: {
-      accuracy?: string;
+      accuracy?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      filterBlocks?: {
-        "*"?: Record<string, unknown>;
-      };
-      interval?: string;
-      mailBinary?: string;
-      mailFrom?: string;
-      mailTo?: string | null;
+      extraConfig?: string | NixExpr;
+      filterBlocks?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      interval?: string | NixExpr;
+      mailBinary?: string | NixExpr;
+      mailFrom?: string | NixExpr;
+      mailTo?: string | null | NixExpr;
       package?: string | NixExpr;
       priority?: number;
     };
@@ -8550,73 +8528,73 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     jupyter: {
-      command?: string;
+      command?: string | NixExpr;
       enable?: boolean;
       extraEnvironmentVariables?: Record<string, unknown | null>;
       extraPackages?: (string | NixExpr)[] | NixExpr;
-      group?: string;
-      ip?: string;
+      group?: string | NixExpr;
+      ip?: string | NixExpr;
       kernels?: {
         "<name>"?: Record<string, unknown>;
       };
-      notebookConfig?: string;
-      notebookDir?: string;
+      notebookConfig?: string | NixExpr;
+      notebookDir?: string | NixExpr;
       package?: string | NixExpr;
-      password?: string;
+      password?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     jupyterhub: {
-      authentication?: string;
+      authentication?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      host?: string;
+      extraConfig?: string | NixExpr;
+      host?: string | NixExpr;
       jupyterhubEnv?: string | NixExpr;
       jupyterlabEnv?: string | NixExpr;
       kernels?: {
         "<name>"?: Record<string, unknown>;
       };
       port?: number;
-      spawner?: string;
-      stateDirectory?: string;
+      spawner?: string | NixExpr;
+      stateDirectory?: string | NixExpr;
     };
     k3s: {
-      agentToken?: string;
-      agentTokenFile?: string | null;
+      agentToken?: string | NixExpr;
+      agentTokenFile?: string | null | NixExpr;
       autoDeployCharts?: {
         "<name>"?: Record<string, unknown>;
       };
       charts?: Record<string, string | string | NixExpr>;
       clusterInit?: boolean;
-      configPath?: string | null;
-      containerdConfigTemplate?: string | null;
+      configPath?: string | null | NixExpr;
+      containerdConfigTemplate?: string | null | NixExpr;
       disable?: string[] | NixExpr;
       disableAgent?: boolean;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraFlags?: string | string[] | NixExpr;
       extraKubeletConfig?: Record<string, unknown>;
       extraKubeProxyConfig?: Record<string, unknown>;
       gracefulNodeShutdown?: {
         enable?: boolean;
-        shutdownGracePeriod?: string;
-        shutdownGracePeriodCriticalPods?: string;
+        shutdownGracePeriod?: string | NixExpr;
+        shutdownGracePeriodCriticalPods?: string | NixExpr;
       };
       images?: (string | NixExpr)[] | NixExpr;
       manifests?: {
         "<name>"?: Record<string, unknown>;
       };
-      nodeExternalIP?: string | null;
-      nodeIP?: string | null;
+      nodeExternalIP?: string | null | NixExpr;
+      nodeIP?: string | null | NixExpr;
       nodeLabel?: string[] | NixExpr;
-      nodeName?: string | null;
+      nodeName?: string | null | NixExpr;
       nodeTaint?: string[] | NixExpr;
       package?: string | NixExpr;
-      role?: "agent" | "server";
+      role?: "agent" | "server" | NixExpr;
       selinux?: boolean;
-      serverAddr?: string;
-      token?: string;
-      tokenFile?: string | null;
+      serverAddr?: string | NixExpr;
+      token?: string | NixExpr;
+      tokenFile?: string | null | NixExpr;
     };
     kanata: {
       enable?: boolean;
@@ -8626,21 +8604,21 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     kanboard: {
-      dataDir?: string;
-      domain?: string;
+      dataDir?: string | NixExpr;
+      domain?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -8653,20 +8631,20 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       phpfpm?: {
-        settings?: Record<string, number | string | boolean>;
+        settings?: Record<string, number | string | boolean> | NixExpr;
       };
       settings?: Record<string, string | number | boolean>;
-      user?: string;
+      user?: string | NixExpr;
     };
     kanidm: {
       client?: {
@@ -8676,13 +8654,13 @@ declare module "winix" {
       package?: string | NixExpr;
       provision?: {
         acceptInvalidCerts?: boolean;
-        adminPasswordFile?: string | null;
+        adminPasswordFile?: string | null | NixExpr;
         autoRemove?: boolean;
         enable?: boolean;
-        extraJsonFile?: string | null;
+        extraJsonFile?: string | null | NixExpr;
         groups?: Record<string, unknown>;
-        idmAdminPasswordFile?: string | null;
-        instanceUrl?: string;
+        idmAdminPasswordFile?: string | null | NixExpr;
+        instanceUrl?: string | NixExpr;
         persons?: Record<string, unknown>;
         systems?: Record<string, unknown>;
       };
@@ -8699,35 +8677,35 @@ declare module "winix" {
     kapacitor: {
       alerta?: {
         enable?: boolean;
-        environment?: string;
-        origin?: string;
-        token?: string;
-        url?: string;
+        environment?: string | NixExpr;
+        origin?: string | NixExpr;
+        token?: string | NixExpr;
+        url?: string | NixExpr;
       };
-      bind?: string;
-      dataDir?: string;
+      bind?: string | NixExpr;
+      dataDir?: string | NixExpr;
       defaultDatabase?: {
         enable?: boolean;
-        password?: string;
-        url?: string;
-        username?: string;
+        password?: string | NixExpr;
+        url?: string | NixExpr;
+        username?: string | NixExpr;
       };
       enable?: boolean;
-      extraConfig?: string;
-      group?: string;
-      loadDirectory?: string | null;
+      extraConfig?: string | NixExpr;
+      group?: string | NixExpr;
+      loadDirectory?: string | null | NixExpr;
       port?: number;
-      taskSnapshotInterval?: string;
-      user?: string;
+      taskSnapshotInterval?: string | NixExpr;
+      user?: string | NixExpr;
     };
     karakeep: {
       browser?: {
         enable?: boolean;
-        exe?: string;
+        exe?: string | NixExpr;
         port?: number;
       };
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraEnvironment?: Record<string, string>;
       meilisearch?: {
         enable?: boolean;
@@ -8736,7 +8714,7 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     karma: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       environment?: Record<string, string>;
       extraOptions?: string[] | NixExpr;
@@ -8747,62 +8725,62 @@ declare module "winix" {
       };
     };
     kasmweb: {
-      datastorePath?: string;
-      defaultAdminPassword?: string;
-      defaultGuacToken?: string;
-      defaultManagerToken?: string;
-      defaultRegistrationToken?: string;
-      defaultUserPassword?: string;
+      datastorePath?: string | NixExpr;
+      defaultAdminPassword?: string | NixExpr;
+      defaultGuacToken?: string | NixExpr;
+      defaultManagerToken?: string | NixExpr;
+      defaultRegistrationToken?: string | NixExpr;
+      defaultUserPassword?: string | NixExpr;
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       listenPort?: number;
-      networkSubnet?: string;
+      networkSubnet?: string | NixExpr;
       postgres?: {
-        password?: string;
-        user?: string;
+        password?: string | NixExpr;
+        user?: string | NixExpr;
       };
-      redisPassword?: string;
-      sslCertificate?: string | null;
-      sslCertificateKey?: string | null;
+      redisPassword?: string | NixExpr;
+      sslCertificate?: string | null | NixExpr;
+      sslCertificateKey?: string | null | NixExpr;
     };
     kavita: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        IpAddresses?: string;
+        IpAddresses?: string | NixExpr;
         Port?: number;
       };
-      tokenKeyFile?: string;
-      user?: string;
+      tokenKeyFile?: string | NixExpr;
+      user?: string | NixExpr;
     };
     kbfs: {
       enable?: boolean;
       enableRedirector?: boolean;
       extraFlags?: string[] | NixExpr;
-      mountPoint?: string;
+      mountPoint?: string | NixExpr;
     };
     kea: {
       "ctrl-agent"?: {
-        configFile?: string | null;
+        configFile?: string | null | NixExpr;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
         settings?: Record<string, unknown>;
       };
       "dhcp-ddns"?: {
-        configFile?: string | null;
+        configFile?: string | null | NixExpr;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
         settings?: Record<string, unknown>;
       };
       dhcp4?: {
-        configFile?: string | null;
+        configFile?: string | null | NixExpr;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
         settings?: Record<string, unknown>;
       };
       dhcp6?: {
-        configFile?: string | null;
+        configFile?: string | null | NixExpr;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
         settings?: Record<string, unknown>;
@@ -8812,11 +8790,11 @@ declare module "winix" {
     keepalived: {
       enable?: boolean;
       enableScriptSecurity?: boolean;
-      extraConfig?: string;
-      extraGlobalDefs?: string;
+      extraConfig?: string | NixExpr;
+      extraGlobalDefs?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      secretFile?: string | null;
+      secretFile?: string | null | NixExpr;
       snmp?: {
         enable?: boolean;
         enableChecker?: boolean;
@@ -8825,7 +8803,7 @@ declare module "winix" {
         enableRfcV2?: boolean;
         enableRfcV3?: boolean;
         enableTraps?: boolean;
-        socket?: string | null;
+        socket?: string | null | NixExpr;
       };
       vrrpInstances?: {
         "<name>"?: Record<string, unknown>;
@@ -8846,11 +8824,11 @@ declare module "winix" {
     };
     keter: {
       bundle?: {
-        appName?: string;
-        domain?: string;
-        executable?: string;
-        publicScript?: string;
-        secretScript?: string;
+        appName?: string | NixExpr;
+        domain?: string | NixExpr;
+        executable?: string | NixExpr;
+        publicScript?: string | NixExpr;
+        secretScript?: string | NixExpr;
       };
       enable?: boolean;
       globalKeterConfig?: {
@@ -8859,38 +8837,38 @@ declare module "winix" {
         "rotate-logs"?: boolean;
       };
       package?: string | NixExpr;
-      root?: string;
+      root?: string | NixExpr;
     };
     keybase: {
       enable?: boolean;
     };
     keycloak: {
       database?: {
-        caCert?: string | null;
+        caCert?: string | null | NixExpr;
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        type?: "mariadb" | "mysql" | "postgresql";
-        username?: string;
+        type?: "mariadb" | "mysql" | "postgresql" | NixExpr;
+        username?: string | NixExpr;
         useSSL?: boolean;
       };
       enable?: boolean;
-      initialAdminPassword?: string | null;
+      initialAdminPassword?: string | null | NixExpr;
       package?: string | NixExpr;
       plugins?: string[] | NixExpr;
       realmFiles?: string[] | NixExpr;
       settings?: {
-        hostname?: string | null;
+        hostname?: string | null | NixExpr;
         "hostname-backchannel-dynamic"?: boolean;
-        "http-host"?: string;
+        "http-host"?: string | NixExpr;
         "http-port"?: number;
-        "http-relative-path"?: string;
+        "http-relative-path"?: string | NixExpr;
         "https-port"?: number;
       };
-      sslCertificate?: string | null;
-      sslCertificateKey?: string | null;
+      sslCertificate?: string | null | NixExpr;
+      sslCertificateKey?: string | null | NixExpr;
       themes?: Record<string, string | NixExpr>;
     };
     keyd: {
@@ -8904,52 +8882,52 @@ declare module "winix" {
       sites?: {
         "<name>"?: Record<string, unknown>;
       };
-      webserver?: "nginx";
+      webserver?: "nginx" | NixExpr;
     };
     kismet: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      group?: string;
+      extraConfig?: string | NixExpr;
+      group?: string | NixExpr;
       httpd?: {
-        address?: string;
+        address?: string | NixExpr;
         enable?: boolean;
         port?: number;
       };
       logTypes?: string[] | NixExpr;
       package?: string | NixExpr;
-      serverDescription?: string;
-      serverName?: string;
+      serverDescription?: string | NixExpr;
+      serverName?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     "kiwix-serve": {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       library?: Record<string, string>;
-      libraryPath?: string | null;
+      libraryPath?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     klipper: {
-      apiSocket?: string | null;
-      configDir?: string;
-      configFile?: string | null;
+      apiSocket?: string | null | NixExpr;
+      configDir?: string | NixExpr;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
-      extraSettings?: string;
+      extraSettings?: string | NixExpr;
       firmwares?: {
         "<name>"?: Record<string, unknown>;
       };
-      group?: string | null;
-      inputTTY?: string;
-      logFile?: string | null;
+      group?: string | null | NixExpr;
+      inputTTY?: string | NixExpr;
+      logFile?: string | null | NixExpr;
       mutableConfig?: boolean;
       octoprintIntegration?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, Record<string, unknown>> | null;
-      user?: string | null;
+      user?: string | null | NixExpr;
     };
     kmonad: {
       enable?: boolean;
@@ -8961,14 +8939,12 @@ declare module "winix" {
     };
     kmscon: {
       enable?: boolean;
-      extraConfig?: string;
-      extraOptions?: string;
-      fonts?: {
-        "*"?: Record<string, unknown>;
-      };
+      extraConfig?: string | NixExpr;
+      extraOptions?: string | NixExpr;
+      fonts?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       hwRender?: boolean;
       package?: string | NixExpr;
-      term?: string | null;
+      term?: string | null | NixExpr;
       useXkbConfig?: boolean;
     };
     knot: {
@@ -8979,7 +8955,7 @@ declare module "winix" {
       keyFiles?: string[] | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      settingsFile?: string | null;
+      settingsFile?: string | null | NixExpr;
     };
     "knot-resolver": {
       enable?: boolean;
@@ -8991,49 +8967,49 @@ declare module "winix" {
     };
     komga: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       settings?: {
         server?: Record<string, unknown>;
       };
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "komodo-periphery": {
       allowedIps?: string[] | NixExpr;
-      bindIp?: string;
-      configFile?: string | null;
-      containerStatsPollingRate?: string;
+      bindIp?: string | NixExpr;
+      configFile?: string | null | NixExpr;
+      containerStatsPollingRate?: string | NixExpr;
       disableContainerExec?: boolean;
       disableTerminals?: boolean;
       enable?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       excludeDiskMounts?: string[] | NixExpr;
       extraSettings?: Record<string, unknown>;
-      group?: string;
+      group?: string | NixExpr;
       includeDiskMounts?: string[] | NixExpr;
       legacyComposeCli?: boolean;
       logging?: {
-        level?: "debug" | "error" | "info" | "off" | "trace" | "warn";
-        otlpEndpoint?: string;
-        stdio?: "json" | "none" | "standard";
+        level?: "debug" | "error" | "info" | "off" | "trace" | "warn" | NixExpr;
+        otlpEndpoint?: string | NixExpr;
+        stdio?: "json" | "none" | "standard" | NixExpr;
       };
       package?: string | NixExpr;
       passkeys?: string[] | NixExpr;
       port?: number;
-      rootDirectory?: string;
+      rootDirectory?: string | NixExpr;
       ssl?: {
-        certFile?: string;
+        certFile?: string | NixExpr;
         enable?: boolean;
-        keyFile?: string;
+        keyFile?: string | NixExpr;
       };
-      statsPollingRate?: string;
-      user?: string;
+      statsPollingRate?: string | NixExpr;
+      user?: string | NixExpr;
     };
     kresd: {
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       instances?: number;
       listenDoH?: string[] | NixExpr;
       listenPlain?: string[] | NixExpr;
@@ -9042,18 +9018,18 @@ declare module "winix" {
     };
     kthxbye: {
       alertmanager?: {
-        timeout?: string;
-        uri?: string;
+        timeout?: string | NixExpr;
+        uri?: string | NixExpr;
       };
       enable?: boolean;
-      extendBy?: string;
-      extendIfExpiringIn?: string;
-      extendWithPrefix?: string;
+      extendBy?: string | NixExpr;
+      extendIfExpiringIn?: string | NixExpr;
+      extendWithPrefix?: string | NixExpr;
       extraOptions?: string[] | NixExpr;
-      interval?: string;
-      listenAddress?: string;
+      interval?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       logJSON?: boolean;
-      maxDuration?: string | null;
+      maxDuration?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -9068,60 +9044,60 @@ declare module "winix" {
         dns?: Record<string, unknown>;
       };
       apiserver?: {
-        advertiseAddress?: string | null;
+        advertiseAddress?: string | null | NixExpr;
         allowPrivileged?: boolean;
-        apiAudiences?: string;
+        apiAudiences?: string | NixExpr;
         authorizationMode?: ("ABAC" | "AlwaysAllow" | "AlwaysDeny" | "Node" | "RBAC" | "Webhook")[] | NixExpr;
         authorizationPolicy?: Record<string, unknown>[] | NixExpr;
-        basicAuthFile?: string | null;
-        bindAddress?: string;
-        clientCaFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
+        bindAddress?: string | NixExpr;
+        clientCaFile?: string | null | NixExpr;
         disableAdmissionPlugins?: string[] | NixExpr;
         enable?: boolean;
         enableAdmissionPlugins?: string[] | NixExpr;
         etcd?: Record<string, unknown>;
-        extraOpts?: string;
+        extraOpts?: string | NixExpr;
         extraSANs?: string[] | NixExpr;
         featureGates?: Record<string, boolean>;
-        kubeletClientCaFile?: string | null;
-        kubeletClientCertFile?: string | null;
-        kubeletClientKeyFile?: string | null;
-        preferredAddressTypes?: string | null;
-        proxyClientCertFile?: string | null;
-        proxyClientKeyFile?: string | null;
-        runtimeConfig?: string;
+        kubeletClientCaFile?: string | null | NixExpr;
+        kubeletClientCertFile?: string | null | NixExpr;
+        kubeletClientKeyFile?: string | null | NixExpr;
+        preferredAddressTypes?: string | null | NixExpr;
+        proxyClientCertFile?: string | null | NixExpr;
+        proxyClientKeyFile?: string | null | NixExpr;
+        runtimeConfig?: string | NixExpr;
         securePort?: number;
-        serviceAccountIssuer?: string;
-        serviceAccountKeyFile?: string;
-        serviceAccountSigningKeyFile?: string;
-        serviceClusterIpRange?: string;
-        storageBackend?: "etcd2" | "etcd3";
-        tlsCertFile?: string | null;
-        tlsKeyFile?: string | null;
-        tokenAuthFile?: string | null;
+        serviceAccountIssuer?: string | NixExpr;
+        serviceAccountKeyFile?: string | NixExpr;
+        serviceAccountSigningKeyFile?: string | NixExpr;
+        serviceClusterIpRange?: string | NixExpr;
+        storageBackend?: "etcd2" | "etcd3" | NixExpr;
+        tlsCertFile?: string | null | NixExpr;
+        tlsKeyFile?: string | null | NixExpr;
+        tokenAuthFile?: string | null | NixExpr;
         verbosity?: number | null;
-        webhookConfig?: string | null;
+        webhookConfig?: string | null | NixExpr;
       };
-      apiserverAddress?: string;
-      caFile?: string | null;
-      clusterCidr?: string | null;
+      apiserverAddress?: string | NixExpr;
+      caFile?: string | null | NixExpr;
+      clusterCidr?: string | null | NixExpr;
       controllerManager?: {
         allocateNodeCIDRs?: boolean;
-        bindAddress?: string;
-        clusterCidr?: string;
+        bindAddress?: string | NixExpr;
+        clusterCidr?: string | NixExpr;
         enable?: boolean;
-        extraOpts?: string;
+        extraOpts?: string | NixExpr;
         featureGates?: Record<string, boolean>;
         kubeconfig?: Record<string, unknown>;
         leaderElect?: boolean;
-        rootCaFile?: string | null;
+        rootCaFile?: string | null | NixExpr;
         securePort?: number;
-        serviceAccountKeyFile?: string | null;
-        tlsCertFile?: string | null;
-        tlsKeyFile?: string | null;
+        serviceAccountKeyFile?: string | null | NixExpr;
+        tlsCertFile?: string | null | NixExpr;
+        tlsKeyFile?: string | null | NixExpr;
         verbosity?: number | null;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       easyCerts?: boolean;
       featureGates?: Record<string, boolean>;
       flannel?: {
@@ -9129,84 +9105,84 @@ declare module "winix" {
         openFirewallPorts?: boolean;
       };
       kubeconfig?: {
-        caFile?: string | null;
-        certFile?: string | null;
-        keyFile?: string | null;
-        server?: string;
+        caFile?: string | null | NixExpr;
+        certFile?: string | null | NixExpr;
+        keyFile?: string | null | NixExpr;
+        server?: string | NixExpr;
       };
       kubelet?: {
-        address?: string;
-        clientCaFile?: string | null;
+        address?: string | NixExpr;
+        clientCaFile?: string | null | NixExpr;
         clusterDns?: string[] | NixExpr;
-        clusterDomain?: string;
+        clusterDomain?: string | NixExpr;
         cni?: Record<string, unknown>;
-        containerRuntimeEndpoint?: string;
+        containerRuntimeEndpoint?: string | NixExpr;
         enable?: boolean;
         extraConfig?: Record<string, Record<string, unknown>>;
-        extraOpts?: string;
+        extraOpts?: string | NixExpr;
         featureGates?: Record<string, boolean>;
         healthz?: Record<string, unknown>;
-        hostname?: string;
+        hostname?: string | NixExpr;
         kubeconfig?: Record<string, unknown>;
         manifests?: Record<string, Record<string, unknown>>;
-        nodeIp?: string | null;
+        nodeIp?: string | null | NixExpr;
         port?: number;
         registerNode?: boolean;
         seedDockerImages?: (string | NixExpr)[] | NixExpr;
         taints?: Record<string, unknown>;
-        tlsCertFile?: string | null;
-        tlsKeyFile?: string | null;
+        tlsCertFile?: string | null | NixExpr;
+        tlsKeyFile?: string | null | NixExpr;
         unschedulable?: boolean;
         verbosity?: number | null;
       };
       lib?: Record<string, unknown>;
-      masterAddress?: string;
+      masterAddress?: string | NixExpr;
       package?: string | NixExpr;
       path?: (string | NixExpr)[] | NixExpr;
       pki?: {
-        caCertPathPrefix?: string;
+        caCertPathPrefix?: string | NixExpr;
         caSpec?: Record<string, unknown>;
         certs?: Record<string, unknown>;
         cfsslAPIExtraSANs?: string[] | NixExpr;
         enable?: boolean;
-        etcClusterAdminKubeconfig?: string | null;
+        etcClusterAdminKubeconfig?: string | null | NixExpr;
         genCfsslAPICerts?: boolean;
         genCfsslAPIToken?: boolean;
         genCfsslCACert?: boolean;
         pkiTrustOnBootstrap?: boolean;
       };
       proxy?: {
-        bindAddress?: string;
+        bindAddress?: string | NixExpr;
         enable?: boolean;
-        extraOpts?: string;
+        extraOpts?: string | NixExpr;
         featureGates?: Record<string, boolean>;
-        hostname?: string;
+        hostname?: string | NixExpr;
         kubeconfig?: Record<string, unknown>;
         verbosity?: number | null;
       };
       roles?: ("master" | "node")[] | NixExpr;
       scheduler?: {
-        address?: string;
+        address?: string | NixExpr;
         enable?: boolean;
-        extraOpts?: string;
+        extraOpts?: string | NixExpr;
         featureGates?: Record<string, boolean>;
         kubeconfig?: Record<string, unknown>;
         leaderElect?: boolean;
         port?: number;
         verbosity?: number | null;
       };
-      secretsPath?: string;
+      secretsPath?: string | NixExpr;
     };
     kubo: {
       autoMigrate?: boolean;
       autoMount?: boolean;
-      dataDir?: string;
-      defaultMode?: "norouting" | "offline" | "online";
+      dataDir?: string | NixExpr;
+      defaultMode?: "norouting" | "offline" | "online" | NixExpr;
       emptyRepo?: boolean;
       enable?: boolean;
       enableGC?: boolean;
       extraFlags?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       localDiscovery?: boolean;
       package?: string | NixExpr;
       serviceFdlimit?: number | null;
@@ -9215,11 +9191,11 @@ declare module "winix" {
         Mounts?: Record<string, unknown>;
       };
       startWhenNeeded?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     labgrid: {
       coordinator?: {
-        bindAddress?: string;
+        bindAddress?: string | NixExpr;
         debug?: boolean;
         enable?: boolean;
         openFirewall?: boolean;
@@ -9235,10 +9211,10 @@ declare module "winix" {
     lambdabot: {
       enable?: boolean;
       package?: string | NixExpr;
-      script?: string;
+      script?: string | NixExpr;
     };
     languagetool: {
-      allowOrigin?: string | null;
+      allowOrigin?: string | null | NixExpr;
       enable?: boolean;
       jvmOptions?: string[] | NixExpr;
       package?: string | NixExpr;
@@ -9252,16 +9228,16 @@ declare module "winix" {
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      passwordFile?: string | null;
+      passwordFile?: string | null | NixExpr;
       port?: number;
       redis?: {
-        passwordFile?: string | null;
+        passwordFile?: string | null | NixExpr;
         port?: number;
       };
     };
     "lasuite-docs": {
       backendPackage?: string | NixExpr;
-      bind?: string;
+      bind?: string | NixExpr;
       celery?: {
         extraArgs?: string[] | NixExpr;
       };
@@ -9270,10 +9246,10 @@ declare module "winix" {
         port?: number;
         settings?: Record<string, unknown>;
       };
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
       enableNginx?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       frontendPackage?: string | NixExpr;
       gunicorn?: {
         extraArgs?: string[] | NixExpr;
@@ -9284,35 +9260,35 @@ declare module "winix" {
       redis?: {
         createLocally?: boolean;
       };
-      s3Url?: string;
-      secretKeyPath?: string | null;
+      s3Url?: string | NixExpr;
+      secretKeyPath?: string | null | NixExpr;
       settings?: {
-        CELERY_BROKER_URL?: string | null;
-        DATA_DIR?: string;
-        DB_HOST?: string | null;
-        DB_NAME?: string;
-        DB_USER?: string;
-        DJANGO_ALLOWED_HOSTS?: string;
-        DJANGO_SECRET_KEY_FILE?: string;
-        REDIS_URL?: string | null;
+        CELERY_BROKER_URL?: string | null | NixExpr;
+        DATA_DIR?: string | NixExpr;
+        DB_HOST?: string | null | NixExpr;
+        DB_NAME?: string | NixExpr;
+        DB_USER?: string | NixExpr;
+        DJANGO_ALLOWED_HOSTS?: string | NixExpr;
+        DJANGO_SECRET_KEY_FILE?: string | NixExpr;
+        REDIS_URL?: string | null | NixExpr;
       };
     };
     "lasuite-meet": {
       addons?: "outlook"[] | NixExpr;
-      bind?: string;
+      bind?: string | NixExpr;
       celery?: {
         extraArgs?: string[] | NixExpr;
       };
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
       enableNginx?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       gunicorn?: {
         extraArgs?: string[] | NixExpr;
       };
       livekit?: {
         enable?: boolean;
-        keyFile?: string;
+        keyFile?: string | NixExpr;
         openFirewall?: boolean;
         settings?: Record<string, unknown>;
       };
@@ -9323,52 +9299,50 @@ declare module "winix" {
       redis?: {
         createLocally?: boolean;
       };
-      secretKeyPath?: string | null;
+      secretKeyPath?: string | null | NixExpr;
       settings?: {
-        CELERY_BROKER_URL?: string | null;
-        DB_HOST?: string | null;
-        DB_NAME?: string;
-        DB_USER?: string;
-        DJANGO_ALLOWED_HOSTS?: string;
-        DJANGO_DATA_DIR?: string;
-        DJANGO_SECRET_KEY_FILE?: string;
-        LIVEKIT_API_URL?: string | null;
-        REDIS_URL?: string | null;
+        CELERY_BROKER_URL?: string | null | NixExpr;
+        DB_HOST?: string | null | NixExpr;
+        DB_NAME?: string | NixExpr;
+        DB_USER?: string | NixExpr;
+        DJANGO_ALLOWED_HOSTS?: string | NixExpr;
+        DJANGO_DATA_DIR?: string | NixExpr;
+        DJANGO_SECRET_KEY_FILE?: string | NixExpr;
+        LIVEKIT_API_URL?: string | null | NixExpr;
+        REDIS_URL?: string | null | NixExpr;
       };
     };
     lauti: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       secrets?: string[] | NixExpr;
       settings?: Record<string, string>;
     };
     lavalink: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       enableHttp2?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraConfig?: Record<string, unknown>;
-      group?: string;
-      home?: string;
-      jvmArgs?: string;
+      group?: string | NixExpr;
+      home?: string | NixExpr;
+      jvmArgs?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      password?: string | null;
-      plugins?: {
-        "*"?: Record<string, unknown>;
-      };
+      password?: string | null | NixExpr;
+      plugins?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     leaps: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
-      path?: string;
+      path?: string | NixExpr;
       port?: number;
     };
     legit: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
         dirs?: Record<string, unknown>;
@@ -9376,32 +9350,32 @@ declare module "winix" {
         repo?: Record<string, unknown>;
         server?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     lemmy: {
-      adminPasswordFile?: string | null;
+      adminPasswordFile?: string | null | NixExpr;
       caddy?: {
         enable?: boolean;
       };
       database?: {
         createLocally?: boolean;
-        uri?: string | null;
-        uriFile?: string | null;
+        uri?: string | null | NixExpr;
+        uriFile?: string | null | NixExpr;
       };
       enable?: boolean;
       nginx?: {
         enable?: boolean;
       };
-      pictrsApiKeyFile?: string | null;
+      pictrsApiKeyFile?: string | null | NixExpr;
       server?: {
         package?: string | NixExpr;
       };
       settings?: {
         captcha?: Record<string, unknown>;
-        hostname?: string;
+        hostname?: string | NixExpr;
         port?: number;
       };
-      smtpPasswordFile?: string | null;
+      smtpPasswordFile?: string | null | NixExpr;
       ui?: {
         package?: string | NixExpr;
         port?: number;
@@ -9433,117 +9407,117 @@ declare module "winix" {
         accelPointsFallback?: number[] | null;
         accelPointsMotion?: number[] | null;
         accelPointsScroll?: number[] | null;
-        accelProfile?: "adaptive" | "custom" | "flat";
-        accelSpeed?: string | null;
+        accelProfile?: "adaptive" | "custom" | "flat" | NixExpr;
+        accelSpeed?: string | null | NixExpr;
         accelStepFallback?: number | null;
         accelStepMotion?: number | null;
         accelStepScroll?: number | null;
-        additionalOptions?: string;
-        buttonMapping?: string | null;
-        calibrationMatrix?: string | null;
+        additionalOptions?: string | NixExpr;
+        buttonMapping?: string | null | NixExpr;
+        calibrationMatrix?: string | null | NixExpr;
         clickMethod?: "buttonareas" | "clickfinger" | "none" | null;
-        dev?: string | null;
+        dev?: string | null | NixExpr;
         disableWhileTyping?: boolean;
         horizontalScrolling?: boolean;
         leftHanded?: boolean;
         middleEmulation?: boolean;
         naturalScrolling?: boolean;
         scrollButton?: number | null;
-        scrollMethod?: "button" | "edge" | "none" | "twofinger";
-        sendEventsMode?: "disabled" | "disabled-on-external-mouse" | "enabled";
+        scrollMethod?: "button" | "edge" | "none" | "twofinger" | NixExpr;
+        sendEventsMode?: "disabled" | "disabled-on-external-mouse" | "enabled" | NixExpr;
         tapping?: boolean;
         tappingButtonMap?: "lmr" | "lrm" | null;
         tappingDragLock?: boolean;
-        transformationMatrix?: string | null;
+        transformationMatrix?: string | null | NixExpr;
       };
       touchpad?: {
         accelPointsFallback?: number[] | null;
         accelPointsMotion?: number[] | null;
         accelPointsScroll?: number[] | null;
-        accelProfile?: "adaptive" | "custom" | "flat";
-        accelSpeed?: string | null;
+        accelProfile?: "adaptive" | "custom" | "flat" | NixExpr;
+        accelSpeed?: string | null | NixExpr;
         accelStepFallback?: number | null;
         accelStepMotion?: number | null;
         accelStepScroll?: number | null;
-        additionalOptions?: string;
-        buttonMapping?: string | null;
-        calibrationMatrix?: string | null;
+        additionalOptions?: string | NixExpr;
+        buttonMapping?: string | null | NixExpr;
+        calibrationMatrix?: string | null | NixExpr;
         clickMethod?: "buttonareas" | "clickfinger" | "none" | null;
-        dev?: string | null;
+        dev?: string | null | NixExpr;
         disableWhileTyping?: boolean;
         horizontalScrolling?: boolean;
         leftHanded?: boolean;
         middleEmulation?: boolean;
         naturalScrolling?: boolean;
         scrollButton?: number | null;
-        scrollMethod?: "button" | "edge" | "none" | "twofinger";
-        sendEventsMode?: "disabled" | "disabled-on-external-mouse" | "enabled";
+        scrollMethod?: "button" | "edge" | "none" | "twofinger" | NixExpr;
+        sendEventsMode?: "disabled" | "disabled-on-external-mouse" | "enabled" | NixExpr;
         tapping?: boolean;
         tappingButtonMap?: "lmr" | "lrm" | null;
         tappingDragLock?: boolean;
-        transformationMatrix?: string | null;
+        transformationMatrix?: string | null | NixExpr;
       };
     };
     librechat: {
       credentials?: Record<string, string>;
-      credentialsFile?: string | null;
-      dataDir?: string;
+      credentialsFile?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       enableLocalDB?: boolean;
       env?: {
-        LIBRECHAT_LOG_DIR?: string;
-        PORT?: string | number;
+        LIBRECHAT_LOG_DIR?: string | NixExpr;
+        PORT?: string | number | NixExpr;
       };
-      group?: string;
+      group?: string | NixExpr;
       meilisearch?: {
         enable?: boolean;
       };
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     librenms: {
       database?: {
         createLocally?: boolean;
-        database?: string;
+        database?: string | NixExpr;
         host?: unknown;
-        passwordFile?: string | null;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        socket?: string | null;
-        username?: string;
+        socket?: string | null | NixExpr;
+        username?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       distributedPoller?: {
         distributedBilling?: boolean;
         enable?: boolean;
-        group?: string;
-        memcachedHost?: string;
+        group?: string | NixExpr;
+        memcachedHost?: string | NixExpr;
         memcachedPort?: number;
-        name?: string | null;
-        rrdcachedHost?: string;
+        name?: string | null | NixExpr;
+        rrdcachedHost?: string | NixExpr;
         rrdcachedPort?: number;
       };
       enable?: boolean;
       enableLocalBilling?: boolean;
       enableOneMinutePolling?: boolean;
-      environmentFile?: string | null;
-      extraConfig?: string | null;
+      environmentFile?: string | null | NixExpr;
+      extraConfig?: string | null | NixExpr;
       finalPackage?: string | NixExpr;
-      group?: string;
-      hostname?: string;
-      logDir?: string;
+      group?: string | NixExpr;
+      hostname?: string | NixExpr;
+      logDir?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -9556,13 +9530,13 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       phpOptions?: Record<string, string | number>;
@@ -9570,16 +9544,16 @@ declare module "winix" {
       poolConfig?: Record<string, string | number | boolean>;
       settings?: Record<string, unknown>;
       useDistributedPollers?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     librespeed: {
-      domain?: string | null;
+      domain?: string | null | NixExpr;
       downloadIPDB?: boolean;
       enable?: boolean;
       frontend?: {
-        contactEmail?: string;
+        contactEmail?: string | NixExpr;
         enable?: boolean;
-        pageTitle?: string;
+        pageTitle?: string | NixExpr;
         servers?: Record<string, unknown>;
         settings?: Record<string, unknown> | null;
         useNginx?: boolean;
@@ -9587,12 +9561,12 @@ declare module "winix" {
       package?: string | NixExpr;
       secrets?: Record<string, string> | null;
       settings?: Record<string, boolean | number | string | string | NixExpr | null> | null;
-      tlsCertificate?: string | null;
-      tlsKey?: string | null;
-      useACMEHost?: string | null;
+      tlsCertificate?: string | null | NixExpr;
+      tlsKey?: string | null | NixExpr;
+      useACMEHost?: string | null | NixExpr;
     };
     libreswan: {
-      configSetup?: string;
+      configSetup?: string | NixExpr;
       connections?: Record<string, string>;
       disableRedirects?: boolean;
       enable?: boolean;
@@ -9600,35 +9574,35 @@ declare module "winix" {
     };
     libretranslate: {
       configureNginx?: boolean;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       disableWebUI?: boolean;
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
       enableApiKeys?: boolean;
-      extraArgs?: Record<string, boolean | string | number | (boolean | string | number)[] | null>;
-      group?: string;
-      host?: string;
+      extraArgs?: Record<string, boolean | string | number | (boolean | string | number)[] | null> | NixExpr;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       threads?: number | null;
       updateModels?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     libvirtd: {
       autoSnapshot?: {
-        calendar?: string;
+        calendar?: string | NixExpr;
         enable?: boolean;
         keep?: number;
-        prefix?: string;
-        snapshotType?: "external" | "internal";
+        prefix?: string | NixExpr;
+        snapshotType?: "external" | "internal" | NixExpr;
         vms?: (string | Record<string, unknown>)[] | null;
       };
     };
     lidarr: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -9636,65 +9610,65 @@ declare module "winix" {
         server?: Record<string, unknown>;
         update?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     lifecycled: {
-      awsRegion?: string | null;
-      cloudwatchGroup?: string | null;
-      cloudwatchStream?: string | null;
+      awsRegion?: string | null | NixExpr;
+      cloudwatchGroup?: string | null | NixExpr;
+      cloudwatchStream?: string | null | NixExpr;
       debug?: boolean;
       enable?: boolean;
-      handler?: string;
-      instanceId?: string | null;
+      handler?: string | NixExpr;
+      instanceId?: string | null | NixExpr;
       json?: boolean;
       noSpot?: boolean;
       queueCleaner?: {
         enable?: boolean;
-        frequency?: string;
+        frequency?: string | NixExpr;
         parallel?: number;
       };
-      snsTopic?: string | null;
+      snsTopic?: string | null | NixExpr;
     };
     lighthouse: {
       beacon?: {
-        address?: string;
-        dataDir?: string;
+        address?: string | NixExpr;
+        dataDir?: string | NixExpr;
         disableDepositContractSync?: boolean;
         enable?: boolean;
         execution?: Record<string, unknown>;
-        extraArgs?: string;
+        extraArgs?: string | NixExpr;
         http?: Record<string, unknown>;
         metrics?: Record<string, unknown>;
         openFirewall?: boolean;
         port?: number;
       };
-      extraArgs?: string;
-      network?: "chiado" | "gnosis" | "holesky" | "mainnet" | "sepolia";
+      extraArgs?: string | NixExpr;
+      network?: "chiado" | "gnosis" | "holesky" | "mainnet" | "sepolia" | NixExpr;
       package?: string | NixExpr;
       validator?: {
         beaconNodes?: string[] | NixExpr;
-        dataDir?: string;
+        dataDir?: string | NixExpr;
         enable?: boolean;
-        extraArgs?: string;
+        extraArgs?: string | NixExpr;
         metrics?: Record<string, unknown>;
       };
     };
     lighttpd: {
       cgit?: {
-        configText?: string;
+        configText?: string | NixExpr;
         enable?: boolean;
-        subdir?: string;
+        subdir?: string | NixExpr;
       };
       collectd?: {
-        collectionCgi?: string;
+        collectionCgi?: string | NixExpr;
         enable?: boolean;
       };
-      configText?: string;
-      "document-root"?: string;
+      configText?: string | NixExpr;
+      "document-root"?: string | NixExpr;
       enable?: boolean;
       enableModules?: string[] | NixExpr;
       enableUpstreamMimeTypes?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       gitweb?: {
         enable?: boolean;
       };
@@ -9707,18 +9681,18 @@ declare module "winix" {
       config?: Record<string, unknown>;
       database?: {
         createLocally?: boolean;
-        dbEngine?: "InnoDB" | "MyISAM";
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        dbEngine?: "InnoDB" | "MyISAM" | NixExpr;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        socket?: string | null;
-        type?: "mssql" | "mysql" | "odbc" | "pgsql";
-        user?: string;
+        socket?: string | null | NixExpr;
+        type?: "mssql" | "mysql" | "odbc" | "pgsql" | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
-      encryptionKeyFile?: string | null;
-      encryptionNonceFile?: string | null;
+      encryptionKeyFile?: string | null | NixExpr;
+      encryptionNonceFile?: string | null | NixExpr;
       httpd?: {
         virtualHost?: Record<string, unknown>;
       };
@@ -9727,53 +9701,53 @@ declare module "winix" {
       };
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
-      webserver?: "httpd" | "nginx";
+      webserver?: "httpd" | "nginx" | NixExpr;
     };
     linkding: {
-      address?: string;
-      contextPath?: string;
+      address?: string | NixExpr;
+      contextPath?: string | NixExpr;
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
         port?: number;
-        type?: "postgres" | "sqlite";
-        user?: string;
+        type?: "postgres" | "sqlite" | NixExpr;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, string>;
-      user?: string;
+      user?: string | NixExpr;
     };
     linkwarden: {
-      cacheLocation?: string;
+      cacheLocation?: string | NixExpr;
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
         port?: number;
-        user?: string;
+        user?: string | NixExpr;
       };
       enable?: boolean;
       enableRegistration?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
-      group?: string;
-      host?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       secretFiles?: Record<string, string | null>;
-      storageLocation?: string;
-      user?: string;
+      storageLocation?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "linux-enable-ir-emitter": {
-      device?: string;
+      device?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
@@ -9790,7 +9764,7 @@ declare module "winix" {
       configs?: string[] | NixExpr;
       enable?: boolean;
       extraArguments?: string[] | NixExpr;
-      options?: string;
+      options?: string | NixExpr;
     };
     listmonk: {
       database?: {
@@ -9800,14 +9774,14 @@ declare module "winix" {
       };
       enable?: boolean;
       package?: string | NixExpr;
-      secretFile?: string | null;
+      secretFile?: string | null | NixExpr;
       settings?: Record<string, unknown>;
     };
     litellm: {
       enable?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
-      host?: string;
+      environmentFile?: string | null | NixExpr;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -9818,18 +9792,18 @@ declare module "winix" {
         model_list?: Record<string, unknown>;
         router_settings?: Record<string, unknown>;
       };
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     litestream: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     livebook: {
       enableUserService?: boolean;
-      environment?: Record<string, boolean | number | string | null>;
-      environmentFile?: string | null;
+      environment?: Record<string, boolean | number | string | null> | NixExpr;
+      environmentFile?: string | null | NixExpr;
       extraPackages?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr;
     };
@@ -9837,17 +9811,17 @@ declare module "winix" {
       enable?: boolean;
       ingress?: {
         enable?: boolean;
-        environmentFile?: string | null;
+        environmentFile?: string | null | NixExpr;
         openFirewall?: Record<string, unknown>;
         package?: string | NixExpr;
         settings?: Record<string, unknown>;
       };
-      keyFile?: string;
+      keyFile?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       redis?: {
         createLocally?: boolean;
-        host?: string | null;
+        host?: string | null | NixExpr;
         port?: number | null;
       };
       settings?: {
@@ -9858,17 +9832,17 @@ declare module "winix" {
     };
     "lk-jwt-service": {
       enable?: boolean;
-      keyFile?: string;
-      livekitUrl?: string;
+      keyFile?: string | NixExpr;
+      livekitUrl?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
     };
     "llama-cpp": {
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      host?: string;
-      model?: string | null;
-      modelsDir?: string | null;
+      host?: string | NixExpr;
+      model?: string | null | NixExpr;
+      modelsDir?: string | null | NixExpr;
       modelsPreset?: Record<string, Record<string, unknown>> | null;
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -9876,40 +9850,40 @@ declare module "winix" {
     };
     "llama-swap": {
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, unknown>;
       tls?: {
-        certFile?: string | null;
+        certFile?: string | null | NixExpr;
         enable?: boolean;
-        keyFile?: string | null;
+        keyFile?: string | null | NixExpr;
       };
     };
     lldap: {
       database?: {
         createLocally?: boolean;
-        type?: "mariadb" | "postgresql" | "sqlite";
+        type?: "mariadb" | "postgresql" | "sqlite" | NixExpr;
       };
       enable?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: {
-        database_url?: string | null;
+        database_url?: string | null | NixExpr;
         force_ldap_user_pass_reset?: boolean | "always";
-        http_host?: string;
+        http_host?: string | NixExpr;
         http_port?: number;
-        http_url?: string;
-        jwt_secret_file?: string | null;
-        ldap_base_dn?: string;
-        ldap_host?: string;
+        http_url?: string | NixExpr;
+        jwt_secret_file?: string | null | NixExpr;
+        ldap_base_dn?: string | NixExpr;
+        ldap_host?: string | NixExpr;
         ldap_port?: number;
-        ldap_user_dn?: string;
-        ldap_user_email?: string;
-        ldap_user_pass?: string | null;
-        ldap_user_pass_file?: string | null;
+        ldap_user_dn?: string | NixExpr;
+        ldap_user_email?: string | NixExpr;
+        ldap_user_pass?: string | null | NixExpr;
+        ldap_user_pass_file?: string | null | NixExpr;
       };
       silenceForceUserPassResetWarning?: boolean;
     };
@@ -9919,7 +9893,7 @@ declare module "winix" {
     };
     "local-content-share": {
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -9932,8 +9906,8 @@ declare module "winix" {
     locate: {
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      interval?: string;
-      output?: string;
+      interval?: string | NixExpr;
+      output?: string | NixExpr;
       package?: string | NixExpr;
       pruneBindMounts?: boolean;
       pruneFS?: string[] | NixExpr;
@@ -9941,7 +9915,7 @@ declare module "winix" {
       prunePaths?: string[] | NixExpr;
     };
     logcheck: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       extraGroups?: string[] | NixExpr;
       extraRulesDirs?: string[] | NixExpr;
@@ -9952,10 +9926,10 @@ declare module "winix" {
       ignoreCron?: {
         "<name>"?: Record<string, unknown>;
       };
-      level?: string;
-      mailTo?: string;
-      timeOfDay?: string;
-      user?: string;
+      level?: string | NixExpr;
+      mailTo?: string | NixExpr;
+      timeOfDay?: string | NixExpr;
+      user?: string | NixExpr;
     };
     logind: {
       enable?: boolean;
@@ -9969,7 +9943,7 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     logkeys: {
-      device?: string | null;
+      device?: string | null | NixExpr;
       enable?: boolean;
     };
     "logmein-hamachi": {
@@ -9978,7 +9952,7 @@ declare module "winix" {
     logrotate: {
       allowNetworking?: boolean;
       checkConfig?: boolean;
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       settings?: {
@@ -9986,29 +9960,29 @@ declare module "winix" {
       };
     };
     logstash: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      extraJvmOptions?: string;
-      extraSettings?: string;
-      filterConfig?: string;
+      extraJvmOptions?: string | NixExpr;
+      extraSettings?: string | NixExpr;
+      filterConfig?: string | NixExpr;
       filterWorkers?: number;
-      inputConfig?: string;
-      listenAddress?: string;
-      logLevel?: "debug" | "error" | "fatal" | "info" | "warn";
-      outputConfig?: string;
+      inputConfig?: string | NixExpr;
+      listenAddress?: string | NixExpr;
+      logLevel?: "debug" | "error" | "fatal" | "info" | "warn" | NixExpr;
+      outputConfig?: string | NixExpr;
       package?: string | NixExpr;
       plugins?: string[] | NixExpr;
-      port?: string;
+      port?: string | NixExpr;
     };
     loki: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       configuration?: Record<string, unknown>;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     lokinet: {
       enable?: boolean;
@@ -10020,29 +9994,29 @@ declare module "winix" {
       useLocally?: boolean;
     };
     longview: {
-      apacheStatusUrl?: string;
-      apiKey?: string;
-      apiKeyFile?: string | null;
+      apacheStatusUrl?: string | NixExpr;
+      apiKey?: string | NixExpr;
+      apiKeyFile?: string | null | NixExpr;
       enable?: boolean;
-      mysqlPassword?: string;
-      mysqlPasswordFile?: string | null;
-      mysqlUser?: string;
-      nginxStatusUrl?: string;
+      mysqlPassword?: string | NixExpr;
+      mysqlPasswordFile?: string | null | NixExpr;
+      mysqlUser?: string | NixExpr;
+      nginxStatusUrl?: string | NixExpr;
     };
     lorri: {
       enable?: boolean;
       package?: string | NixExpr;
     };
     lubelogger: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, string>;
-      user?: string;
+      user?: string | NixExpr;
     };
     lvm: {
       boot?: {
@@ -10059,15 +10033,15 @@ declare module "winix" {
     };
     "lxd-image-server": {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       nginx?: {
-        domain?: string;
+        domain?: string | NixExpr;
         enable?: boolean;
       };
       settings?: Record<string, unknown>;
     };
     "mackerel-agent": {
-      apiKeyFile?: string;
+      apiKeyFile?: string | NixExpr;
       autoRetirement?: boolean;
       enable?: boolean;
       runAsRoot?: boolean;
@@ -10077,32 +10051,32 @@ declare module "winix" {
       };
     };
     maddy: {
-      config?: string | null;
+      config?: string | null | NixExpr;
       enable?: boolean;
       ensureAccounts?: string[] | NixExpr;
       ensureCredentials?: {
         "<name>"?: Record<string, unknown>;
       };
-      group?: string;
-      hostname?: string;
+      group?: string | NixExpr;
+      hostname?: string | NixExpr;
       localDomains?: string[] | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      primaryDomain?: string;
+      primaryDomain?: string | NixExpr;
       secrets?: string[] | NixExpr;
       tls?: {
         certificates?: Record<string, unknown>;
-        extraConfig?: string | null;
+        extraConfig?: string | null | NixExpr;
         loader?: "acme" | "file" | "off" | null;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "magic-wormhole-mailbox-server": {
       enable?: boolean;
     };
     magnetico: {
       crawler?: {
-        address?: string;
+        address?: string | NixExpr;
         extraOptions?: string[] | NixExpr;
         maxLeeches?: number;
         maxNeighbors?: number;
@@ -10110,35 +10084,35 @@ declare module "winix" {
       };
       enable?: boolean;
       web?: {
-        address?: string;
+        address?: string | NixExpr;
         credentials?: Record<string, string>;
-        credentialsFile?: string | null;
+        credentialsFile?: string | null | NixExpr;
         extraOptions?: string[] | NixExpr;
         port?: number;
       };
     };
     mail: {
       sendmailSetuidWrapper?: {
-        capabilities?: string;
+        capabilities?: string | NixExpr;
         enable?: boolean;
-        group?: string;
-        owner?: string;
-        permissions?: string;
-        program?: string | null;
+        group?: string | NixExpr;
+        owner?: string | NixExpr;
+        permissions?: string | NixExpr;
+        program?: string | null | NixExpr;
         setgid?: boolean;
         setuid?: boolean;
-        source?: string;
+        source?: string | NixExpr;
       };
     };
     mailcatcher: {
       enable?: boolean;
       http?: {
-        ip?: string;
-        path?: string | null;
+        ip?: string | NixExpr;
+        path?: string | null | NixExpr;
         port?: number;
       };
       smtp?: {
-        ip?: string;
+        ip?: string | NixExpr;
         port?: number;
       };
     };
@@ -10148,38 +10122,38 @@ declare module "winix" {
       extraArgs?: string[] | NixExpr;
       setSendmail?: boolean;
       smtpPort?: number;
-      storage?: "maildir" | "memory";
+      storage?: "maildir" | "memory" | NixExpr;
       uiPort?: number;
     };
     mailman: {
       enable?: boolean;
       enablePostfix?: boolean;
       hyperkitty?: {
-        baseUrl?: string;
+        baseUrl?: string | NixExpr;
         enable?: boolean;
       };
       ldap?: {
         attrMap?: Record<string, unknown>;
-        bindDn?: string;
-        bindPasswordFile?: string;
+        bindDn?: string | NixExpr;
+        bindPasswordFile?: string | NixExpr;
         enable?: boolean;
         groupSearch?: Record<string, unknown>;
-        serverUri?: string;
-        superUserGroup?: string | null;
+        serverUri?: string | NixExpr;
+        superUserGroup?: string | null | NixExpr;
         userSearch?: Record<string, unknown>;
       };
       packageSet?: Record<string, unknown>;
-      restApiPassFile?: string | null;
+      restApiPassFile?: string | null | NixExpr;
       serve?: {
         enable?: boolean;
         uwsgiSettings?: Record<string, unknown>;
-        virtualRoot?: string;
+        virtualRoot?: string | NixExpr;
       };
       settings?: Record<string, Record<string, string>>;
-      siteOwner?: string;
+      siteOwner?: string | NixExpr;
       webHosts?: string[] | NixExpr;
       webSettings?: Record<string, unknown>;
-      webUser?: string;
+      webUser?: string | NixExpr;
     };
     mailpit: {
       instances?: {
@@ -10188,18 +10162,18 @@ declare module "winix" {
     };
     mainsail: {
       enable?: boolean;
-      hostName?: string;
+      hostName?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -10212,13 +10186,13 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
     };
@@ -10226,17 +10200,17 @@ declare module "winix" {
       enable?: boolean;
     };
     mame: {
-      emuAddr?: string;
+      emuAddr?: string | NixExpr;
       enable?: boolean;
-      hostAddr?: string;
-      user?: string;
+      hostAddr?: string | NixExpr;
+      user?: string | NixExpr;
     };
     manticore: {
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
     marytts: {
-      basePath?: string;
+      basePath?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -10246,47 +10220,47 @@ declare module "winix" {
       voices?: string[] | NixExpr;
     };
     mastodon: {
-      activeRecordEncryptionDeterministicKeyFile?: string;
-      activeRecordEncryptionKeyDerivationSaltFile?: string;
-      activeRecordEncryptionPrimaryKeyFile?: string;
+      activeRecordEncryptionDeterministicKeyFile?: string | NixExpr;
+      activeRecordEncryptionKeyDerivationSaltFile?: string | NixExpr;
+      activeRecordEncryptionPrimaryKeyFile?: string | NixExpr;
       automaticMigrations?: boolean;
       configureNginx?: boolean;
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number | null;
-        user?: string;
+        user?: string | NixExpr;
       };
       elasticsearch?: {
-        host?: string | null;
-        passwordFile?: string | null;
+        host?: string | null | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        prefix?: string | null;
-        preset?: "large_cluster" | "single_node_cluster" | "small_cluster";
-        user?: string | null;
+        prefix?: string | null | NixExpr;
+        preset?: "large_cluster" | "single_node_cluster" | "small_cluster" | NixExpr;
+        user?: string | null | NixExpr;
       };
       enable?: boolean;
       enableUnixSocket?: boolean;
       extraConfig?: Record<string, unknown>;
       extraEnvFiles?: string[] | NixExpr;
-      group?: string;
-      localDomain?: string;
+      group?: string | NixExpr;
+      localDomain?: string | NixExpr;
       mediaAutoRemove?: {
         enable?: boolean;
         olderThanDays?: number;
-        startAt?: string;
+        startAt?: string | NixExpr;
       };
       package?: string | NixExpr;
       redis?: {
         createLocally?: boolean;
         enableUnixSocket?: boolean;
-        host?: string | null;
-        passwordFile?: string | null;
+        host?: string | null | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number | null;
       };
-      secretKeyBaseFile?: string;
+      secretKeyBaseFile?: string | NixExpr;
       sidekiqPort?: number;
       sidekiqProcesses?: {
         "<name>"?: Record<string, unknown>;
@@ -10295,35 +10269,35 @@ declare module "winix" {
       smtp?: {
         authenticate?: boolean;
         createLocally?: boolean;
-        fromAddress?: string;
-        host?: string;
-        passwordFile?: string | null;
+        fromAddress?: string | NixExpr;
+        host?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        user?: string | null;
+        user?: string | null | NixExpr;
       };
       streamingProcesses?: number;
-      trustedProxy?: string;
-      user?: string;
-      vapidPrivateKeyFile?: string;
-      vapidPublicKeyFile?: string;
+      trustedProxy?: string | NixExpr;
+      user?: string | NixExpr;
+      vapidPrivateKeyFile?: string | NixExpr;
+      vapidPublicKeyFile?: string | NixExpr;
       webPort?: number;
       webProcesses?: number;
       webThreads?: number;
     };
     matomo: {
       enable?: boolean;
-      hostname?: string;
+      hostname?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -10336,48 +10310,46 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       periodicArchiveProcessing?: boolean;
-      webServerUser?: string | null;
+      webServerUser?: string | null | NixExpr;
     };
     "matrix-alertmanager": {
       enable?: boolean;
-      homeserverUrl?: string;
-      matrixRooms?: {
-        "*"?: Record<string, unknown>;
-      };
-      matrixUser?: string;
+      homeserverUrl?: string | NixExpr;
+      matrixRooms?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      matrixUser?: string | NixExpr;
       mention?: boolean;
       package?: string | NixExpr;
       port?: number;
-      secretFile?: string;
-      tokenFile?: string;
+      secretFile?: string | NixExpr;
+      tokenFile?: string | NixExpr;
     };
     "matrix-appservice-discord": {
       enable?: boolean;
-      environmentFile?: string | null;
-      localpart?: string | null;
+      environmentFile?: string | null | NixExpr;
+      localpart?: string | null | NixExpr;
       package?: string | NixExpr;
       port?: number;
       serviceDependencies?: string[] | NixExpr;
       settings?: Record<string, unknown>;
-      url?: string;
+      url?: string | NixExpr;
     };
     "matrix-appservice-irc": {
       enable?: boolean;
-      localpart?: string;
+      localpart?: string | NixExpr;
       needBindingCap?: boolean;
       passwordEncryptionKeyLength?: number;
       port?: number;
-      registrationUrl?: string;
+      registrationUrl?: string | NixExpr;
       settings?: {
         database?: Record<string, unknown>;
         homeserver?: Record<string, unknown>;
@@ -10388,7 +10360,7 @@ declare module "winix" {
       enable?: boolean;
       extraEnvironment?: Record<string, string>;
       package?: string | NixExpr;
-      secretFile?: string | null;
+      secretFile?: string | null | NixExpr;
       settings?: {
         global?: Record<string, unknown>;
       };
@@ -10399,26 +10371,26 @@ declare module "winix" {
       };
       enable?: boolean;
       extraEnvironment?: Record<string, string>;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
         global?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "matrix-hookshot": {
       enable?: boolean;
       package?: string | NixExpr;
-      registrationFile?: string;
+      registrationFile?: string | NixExpr;
       serviceDependencies?: string[] | NixExpr;
       settings?: {
-        passFile?: string;
+        passFile?: string | NixExpr;
       };
     };
     "matrix-synapse": {
-      configFile?: string;
+      configFile?: string | NixExpr;
       configureRedisLocally?: boolean;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       enableRegistrationScript?: boolean;
       extraArgs?: string[] | NixExpr;
@@ -10427,7 +10399,7 @@ declare module "winix" {
       log?: Record<string, Record<string, unknown>>;
       package?: string | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
-      serviceUnit?: string;
+      serviceUnit?: string | NixExpr;
       settings?: {
         app_service_config_files?: string[] | NixExpr;
         database?: Record<string, unknown>;
@@ -10435,23 +10407,23 @@ declare module "winix" {
         enable_metrics?: boolean;
         enable_registration?: boolean;
         listeners?: Record<string, unknown>;
-        log_config?: string;
-        macaroon_secret_key?: string | null;
-        max_image_pixels?: string;
-        max_upload_size?: string;
-        media_store_path?: string;
-        pid_file?: string;
+        log_config?: string | NixExpr;
+        macaroon_secret_key?: string | null | NixExpr;
+        max_image_pixels?: string | NixExpr;
+        max_upload_size?: string | NixExpr;
+        media_store_path?: string | NixExpr;
+        pid_file?: string | NixExpr;
         presence?: Record<string, unknown>;
-        public_baseurl?: string | null;
+        public_baseurl?: string | null | NixExpr;
         redis?: Record<string, unknown>;
-        registration_shared_secret?: string | null;
+        registration_shared_secret?: string | null | NixExpr;
         report_stats?: boolean;
-        server_name?: string;
-        signing_key_path?: string;
-        tls_certificate_path?: string | null;
-        tls_private_key_path?: string | null;
+        server_name?: string | NixExpr;
+        signing_key_path?: string | NixExpr;
+        tls_certificate_path?: string | null | NixExpr;
+        tls_private_key_path?: string | null | NixExpr;
         trusted_key_servers?: Record<string, unknown>;
-        turn_shared_secret?: string;
+        turn_shared_secret?: string | NixExpr;
         turn_uris?: string[] | NixExpr;
         url_preview_enabled?: boolean;
         url_preview_ip_range_blacklist?: string[] | NixExpr;
@@ -10466,51 +10438,51 @@ declare module "winix" {
     "matrix-tuwunel": {
       enable?: boolean;
       extraEnvironment?: Record<string, string>;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
         global?: Record<string, unknown>;
       };
-      stateDirectory?: string;
-      user?: string;
+      stateDirectory?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "matter-server": {
       enable?: boolean;
       extraArgs?: Record<string, unknown>;
-      logLevel?: "critical" | "debug" | "error" | "info" | "warning";
+      logLevel?: "critical" | "debug" | "error" | "info" | "warning" | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     matterbridge: {
-      configFile?: string;
-      configPath?: string | null;
+      configFile?: string | NixExpr;
+      configPath?: string | null | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     mattermost: {
-      configDir?: string;
+      configDir?: string | NixExpr;
       database?: {
         create?: boolean;
         extraConnectionOptions?: Record<string, number | string>;
         fromEnvironment?: boolean;
-        host?: string;
-        name?: string;
-        password?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        password?: string | NixExpr;
         peerAuth?: boolean;
         port?: number;
-        socketPath?: string;
-        user?: string;
+        socketPath?: string | NixExpr;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       environment?: Record<string, number | string>;
-      environmentFile?: string | null;
-      group?: string;
-      host?: string;
-      logDir?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
+      logDir?: string | NixExpr;
       matterircd?: {
         enable?: boolean;
         package?: string | NixExpr;
@@ -10523,32 +10495,32 @@ declare module "winix" {
       port?: number;
       preferNixConfig?: boolean;
       settings?: Record<string, unknown>;
-      siteName?: string;
-      siteUrl?: string;
+      siteName?: string | NixExpr;
+      siteUrl?: string | NixExpr;
       socket?: {
         enable?: boolean;
         export?: boolean;
-        path?: string;
+        path?: string | NixExpr;
       };
       telemetry?: {
         enableDiagnostics?: boolean;
         enableSecurityAlerts?: boolean;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     maubot: {
       configMutable?: boolean;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      extraConfigFile?: string;
+      extraConfigFile?: string | NixExpr;
       package?: string | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
       pythonPackages?: (string | NixExpr)[] | NixExpr;
       settings?: {
         admins?: Record<string, string>;
         api_features?: Record<string, boolean>;
-        crypto_database?: string;
-        database?: string;
+        crypto_database?: string | NixExpr;
+        database?: string | NixExpr;
         database_opts?: Record<string, unknown>;
         homeservers?: Record<string, unknown>;
         logging?: Record<string, unknown>;
@@ -10558,14 +10530,14 @@ declare module "winix" {
       };
     };
     "mautrix-discord": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       registerToSynapse?: boolean;
-      registrationServiceUnit?: string;
+      registrationServiceUnit?: string | NixExpr;
       serviceDependencies?: string[] | NixExpr;
-      serviceUnit?: string;
+      serviceUnit?: string | NixExpr;
       settings?: {
         appservice?: Record<string, unknown>;
         bridge?: Record<string, unknown>;
@@ -10581,7 +10553,7 @@ declare module "winix" {
     };
     "mautrix-signal": {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       registerToSynapse?: boolean;
       serviceDependencies?: string[] | NixExpr;
@@ -10589,7 +10561,7 @@ declare module "winix" {
     };
     "mautrix-telegram": {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       registerToSynapse?: boolean;
       serviceDependencies?: string[] | NixExpr;
@@ -10597,7 +10569,7 @@ declare module "winix" {
     };
     "mautrix-whatsapp": {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       registerToSynapse?: boolean;
       serviceDependencies?: string[] | NixExpr;
@@ -10613,21 +10585,21 @@ declare module "winix" {
       verbose?: boolean;
     };
     mchprs: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       declarativeSettings?: boolean;
       declarativeWhitelist?: boolean;
       enable?: boolean;
-      maxRuntime?: string;
+      maxRuntime?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
-        address?: string;
+        address?: string | NixExpr;
         auto_redpiler?: boolean;
         block_in_hitbox?: boolean;
         bungeecord?: boolean;
-        chat_format?: string;
+        chat_format?: string | NixExpr;
         max_players?: number;
-        motd?: string;
+        motd?: string | NixExpr;
         port?: number;
         schemati?: boolean;
         view_distance?: number;
@@ -10638,20 +10610,20 @@ declare module "winix" {
       };
     };
     mealie: {
-      credentialsFile?: string | null;
+      credentialsFile?: string | null | NixExpr;
       database?: {
         createLocally?: boolean;
       };
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, unknown>;
     };
     mediagoblin: {
       createDatabaseLocally?: boolean;
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       paste?: {
@@ -10672,65 +10644,63 @@ declare module "winix" {
     };
     mediatomb: {
       customCfg?: boolean;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       dsmSupport?: boolean;
       enable?: boolean;
-      group?: string;
-      interface?: string;
-      mediaDirectories?: {
-        "*"?: Record<string, unknown>;
-      };
+      group?: string | NixExpr;
+      interface?: string | NixExpr;
+      mediaDirectories?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       pcDirectoryHide?: boolean;
       port?: number;
       ps3Support?: boolean;
-      serverName?: string;
+      serverName?: string | NixExpr;
       tg100Support?: boolean;
       transcoding?: boolean;
-      user?: string;
-      uuid?: string;
+      user?: string | NixExpr;
+      uuid?: string | NixExpr;
     };
     mediawiki: {
       database?: {
         createLocally?: boolean;
-        host?: string | null;
-        name?: string;
-        passwordFile?: string | null;
-        path?: string | null;
+        host?: string | null | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
+        path?: string | null | NixExpr;
         port?: number | null;
-        socket?: string | null;
-        tablePrefix?: string | null;
-        type?: "mssql" | "mysql" | "oracle" | "postgres" | "sqlite";
-        user?: string | null;
+        socket?: string | null | NixExpr;
+        tablePrefix?: string | null | NixExpr;
+        type?: "mssql" | "mysql" | "oracle" | "postgres" | "sqlite" | NixExpr;
+        user?: string | null | NixExpr;
       };
       enable?: boolean;
       extensions?: Record<string, string | null>;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       finalPackage?: string | NixExpr;
       httpd?: {
         virtualHost?: Record<string, unknown>;
       };
-      name?: string;
+      name?: string | NixExpr;
       nginx?: {
-        hostName?: string;
+        hostName?: string | NixExpr;
       };
       package?: string | NixExpr;
-      passwordFile?: string;
-      passwordSender?: string;
+      passwordFile?: string | NixExpr;
+      passwordSender?: string | NixExpr;
       path?: (string | NixExpr)[] | NixExpr;
       phpPackage?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       skins?: Record<string, string>;
-      uploadsDir?: string | null;
-      url?: string;
-      webserver?: "apache" | "nginx" | "none";
+      uploadsDir?: string | null | NixExpr;
+      url?: string | NixExpr;
+      webserver?: "apache" | "nginx" | "none" | NixExpr;
     };
     meilisearch: {
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       listenPort?: number;
-      masterKeyFile?: string | null;
+      masterKeyFile?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
@@ -10738,29 +10708,29 @@ declare module "winix" {
       enable?: boolean;
       enableUnixSocket?: boolean;
       extraOptions?: string[] | NixExpr;
-      listen?: string;
+      listen?: string | NixExpr;
       maxConnections?: number;
       maxMemory?: number;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     "meme-bingo-web": {
-      address?: string;
-      baseUrl?: string;
+      address?: string | NixExpr;
+      baseUrl?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     memos: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string;
-      group?: string;
+      environmentFile?: string | NixExpr;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     merecat: {
       enable?: boolean;
@@ -10772,25 +10742,25 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     meshtasticd: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     metabase: {
       enable?: boolean;
       listen?: {
-        ip?: string;
+        ip?: string | NixExpr;
         port?: number;
       };
       openFirewall?: boolean;
       package?: string | NixExpr;
       ssl?: {
         enable?: boolean;
-        keystore?: string | null;
+        keystore?: string | null | NixExpr;
         port?: number;
       };
     };
@@ -10801,59 +10771,59 @@ declare module "winix" {
       };
       package?: string | NixExpr;
       settings?: {
-        name?: string;
+        name?: string | NixExpr;
         tags?: string[] | NixExpr;
       };
     };
     microbin: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
-      passwordFile?: string | null;
+      passwordFile?: string | null | NixExpr;
       settings?: Record<string, unknown>;
     };
     microsocks: {
       authOnce?: boolean;
-      authPasswordFile?: string | null;
-      authUsername?: string | null;
+      authPasswordFile?: string | null | NixExpr;
+      authUsername?: string | null | NixExpr;
       disableLogging?: boolean;
       enable?: boolean;
-      execWrapper?: string | null;
-      group?: string;
-      ip?: string;
-      outgoingBindIp?: string | null;
+      execWrapper?: string | null | NixExpr;
+      group?: string | NixExpr;
+      ip?: string | NixExpr;
+      outgoingBindIp?: string | null | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     mighttpd2: {
-      config?: string;
+      config?: string | NixExpr;
       cores?: number | null;
       enable?: boolean;
-      routing?: string;
+      routing?: string | NixExpr;
     };
     mihomo: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
-      extraOpts?: string | null;
+      extraOpts?: string | null | NixExpr;
       package?: string | NixExpr;
       processesInfo?: boolean;
       tunMode?: boolean;
-      webui?: string | null;
+      webui?: string | null | NixExpr;
     };
     mimir: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       configuration?: Record<string, unknown>;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
       package?: string | NixExpr;
     };
     "minecraft-server": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       declarative?: boolean;
       enable?: boolean;
       eula?: boolean;
-      jvmOpts?: string;
+      jvmOpts?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       serverProperties?: Record<string, boolean | number | string>;
@@ -10861,38 +10831,38 @@ declare module "winix" {
     };
     "minetest-server": {
       config?: Record<string, unknown>;
-      configPath?: string | null;
+      configPath?: string | null | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      gameId?: string | null;
-      logPath?: string | null;
+      gameId?: string | null | NixExpr;
+      logPath?: string | null | NixExpr;
       port?: number | null;
-      world?: string | null;
+      world?: string | null | NixExpr;
     };
     minidlna: {
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
-        db_dir?: string;
-        enable_subtitles?: "no" | "yes";
-        enable_tivo?: "no" | "yes";
-        friendly_name?: string;
-        inotify?: "no" | "yes";
-        log_level?: string;
+        db_dir?: string | NixExpr;
+        enable_subtitles?: "no" | "yes" | NixExpr;
+        enable_tivo?: "no" | "yes" | NixExpr;
+        friendly_name?: string | NixExpr;
+        inotify?: "no" | "yes" | NixExpr;
+        log_level?: string | NixExpr;
         media_dir?: string[] | NixExpr;
         notify_interval?: number;
         port?: number;
-        root_container?: string;
-        wide_links?: "no" | "yes";
+        root_container?: string | NixExpr;
+        wide_links?: "no" | "yes" | NixExpr;
       };
     };
     miniflux: {
-      adminCredentialsFile?: string | null;
+      adminCredentialsFile?: string | null | NixExpr;
       config?: {
         CREATE_ADMIN?: number | boolean;
-        DATABASE_URL?: string | null;
-        LISTEN_ADDR?: string;
+        DATABASE_URL?: string | null | NixExpr;
+        LISTEN_ADDR?: string | NixExpr;
         RUN_MIGRATIONS?: number | boolean;
         WATCHDOG?: number | boolean;
       };
@@ -10901,23 +10871,23 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     minio: {
-      accessKey?: string;
+      accessKey?: string | NixExpr;
       browser?: boolean;
-      certificatesDir?: string;
-      configDir?: string;
-      consoleAddress?: string;
+      certificatesDir?: string | NixExpr;
+      configDir?: string | NixExpr;
+      consoleAddress?: string | NixExpr;
       dataDir?: string[] | NixExpr;
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
-      region?: string;
-      rootCredentialsFile?: string | null;
-      secretKey?: string;
+      region?: string | NixExpr;
+      rootCredentialsFile?: string | null | NixExpr;
+      secretKey?: string | NixExpr;
     };
     miniupnpd: {
-      appendConfig?: string;
+      appendConfig?: string | NixExpr;
       enable?: boolean;
-      externalInterface?: string;
+      externalInterface?: string | NixExpr;
       internalIPs?: string[] | NixExpr;
       natpmp?: boolean;
       upnp?: boolean;
@@ -10930,80 +10900,80 @@ declare module "winix" {
       port?: number | null;
       serverSettings?: Record<string, unknown>;
       tunerSettings?: Record<string, unknown> | null;
-      unixSocket?: string | null;
+      unixSocket?: string | null | NixExpr;
     };
     miredo: {
-      bindAddress?: string | null;
-      bindPort?: string | null;
+      bindAddress?: string | null | NixExpr;
+      bindPort?: string | null | NixExpr;
       enable?: boolean;
-      interfaceName?: string;
+      interfaceName?: string | NixExpr;
       package?: string | NixExpr;
-      serverAddress?: string;
+      serverAddress?: string | NixExpr;
     };
     misskey: {
       database?: {
         createLocally?: boolean;
-        passwordFile?: string | null;
+        passwordFile?: string | null | NixExpr;
       };
       enable?: boolean;
       meilisearch?: {
         createLocally?: boolean;
-        keyFile?: string | null;
+        keyFile?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       redis?: {
         createLocally?: boolean;
-        passwordFile?: string | null;
+        passwordFile?: string | null | NixExpr;
       };
       reverseProxy?: {
         enable?: boolean;
-        host?: string | null;
+        host?: string | null | NixExpr;
         ssl?: boolean | null;
         webserver?: Record<string, unknown>;
       };
       settings?: {
-        chmodSocket?: string | null;
+        chmodSocket?: string | null | NixExpr;
         db?: Record<string, unknown>;
-        id?: "aid" | "aidx" | "meid" | "objectid" | "ulid";
+        id?: "aid" | "aidx" | "meid" | "objectid" | "ulid" | NixExpr;
         meilisearch?: Record<string, unknown>;
         port?: number;
         redis?: Record<string, unknown>;
         redisForJobQueue?: Record<string, unknown>;
         redisForPubsub?: Record<string, unknown>;
         redisForTimelines?: Record<string, unknown>;
-        socket?: string | null;
-        url?: string;
+        socket?: string | null | NixExpr;
+        url?: string | NixExpr;
       };
     };
     mjolnir: {
-      accessTokenFile?: string | null;
-      dataPath?: string;
+      accessTokenFile?: string | null | NixExpr;
+      dataPath?: string | NixExpr;
       enable?: boolean;
-      homeserverUrl?: string;
-      managementRoom?: string;
+      homeserverUrl?: string | NixExpr;
+      managementRoom?: string | NixExpr;
       pantalaimon?: {
         enable?: boolean;
         options?: Record<string, unknown>;
-        passwordFile?: string | null;
-        username?: string;
+        passwordFile?: string | null | NixExpr;
+        username?: string | NixExpr;
       };
       protectedRooms?: string[] | NixExpr;
       settings?: Record<string, unknown>;
     };
     "mjpg-streamer": {
       enable?: boolean;
-      group?: string;
-      inputPlugin?: string;
-      outputPlugin?: string;
-      user?: string;
+      group?: string | NixExpr;
+      inputPlugin?: string | NixExpr;
+      outputPlugin?: string | NixExpr;
+      user?: string | NixExpr;
     };
     mlmmj: {
       enable?: boolean;
-      group?: string;
-      listDomain?: string;
+      group?: string | NixExpr;
+      listDomain?: string | NixExpr;
       mailLists?: string[] | NixExpr;
-      maintInterval?: string;
-      user?: string;
+      maintInterval?: string | NixExpr;
+      user?: string | NixExpr;
     };
     mmsd: {
       enable?: boolean;
@@ -11020,22 +10990,22 @@ declare module "winix" {
       };
     };
     "molly-brown": {
-      certPath?: string;
-      docBase?: string;
+      certPath?: string | NixExpr;
+      docBase?: string | NixExpr;
       enable?: boolean;
-      hostName?: string;
-      keyPath?: string;
+      hostName?: string | NixExpr;
+      keyPath?: string | NixExpr;
       port?: number;
       settings?: Record<string, unknown>;
     };
     mollysocket: {
       enable?: boolean;
-      environmentFile?: string | null;
-      logLevel?: string;
+      environmentFile?: string | null | NixExpr;
+      logLevel?: string | NixExpr;
       settings?: {
         allowed_endpoints?: string[] | NixExpr;
         allowed_uuids?: string[] | NixExpr;
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
     };
@@ -11047,12 +11017,12 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     monero: {
-      banlist?: string | null;
-      dataDir?: string;
+      banlist?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       exclusiveNodes?: string[] | NixExpr;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraNodes?: string[] | NixExpr;
       limits?: {
         download?: number;
@@ -11061,82 +11031,82 @@ declare module "winix" {
         upload?: number;
       };
       mining?: {
-        address?: string;
+        address?: string | NixExpr;
         enable?: boolean;
         threads?: number;
       };
       priorityNodes?: string[] | NixExpr;
       prune?: boolean;
       rpc?: {
-        address?: string;
-        password?: string | null;
+        address?: string | NixExpr;
+        password?: string | null | NixExpr;
         port?: number;
         restricted?: boolean;
-        user?: string | null;
+        user?: string | null | NixExpr;
       };
     };
     monetdb: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      listenAddress?: string;
+      group?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     mongodb: {
-      bind_ip?: string;
-      dbpath?: string;
+      bind_ip?: string | NixExpr;
+      dbpath?: string | NixExpr;
       enable?: boolean;
       enableAuth?: boolean;
-      extraConfig?: string;
-      initialRootPasswordFile?: string | null;
-      initialScript?: string | null;
+      extraConfig?: string | NixExpr;
+      initialRootPasswordFile?: string | null | NixExpr;
+      initialScript?: string | null | NixExpr;
       mongoshPackage?: string | NixExpr;
       package?: string | NixExpr;
-      pidFile?: string;
+      pidFile?: string | NixExpr;
       quiet?: boolean;
-      replSetName?: string;
-      user?: string;
+      replSetName?: string | NixExpr;
+      user?: string | NixExpr;
     };
     monica: {
-      appKeyFile?: string;
-      appURL?: string;
+      appKeyFile?: string | NixExpr;
+      appURL?: string | NixExpr;
       config?: Record<string, unknown>;
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        user?: string;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      hostname?: string;
+      group?: string | NixExpr;
+      hostname?: string | NixExpr;
       mail?: {
-        driver?: "sendmail" | "smtp";
+        driver?: "sendmail" | "smtp" | NixExpr;
         encryption?: "tls" | null;
-        from?: string;
-        fromName?: string;
-        host?: string;
-        passwordFile?: string | null;
+        from?: string | NixExpr;
+        fromName?: string | NixExpr;
+        host?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        user?: string | null;
+        user?: string | null | NixExpr;
       };
-      maxUploadSize?: string;
+      maxUploadSize?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -11149,80 +11119,80 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       phpPackage?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
-      user?: string;
+      user?: string | NixExpr;
     };
     monit: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
     };
     moodle: {
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        socket?: string | null;
-        type?: "mysql" | "pgsql";
-        user?: string;
+        socket?: string | null | NixExpr;
+        type?: "mysql" | "pgsql" | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
-      extraConfig?: string;
-      initialPassword?: string;
+      extraConfig?: string | NixExpr;
+      initialPassword?: string | NixExpr;
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       virtualHost?: {
-        acmeRoot?: string | null;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
-        adminAddr?: string | null;
-        documentRoot?: string | null;
+        adminAddr?: string | null | NixExpr;
+        documentRoot?: string | null | NixExpr;
         enableACME?: boolean;
         enableUserDir?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
-        hostName?: string;
+        globalRedirect?: string | null | NixExpr;
+        hostName?: string | NixExpr;
         http2?: boolean;
         listen?: Record<string, unknown>;
         listenAddresses?: string[] | NixExpr;
         locations?: Record<string, unknown>;
-        logFormat?: string;
+        logFormat?: string | NixExpr;
         onlySSL?: boolean;
-        robotsEntries?: string;
+        robotsEntries?: string | NixExpr;
         servedDirs?: Record<string, unknown>[] | NixExpr;
         servedFiles?: Record<string, unknown>[] | NixExpr;
         serverAliases?: string[] | NixExpr;
-        sslServerCert?: string;
-        sslServerChain?: string | null;
-        sslServerKey?: string;
-        useACMEHost?: string | null;
+        sslServerCert?: string | NixExpr;
+        sslServerChain?: string | null | NixExpr;
+        sslServerKey?: string | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
     };
     moonraker: {
-      address?: string;
+      address?: string | NixExpr;
       allowSystemControl?: boolean;
       analysis?: {
         enable?: boolean;
       };
-      configDir?: string | null;
+      configDir?: string | null | NixExpr;
       enable?: boolean;
-      group?: string;
-      klipperSocket?: string;
+      group?: string | NixExpr;
+      klipperSocket?: string | NixExpr;
       package?: string | NixExpr | null;
       port?: number;
       settings?: Record<string, Record<string, unknown>>;
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     moosefs: {
       cgiserver?: {
@@ -11246,7 +11216,7 @@ declare module "winix" {
         openFirewall?: boolean;
         settings?: Record<string, unknown>;
       };
-      masterHost?: string;
+      masterHost?: string | NixExpr;
       metalogger?: {
         enable?: boolean;
         settings?: Record<string, unknown>;
@@ -11254,7 +11224,7 @@ declare module "winix" {
       runAsUser?: boolean;
     };
     mopidy: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extensionPackages?: (string | NixExpr)[] | NixExpr;
       extraConfigFiles?: string[] | NixExpr;
@@ -11264,12 +11234,10 @@ declare module "winix" {
       bridges?: {
         "<name>"?: Record<string, unknown>;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       includeDirs?: string[] | NixExpr;
-      listeners?: {
-        "*"?: Record<string, unknown>;
-      };
+      listeners?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       logDest?: (string | "dlt" | "stderr" | "stdout" | "syslog" | "topic")[] | NixExpr;
       logType?: ("all" | "debug" | "error" | "information" | "none" | "notice" | "subscribe" | "unsubscribe" | "warning" | "websockets")[] | NixExpr;
       package?: string | NixExpr;
@@ -11278,49 +11246,49 @@ declare module "winix" {
     };
     motioneye: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       packages?: {
         ffmpeg?: string | NixExpr;
         motion?: string | NixExpr;
         motioneye?: string | NixExpr;
       };
       settings?: Record<string, string>;
-      user?: string;
+      user?: string | NixExpr;
     };
     movim: {
       database?: {
         createLocally?: boolean;
-        name?: string;
-        type?: "mariadb" | "postgresql";
-        user?: string;
+        name?: string | NixExpr;
+        type?: "mariadb" | "postgresql" | NixExpr;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       debug?: boolean;
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       h2o?: {
         acme?: Record<string, unknown>;
-        host?: string | null;
+        host?: string | null | NixExpr;
         http?: Record<string, unknown>;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
+        serverName?: string | null | NixExpr;
         settings?: Record<string, unknown>;
         tls?: Record<string, unknown>;
       };
-      logDir?: string;
+      logDir?: string | NixExpr;
       minifyStaticFiles?: boolean | Record<string, unknown>;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -11333,74 +11301,72 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
-      phpCfg?: Record<string, number | string | boolean>;
+      phpCfg?: Record<string, number | string | boolean> | NixExpr;
       phpPackage?: string | NixExpr;
       podConfig?: {
         chatonly?: boolean | null;
-        description?: string | null;
+        description?: string | null | NixExpr;
         disableregistration?: boolean | null;
-        info?: string | null;
-        locale?: string | null;
+        info?: string | null | NixExpr;
+        locale?: string | null | NixExpr;
         loglevel?: number | null;
         restrictsuggestions?: boolean | null;
-        timezone?: string | null;
-        xmppdescription?: string | null;
-        xmppdomain?: string | null;
-        xmppwhitelist?: string | null;
+        timezone?: string | null | NixExpr;
+        xmppdescription?: string | null | NixExpr;
+        xmppdomain?: string | null | NixExpr;
+        xmppwhitelist?: string | null | NixExpr;
       };
-      poolConfig?: Record<string, number | string | boolean>;
+      poolConfig?: Record<string, number | string | boolean> | NixExpr;
       port?: number;
       precompressStaticFiles?: {
         brotli?: Record<string, unknown>;
         gzip?: Record<string, unknown>;
       };
-      runtimeDir?: string;
-      secretFile?: string | null;
-      settings?: Record<string, number | string | boolean | null>;
-      user?: string;
+      runtimeDir?: string | NixExpr;
+      secretFile?: string | null | NixExpr;
+      settings?: Record<string, number | string | boolean | null> | NixExpr;
+      user?: string | NixExpr;
       verbose?: boolean;
     };
     mozillavpn: {
       enable?: boolean;
     };
     mpd: {
-      credentials?: {
-        "*"?: Record<string, unknown>;
-      };
-      dataDir?: string;
+      credentials?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       fluidsynth?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean | null;
       settings?: {
-        bind_to_address?: string;
-        db_file?: string | null;
-        music_directory?: string;
-        playlist_directory?: string;
+        bind_to_address?: string | NixExpr;
+        db_file?: string | null | NixExpr;
+        music_directory?: string | NixExpr;
+        playlist_directory?: string | NixExpr;
         port?: number;
       };
       startWhenNeeded?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     mpdscribble: {
       enable?: boolean;
       endpoints?: {
         "<name>"?: Record<string, unknown>;
       };
-      host?: string;
+      host?: string | NixExpr;
       journalInterval?: number;
-      passwordFile?: string | null;
+      passwordFile?: string | null | NixExpr;
       port?: number;
-      proxy?: string | null;
+      proxy?: string | null | NixExpr;
       verbose?: number;
     };
     mptcpd: {
@@ -11411,33 +11377,31 @@ declare module "winix" {
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
       influxdb?: {
-        database?: string;
-        host?: string;
-        password?: string | null;
+        database?: string | NixExpr;
+        host?: string | NixExpr;
+        password?: string | null | NixExpr;
         port?: number;
         ssl?: boolean;
-        username?: string | null;
+        username?: string | null | NixExpr;
         verify_ssl?: boolean;
       };
       mqtt?: {
-        cafile?: string | null;
-        certfile?: string | null;
-        host?: string;
-        keyfile?: string | null;
-        password?: string | null;
+        cafile?: string | null | NixExpr;
+        certfile?: string | null | NixExpr;
+        host?: string | NixExpr;
+        keyfile?: string | null | NixExpr;
+        password?: string | null | NixExpr;
         port?: number;
-        username?: string | null;
+        username?: string | null | NixExpr;
       };
       package?: string | NixExpr;
-      points?: {
-        "*"?: Record<string, unknown>;
-      };
+      points?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
     };
     mstpd: {
       enable?: boolean;
     };
     mtprotoproxy: {
-      adTag?: string | null;
+      adTag?: string | null | NixExpr;
       enable?: boolean;
       extraConfig?: Record<string, unknown>;
       port?: number;
@@ -11445,12 +11409,10 @@ declare module "winix" {
       users?: Record<string, string>;
     };
     "mtr-exporter": {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      jobs?: {
-        "*"?: Record<string, unknown>;
-      };
+      jobs?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       mtrPackage?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
@@ -11462,37 +11424,33 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     multipath: {
-      blacklist?: string | null;
-      blacklist_exceptions?: string | null;
-      defaults?: string | null;
-      devices?: {
-        "*"?: Record<string, unknown>;
-      };
+      blacklist?: string | null | NixExpr;
+      blacklist_exceptions?: string | null | NixExpr;
+      defaults?: string | null | NixExpr;
+      devices?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       enable?: boolean;
-      extraConfig?: string | null;
-      extraConfigFile?: string | null;
-      overrides?: string | null;
+      extraConfig?: string | null | NixExpr;
+      extraConfigFile?: string | null | NixExpr;
+      overrides?: string | null | NixExpr;
       package?: string | NixExpr;
-      pathGroups?: {
-        "*"?: Record<string, unknown>;
-      };
+      pathGroups?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
     };
     munge: {
       enable?: boolean;
-      password?: string;
+      password?: string | NixExpr;
     };
     "munin-cron": {
       enable?: boolean;
-      extraCSS?: string;
-      extraGlobalConfig?: string;
-      hosts?: string;
+      extraCSS?: string | NixExpr;
+      extraGlobalConfig?: string | NixExpr;
+      hosts?: string | NixExpr;
     };
     "munin-node": {
       disabledPlugins?: string[] | NixExpr;
       enable?: boolean;
       extraAutoPlugins?: string[] | NixExpr;
-      extraConfig?: string;
-      extraPluginConfig?: string;
+      extraConfig?: string | NixExpr;
+      extraPluginConfig?: string | NixExpr;
       extraPlugins?: Record<string, string>;
     };
     murmur: {
@@ -11503,35 +11461,35 @@ declare module "winix" {
       bandwidth?: number;
       bonjour?: boolean;
       clientCertRequired?: boolean;
-      dbus?: "session" | "system";
+      dbus?: "session" | "system" | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
-      extraConfig?: string;
-      group?: string;
-      hostName?: string;
+      environmentFile?: string | null | NixExpr;
+      extraConfig?: string | NixExpr;
+      group?: string | NixExpr;
+      hostName?: string | NixExpr;
       imgMsgLength?: number;
       logDays?: number;
       logToFile?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      password?: string;
+      password?: string | NixExpr;
       port?: number;
-      registerHostname?: string;
-      registerName?: string;
-      registerPassword?: string;
-      registerUrl?: string;
+      registerHostname?: string | NixExpr;
+      registerName?: string | NixExpr;
+      registerPassword?: string | NixExpr;
+      registerUrl?: string | NixExpr;
       sendVersion?: boolean;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
       textMsgLength?: number;
       tls?: {
-        caPath?: string | null;
-        certPath?: string | null;
-        keyPath?: string | null;
-        useACMEHost?: string | null;
+        caPath?: string | null | NixExpr;
+        certPath?: string | null | NixExpr;
+        keyPath?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
       users?: number;
-      welcometext?: string;
+      welcometext?: string | NixExpr;
     };
     "music-assistant": {
       enable?: boolean;
@@ -11544,7 +11502,7 @@ declare module "winix" {
       addHostedPublicNodes?: boolean;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      keyFile?: string | null;
+      keyFile?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       peers?: string[] | NixExpr;
@@ -11560,65 +11518,61 @@ declare module "winix" {
       };
     };
     mysql: {
-      configFile?: string;
-      dataDir?: string;
+      configFile?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       ensureDatabases?: string[] | NixExpr;
-      ensureUsers?: {
-        "*"?: Record<string, unknown>;
-      };
+      ensureUsers?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       galeraCluster?: {
-        clusterAddress?: string;
-        clusterPassword?: string;
+        clusterAddress?: string | NixExpr;
+        clusterPassword?: string | NixExpr;
         enable?: boolean;
-        localAddress?: string;
-        localName?: string;
-        name?: string;
+        localAddress?: string | NixExpr;
+        localName?: string | NixExpr;
+        name?: string | NixExpr;
         nodeAddresses?: string[] | NixExpr;
         package?: string | NixExpr;
-        sstMethod?: "mariabackup" | "rsync";
+        sstMethod?: "mariabackup" | "rsync" | NixExpr;
       };
-      group?: string;
-      initialDatabases?: {
-        "*"?: Record<string, unknown>;
-      };
-      initialScript?: string | null;
+      group?: string | NixExpr;
+      initialDatabases?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      initialScript?: string | null | NixExpr;
       package?: string | NixExpr;
       replication?: {
-        masterHost?: string;
-        masterPassword?: string;
+        masterHost?: string | NixExpr;
+        masterPassword?: string | NixExpr;
         masterPort?: number;
-        masterUser?: string;
-        role?: "master" | "none" | "slave";
+        masterUser?: string | NixExpr;
+        role?: "master" | "none" | "slave" | NixExpr;
         serverId?: number;
-        slaveHost?: string;
+        slaveHost?: string | NixExpr;
       };
       settings?: Record<string, Record<string, unknown>>;
-      user?: string;
+      user?: string | NixExpr;
     };
     mysqlBackup: {
-      calendar?: string;
-      compressionAlg?: "gzip" | "xz" | "zstd";
+      calendar?: string | NixExpr;
+      compressionAlg?: "gzip" | "xz" | "zstd" | NixExpr;
       compressionLevel?: number | null;
       databases?: string[] | NixExpr;
       enable?: boolean;
-      gzipOptions?: string;
-      location?: string;
+      gzipOptions?: string | NixExpr;
+      location?: string | NixExpr;
       singleTransaction?: boolean | string[] | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     n8n: {
       customNodes?: (string | NixExpr)[] | NixExpr;
       enable?: boolean;
       environment?: {
-        GENERIC_TIMEZONE?: string | null;
-        N8N_DIAGNOSTICS_ENABLED?: string | boolean;
-        N8N_PORT?: string | number;
-        N8N_RUNNERS_AUTH_TOKEN_FILE?: string | null;
-        N8N_RUNNERS_BROKER_LISTEN_ADDRESS?: string;
-        N8N_RUNNERS_BROKER_PORT?: string | number;
-        N8N_USER_FOLDER?: string;
-        N8N_VERSION_NOTIFICATIONS_ENABLED?: string | boolean;
+        GENERIC_TIMEZONE?: string | null | NixExpr;
+        N8N_DIAGNOSTICS_ENABLED?: string | boolean | NixExpr;
+        N8N_PORT?: string | number | NixExpr;
+        N8N_RUNNERS_AUTH_TOKEN_FILE?: string | null | NixExpr;
+        N8N_RUNNERS_BROKER_LISTEN_ADDRESS?: string | NixExpr;
+        N8N_RUNNERS_BROKER_PORT?: string | number | NixExpr;
+        N8N_USER_FOLDER?: string | NixExpr;
+        N8N_VERSION_NOTIFICATIONS_ENABLED?: string | boolean | NixExpr;
       };
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -11639,30 +11593,30 @@ declare module "winix" {
       plugins?: (string | NixExpr)[] | NixExpr;
       validateConfig?: boolean;
       virtualHost?: {
-        acmeRoot?: string | null;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
-        adminAddr?: string | null;
-        documentRoot?: string | null;
+        adminAddr?: string | null | NixExpr;
+        documentRoot?: string | null | NixExpr;
         enableACME?: boolean;
         enableUserDir?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
-        hostName?: string;
+        globalRedirect?: string | null | NixExpr;
+        hostName?: string | NixExpr;
         http2?: boolean;
         listen?: Record<string, unknown>;
         listenAddresses?: string[] | NixExpr;
         locations?: Record<string, unknown>;
-        logFormat?: string;
+        logFormat?: string | NixExpr;
         onlySSL?: boolean;
-        robotsEntries?: string;
+        robotsEntries?: string | NixExpr;
         servedDirs?: Record<string, unknown>[] | NixExpr;
         servedFiles?: Record<string, unknown>[] | NixExpr;
         serverAliases?: string[] | NixExpr;
-        sslServerCert?: string;
-        sslServerChain?: string | null;
-        sslServerKey?: string;
-        useACMEHost?: string | null;
+        sslServerCert?: string | NixExpr;
+        sslServerChain?: string | null | NixExpr;
+        sslServerKey?: string | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
     };
     namecoind: {
@@ -11670,71 +11624,71 @@ declare module "winix" {
       extraNodes?: string[] | NixExpr;
       generate?: boolean;
       rpc?: {
-        address?: string;
+        address?: string | NixExpr;
         allowFrom?: string[] | NixExpr;
-        certificate?: string | null;
-        key?: string | null;
-        password?: string | null;
+        certificate?: string | null | NixExpr;
+        key?: string | null | NixExpr;
+        password?: string | null | NixExpr;
         port?: number;
-        user?: string | null;
+        user?: string | null | NixExpr;
       };
       trustedNodes?: string[] | NixExpr;
-      wallet?: string;
+      wallet?: string | NixExpr;
     };
     "nar-serve": {
-      cacheURL?: string;
-      domain?: string;
+      cacheURL?: string | NixExpr;
+      domain?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     nats: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       jetstream?: boolean;
       port?: number;
-      serverName?: string;
+      serverName?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
       validateConfig?: boolean;
     };
     navidrome: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       finalPackage?: string | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       plugins?: unknown[] | NixExpr;
       settings?: {
-        Address?: string;
+        Address?: string | NixExpr;
         EnableInsightsCollector?: boolean;
         Plugins?: Record<string, unknown>;
         Port?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     nbd: {
       server?: {
         enable?: boolean;
         exports?: Record<string, unknown>;
         extraOptions?: Record<string, boolean | number | string>;
-        listenAddress?: string | null;
+        listenAddress?: string | null | NixExpr;
         listenPort?: number;
       };
     };
     ncdns: {
-      address?: string;
+      address?: string | NixExpr;
       dnssec?: {
         enable?: boolean;
         keys?: Record<string, unknown>;
       };
       enable?: boolean;
       identity?: {
-        address?: string;
-        hostmaster?: string;
-        hostname?: string;
+        address?: string | NixExpr;
+        hostmaster?: string | NixExpr;
+        hostname?: string | NixExpr;
       };
       port?: number;
       settings?: Record<string, unknown>;
@@ -11748,39 +11702,39 @@ declare module "winix" {
         allowPutVerb?: boolean;
         cdc?: Record<string, unknown>;
         database?: Record<string, unknown>;
-        databaseURL?: string | null;
-        databaseURLFile?: string | null;
-        hostName?: string;
+        databaseURL?: string | null | NixExpr;
+        databaseURLFile?: string | null | NixExpr;
+        hostName?: string | NixExpr;
         lock?: Record<string, unknown>;
         lru?: Record<string, unknown>;
-        maxSize?: string | null;
+        maxSize?: string | null | NixExpr;
         redis?: Record<string, unknown>;
-        secretKeyPath?: string | null;
+        secretKeyPath?: string | null | NixExpr;
         signNarinfo?: boolean;
         storage?: Record<string, unknown>;
-        tempPath?: string;
+        tempPath?: string | NixExpr;
         upstream?: Record<string, unknown>;
       };
       enable?: boolean;
-      logLevel?: "debug" | "error" | "fatal" | "info" | "panic" | "trace" | "warn";
-      netrcFile?: string | null;
+      logLevel?: "debug" | "error" | "fatal" | "info" | "panic" | "trace" | "warn" | NixExpr;
+      netrcFile?: string | null | NixExpr;
       openTelemetry?: {
         enable?: boolean;
-        grpcURL?: string | null;
+        grpcURL?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       prometheus?: {
         enable?: boolean;
       };
       server?: {
-        addr?: string;
+        addr?: string | NixExpr;
       };
     };
     ndppd: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
-      interface?: string | null;
-      network?: string | null;
+      interface?: string | null | NixExpr;
+      network?: string | null | NixExpr;
       proxies?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -11800,37 +11754,37 @@ declare module "winix" {
     "nebula-lighthouse-service": {
       enable?: boolean;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     neo4j: {
       bolt?: {
-        advertisedAddress?: string;
+        advertisedAddress?: string | NixExpr;
         enable?: boolean;
-        listenAddress?: string;
-        sslPolicy?: string;
-        tlsLevel?: "DISABLED" | "OPTIONAL" | "REQUIRED";
+        listenAddress?: string | NixExpr;
+        sslPolicy?: string | NixExpr;
+        tlsLevel?: "DISABLED" | "OPTIONAL" | "REQUIRED" | NixExpr;
       };
       constrainLoadCsv?: boolean;
-      defaultListenAddress?: string;
+      defaultListenAddress?: string | NixExpr;
       directories?: {
-        certificates?: string;
-        data?: string;
-        home?: string;
-        imports?: string;
-        plugins?: string;
+        certificates?: string | NixExpr;
+        data?: string | NixExpr;
+        home?: string | NixExpr;
+        imports?: string | NixExpr;
+        plugins?: string | NixExpr;
       };
       enable?: boolean;
-      extraServerConfig?: string;
+      extraServerConfig?: string | NixExpr;
       http?: {
-        advertisedAddress?: string;
+        advertisedAddress?: string | NixExpr;
         enable?: boolean;
-        listenAddress?: string;
+        listenAddress?: string | NixExpr;
       };
       https?: {
-        advertisedAddress?: string;
+        advertisedAddress?: string | NixExpr;
         enable?: boolean;
-        listenAddress?: string;
-        sslPolicy?: string;
+        listenAddress?: string | NixExpr;
+        sslPolicy?: string | NixExpr;
       };
       package?: string | NixExpr;
       readOnly?: boolean;
@@ -11844,7 +11798,7 @@ declare module "winix" {
     };
     netatalk: {
       enable?: boolean;
-      extmap?: string;
+      extmap?: string | NixExpr;
       port?: number;
       settings?: Record<string, Record<string, unknown>>;
     };
@@ -11857,7 +11811,7 @@ declare module "winix" {
       server?: {
         coturn?: Record<string, unknown>;
         dashboard?: Record<string, unknown>;
-        domain?: string;
+        domain?: string | NixExpr;
         enable?: boolean;
         enableNginx?: boolean;
         management?: Record<string, unknown>;
@@ -11870,57 +11824,57 @@ declare module "winix" {
         enable?: boolean;
         package?: string | NixExpr;
       };
-      useRoutingFeatures?: "both" | "client" | "none" | "server";
+      useRoutingFeatures?: "both" | "client" | "none" | "server" | NixExpr;
     };
     netbox: {
-      apiTokenPeppersFile?: string | null;
-      dataDir?: string;
+      apiTokenPeppersFile?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       enableLdap?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       gunicornArgs?: string[] | NixExpr;
-      keycloakClientSecret?: string | null;
-      ldapConfigPath?: string;
-      listenAddress?: string;
+      keycloakClientSecret?: string | null | NixExpr;
+      ldapConfigPath?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       plugins?: unknown;
       port?: number;
-      secretKeyFile?: string;
+      secretKeyFile?: string | NixExpr;
       settings?: {
         ALLOWED_HOSTS?: string[] | NixExpr;
       };
-      unixSocket?: string | null;
+      unixSocket?: string | null | NixExpr;
     };
     netclient: {
       enable?: boolean;
       package?: string | NixExpr;
     };
     netdata: {
-      claimTokenFile?: string | null;
+      claimTokenFile?: string | null | NixExpr;
       config?: Record<string, Record<string, unknown>>;
       configDir?: Record<string, string>;
-      configText?: string | null;
+      configText?: string | null | NixExpr;
       deadlineBeforeStopSec?: number;
       enable?: boolean;
       enableAnalyticsReporting?: boolean;
       extraNdsudoPackages?: (string | NixExpr)[] | NixExpr;
       extraPluginPaths?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       python?: {
         enable?: boolean;
         extraPackages?: unknown;
         recommendedPythonPackages?: boolean;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     netfoil: {
       config?: Record<string, string>;
-      doHIPs?: string;
-      doHUrl?: string;
+      doHIPs?: string | NixExpr;
+      doHUrl?: string | NixExpr;
       enable?: boolean;
       listen?: {
-        ipAddress?: string;
+        ipAddress?: string | NixExpr;
         port?: number;
       };
       logAllowed?: boolean;
@@ -11946,14 +11900,14 @@ declare module "winix" {
       websockify?: {
         enable?: boolean;
         portMap?: Record<string, number>;
-        sslCert?: string;
-        sslKey?: string;
+        sslCert?: string | NixExpr;
+        sslKey?: string | NixExpr;
       };
     };
     newt: {
       blueprint?: Record<string, unknown>;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
@@ -11969,86 +11923,86 @@ declare module "winix" {
         redis?: boolean;
       };
       cli?: {
-        memoryLimit?: string | null;
+        memoryLimit?: string | null | NixExpr;
       };
       config?: {
-        adminpassFile?: string | null;
-        adminuser?: string | null;
-        dbhost?: string | null;
-        dbname?: string | null;
-        dbpassFile?: string | null;
-        dbtableprefix?: string | null;
+        adminpassFile?: string | null | NixExpr;
+        adminuser?: string | null | NixExpr;
+        dbhost?: string | null | NixExpr;
+        dbname?: string | null | NixExpr;
+        dbpassFile?: string | null | NixExpr;
+        dbtableprefix?: string | null | NixExpr;
         dbtype?: "mysql" | "pgsql" | "sqlite" | null;
-        dbuser?: string | null;
+        dbuser?: string | null | NixExpr;
         objectstore?: Record<string, unknown>;
       };
       configureRedis?: boolean;
       database?: {
         createLocally?: boolean;
       };
-      datadir?: string;
+      datadir?: string | NixExpr;
       enable?: boolean;
       enableImagemagick?: boolean;
       extraApps?: Record<string, string | NixExpr>;
       extraAppsEnable?: boolean;
       fastcgiTimeout?: number;
       finalPackage?: string | NixExpr;
-      home?: string;
-      hostName?: string;
+      home?: string | NixExpr;
+      hostName?: string | NixExpr;
       https?: boolean;
       imaginary?: {
         enable?: boolean;
       };
-      maxUploadSize?: string;
+      maxUploadSize?: string | NixExpr;
       nginx?: {
         enableFastcgiRequestBuffering?: boolean;
         hstsMaxAge?: number;
       };
       notify_push?: {
         bendDomainToLocalhost?: boolean;
-        dbhost?: string | null;
-        dbname?: string | null;
-        dbpassFile?: string | null;
-        dbtableprefix?: string | null;
+        dbhost?: string | null | NixExpr;
+        dbname?: string | null | NixExpr;
+        dbpassFile?: string | null | NixExpr;
+        dbtableprefix?: string | null | NixExpr;
         dbtype?: "mysql" | "pgsql" | "sqlite" | null;
-        dbuser?: string | null;
+        dbuser?: string | null | NixExpr;
         enable?: boolean;
-        logLevel?: "debug" | "error" | "info" | "trace" | "warn";
-        nextcloudUrl?: string;
+        logLevel?: "debug" | "error" | "info" | "trace" | "warn" | NixExpr;
+        nextcloudUrl?: string | NixExpr;
         package?: string | NixExpr;
-        socketPath?: string;
+        socketPath?: string | NixExpr;
       };
       occ?: string | NixExpr;
       package?: string | NixExpr;
       phpExtraExtensions?: unknown;
       phpOptions?: Record<string, string | number>;
       phpPackage?: string | NixExpr;
-      poolConfig?: string | null;
+      poolConfig?: string | null | NixExpr;
       poolSettings?: Record<string, string | number | boolean>;
-      secretFile?: string | null;
+      secretFile?: string | null | NixExpr;
       secrets?: Record<string, string>;
       settings?: {
-        default_phone_region?: string;
+        default_phone_region?: string | NixExpr;
         enabledPreviewProviders?: string[] | NixExpr;
-        log_type?: "errorlog" | "file" | "syslog" | "systemd";
+        log_type?: "errorlog" | "file" | "syslog" | "systemd" | NixExpr;
         loglevel?: number;
-        mail_domain?: string | null;
-        mail_from_address?: string | null;
+        mail_domain?: string | null | NixExpr;
+        mail_from_address?: string | null | NixExpr;
         mail_send_plaintext_only?: boolean;
-        mail_sendmailmode?: "pipe" | "smtp";
+        mail_sendmailmode?: "pipe" | "smtp" | NixExpr;
         mail_smtpauth?: boolean;
         mail_smtpdebug?: boolean;
-        mail_smtphost?: string;
-        mail_smtpmode?: "null" | "qmail" | "sendmail" | "smtp";
-        mail_smtpname?: string;
+        mail_smtphost?: string | NixExpr;
+        mail_smtpmode?: "null" | "qmail" | "sendmail" | "smtp" | NixExpr;
+        mail_smtpname?: string | NixExpr;
         mail_smtpport?: number;
         mail_smtpsecure?: "" | "ssl";
         mail_smtpstreamoptions?: Record<string, Record<string, unknown>>;
         mail_smtptimeout?: number;
-        mail_template_class?: string;
+        mail_template_class?: string | NixExpr;
         overwriteprotocol?: "" | "http" | "https";
         "profile.enabled"?: boolean;
-        skeletondirectory?: string;
+        skeletondirectory?: string | NixExpr;
         trusted_domains?: string[] | NixExpr;
         trusted_proxies?: string[] | NixExpr;
       };
@@ -12060,8 +12014,8 @@ declare module "winix" {
       };
       configureNginx?: boolean;
       enable?: boolean;
-      group?: string;
-      hostName?: string | null;
+      group?: string | NixExpr;
+      hostName?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: {
         app?: Record<string, unknown>;
@@ -12077,8 +12031,8 @@ declare module "winix" {
         stats?: Record<string, unknown>;
         turn?: Record<string, unknown>;
       };
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "nextcloud-whiteboard-server": {
       enable?: boolean;
@@ -12091,24 +12045,24 @@ declare module "winix" {
     };
     "nextjs-ollama-llm-ui": {
       enable?: boolean;
-      hostname?: string;
-      ollamaUrl?: string;
+      hostname?: string | NixExpr;
+      ollamaUrl?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
     };
     nexus: {
       enable?: boolean;
-      group?: string;
-      home?: string;
+      group?: string | NixExpr;
+      home?: string | NixExpr;
       jdkPackage?: string | NixExpr;
-      jvmOpts?: string;
-      listenAddress?: string;
+      jvmOpts?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       listenPort?: number;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     "nezha-agent": {
-      clientSecretFile?: string | null;
+      clientSecretFile?: string | null | NixExpr;
       debug?: boolean;
       enable?: boolean;
       genUuid?: boolean;
@@ -12119,26 +12073,26 @@ declare module "winix" {
         disable_send_query?: boolean;
         gpu?: boolean;
         report_delay?: number;
-        server?: string;
+        server?: string | NixExpr;
         skip_connection_count?: boolean;
         skip_procs_count?: boolean;
         temperature?: boolean;
         tls?: boolean;
         use_ipv6_country_code?: boolean;
-        uuid?: string | null;
+        uuid?: string | null | NixExpr;
       };
     };
     nfs: {
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       idmapd?: {
         settings?: Record<string, Record<string, unknown>>;
       };
       server?: {
         createMountPoints?: boolean;
         enable?: boolean;
-        exports?: string;
-        extraNfsdConfig?: string;
-        hostName?: string | null;
+        exports?: string | NixExpr;
+        extraNfsdConfig?: string | NixExpr;
+        hostName?: string | null | NixExpr;
         lockdPort?: number | null;
         mountdPort?: number | null;
         nproc?: number;
@@ -12147,64 +12101,58 @@ declare module "winix" {
       settings?: Record<string, Record<string, unknown>>;
     };
     nghttpx: {
-      "backend-address-family"?: "IPv4" | "IPv6" | "auto";
-      backends?: {
-        "*"?: Record<string, unknown>;
-      };
+      "backend-address-family"?: "IPv4" | "IPv6" | "auto" | NixExpr;
+      backends?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       backlog?: number;
       enable?: boolean;
-      extraConfig?: string;
-      frontends?: {
-        "*"?: Record<string, unknown>;
-      };
+      extraConfig?: string | NixExpr;
+      frontends?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       "rlimit-nofile"?: number;
       "single-process"?: boolean;
       "single-thread"?: boolean;
       tls?: {
-        crt?: string;
-        key?: string;
+        crt?: string | NixExpr;
+        key?: string | NixExpr;
       };
       workers?: number;
     };
     nginx: {
       additionalModules?: Record<string, unknown>[] | NixExpr;
-      appendConfig?: string;
-      appendHttpConfig?: string;
-      clientMaxBodySize?: string;
-      commonHttpConfig?: string;
-      config?: string;
+      appendConfig?: string | NixExpr;
+      appendHttpConfig?: string | NixExpr;
+      clientMaxBodySize?: string | NixExpr;
+      commonHttpConfig?: string | NixExpr;
+      config?: string | NixExpr;
       defaultHTTPListenPort?: number;
-      defaultListen?: {
-        "*"?: Record<string, unknown>;
-      };
+      defaultListen?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       defaultListenAddresses?: string[] | NixExpr;
-      defaultMimeTypes?: string;
+      defaultMimeTypes?: string | NixExpr;
       defaultSSLListenPort?: number;
       enable?: boolean;
       enableQuicBPF?: boolean;
       enableReload?: boolean;
-      eventsConfig?: string;
+      eventsConfig?: string | NixExpr;
       experimentalZstdSettings?: boolean;
       gitweb?: {
         enable?: boolean;
-        group?: string;
-        location?: string;
-        user?: string;
-        virtualHost?: string;
+        group?: string | NixExpr;
+        location?: string | NixExpr;
+        user?: string | NixExpr;
+        virtualHost?: string | NixExpr;
       };
-      group?: string;
-      httpConfig?: string;
-      logError?: string;
+      group?: string | NixExpr;
+      httpConfig?: string | NixExpr;
+      logError?: string | NixExpr;
       mapHashBucketSize?: number | null;
       mapHashMaxSize?: number | null;
       package?: string | NixExpr;
-      prependConfig?: string;
-      preStart?: string;
+      prependConfig?: string | NixExpr;
+      preStart?: string | NixExpr;
       proxyCachePath?: {
         "<name>"?: Record<string, unknown>;
       };
       proxyResolveWhileRunning?: boolean;
-      proxyTimeout?: string;
+      proxyTimeout?: string | NixExpr;
       recommendedBrotliSettings?: boolean;
       recommendedGzipSettings?: boolean;
       recommendedOptimisation?: boolean;
@@ -12215,74 +12163,74 @@ declare module "winix" {
         addresses?: string[] | NixExpr;
         ipv4?: boolean;
         ipv6?: boolean;
-        valid?: string;
+        valid?: string | NixExpr;
       };
       serverNamesHashBucketSize?: number | null;
       serverNamesHashMaxSize?: number | null;
       serverTokens?: boolean;
-      sslCiphers?: string | string[] | null;
-      sslDhparam?: string | boolean;
-      sslProtocols?: string;
+      sslCiphers?: string | string[] | null | NixExpr;
+      sslDhparam?: string | boolean | NixExpr;
+      sslProtocols?: string | NixExpr;
       sso?: {
         configuration?: Record<string, unknown>;
         enable?: boolean;
         package?: string | NixExpr;
       };
       statusPage?: boolean;
-      streamConfig?: string;
+      streamConfig?: string | NixExpr;
       tailscaleAuth?: {
         enable?: boolean;
-        expectedTailnet?: string | null;
-        group?: string;
+        expectedTailnet?: string | null | NixExpr;
+        group?: string | NixExpr;
         package?: string | NixExpr;
-        socketPath?: string;
-        user?: string;
+        socketPath?: string | NixExpr;
+        user?: string | NixExpr;
         virtualHosts?: string[] | NixExpr;
       };
       typesHashMaxSize?: number;
       upstreams?: {
         "<name>"?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
       uwsgiResolveWhileRunning?: boolean;
-      uwsgiTimeout?: string;
+      uwsgiTimeout?: string | NixExpr;
       validateConfigFile?: boolean;
       virtualHosts?: {
         "<name>"?: Record<string, unknown>;
       };
     };
     ngircd: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
     nifi: {
       enable?: boolean;
       enableHTTPS?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       initJavaHeapSize?: number | null;
-      initPasswordFile?: string | null;
-      initUser?: string | null;
-      listenHost?: string;
+      initPasswordFile?: string | null | NixExpr;
+      initUser?: string | null | NixExpr;
+      listenHost?: string | NixExpr;
       listenPort?: number;
       maxJavaHeapSize?: number | null;
       package?: string | NixExpr;
-      proxyHost?: string | null;
+      proxyHost?: string | null | NixExpr;
       proxyPort?: number | null;
-      user?: string;
+      user?: string | NixExpr;
     };
     nipap: {
       authBackendSettings?: Record<string, unknown>;
       enable?: boolean;
       "nipap-www"?: {
         enable?: boolean;
-        host?: string | null;
+        host?: string | null | NixExpr;
         package?: string | NixExpr;
         port?: number | null;
-        umask?: string;
-        unixSocket?: string | null;
+        umask?: string | NixExpr;
+        unixSocket?: string | null | NixExpr;
         workers?: number;
-        xmlrpcURIFile?: string | null;
+        xmlrpcURIFile?: string | null | NixExpr;
       };
       nipapd?: {
         database?: Record<string, unknown>;
@@ -12293,13 +12241,13 @@ declare module "winix" {
         auth?: Record<string, unknown>;
         nipapd?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     nitter: {
       cache?: {
         listMinutes?: number;
         redisConnections?: number;
-        redisHost?: string;
+        redisHost?: string | NixExpr;
         redisMaxConnections?: number;
         redisPort?: number;
         rssMinutes?: number;
@@ -12308,8 +12256,8 @@ declare module "winix" {
         base64Media?: boolean;
         enableDebug?: boolean;
         enableRSS?: boolean;
-        proxy?: string;
-        proxyAuth?: string;
+        proxy?: string | NixExpr;
+        proxyAuth?: string | NixExpr;
         tokenCount?: number;
       };
       enable?: boolean;
@@ -12327,50 +12275,50 @@ declare module "winix" {
         mp4Playback?: boolean;
         muteVideos?: boolean;
         proxyVideos?: boolean;
-        replaceReddit?: string;
-        replaceTwitter?: string;
-        replaceYouTube?: string;
+        replaceReddit?: string | NixExpr;
+        replaceTwitter?: string | NixExpr;
+        replaceYouTube?: string | NixExpr;
         squareAvatars?: boolean;
         stickyProfile?: boolean;
-        theme?: string;
+        theme?: string | NixExpr;
       };
       redisCreateLocally?: boolean;
       server?: {
-        address?: string;
-        hostname?: string;
+        address?: string | NixExpr;
+        hostname?: string | NixExpr;
         httpMaxConnections?: number;
         https?: boolean;
         port?: number;
-        staticDir?: string;
-        title?: string;
+        staticDir?: string | NixExpr;
+        title?: string | NixExpr;
       };
-      sessionsFile?: string;
+      sessionsFile?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     "nix-serve": {
-      bindAddress?: string;
+      bindAddress?: string | NixExpr;
       enable?: boolean;
-      extraParams?: string;
+      extraParams?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      secretKeyFile?: string | null;
+      secretKeyFile?: string | null | NixExpr;
     };
     "nix-store-gcs-proxy": {
       "<name>"?: {
-        address?: string;
-        bucketName?: string;
+        address?: string | NixExpr;
+        bucketName?: string | NixExpr;
         enable?: boolean;
       };
     };
     "nixops-dns": {
       dnsmasq?: boolean;
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     nixseparatedebuginfod2: {
-      cacheExpirationDelay?: string;
+      cacheExpirationDelay?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -12378,9 +12326,9 @@ declare module "winix" {
     };
     nmtrust: {
       enable?: boolean;
-      evalFailurePolicy?: "offline" | "untrusted";
+      evalFailurePolicy?: "offline" | "untrusted" | NixExpr;
       excludedConnectionPatterns?: string[] | NixExpr;
-      mixedPolicy?: "trusted" | "untrusted";
+      mixedPolicy?: "trusted" | "untrusted" | NixExpr;
       systemUnits?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -12403,36 +12351,36 @@ declare module "winix" {
     };
     "nntp-proxy": {
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       port?: number;
       prohibitPosting?: boolean;
-      sslCert?: string;
-      sslKey?: string;
+      sslCert?: string | NixExpr;
+      sslKey?: string | NixExpr;
       upstreamMaxConnections?: number;
-      upstreamPassword?: string;
+      upstreamPassword?: string | NixExpr;
       upstreamPort?: number;
-      upstreamServer?: string;
-      upstreamUser?: string;
+      upstreamServer?: string | NixExpr;
+      upstreamUser?: string | NixExpr;
       users?: {
         "<name>"?: Record<string, unknown>;
       };
-      verbosity?: "debug" | "error" | "info" | "notice" | "warning";
+      verbosity?: "debug" | "error" | "info" | "notice" | "warning" | NixExpr;
     };
     "node-red": {
-      configFile?: string;
+      configFile?: string | NixExpr;
       define?: Record<string, unknown>;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       safe?: boolean;
-      user?: string;
-      userDir?: string;
+      user?: string | NixExpr;
+      userDir?: string | NixExpr;
       withNpmAndGcc?: boolean;
     };
     nohang: {
-      configPath?: "basic" | "desktop";
+      configPath?: "basic" | "desktop" | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
@@ -12449,25 +12397,25 @@ declare module "winix" {
     };
     nominatim: {
       database?: {
-        apiUser?: string;
-        dbname?: string;
-        extraConnectionParams?: string | null;
-        host?: string;
-        passwordFile?: string | null;
+        apiUser?: string | NixExpr;
+        dbname?: string | NixExpr;
+        extraConnectionParams?: string | null | NixExpr;
+        host?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        superUser?: string;
+        superUser?: string | NixExpr;
       };
       enable?: boolean;
-      hostName?: string;
+      hostName?: string | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, string>;
       ui?: {
-        config?: string | null;
+        config?: string | null | NixExpr;
         package?: string | NixExpr;
       };
     };
     "nostr-rs-relay": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -12477,20 +12425,20 @@ declare module "winix" {
       enable?: boolean;
     };
     nscd: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       enableNsncd?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     nsd: {
       bind8Stats?: boolean;
-      dnssecInterval?: string;
+      dnssecInterval?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       hideVersion?: boolean;
-      identity?: string;
+      identity?: string | NixExpr;
       interfaces?: string[] | NixExpr;
       ipFreebind?: boolean;
       ipTransparent?: boolean;
@@ -12502,7 +12450,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
       logTimeAscii?: boolean;
-      nsid?: string | null;
+      nsid?: string | null | NixExpr;
       port?: number;
       ratelimit?: {
         enable?: boolean;
@@ -12514,13 +12462,13 @@ declare module "winix" {
         whitelistRatelimit?: number;
       };
       remoteControl?: {
-        controlCertFile?: string;
-        controlKeyFile?: string;
+        controlCertFile?: string | NixExpr;
+        controlKeyFile?: string | NixExpr;
         enable?: boolean;
         interfaces?: string[] | NixExpr;
         port?: number;
-        serverCertFile?: string;
-        serverKeyFile?: string;
+        serverCertFile?: string | NixExpr;
+        serverKeyFile?: string | NixExpr;
       };
       reuseport?: boolean;
       rootServer?: boolean;
@@ -12531,7 +12479,7 @@ declare module "winix" {
       tcpQueryCount?: number;
       tcpTimeout?: number;
       verbosity?: number;
-      version?: string | null;
+      version?: string | null | NixExpr;
       xfrdReloadTimeout?: number;
       zonefilesCheck?: boolean;
       zonefilesWrite?: number;
@@ -12541,28 +12489,28 @@ declare module "winix" {
     };
     "ntfy-sh": {
       enable?: boolean;
-      environmentFile?: string | null;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
-        "base-url"?: string;
+        "base-url"?: string | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     ntopng: {
-      configText?: string;
+      configText?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       httpPort?: number;
       interfaces?: string[] | NixExpr;
       redis?: {
-        address?: string;
-        createInstance?: string | null;
+        address?: string | NixExpr;
+        createInstance?: string | null | NixExpr;
       };
     };
     ntp: {
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraFlags?: string[] | NixExpr;
       restrictDefault?: string[] | NixExpr;
       restrictSource?: string[] | NixExpr;
@@ -12579,28 +12527,28 @@ declare module "winix" {
     };
     nullidentdmod: {
       enable?: boolean;
-      userid?: string | null;
+      userid?: string | null | NixExpr;
     };
     nullmailer: {
       config?: {
-        adminaddr?: string | null;
-        allmailfrom?: string | null;
-        defaultdomain?: string | null;
-        defaulthost?: string | null;
-        doublebounceto?: string | null;
-        helohost?: string | null;
-        idhost?: string | null;
-        maxpause?: string | number | null;
-        me?: string | null;
-        pausetime?: string | number | null;
-        remotes?: string | null;
-        sendtimeout?: string | number | null;
+        adminaddr?: string | null | NixExpr;
+        allmailfrom?: string | null | NixExpr;
+        defaultdomain?: string | null | NixExpr;
+        defaulthost?: string | null | NixExpr;
+        doublebounceto?: string | null | NixExpr;
+        helohost?: string | null | NixExpr;
+        idhost?: string | null | NixExpr;
+        maxpause?: string | number | null | NixExpr;
+        me?: string | null | NixExpr;
+        pausetime?: string | number | null | NixExpr;
+        remotes?: string | null | NixExpr;
+        sendtimeout?: string | number | null | NixExpr;
       };
       enable?: boolean;
-      group?: string;
-      remotesFile?: string | null;
+      group?: string | NixExpr;
+      remotesFile?: string | null | NixExpr;
       setSendmail?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     "nvme-rs": {
       enable?: boolean;
@@ -12613,13 +12561,13 @@ declare module "winix" {
     };
     nylon: {
       "<name>"?: {
-        acceptInterface?: string;
+        acceptInterface?: string | NixExpr;
         allowedIPRanges?: string[] | NixExpr;
-        bindInterface?: string;
+        bindInterface?: string | NixExpr;
         deniedIPRanges?: string[] | NixExpr;
         enable?: boolean;
         logging?: boolean;
-        name?: string;
+        name?: string | NixExpr;
         nrConnections?: number;
         port?: number;
         verbosity?: boolean;
@@ -12627,135 +12575,135 @@ declare module "winix" {
     };
     nzbget: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, boolean | number | string>;
-      user?: string;
+      user?: string | NixExpr;
     };
     nzbhydra2: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
     };
     "oauth2-proxy": {
-      approvalPrompt?: "auto" | "force";
+      approvalPrompt?: "auto" | "force" | NixExpr;
       azure?: {
-        resource?: string;
-        tenant?: string;
+        resource?: string | NixExpr;
+        tenant?: string | NixExpr;
       };
-      basicAuthPassword?: string | null;
-      clientID?: string | null;
-      clientSecretFile?: string | null;
+      basicAuthPassword?: string | null | NixExpr;
+      clientID?: string | null | NixExpr;
+      clientSecretFile?: string | null | NixExpr;
       cookie?: {
-        domain?: string | null;
-        expire?: string;
+        domain?: string | null | NixExpr;
+        expire?: string | NixExpr;
         httpOnly?: boolean;
-        name?: string;
-        refresh?: string | null;
-        secretFile?: string | null;
+        name?: string | NixExpr;
+        refresh?: string | null | NixExpr;
+        secretFile?: string | null | NixExpr;
         secure?: boolean;
       };
-      customTemplatesDir?: string | null;
+      customTemplatesDir?: string | null | NixExpr;
       email?: {
-        addresses?: string | null;
+        addresses?: string | null | NixExpr;
         domains?: string[] | NixExpr;
       };
       enable?: boolean;
       extraConfig?: Record<string, unknown>;
       github?: {
-        org?: string | null;
-        team?: string | null;
+        org?: string | null | NixExpr;
+        team?: string | null | NixExpr;
       };
       google?: {
-        adminEmail?: string;
+        adminEmail?: string | NixExpr;
         groups?: string[] | NixExpr;
-        serviceAccountJSON?: string;
+        serviceAccountJSON?: string | NixExpr;
       };
       htpasswd?: {
         displayForm?: boolean;
-        file?: string | null;
+        file?: string | null | NixExpr;
       };
-      httpAddress?: string;
-      keyFile?: string | null;
-      loginURL?: string | null;
+      httpAddress?: string | NixExpr;
+      keyFile?: string | null | NixExpr;
+      loginURL?: string | null | NixExpr;
       nginx?: {
-        domain?: string;
-        proxy?: string;
+        domain?: string | NixExpr;
+        proxy?: string | NixExpr;
         virtualHosts?: Record<string, unknown>;
       };
-      oidcIssuerUrl?: string | null;
+      oidcIssuerUrl?: string | null | NixExpr;
       package?: string | NixExpr;
       passAccessToken?: boolean;
       passBasicAuth?: boolean;
       passHostHeader?: boolean;
-      profileURL?: string | null;
-      provider?: "adfs" | "azure" | "bitbucket" | "digitalocean" | "facebook" | "github" | "gitlab" | "google" | "keycloak" | "keycloak-oidc" | "linkedin" | "login.gov" | "nextcloud" | "oidc";
-      proxyPrefix?: string;
-      redeemURL?: string | null;
-      redirectURL?: string | null;
+      profileURL?: string | null | NixExpr;
+      provider?: "adfs" | "azure" | "bitbucket" | "digitalocean" | "facebook" | "github" | "gitlab" | "google" | "keycloak" | "keycloak-oidc" | "linkedin" | "login.gov" | "nextcloud" | "oidc" | NixExpr;
+      proxyPrefix?: string | NixExpr;
+      redeemURL?: string | null | NixExpr;
+      redirectURL?: string | null | NixExpr;
       requestLogging?: boolean;
       reverseProxy?: boolean;
-      scope?: string | null;
+      scope?: string | null | NixExpr;
       setXauthrequest?: boolean | null;
-      signatureKey?: string | null;
+      signatureKey?: string | null | NixExpr;
       skipAuthRegexes?: string[] | NixExpr;
       tls?: {
-        certificate?: string;
+        certificate?: string | NixExpr;
         enable?: boolean;
-        httpsAddress?: string;
-        key?: string;
+        httpsAddress?: string | NixExpr;
+        key?: string | NixExpr;
       };
       trustedProxyIP?: string[] | NixExpr;
       upstream?: unknown;
-      validateURL?: string | null;
+      validateURL?: string | null | NixExpr;
     };
     ocis: {
-      address?: string;
-      configDir?: string | null;
+      address?: string | NixExpr;
+      configDir?: string | null | NixExpr;
       enable?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      stateDir?: string;
-      url?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      url?: string | NixExpr;
+      user?: string | NixExpr;
     };
     ocserv: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
     };
     "ocsinventory-agent": {
       enable?: boolean;
-      interval?: string;
+      interval?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
-        ca?: string;
+        ca?: string | NixExpr;
         debug?: boolean;
-        local?: string | null;
-        server?: string | null;
-        tag?: string | null;
+        local?: string | null | NixExpr;
+        server?: string | null | NixExpr;
+        tag?: string | null | NixExpr;
       };
     };
     octoprint: {
       enable?: boolean;
       extraConfig?: Record<string, unknown>;
-      group?: string;
-      host?: string | null;
+      group?: string | NixExpr;
+      host?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       plugins?: unknown;
       port?: number;
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     odoo: {
       addons?: (string | NixExpr)[] | NixExpr;
       autoInit?: boolean;
       autoInitExtraFlags?: string[] | NixExpr;
-      domain?: string | null;
+      domain?: string | null | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -12765,10 +12713,10 @@ declare module "winix" {
     offlineimap: {
       enable?: boolean;
       install?: boolean;
-      onCalendar?: string;
+      onCalendar?: string | NixExpr;
       package?: string | NixExpr;
       path?: string[] | NixExpr;
-      timeoutStartSec?: string;
+      timeoutStartSec?: string | NixExpr;
     };
     ofono: {
       enable?: boolean;
@@ -12778,11 +12726,11 @@ declare module "winix" {
       enable?: boolean;
     };
     oink: {
-      apiKeyFile?: string;
+      apiKeyFile?: string | NixExpr;
       domains?: Record<string, unknown>[] | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
-      secretApiKeyFile?: string;
+      secretApiKeyFile?: string | NixExpr;
       settings?: {
         interval?: number;
         ttl?: number;
@@ -12791,45 +12739,45 @@ declare module "winix" {
     olivetin: {
       enable?: boolean;
       extraConfigFiles?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       path?: (string | NixExpr | string)[];
       settings?: {
-        ListenAddressSingleHTTPFrontend?: string;
+        ListenAddressSingleHTTPFrontend?: string | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     ollama: {
       enable?: boolean;
       environmentVariables?: Record<string, string>;
-      group?: string | null;
-      home?: string;
-      host?: string;
+      group?: string | null | NixExpr;
+      home?: string | NixExpr;
+      host?: string | NixExpr;
       loadModels?: string[] | NixExpr;
-      models?: string;
+      models?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      rocmOverrideGfx?: string | null;
+      rocmOverrideGfx?: string | null | NixExpr;
       syncModels?: boolean;
-      user?: string | null;
+      user?: string | null | NixExpr;
     };
     ombi: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     omnom: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      passwordFile?: string | null;
+      passwordFile?: string | null | NixExpr;
       port?: number;
       settings?: {
         activitypub?: Record<string, unknown>;
@@ -12839,7 +12787,7 @@ declare module "winix" {
         smtp?: Record<string, unknown>;
         storage?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     oncall: {
       database?: {
@@ -12847,10 +12795,10 @@ declare module "winix" {
       };
       enable?: boolean;
       package?: string | NixExpr;
-      secretFile?: string;
+      secretFile?: string | NixExpr;
       settings?: {
         db?: Record<string, unknown>;
-        oncall_host?: string;
+        oncall_host?: string | NixExpr;
       };
     };
     onedrive: {
@@ -12862,48 +12810,48 @@ declare module "winix" {
       enable?: boolean;
       enableExampleServer?: boolean;
       examplePort?: number;
-      hostname?: string;
-      jwtSecretFile?: string | null;
-      loglevel?: string;
+      hostname?: string | NixExpr;
+      jwtSecretFile?: string | null | NixExpr;
+      loglevel?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      postgresHost?: string;
-      postgresName?: string;
-      postgresPasswordFile?: string | null;
-      postgresUser?: string;
-      rabbitmqUrl?: string;
-      securityNonceFile?: string;
+      postgresHost?: string | NixExpr;
+      postgresName?: string | NixExpr;
+      postgresPasswordFile?: string | null | NixExpr;
+      postgresUser?: string | NixExpr;
+      rabbitmqUrl?: string | NixExpr;
+      securityNonceFile?: string | NixExpr;
       wopi?: boolean;
       x2t?: string | NixExpr;
     };
     "open-web-calendar": {
       calendarSettings?: Record<string, unknown>;
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        ALLOWED_HOSTS?: string;
+        ALLOWED_HOSTS?: string | NixExpr;
       };
     };
     "open-webui": {
       enable?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
-      host?: string;
+      environmentFile?: string | null | NixExpr;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     openafsClient: {
       afsdb?: boolean;
       cache?: {
         blocks?: number;
         chunksize?: number;
-        directory?: string;
+        directory?: string | NixExpr;
         diskless?: boolean;
       };
-      cellName?: string;
+      cellName?: string | NixExpr;
       cellServDB?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -12912,8 +12860,8 @@ declare module "winix" {
       enable?: boolean;
       fakestat?: boolean;
       globalCellServDBFile?: unknown | null;
-      inumcalc?: string;
-      mountPoint?: string;
+      inumcalc?: string | NixExpr;
+      mountPoint?: string | NixExpr;
       packages?: {
         module?: string | NixExpr;
         programs?: string | NixExpr;
@@ -12923,7 +12871,7 @@ declare module "winix" {
     };
     openafsServer: {
       advertisedAddresses?: string[] | NixExpr;
-      cellName?: string;
+      cellName?: string | NixExpr;
       cellServDB?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -12953,45 +12901,45 @@ declare module "winix" {
       };
     };
     opencloud: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
       idpWebPackage?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, Record<string, unknown>>;
-      stateDir?: string;
-      url?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      url?: string | NixExpr;
+      user?: string | NixExpr;
       webPackage?: string | NixExpr;
     };
     opendkim: {
-      configFile?: string | null;
-      domains?: string;
+      configFile?: string | null | NixExpr;
+      domains?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      keyPath?: string;
-      selector?: string;
+      group?: string | NixExpr;
+      keyPath?: string | NixExpr;
+      selector?: string | NixExpr;
       settings?: Record<string, unknown>;
-      socket?: string;
-      user?: string;
+      socket?: string | NixExpr;
+      user?: string | NixExpr;
     };
     openiscsi: {
-      discoverPortal?: string | null;
+      discoverPortal?: string | null | NixExpr;
       enable?: boolean;
       enableAutoLoginOut?: boolean;
-      extraConfig?: string;
-      extraConfigFile?: string | null;
-      name?: string;
+      extraConfig?: string | NixExpr;
+      extraConfigFile?: string | null | NixExpr;
+      name?: string | NixExpr;
       package?: string | NixExpr;
     };
     openldap: {
-      configDir?: string | null;
+      configDir?: string | null | NixExpr;
       declarativeContents?: Record<string, string>;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       mutableConfig?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -13000,39 +12948,39 @@ declare module "winix" {
         includes?: string[] | NixExpr;
       };
       urlList?: string[] | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     openntpd: {
       enable?: boolean;
-      extraConfig?: string;
-      extraOptions?: string;
+      extraConfig?: string | NixExpr;
+      extraOptions?: string | NixExpr;
       servers?: string[] | NixExpr;
     };
     opensearch: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraCmdLineOptions?: string[] | NixExpr;
       extraJavaOptions?: string[] | NixExpr;
-      group?: string;
-      logging?: string;
+      group?: string | NixExpr;
+      logging?: string | NixExpr;
       package?: string | NixExpr;
       restartIfChanged?: boolean;
       settings?: {
-        "cluster.name"?: string;
-        "discovery.type"?: string;
+        "cluster.name"?: string | NixExpr;
+        "discovery.type"?: string | NixExpr;
         "http.port"?: number;
-        "network.host"?: string;
+        "network.host"?: string | NixExpr;
         "plugins.security.disabled"?: boolean;
         "transport.port"?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     opensmtpd: {
       enable?: boolean;
       extraServerArgs?: string[] | NixExpr;
       package?: string | NixExpr;
       procPackages?: (string | NixExpr)[] | NixExpr;
-      serverConfiguration?: string;
+      serverConfiguration?: string | NixExpr;
       setSendmail?: boolean;
     };
     opensnitch: {
@@ -13041,12 +12989,12 @@ declare module "winix" {
       rules?: Record<string, unknown>;
       settings?: {
         Audit?: Record<string, unknown>;
-        DefaultAction?: "allow" | "deny";
+        DefaultAction?: "allow" | "deny" | NixExpr;
         Ebpf?: Record<string, unknown>;
-        Firewall?: "iptables" | "nftables";
+        Firewall?: "iptables" | "nftables" | NixExpr;
         InterceptUnknown?: boolean;
         LogLevel?: number;
-        ProcMonitorMethod?: "audit" | "ebpf" | "ftrace" | "proc";
+        ProcMonitorMethod?: "audit" | "ebpf" | "ftrace" | "proc" | NixExpr;
         Rules?: Record<string, unknown>;
         Server?: Record<string, unknown>;
         Stats?: Record<string, unknown>;
@@ -13054,22 +13002,20 @@ declare module "winix" {
     };
     openssh: {
       allowSFTP?: boolean;
-      authorizedKeysCommand?: string;
-      authorizedKeysCommandUser?: string;
+      authorizedKeysCommand?: string | NixExpr;
+      authorizedKeysCommandUser?: string | NixExpr;
       authorizedKeysFiles?: string[] | NixExpr;
       authorizedKeysInHomedir?: boolean;
       enable?: boolean;
       enableRecommendedAlgorithms?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       generateHostKeys?: boolean;
       hostKeys?: Record<string, unknown>[] | NixExpr;
       knownHosts?: {
         "<name>"?: Record<string, unknown>;
       };
-      listenAddresses?: {
-        "*"?: Record<string, unknown>;
-      };
-      moduliFile?: string;
+      listenAddresses?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      moduliFile?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       ports?: number[] | NixExpr;
@@ -13077,12 +13023,12 @@ declare module "winix" {
         AcceptEnv?: string[] | null;
         AllowGroups?: string[] | null;
         AllowUsers?: string[] | null;
-        AuthorizedPrincipalsFile?: string | null;
-        Banner?: string | null;
+        AuthorizedPrincipalsFile?: string | null | NixExpr;
+        Banner?: string | null | NixExpr;
         Ciphers?: string[] | null;
         DenyGroups?: string[] | null;
         DenyUsers?: string[] | null;
-        GatewayPorts?: string | null;
+        GatewayPorts?: string | null | NixExpr;
         KbdInteractiveAuthentication?: boolean | null;
         KexAlgorithms?: string[] | null;
         LogLevel?: "DEBUG" | "DEBUG1" | "DEBUG2" | "DEBUG3" | "ERROR" | "FATAL" | "INFO" | "QUIET" | "VERBOSE" | null;
@@ -13096,11 +13042,11 @@ declare module "winix" {
         X11Forwarding?: boolean | null;
       };
       sftpFlags?: string[] | NixExpr;
-      sftpServerExecutable?: string;
+      sftpServerExecutable?: string | NixExpr;
       startWhenNeeded?: boolean;
     };
     "opentelemetry-collector": {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
@@ -13110,40 +13056,40 @@ declare module "winix" {
       backboneInterfaces?: string[] | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      interfaceName?: string;
-      logLevel?: "alert" | "crit" | "debug" | "emerg" | "err" | "info" | "notice" | "warning";
+      interfaceName?: string | NixExpr;
+      logLevel?: "alert" | "crit" | "debug" | "emerg" | "err" | "info" | "notice" | "warning" | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       radio?: {
         baudRate?: number;
-        device?: string | null;
+        device?: string | null | NixExpr;
         extraDevices?: string[] | NixExpr;
         flowControl?: boolean;
-        url?: string | null;
-        urlQueryString?: string;
+        url?: string | null | NixExpr;
+        urlQueryString?: string | NixExpr;
       };
       rest?: {
-        listenAddress?: string;
+        listenAddress?: string | NixExpr;
         listenPort?: number;
       };
       web?: {
         enable?: boolean;
-        listenAddress?: string;
+        listenAddress?: string | NixExpr;
         listenPort?: number;
       };
     };
     opentracker: {
       enable?: boolean;
-      extraOptions?: string;
+      extraOptions?: string | NixExpr;
       package?: string | NixExpr;
     };
     opentsdb: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     openvpn: {
       package?: string | NixExpr;
@@ -13153,23 +13099,23 @@ declare module "winix" {
       };
     };
     "openvscode-server": {
-      connectionToken?: string | null;
-      connectionTokenFile?: string | null;
+      connectionToken?: string | null | NixExpr;
+      connectionTokenFile?: string | null | NixExpr;
       enable?: boolean;
-      extensionsDir?: string | null;
+      extensionsDir?: string | null | NixExpr;
       extraArguments?: string[] | NixExpr;
       extraEnvironment?: Record<string, string>;
       extraGroups?: string[] | NixExpr;
       extraPackages?: (string | NixExpr)[] | NixExpr;
-      group?: string;
-      host?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      serverDataDir?: string | null;
-      socketPath?: string | null;
+      serverDataDir?: string | null | NixExpr;
+      socketPath?: string | null | NixExpr;
       telemetryLevel?: "all" | "crash" | "error" | "off" | null;
-      user?: string;
-      userDataDir?: string | null;
+      user?: string | NixExpr;
+      userDataDir?: string | null | NixExpr;
       withoutConnectionToken?: boolean;
     };
     openwebrx: {
@@ -13177,16 +13123,14 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     opkssh: {
-      authorizations?: {
-        "*"?: Record<string, unknown>;
-      };
+      authorizations?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       providers?: {
         "<name>"?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     orangefs: {
       client?: {
@@ -13196,13 +13140,13 @@ declare module "winix" {
       };
       server?: {
         BMIModules?: string[] | NixExpr;
-        dataStorageSpace?: string | null;
+        dataStorageSpace?: string | null | NixExpr;
         enable?: boolean;
-        extraConfig?: string;
-        extraDefaults?: string;
+        extraConfig?: string | NixExpr;
+        extraDefaults?: string | NixExpr;
         fileSystems?: Record<string, unknown>;
-        logType?: "file" | "syslog";
-        metadataStorageSpace?: string | null;
+        logType?: "file" | "syslog" | NixExpr;
+        metadataStorageSpace?: string | null | NixExpr;
         servers?: Record<string, string>;
       };
     };
@@ -13213,26 +13157,26 @@ declare module "winix" {
     orthanc: {
       enable?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     osquery: {
       enable?: boolean;
       flags?: {
-        database_path?: string;
-        logger_path?: string;
-        pidfile?: string;
+        database_path?: string | NixExpr;
+        logger_path?: string | NixExpr;
+        pidfile?: string | NixExpr;
       };
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     osrm: {
-      address?: string;
-      algorithm?: "CH" | "CoreCH" | "MLD";
-      dataFile?: string;
+      address?: string | NixExpr;
+      algorithm?: "CH" | "CoreCH" | "MLD" | NixExpr;
+      dataFile?: string | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
       port?: number;
@@ -13245,97 +13189,97 @@ declare module "winix" {
         exclude?: string[] | NixExpr;
         include?: string[] | NixExpr;
       };
-      rateAccuracy?: "High" | "Low";
+      rateAccuracy?: "High" | "Low" | NixExpr;
       rpcServer?: {
-        address?: string;
+        address?: string | NixExpr;
       };
     };
     outline: {
       azureAuthentication?: {
-        clientId?: string;
-        clientSecretFile?: string;
-        resourceAppId?: string;
+        clientId?: string | NixExpr;
+        clientSecretFile?: string | NixExpr;
+        resourceAppId?: string | NixExpr;
       };
-      cdnUrl?: string;
+      cdnUrl?: string | NixExpr;
       concurrency?: number;
-      databaseUrl?: string;
+      databaseUrl?: string | NixExpr;
       debugOutput?: "http" | null;
-      defaultLanguage?: "da_DK" | "de_DE" | "en_US" | "es_ES" | "fa_IR" | "fr_FR" | "it_IT" | "ja_JP" | "ko_KR" | "nl_NL" | "pl_PL" | "pt_BR" | "pt_PT" | "ru_RU" | "sv_SE" | "th_TH" | "vi_VN" | "zh_CN" | "zh_TW";
+      defaultLanguage?: "da_DK" | "de_DE" | "en_US" | "es_ES" | "fa_IR" | "fr_FR" | "it_IT" | "ja_JP" | "ko_KR" | "nl_NL" | "pl_PL" | "pt_BR" | "pt_PT" | "ru_RU" | "sv_SE" | "th_TH" | "vi_VN" | "zh_CN" | "zh_TW" | NixExpr;
       discordAuthentication?: {
-        clientId?: string;
-        clientSecretFile?: string;
-        serverId?: string;
-        serverRoles?: string;
+        clientId?: string | NixExpr;
+        clientSecretFile?: string | NixExpr;
+        serverId?: string | NixExpr;
+        serverRoles?: string | NixExpr;
       };
       enable?: boolean;
       enableUpdateCheck?: boolean;
       forceHttps?: boolean;
-      googleAnalyticsId?: string | null;
+      googleAnalyticsId?: string | null | NixExpr;
       googleAuthentication?: {
-        clientId?: string;
-        clientSecretFile?: string;
+        clientId?: string | NixExpr;
+        clientSecretFile?: string | NixExpr;
       };
-      group?: string;
-      logo?: string | null;
+      group?: string | NixExpr;
+      logo?: string | null | NixExpr;
       maximumImportSize?: number;
       oidcAuthentication?: {
-        authUrl?: string;
-        clientId?: string;
-        clientSecretFile?: string;
-        displayName?: string;
+        authUrl?: string | NixExpr;
+        clientId?: string | NixExpr;
+        clientSecretFile?: string | NixExpr;
+        displayName?: string | NixExpr;
         scopes?: string[] | NixExpr;
-        tokenUrl?: string;
-        userinfoUrl?: string;
-        usernameClaim?: string;
+        tokenUrl?: string | NixExpr;
+        userinfoUrl?: string | NixExpr;
+        usernameClaim?: string | NixExpr;
       };
       package?: string | NixExpr;
       port?: number;
-      publicUrl?: string;
+      publicUrl?: string | NixExpr;
       rateLimiter?: {
         durationWindow?: number;
         enable?: boolean;
         requests?: number;
       };
-      redisUrl?: string;
-      secretKeyFile?: string;
-      sentryDsn?: string | null;
-      sentryTunnel?: string | null;
+      redisUrl?: string | NixExpr;
+      secretKeyFile?: string | NixExpr;
+      sentryDsn?: string | null | NixExpr;
+      sentryTunnel?: string | null | NixExpr;
       slackAuthentication?: {
-        clientId?: string;
-        secretFile?: string;
+        clientId?: string | NixExpr;
+        secretFile?: string | NixExpr;
       };
       slackIntegration?: {
-        appId?: string;
+        appId?: string | NixExpr;
         messageActions?: boolean;
-        verificationTokenFile?: string;
+        verificationTokenFile?: string | NixExpr;
       };
       smtp?: {
-        fromEmail?: string;
-        host?: string;
-        passwordFile?: string;
+        fromEmail?: string | NixExpr;
+        host?: string | NixExpr;
+        passwordFile?: string | NixExpr;
         port?: number;
-        replyEmail?: string;
+        replyEmail?: string | NixExpr;
         secure?: boolean;
-        tlsCiphers?: string;
-        username?: string;
+        tlsCiphers?: string | NixExpr;
+        username?: string | NixExpr;
       };
-      sslCertFile?: string | null;
-      sslKeyFile?: string | null;
+      sslCertFile?: string | null | NixExpr;
+      sslKeyFile?: string | null | NixExpr;
       storage?: {
-        accelerateUrl?: string | null;
-        accessKey?: string;
-        acl?: string;
+        accelerateUrl?: string | null | NixExpr;
+        accessKey?: string | NixExpr;
+        acl?: string | NixExpr;
         forcePathStyle?: boolean;
-        localRootDir?: string;
-        region?: string;
-        secretKeyFile?: string;
-        storageType?: "local" | "s3";
-        uploadBucketName?: string;
-        uploadBucketUrl?: string;
+        localRootDir?: string | NixExpr;
+        region?: string | NixExpr;
+        secretKeyFile?: string | NixExpr;
+        storageType?: "local" | "s3" | NixExpr;
+        uploadBucketName?: string | NixExpr;
+        uploadBucketUrl?: string | NixExpr;
         uploadMaxSize?: number;
       };
-      user?: string;
-      utilsSecretFile?: string;
+      user?: string | NixExpr;
+      utilsSecretFile?: string | NixExpr;
     };
     overseerr: {
       enable?: boolean;
@@ -13347,23 +13291,23 @@ declare module "winix" {
       enable?: boolean;
     };
     owncast: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      listen?: string;
+      group?: string | NixExpr;
+      listen?: string | NixExpr;
       openFirewall?: boolean;
       port?: number;
       "rtmp-port"?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     oxidized: {
-      configFile?: string | null;
-      dataDir?: string;
+      configFile?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      routerDB?: string | null;
-      user?: string;
+      routerDB?: string | null | NixExpr;
+      user?: string | NixExpr;
     };
     pacemaker: {
       enable?: boolean;
@@ -13383,25 +13327,25 @@ declare module "winix" {
     };
     paisa: {
       enable?: boolean;
-      host?: string;
+      host?: string | NixExpr;
       mutableSettings?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       settings?: {
-        dataDir?: string;
-        dbFile?: string;
-        journalFile?: string;
+        dataDir?: string | NixExpr;
+        dbFile?: string | NixExpr;
+        journalFile?: string | NixExpr;
       };
     };
     pangolin: {
-      baseDomain?: string | null;
-      dashboardDomain?: string;
-      dataDir?: string;
-      dnsProvider?: string | null;
+      baseDomain?: string | null | NixExpr;
+      dashboardDomain?: string | NixExpr;
+      dataDir?: string | NixExpr;
+      dnsProvider?: string | null | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
-      letsEncryptEmail?: string | null;
+      environmentFile?: string | null | NixExpr;
+      letsEncryptEmail?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
@@ -13423,40 +13367,40 @@ declare module "winix" {
       };
     };
     paperless: {
-      address?: string;
+      address?: string | NixExpr;
       configureNginx?: boolean;
       configureTika?: boolean;
-      consumptionDir?: string;
+      consumptionDir?: string | NixExpr;
       consumptionDirIsPublic?: boolean;
       database?: {
         createLocally?: boolean;
       };
-      dataDir?: string;
-      domain?: string | null;
+      dataDir?: string | NixExpr;
+      domain?: string | null | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       exporter?: {
-        directory?: string;
+        directory?: string | NixExpr;
         enable?: boolean;
-        onCalendar?: string | null;
+        onCalendar?: string | null | NixExpr;
         settings?: Record<string, unknown>;
       };
       manage?: string | NixExpr;
-      mediaDir?: string;
+      mediaDir?: string | NixExpr;
       openMPThreadingWorkaround?: boolean;
       package?: string | NixExpr;
-      passwordFile?: string | null;
+      passwordFile?: string | null | NixExpr;
       port?: number;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     papra: {
       enable?: boolean;
       environment?: Record<string, string | number | boolean | string | NixExpr>;
-      environmentFile?: string | null;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     paretosecurity: {
       enable?: boolean;
@@ -13490,35 +13434,35 @@ declare module "winix" {
       phpPackage?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       settings?: {
-        DATABASE_URL?: string;
+        DATABASE_URL?: string | NixExpr;
       };
-      virtualHost?: string;
+      virtualHost?: string | NixExpr;
     };
     passSecretService: {
       enable?: boolean;
       package?: string | NixExpr;
     };
     patroni: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       environmentFiles?: Record<string, string | string | NixExpr | null>;
-      group?: string;
-      name?: string;
-      namespace?: string;
-      nodeIp?: string;
+      group?: string | NixExpr;
+      name?: string | NixExpr;
+      namespace?: string | NixExpr;
+      nodeIp?: string | NixExpr;
       otherNodesIps?: string[] | NixExpr;
-      postgresqlDataDir?: string;
+      postgresqlDataDir?: string | NixExpr;
       postgresqlPackage?: string | NixExpr;
       postgresqlPort?: number;
       restApiPort?: number;
-      scope?: string;
+      scope?: string | NixExpr;
       settings?: Record<string, unknown>;
       softwareWatchdog?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     pcscd: {
       enable?: boolean;
-      extendReaderNames?: string | null;
+      extendReaderNames?: string | null | NixExpr;
       extraArgs?: string[] | NixExpr;
       ignoreReaderNames?: string[] | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
@@ -13528,39 +13472,39 @@ declare module "winix" {
       allowedHosts?: string[] | NixExpr;
       backup?: {
         enable?: boolean;
-        endpoint?: string | null;
-        schedule?: string;
+        endpoint?: string | null | NixExpr;
+        schedule?: string | NixExpr;
       };
       consume?: {
         enable?: boolean;
-        schedule?: string;
+        schedule?: string | NixExpr;
       };
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        type?: "postgres" | "sqlite";
-        user?: string;
+        type?: "postgres" | "sqlite" | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
       envFiles?: string[] | NixExpr;
       extraEnvironment?: Record<string, string>;
-      group?: string;
+      group?: string | NixExpr;
       gunicorn?: {
         extraArgs?: string[] | NixExpr;
       };
-      hostName?: string;
+      hostName?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      secretKeyFile?: string;
-      user?: string;
+      secretKeyFile?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "pdns-recursor": {
       api?: {
-        address?: string;
+        address?: string | NixExpr;
         allowFrom?: string[] | NixExpr;
         port?: number;
       };
@@ -13569,50 +13513,50 @@ declare module "winix" {
         allowFrom?: string[] | NixExpr;
         port?: number;
       };
-      dnssecValidation?: "log-fail" | "off" | "process" | "process-no-validate" | "validate";
+      dnssecValidation?: "log-fail" | "off" | "process" | "process-no-validate" | "validate" | NixExpr;
       enable?: boolean;
       exportHosts?: boolean;
       forwardZones?: Record<string, unknown>;
       forwardZonesRecurse?: Record<string, unknown>;
-      luaConfig?: string;
+      luaConfig?: string | NixExpr;
       resolveNamecoin?: boolean;
       serveRFC1918?: boolean;
       settings?: Record<string, unknown>;
     };
     pdnsd: {
-      cacheDir?: string;
+      cacheDir?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      globalConfig?: string;
-      serverConfig?: string;
+      extraConfig?: string | NixExpr;
+      globalConfig?: string | NixExpr;
+      serverConfig?: string | NixExpr;
     };
     pdudaemon: {
-      bindAddress?: string;
+      bindAddress?: string | NixExpr;
       enable?: boolean;
-      listener?: "http" | "tcp";
-      logLevel?: "debug" | "error" | "info" | "warning";
+      listener?: "http" | "tcp" | NixExpr;
+      logLevel?: "debug" | "error" | "info" | "warning" | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       pdus?: Record<string, unknown>;
       port?: number;
     };
     peerflix: {
-      downloadDir?: string;
+      downloadDir?: string | NixExpr;
       enable?: boolean;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     "peering-manager": {
       enable?: boolean;
       enableLdap?: boolean;
       enableScheduledTasks?: boolean;
-      environmentFile?: string | null;
-      extraConfig?: string;
-      ldapConfigPath?: string;
-      listenAddress?: string;
-      peeringdbApiKeyFile?: string | null;
+      environmentFile?: string | null | NixExpr;
+      extraConfig?: string | NixExpr;
+      ldapConfigPath?: string | NixExpr;
+      listenAddress?: string | NixExpr;
+      peeringdbApiKeyFile?: string | null | NixExpr;
       plugins?: unknown;
       port?: number;
-      secretKeyFile?: string;
+      secretKeyFile?: string | NixExpr;
       settings?: {
         ALLOWED_HOSTS?: string[] | NixExpr;
       };
@@ -13621,55 +13565,55 @@ declare module "winix" {
       configureNginx?: boolean;
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        user?: string;
+        user?: string | NixExpr;
       };
       dataDirs?: string[] | NixExpr;
       enable?: boolean;
       enableWebHttps?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       listenHttp?: number;
       listenWeb?: number;
-      localDomain?: string;
+      localDomain?: string | NixExpr;
       package?: string | NixExpr;
       redis?: {
         createLocally?: boolean;
         enableUnixSocket?: boolean;
-        host?: string | null;
-        passwordFile?: string | null;
+        host?: string | null | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number | null;
       };
       secrets?: {
-        secretsFile?: string | null;
+        secretsFile?: string | null | NixExpr;
       };
-      serviceEnvironmentFile?: string | null;
+      serviceEnvironmentFile?: string | null | NixExpr;
       settings?: {
         video_transcription?: Record<string, unknown>;
       };
       smtp?: {
         createLocally?: boolean;
-        passwordFile?: string | null;
+        passwordFile?: string | null | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "peertube-runner": {
       enable?: boolean;
       enabledJobTypes?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       instancesToRegister?: {
         "<name>"?: Record<string, unknown>;
       };
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     perses: {
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, unknown>;
@@ -13680,24 +13624,24 @@ declare module "winix" {
     };
     "pfix-srsd": {
       configurePostfix?: boolean;
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
-      secretsFile?: string;
+      secretsFile?: string | NixExpr;
     };
     pgadmin: {
       emailServer?: {
-        address?: string;
+        address?: string | NixExpr;
         enable?: boolean;
-        passwordFile?: string;
+        passwordFile?: string | NixExpr;
         port?: number;
-        sender?: string;
-        username?: string | null;
+        sender?: string | NixExpr;
+        username?: string | null | NixExpr;
         useSSL?: boolean;
         useTLS?: boolean;
       };
       enable?: boolean;
-      initialEmail?: string;
-      initialPasswordFile?: string;
+      initialEmail?: string | NixExpr;
+      initialPasswordFile?: string | NixExpr;
       minimumPasswordLength?: number;
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -13738,8 +13682,8 @@ declare module "winix" {
     };
     pgbouncer: {
       enable?: boolean;
-      group?: string;
-      homeDir?: string;
+      group?: string | NixExpr;
+      homeDir?: string | NixExpr;
       openFilesLimit?: number;
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -13749,7 +13693,7 @@ declare module "winix" {
         pgbouncer?: Record<string, unknown>;
         users?: Record<string, string>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     pghero: {
       enable?: boolean;
@@ -13757,7 +13701,7 @@ declare module "winix" {
       environmentFiles?: string[] | NixExpr;
       extraArgs?: string[] | NixExpr;
       extraGroups?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
@@ -13766,28 +13710,28 @@ declare module "winix" {
       connections?: Record<string, string>;
       enable?: boolean;
       localOnly?: boolean;
-      loginGroup?: string | null;
+      loginGroup?: string | null | NixExpr;
       loginTimeout?: number;
-      logLevel?: "error" | "info" | "notice" | "warn";
+      logLevel?: "error" | "info" | "notice" | "warn" | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      sqlRoot?: string;
+      sqlRoot?: string | NixExpr;
       superOnly?: boolean;
       tls?: {
-        cert?: string;
-        key?: string;
+        cert?: string | NixExpr;
+        key?: string | NixExpr;
       };
     };
     "pgpkeyserver-lite": {
       enable?: boolean;
-      hkpAddress?: string;
+      hkpAddress?: string | NixExpr;
       hkpPort?: number;
-      hostname?: string;
+      hostname?: string | NixExpr;
       package?: string | NixExpr;
     };
     pgscv: {
       enable?: boolean;
-      logLevel?: "debug" | "error" | "info" | "warn";
+      logLevel?: "debug" | "error" | "info" | "warn" | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
@@ -13797,48 +13741,48 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     photoprism: {
-      address?: string;
-      databasePasswordFile?: string | null;
+      address?: string | NixExpr;
+      databasePasswordFile?: string | null | NixExpr;
       enable?: boolean;
-      group?: string;
-      importPath?: string;
-      originalsPath?: string;
+      group?: string | NixExpr;
+      importPath?: string | NixExpr;
+      originalsPath?: string | NixExpr;
       package?: string | NixExpr;
-      passwordFile?: string | null;
+      passwordFile?: string | null | NixExpr;
       port?: number;
       settings?: Record<string, string>;
-      storagePath?: string;
-      user?: string;
+      storagePath?: string | NixExpr;
+      user?: string | NixExpr;
     };
     photoview: {
       database?: {
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        type?: "mysql" | "postgres" | "sqlite";
-        user?: string;
+        type?: "mysql" | "postgres" | "sqlite" | NixExpr;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      host?: string;
-      mediaPath?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
+      mediaPath?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      secretsFile?: string | null;
+      secretsFile?: string | null | NixExpr;
       settings?: {
         disableFaceRecognition?: boolean;
         disableRawProcessing?: boolean;
         disableVideoEncoding?: boolean;
-        mapboxToken?: string | null;
+        mapboxToken?: string | null | NixExpr;
         videoEncoder?: "h264_nvenc" | "h264_qsv" | "h264_vaapi" | null;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     phpfpm: {
-      extraConfig?: string | null;
-      phpOptions?: string;
+      extraConfig?: string | null | NixExpr;
+      phpOptions?: string | NixExpr;
       phpPackage?: string | NixExpr;
       pools?: {
         "<name>"?: Record<string, unknown>;
@@ -13847,8 +13791,8 @@ declare module "winix" {
     };
     phylactery: {
       enable?: boolean;
-      host?: string;
-      library?: string;
+      host?: string | NixExpr;
+      library?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
     };
@@ -13856,7 +13800,7 @@ declare module "winix" {
       allowAnyUser?: boolean;
       disableSysRq?: boolean;
       enable?: boolean;
-      lockMessage?: string;
+      lockMessage?: string | NixExpr;
       lockOn?: {
         extraTargets?: string[] | NixExpr;
         hibernate?: boolean;
@@ -13866,7 +13810,7 @@ declare module "winix" {
     };
     picom: {
       activeOpacity?: number;
-      backend?: "egl" | "glx" | "xr_glx_hybrid" | "xrender";
+      backend?: "egl" | "glx" | "xr_glx_hybrid" | "xrender" | NixExpr;
       enable?: boolean;
       fade?: boolean;
       fadeDelta?: number;
@@ -13888,13 +13832,13 @@ declare module "winix" {
       enable?: boolean;
     };
     "pict-rs": {
-      address?: string;
-      dataDir?: string;
+      address?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       port?: number;
-      repoPath?: string | null;
-      storePath?: string | null;
+      repoPath?: string | null | NixExpr;
+      storePath?: string | null | NixExpr;
     };
     "pid-fan-controller": {
       enable?: boolean;
@@ -13903,12 +13847,10 @@ declare module "winix" {
     };
     "pihole-ftl": {
       enable?: boolean;
-      group?: string;
-      lists?: {
-        "*"?: Record<string, unknown>;
-      };
-      logDirectory?: string;
-      macvendorURL?: string;
+      group?: string | NixExpr;
+      lists?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      logDirectory?: string | NixExpr;
+      macvendorURL?: string | NixExpr;
       openFirewallDHCP?: boolean;
       openFirewallDNS?: boolean;
       openFirewallWebserver?: boolean;
@@ -13918,39 +13860,39 @@ declare module "winix" {
       queryLogDeleter?: {
         age?: number;
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
       };
       settings?: Record<string, unknown>;
-      stateDirectory?: string;
+      stateDirectory?: string | NixExpr;
       useDnsmasqConfig?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     "pihole-web": {
       enable?: boolean;
-      hostName?: string;
+      hostName?: string | NixExpr;
       package?: string | NixExpr;
       ports?: (number | string | Record<string, unknown>)[] | NixExpr;
     };
     pinchflat: {
       enable?: boolean;
-      extraConfig?: Record<string, boolean | number | string | null>;
-      group?: string;
-      logLevel?: "debug" | "error" | "info" | "warning";
-      mediaDir?: string;
+      extraConfig?: Record<string, boolean | number | string | null> | NixExpr;
+      group?: string | NixExpr;
+      logLevel?: "debug" | "error" | "info" | "warning" | NixExpr;
+      mediaDir?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      secretsFile?: string | null;
+      secretsFile?: string | null | NixExpr;
       selfhosted?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     pinnwand: {
       enable?: boolean;
       port?: number;
       settings?: {
-        database_uri?: string;
-        footer?: string;
-        paste_help?: string;
+        database_uri?: string | NixExpr;
+        footer?: string | NixExpr;
+        paste_help?: string | NixExpr;
         paste_size?: number;
       };
     };
@@ -13996,25 +13938,25 @@ declare module "winix" {
       database?: {
         automaticMigrations?: boolean;
         createLocally?: boolean;
-        name?: string;
-        type?: "mysql" | "pgsql";
+        name?: string | NixExpr;
+        type?: "mysql" | "pgsql" | NixExpr;
       };
-      dataDir?: string;
-      domain?: string;
+      dataDir?: string | NixExpr;
+      domain?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      maxUploadSize?: string;
+      group?: string | NixExpr;
+      maxUploadSize?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -14027,49 +13969,49 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       package?: string | NixExpr;
       phpPackage?: string | NixExpr;
-      poolConfig?: Record<string, number | string | boolean>;
+      poolConfig?: Record<string, number | string | boolean> | NixExpr;
       redis?: {
         createLocally?: boolean;
       };
-      runtimeDir?: string;
-      schedulerInterval?: string;
-      secretFile?: string;
+      runtimeDir?: string | NixExpr;
+      schedulerInterval?: string | NixExpr;
+      secretFile?: string | NixExpr;
       settings?: Record<string, boolean | number | string>;
-      user?: string;
+      user?: string | NixExpr;
     };
     pixiecore: {
-      apiServer?: string;
-      cmdLine?: string;
+      apiServer?: string | NixExpr;
+      cmdLine?: string | NixExpr;
       debug?: boolean;
       dhcpNoBind?: boolean;
       enable?: boolean;
       extraArguments?: string[] | NixExpr;
-      initrd?: string;
-      kernel?: string;
-      listen?: string;
-      mode?: "api" | "boot" | "quick";
+      initrd?: string | NixExpr;
+      kernel?: string | NixExpr;
+      listen?: string | NixExpr;
+      mode?: "api" | "boot" | "quick" | NixExpr;
       openFirewall?: boolean;
       port?: number;
-      quick?: "arch" | "centos" | "coreos" | "debian" | "fedora" | "ubuntu" | "xyz";
+      quick?: "arch" | "centos" | "coreos" | "debian" | "fedora" | "ubuntu" | "xyz" | NixExpr;
       statusPort?: number;
     };
     "plantuml-server": {
       enable?: boolean;
       graphvizPackage?: string | NixExpr;
-      group?: string;
-      home?: string;
-      httpAuthorization?: string | null;
-      listenHost?: string;
+      group?: string | NixExpr;
+      home?: string | NixExpr;
+      httpAuthorization?: string | null | NixExpr;
+      listenHost?: string | NixExpr;
       listenPort?: number;
       package?: string | NixExpr;
       packages?: {
@@ -14078,7 +14020,7 @@ declare module "winix" {
       };
       plantumlLimitSize?: number;
       plantumlStats?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     plausible: {
       database?: {
@@ -14087,16 +14029,16 @@ declare module "winix" {
       };
       enable?: boolean;
       mail?: {
-        email?: string;
+        email?: string | NixExpr;
         smtp?: Record<string, unknown>;
       };
       package?: string | NixExpr;
       server?: {
-        baseUrl?: string;
-        disableRegistration?: "invite_only";
-        listenAddress?: string;
+        baseUrl?: string | NixExpr;
+        disableRegistration?: "invite_only" | NixExpr;
+        listenAddress?: string | NixExpr;
         port?: number;
-        secretKeybaseFile?: string;
+        secretKeybaseFile?: string | NixExpr;
       };
     };
     playerctld: {
@@ -14106,22 +14048,22 @@ declare module "winix" {
     pleroma: {
       configs?: string[] | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      secretConfigFile?: string;
-      stateDir?: string;
-      user?: string;
+      secretConfigFile?: string | NixExpr;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     plex: {
       accelerationDevices?: string[] | NixExpr;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraPlugins?: string[] | NixExpr;
       extraScanners?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     plikd: {
       enable?: boolean;
@@ -14130,42 +14072,42 @@ declare module "winix" {
     };
     "pocket-id": {
       credentials?: Record<string, string>;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string;
-      group?: string;
+      environmentFile?: string | NixExpr;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
         ANALYTICS_DISABLED?: boolean;
-        APP_URL?: string;
+        APP_URL?: string | NixExpr;
         TRUST_PROXY?: boolean;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     podgrab: {
-      dataDirectory?: string;
+      dataDirectory?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      passwordFile?: string | null;
+      group?: string | NixExpr;
+      passwordFile?: string | null | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     polaris: {
       enable?: boolean;
       extraGroups?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     pomerium: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
-      secretsFile?: string | null;
+      secretsFile?: string | null | NixExpr;
       settings?: Record<string, unknown>;
-      useACMEHost?: string | null;
+      useACMEHost?: string | null | NixExpr;
     };
     "porn-vault": {
       autoStart?: boolean;
@@ -14181,23 +14123,23 @@ declare module "winix" {
         oidcClients?: Record<string, unknown>;
         port?: number;
       };
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       ldap?: {
-        group?: string;
+        group?: string | NixExpr;
         package?: string | NixExpr;
-        searchUserName?: string;
-        suffix?: string;
+        searchUserName?: string | NixExpr;
+        suffix?: string | NixExpr;
         tls?: boolean;
-        user?: string;
+        user?: string | NixExpr;
       };
       package?: string | NixExpr;
       port?: number;
-      seedPath?: string | null;
+      seedPath?: string | null | NixExpr;
       seedSettings?: Record<string, Record<string, unknown>[]> | null;
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     porxie: {
       enable?: boolean;
@@ -14205,52 +14147,50 @@ declare module "winix" {
       package?: string | NixExpr;
       settings?: {
         PORXIE_BLOB_ALLOWED_MIMETYPES?: string[] | null;
-        PORXIE_BLOB_CACHE_HEADER?: string | null;
-        PORXIE_BLOB_HTTP_CONNECT_TIMEOUT?: string | null;
-        PORXIE_BLOB_HTTP_TIMEOUT?: string | null;
-        PORXIE_BLOB_MAX_SIZE?: string | null;
-        PORXIE_BLOB_PROCESSING_TIMEOUT?: string | null;
-        PORXIE_CACHE_ALLOCATION?: string | null;
-        PORXIE_CACHE_BLOB_TTI?: string | null;
-        PORXIE_CACHE_IDENTITY_TTL?: string | null;
-        PORXIE_CACHE_OWNERSHIP_TTL?: string | null;
-        PORXIE_CACHE_POLICY_TTL?: string | null;
-        PORXIE_IDENTITY_HTTP_CONNECT_TIMEOUT?: string | null;
-        PORXIE_IDENTITY_HTTP_TIMEOUT?: string | null;
-        PORXIE_IDENTITY_PLC_URL?: string | null;
+        PORXIE_BLOB_CACHE_HEADER?: string | null | NixExpr;
+        PORXIE_BLOB_HTTP_CONNECT_TIMEOUT?: string | null | NixExpr;
+        PORXIE_BLOB_HTTP_TIMEOUT?: string | null | NixExpr;
+        PORXIE_BLOB_MAX_SIZE?: string | null | NixExpr;
+        PORXIE_BLOB_PROCESSING_TIMEOUT?: string | null | NixExpr;
+        PORXIE_CACHE_ALLOCATION?: string | null | NixExpr;
+        PORXIE_CACHE_BLOB_TTI?: string | null | NixExpr;
+        PORXIE_CACHE_IDENTITY_TTL?: string | null | NixExpr;
+        PORXIE_CACHE_OWNERSHIP_TTL?: string | null | NixExpr;
+        PORXIE_CACHE_POLICY_TTL?: string | null | NixExpr;
+        PORXIE_IDENTITY_HTTP_CONNECT_TIMEOUT?: string | null | NixExpr;
+        PORXIE_IDENTITY_HTTP_TIMEOUT?: string | null | NixExpr;
+        PORXIE_IDENTITY_PLC_URL?: string | null | NixExpr;
         PORXIE_POLICY_FAIL_OPEN?: boolean | null;
-        PORXIE_POLICY_HTTP_CONNECT_TIMEOUT?: string | null;
-        PORXIE_POLICY_HTTP_TIMEOUT?: string | null;
+        PORXIE_POLICY_HTTP_CONNECT_TIMEOUT?: string | null | NixExpr;
+        PORXIE_POLICY_HTTP_TIMEOUT?: string | null | NixExpr;
         PORXIE_POLICY_REQUEST_HEADERS?: string[] | null;
-        PORXIE_POLICY_URL?: string | null;
-        PORXIE_SERVER_ADDRESS?: string;
-        PORXIE_SERVER_ADMIN_PASSWORD?: string | null;
+        PORXIE_POLICY_URL?: string | null | NixExpr;
+        PORXIE_SERVER_ADDRESS?: string | NixExpr;
+        PORXIE_SERVER_ADMIN_PASSWORD?: string | null | NixExpr;
       };
     };
     postfix: {
       aliasFiles?: Record<string, string>;
-      aliasMapType?: "hash" | "pcre" | "regexp";
-      canonical?: string;
-      dnsBlacklistOverrides?: string;
+      aliasMapType?: "hash" | "pcre" | "regexp" | NixExpr;
+      canonical?: string | NixExpr;
+      dnsBlacklistOverrides?: string | NixExpr;
       dnsBlacklists?: string[] | NixExpr;
       enable?: boolean;
       enableHeaderChecks?: boolean;
       enableSmtp?: boolean;
       enableSubmission?: boolean;
       enableSubmissions?: boolean;
-      extraAliases?: string;
-      extraHeaderChecks?: string;
-      extraMasterConf?: string;
-      group?: string;
-      headerChecks?: {
-        "*"?: Record<string, unknown>;
-      };
+      extraAliases?: string | NixExpr;
+      extraHeaderChecks?: string | NixExpr;
+      extraMasterConf?: string | NixExpr;
+      group?: string | NixExpr;
+      headerChecks?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       localRecipients?: string[] | null;
       mapFiles?: Record<string, string>;
       package?: string | NixExpr;
-      postmasterAlias?: string;
-      rootAlias?: string;
-      setgidGroup?: string;
+      postmasterAlias?: string | NixExpr;
+      rootAlias?: string | NixExpr;
+      setgidGroup?: string | NixExpr;
       setSendmail?: boolean;
       settings?: {
         main?: Record<string, unknown>;
@@ -14258,10 +14198,10 @@ declare module "winix" {
       };
       submissionOptions?: Record<string, string>;
       submissionsOptions?: Record<string, string>;
-      transport?: string;
-      user?: string;
-      virtual?: string;
-      virtualMapType?: "hash" | "pcre" | "regexp";
+      transport?: string | NixExpr;
+      user?: string | NixExpr;
+      virtual?: string | NixExpr;
+      virtualMapType?: "hash" | "pcre" | "regexp" | NixExpr;
     };
     "postfix-tlspol": {
       configurePostfix?: boolean;
@@ -14276,32 +14216,30 @@ declare module "winix" {
       enable?: boolean;
       environment?: {
         PGWS_DB_URI?: Record<string, unknown>;
-        PGWS_HOST?: string | null;
+        PGWS_HOST?: string | null | NixExpr;
       };
-      jwtSecretFile?: string | null;
-      pgpassFile?: string | null;
+      jwtSecretFile?: string | null | NixExpr;
+      pgpassFile?: string | null | NixExpr;
     };
     postgresql: {
-      authentication?: string;
+      authentication?: string | NixExpr;
       checkConfig?: boolean;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       enableJIT?: boolean;
       enableTCPIP?: boolean;
       ensureDatabases?: string[] | NixExpr;
-      ensureUsers?: {
-        "*"?: Record<string, unknown>;
-      };
+      ensureUsers?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       extensions?: unknown;
       finalPackage?: string | NixExpr;
-      identMap?: string;
+      identMap?: string | NixExpr;
       initdbArgs?: string[] | NixExpr;
-      initialScript?: string | null;
+      initialScript?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: {
-        log_line_prefix?: string;
+        log_line_prefix?: string | NixExpr;
         port?: number;
-        shared_preload_libraries?: string | null;
+        shared_preload_libraries?: string | null | NixExpr;
       };
       systemCallFilter?: {
         "<name>"?: Record<string, unknown>;
@@ -14309,13 +14247,13 @@ declare module "winix" {
     };
     postgresqlBackup: {
       backupAll?: boolean;
-      compression?: "gzip" | "none" | "zstd";
+      compression?: "gzip" | "none" | "zstd" | NixExpr;
       compressionLevel?: number;
       databases?: string[] | NixExpr;
       enable?: boolean;
-      location?: string;
-      pgdumpAllOptions?: string;
-      pgdumpOptions?: string;
+      location?: string | NixExpr;
+      pgdumpAllOptions?: string | NixExpr;
+      pgdumpOptions?: string | NixExpr;
       startAt?: unknown;
     };
     postgresqlWalReceiver: {
@@ -14325,24 +14263,24 @@ declare module "winix" {
     };
     postgrest: {
       enable?: boolean;
-      jwtSecretFile?: string | null;
-      pgpassFile?: string | null;
+      jwtSecretFile?: string | null | NixExpr;
+      pgpassFile?: string | null | NixExpr;
       settings?: {
         "admin-server-port"?: number | null;
         "db-config"?: boolean;
         "db-uri"?: Record<string, unknown>;
-        "server-host"?: string | null;
+        "server-host"?: string | null | NixExpr;
         "server-port"?: number | null;
-        "server-unix-socket"?: string | null;
+        "server-unix-socket"?: string | null | NixExpr;
       };
     };
     postgrey: {
       autoWhitelist?: number | null;
       delay?: number;
       enable?: boolean;
-      greylistAction?: string;
-      greylistHeader?: string;
-      greylistText?: string;
+      greylistAction?: string | NixExpr;
+      greylistHeader?: string | NixExpr;
+      greylistText?: string | NixExpr;
       IPv4CIDR?: number;
       IPv6CIDR?: number;
       lookupBySubnet?: boolean;
@@ -14356,19 +14294,19 @@ declare module "winix" {
     postsrsd: {
       configurePostfix?: boolean;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      secretsFile?: string;
+      secretsFile?: string | NixExpr;
       settings?: {
-        "chroot-dir"?: string;
+        "chroot-dir"?: string | NixExpr;
         domains?: string[] | NixExpr;
-        "secrets-file"?: string;
-        separator?: "+" | "-" | "=";
-        socketmap?: string;
-        "srs-domain"?: string | null;
-        "unprivileged-user"?: string;
+        "secrets-file"?: string | NixExpr;
+        separator?: "+" | "-" | "=" | NixExpr;
+        socketmap?: string | NixExpr;
+        "srs-domain"?: string | null | NixExpr;
+        "unprivileged-user"?: string | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "power-profiles-daemon": {
       enable?: boolean;
@@ -14376,15 +14314,15 @@ declare module "winix" {
     };
     powerdns: {
       enable?: boolean;
-      extraConfig?: string;
-      secretFile?: string | null;
+      extraConfig?: string | NixExpr;
+      secretFile?: string | null | NixExpr;
     };
     "powerdns-admin": {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      saltFile?: string | null;
-      secretKeyFile?: string | null;
+      saltFile?: string | null | NixExpr;
+      secretKeyFile?: string | null | NixExpr;
     };
     powerstation: {
       enable?: boolean;
@@ -14398,24 +14336,24 @@ declare module "winix" {
       };
     };
     pptpd: {
-      clientIpRange?: string;
+      clientIpRange?: string | NixExpr;
       enable?: boolean;
-      extraPppdOptions?: string;
-      extraPptpdOptions?: string;
+      extraPppdOptions?: string | NixExpr;
+      extraPptpdOptions?: string | NixExpr;
       maxClients?: number;
-      serverIp?: string;
+      serverIp?: string | NixExpr;
     };
     prefect: {
-      baseUrl?: string | null;
-      database?: "postgres" | "sqlite";
-      databaseHost?: string;
-      databaseName?: string;
-      databasePasswordFile?: string | null;
-      databasePort?: string;
-      databaseUser?: string;
-      dataDir?: string;
+      baseUrl?: string | null | NixExpr;
+      database?: "postgres" | "sqlite" | NixExpr;
+      databaseHost?: string | NixExpr;
+      databaseName?: string | NixExpr;
+      databasePasswordFile?: string | null | NixExpr;
+      databasePort?: string | NixExpr;
+      databaseUser?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      host?: string;
+      host?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       workerPools?: {
@@ -14433,12 +14371,12 @@ declare module "winix" {
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
       finalPackage?: string | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       gunicorn?: {
         extraArgs?: string[] | NixExpr;
       };
       nginx?: {
-        domain?: string;
+        domain?: string | NixExpr;
         enable?: boolean;
       };
       package?: string | NixExpr;
@@ -14451,7 +14389,7 @@ declare module "winix" {
         redis?: Record<string, unknown>;
         site?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     pretix: {
       celery?: {
@@ -14461,13 +14399,13 @@ declare module "winix" {
         createLocally?: boolean;
       };
       enable?: boolean;
-      environmentFile?: string | null;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
       gunicorn?: {
         extraArgs?: string[] | NixExpr;
       };
       nginx?: {
-        domain?: string;
+        domain?: string | NixExpr;
         enable?: boolean;
       };
       package?: string | NixExpr;
@@ -14481,7 +14419,7 @@ declare module "winix" {
         redis?: Record<string, unknown>;
         tools?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     printing: {
       allowFrom?: string[] | NixExpr;
@@ -14489,9 +14427,9 @@ declare module "winix" {
         enable?: boolean;
         package?: string | NixExpr;
       };
-      browsedConf?: string;
+      browsedConf?: string | NixExpr;
       browsing?: boolean;
-      clientConf?: string;
+      clientConf?: string | NixExpr;
       "cups-pdf"?: {
         enable?: boolean;
         instances?: Record<string, unknown>;
@@ -14499,31 +14437,31 @@ declare module "winix" {
       defaultShared?: boolean;
       drivers?: string[] | NixExpr;
       enable?: boolean;
-      extraConf?: string;
-      extraFilesConf?: string;
+      extraConf?: string | NixExpr;
+      extraFilesConf?: string | NixExpr;
       listenAddresses?: string[] | NixExpr;
-      logLevel?: string;
+      logLevel?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      snmpConf?: string;
+      snmpConf?: string | NixExpr;
       startWhenNeeded?: boolean;
       stateless?: boolean;
-      tempDir?: string;
+      tempDir?: string | NixExpr;
       webInterface?: boolean;
     };
     privatebin: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       enableNginx?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       settings?: Record<string, unknown>;
-      user?: string;
-      virtualHost?: string;
+      user?: string | NixExpr;
+      virtualHost?: string | NixExpr;
     };
     privoxy: {
-      certsLifetime?: string;
+      certsLifetime?: string | NixExpr;
       enable?: boolean;
       enableTor?: boolean;
       inspectHttps?: boolean;
@@ -14533,25 +14471,25 @@ declare module "winix" {
         filterfile?: string[] | NixExpr;
         "listen-address"?: string | string[] | NixExpr;
       };
-      userActions?: string;
-      userFilters?: string;
+      userActions?: string | NixExpr;
+      userFilters?: string | NixExpr;
     };
     prometheus: {
       alertmanager?: {
         checkConfig?: boolean;
         clusterPeers?: string[] | NixExpr;
-        configText?: string | null;
+        configText?: string | null | NixExpr;
         configuration?: Record<string, unknown> | null;
         enable?: boolean;
-        environmentFile?: string | null;
+        environmentFile?: string | null | NixExpr;
         extraFlags?: string[] | NixExpr;
-        listenAddress?: string;
-        logFormat?: string | null;
-        logLevel?: "debug" | "error" | "fatal" | "info" | "warn";
+        listenAddress?: string | NixExpr;
+        logFormat?: string | null | NixExpr;
+        logLevel?: "debug" | "error" | "fatal" | "info" | "warn" | NixExpr;
         openFirewall?: boolean;
         package?: string | NixExpr;
         port?: number;
-        webExternalUrl?: string | null;
+        webExternalUrl?: string | null | NixExpr;
       };
       "alertmanager-ntfy"?: {
         enable?: boolean;
@@ -14560,23 +14498,23 @@ declare module "winix" {
         settings?: Record<string, unknown>;
       };
       alertmanagerGotify?: {
-        bindAddress?: string;
+        bindAddress?: string | NixExpr;
         debug?: boolean;
         defaultPriority?: number;
         dispatchErrors?: boolean;
         enable?: boolean;
-        environmentFile?: string | null;
+        environmentFile?: string | null | NixExpr;
         extendedDetails?: boolean;
         gotifyEndpoint?: Record<string, unknown>;
-        messageAnnotation?: string;
+        messageAnnotation?: string | NixExpr;
         metrics?: Record<string, unknown>;
         openFirewall?: boolean;
         package?: string | NixExpr;
         port?: number;
-        priorityAnnotation?: string;
+        priorityAnnotation?: string | NixExpr;
         timeout?: number;
-        titleAnnotation?: string;
-        webhookPath?: string;
+        titleAnnotation?: string | NixExpr;
+        webhookPath?: string | NixExpr;
       };
       alertmanagerIrcRelay?: {
         enable?: boolean;
@@ -14592,7 +14530,7 @@ declare module "winix" {
         package?: string | NixExpr;
       };
       checkConfig?: boolean | "syntax-only";
-      configText?: string | null;
+      configText?: string | null | NixExpr;
       enable?: boolean;
       enableAgentMode?: boolean;
       enableReload?: boolean;
@@ -14696,13 +14634,13 @@ declare module "winix" {
       };
       extraFlags?: string[] | NixExpr;
       globalConfig?: {
-        evaluation_interval?: string | null;
+        evaluation_interval?: string | null | NixExpr;
         external_labels?: Record<string, string> | null;
-        query_log_file?: string | null;
-        scrape_interval?: string | null;
-        scrape_timeout?: string | null;
+        query_log_file?: string | null | NixExpr;
+        scrape_interval?: string | null | NixExpr;
+        scrape_timeout?: string | null | NixExpr;
       };
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       pushgateway?: {
@@ -14712,30 +14650,24 @@ declare module "winix" {
         package?: string | NixExpr;
         persistence?: Record<string, unknown>;
         persistMetrics?: boolean;
-        stateDir?: string;
+        stateDir?: string | NixExpr;
         web?: Record<string, unknown>;
       };
-      remoteRead?: {
-        "*"?: Record<string, unknown>;
-      };
-      remoteWrite?: {
-        "*"?: Record<string, unknown>;
-      };
-      retentionTime?: string | null;
+      remoteRead?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      remoteWrite?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      retentionTime?: string | null | NixExpr;
       ruleFiles?: string[] | NixExpr;
       rules?: string[] | NixExpr;
       sachet?: {
-        address?: string;
+        address?: string | NixExpr;
         configuration?: Record<string, unknown> | null;
         enable?: boolean;
         port?: number;
       };
-      scrapeConfigs?: {
-        "*"?: Record<string, unknown>;
-      };
-      stateDir?: string;
-      webConfigFile?: string | null;
-      webExternalUrl?: string | null;
+      scrapeConfigs?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      stateDir?: string | NixExpr;
+      webConfigFile?: string | null | NixExpr;
+      webExternalUrl?: string | null | NixExpr;
       "xmpp-alerts"?: {
         enable?: boolean;
         settings?: Record<string, unknown>;
@@ -14744,31 +14676,29 @@ declare module "winix" {
     prosody: {
       admins?: string[] | NixExpr;
       allowRegistration?: boolean;
-      authentication?: "anonymous" | "cyrus" | "internal_hashed" | "internal_plain" | "ldap";
+      authentication?: "anonymous" | "cyrus" | "internal_hashed" | "internal_plain" | "ldap" | NixExpr;
       c2sRequireEncryption?: boolean;
       checkConfig?: boolean;
-      dataDir?: string;
-      disco_items?: {
-        "*"?: Record<string, unknown>;
-      };
+      dataDir?: string | NixExpr;
+      disco_items?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraModules?: string[] | NixExpr;
       extraPluginPaths?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       httpFileShare?: {
         daily_quota?: number | null;
-        domain?: string | null;
-        expires_after?: string;
-        http_external_url?: string | null;
-        http_host?: string | null;
+        domain?: string | null | NixExpr;
+        expires_after?: string | NixExpr;
+        http_external_url?: string | null | NixExpr;
+        http_host?: string | null | NixExpr;
         size_limit?: number;
       };
       httpInterfaces?: string[] | NixExpr;
       httpPorts?: number[] | NixExpr;
       httpsInterfaces?: string[] | NixExpr;
       httpsPorts?: number[] | NixExpr;
-      log?: string;
+      log?: string | NixExpr;
       modules?: {
         admin_adhoc?: boolean;
         admin_telnet?: boolean;
@@ -14806,20 +14736,18 @@ declare module "winix" {
         websocket?: boolean;
         welcome?: boolean;
       };
-      muc?: {
-        "*"?: Record<string, unknown>;
-      };
+      muc?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       package?: string | NixExpr;
       s2sInsecureDomains?: string[] | NixExpr;
       s2sRequireEncryption?: boolean;
       s2sSecureAuth?: boolean;
       s2sSecureDomains?: string[] | NixExpr;
       ssl?: {
-        cert?: string;
+        cert?: string | NixExpr;
         extraOptions?: Record<string, unknown>;
-        key?: string;
+        key?: string | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
       virtualHosts?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -14836,7 +14764,7 @@ declare module "winix" {
       path?: string[] | NixExpr;
     };
     prowlarr: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
       openFirewall?: boolean;
@@ -14849,7 +14777,7 @@ declare module "winix" {
     };
     psd: {
       enable?: boolean;
-      resyncTimer?: string;
+      resyncTimer?: string | NixExpr;
     };
     "public-inbox": {
       enable?: boolean;
@@ -14857,14 +14785,14 @@ declare module "winix" {
         args?: string[] | NixExpr;
         enable?: boolean;
         mounts?: string[] | NixExpr;
-        port?: string | number | null;
+        port?: string | number | null | NixExpr;
       };
       imap?: {
         args?: string[] | NixExpr;
-        cert?: string | null;
+        cert?: string | null | NixExpr;
         enable?: boolean;
-        key?: string | null;
-        port?: string | number | null;
+        key?: string | null | NixExpr;
+        port?: string | number | null | NixExpr;
       };
       inboxes?: {
         "<name>"?: Record<string, unknown>;
@@ -14875,10 +14803,10 @@ declare module "winix" {
       };
       nntp?: {
         args?: string[] | NixExpr;
-        cert?: string | null;
+        cert?: string | null | NixExpr;
         enable?: boolean;
-        key?: string | null;
-        port?: string | number | null;
+        key?: string | null | NixExpr;
+        port?: string | number | null | NixExpr;
       };
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -14892,25 +14820,25 @@ declare module "winix" {
         publicinboxmda?: Record<string, unknown>;
         publicinboxwatch?: Record<string, unknown>;
       };
-      spamAssassinRules?: string | null;
+      spamAssassinRules?: string | null | NixExpr;
     };
     pufferpanel: {
       enable?: boolean;
       environment?: Record<string, string>;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraGroups?: string[] | NixExpr;
       extraPackages?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr;
     };
     pulseaudio: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       daemon?: {
         config?: Record<string, unknown>;
-        logLevel?: string;
+        logLevel?: string | NixExpr;
       };
       enable?: boolean;
-      extraClientConf?: string;
-      extraConfig?: string;
+      extraClientConf?: string | NixExpr;
+      extraConfig?: string | NixExpr;
       extraModules?: (string | NixExpr)[] | NixExpr;
       package?: string | NixExpr;
       support32Bit?: boolean;
@@ -14929,15 +14857,15 @@ declare module "winix" {
     pykms: {
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      listenAddress?: string;
-      logLevel?: "CRITICAL" | "DEBUG" | "ERROR" | "INFO" | "MININFO" | "WARNING";
-      memoryLimit?: string;
+      listenAddress?: string | NixExpr;
+      logLevel?: "CRITICAL" | "DEBUG" | "ERROR" | "INFO" | "MININFO" | "WARNING" | NixExpr;
+      memoryLimit?: string | NixExpr;
       openFirewallPort?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     pyroscope: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
       openFirewall?: boolean;
@@ -14949,13 +14877,13 @@ declare module "winix" {
     qbittorrent: {
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      profileDir?: string;
+      profileDir?: string | NixExpr;
       serverConfig?: Record<string, unknown>;
       torrentingPort?: number | null;
-      user?: string;
+      user?: string | NixExpr;
       webuiPort?: number | null;
     };
     qdrant: {
@@ -14971,79 +14899,79 @@ declare module "winix" {
     "quake3-server": {
       baseq3?: string | NixExpr | string;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     quassel: {
-      certificateFile?: string | null;
-      dataDir?: string;
+      certificateFile?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       interfaces?: string[] | NixExpr;
       package?: string | NixExpr;
       portNumber?: number;
       requireSSL?: boolean;
-      user?: string | null;
+      user?: string | null | NixExpr;
     };
     qui: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      secretFile?: string;
+      secretFile?: string | NixExpr;
       settings?: {
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     quicktun: {
       "<name>"?: {
-        localAddress?: string | null;
+        localAddress?: string | null | NixExpr;
         localPort?: number;
-        privateKey?: string | null;
-        privateKeyFile?: string | null;
-        protocol?: "nacl0" | "nacltai" | "raw" | "salty";
-        publicKey?: string | null;
-        remoteAddress?: string;
+        privateKey?: string | null | NixExpr;
+        privateKeyFile?: string | null | NixExpr;
+        protocol?: "nacl0" | "nacltai" | "raw" | "salty" | NixExpr;
+        publicKey?: string | null | NixExpr;
+        remoteAddress?: string | NixExpr;
         remoteFloat?: number | boolean;
         remotePort?: number;
         timeWindow?: number;
         tunMode?: number | boolean;
-        upScript?: string | null;
+        upScript?: string | null | NixExpr;
       };
     };
     quickwit: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       restartIfChanged?: boolean;
       settings?: {
         grpc_listen_port?: number;
-        listen_address?: string;
+        listen_address?: string | NixExpr;
         rest?: Record<string, unknown>;
         version?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "r53-ddns": {
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string;
-      hostname?: string;
-      interval?: string;
+      environmentFile?: string | NixExpr;
+      hostname?: string | NixExpr;
+      interval?: string | NixExpr;
       ttl?: number;
-      zoneID?: string;
+      zoneID?: string | NixExpr;
     };
     rabbitmq: {
-      config?: string;
+      config?: string | NixExpr;
       configItems?: Record<string, string>;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       managementPlugin?: {
         enable?: boolean;
         port?: number;
@@ -15052,13 +14980,13 @@ declare module "winix" {
       pluginDirs?: string[] | NixExpr;
       plugins?: string[] | NixExpr;
       port?: number;
-      unsafeCookie?: string;
+      unsafeCookie?: string | NixExpr;
     };
     radarr: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -15066,17 +14994,17 @@ declare module "winix" {
         server?: Record<string, unknown>;
         update?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     radicale: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       rights?: Record<string, Record<string, unknown>>;
       settings?: Record<string, Record<string, unknown>>;
-      user?: string;
+      user?: string | NixExpr;
     };
     radicle: {
       checkConfig?: boolean;
@@ -15089,25 +15017,25 @@ declare module "winix" {
         aliases?: Record<string, string>;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
-        listenAddress?: string;
+        listenAddress?: string | NixExpr;
         listenPort?: number;
         nginx?: Record<string, unknown>;
         package?: string | NixExpr;
       };
       node?: {
         extraArgs?: string[] | NixExpr;
-        listenAddress?: string;
+        listenAddress?: string | NixExpr;
         listenPort?: number;
         openFirewall?: boolean;
       };
       package?: string | NixExpr;
-      privateKey?: string | null;
-      privateKeyPassphrase?: string | null;
-      publicKey?: string;
+      privateKey?: string | null | NixExpr;
+      privateKeyPassphrase?: string | null | NixExpr;
+      publicKey?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     radvd: {
-      config?: string;
+      config?: string | NixExpr;
       debugLevel?: number;
       enable?: boolean;
       package?: string | NixExpr;
@@ -15117,20 +15045,20 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     rathole: {
-      credentialsFile?: string;
+      credentialsFile?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
-      role?: "client" | "server";
+      role?: "client" | "server" | NixExpr;
       settings?: Record<string, unknown>;
     };
     rauc: {
-      bootloader?: "barebox" | "custom" | "efi" | "grub" | "noop" | "uboot";
+      bootloader?: "barebox" | "custom" | "efi" | "grub" | "noop" | "uboot" | NixExpr;
       bundleFormats?: string[] | NixExpr;
       client?: {
         enable?: boolean;
       };
-      compatible?: string;
-      dataDir?: string;
+      compatible?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       "mark-good"?: {
         enable?: boolean;
@@ -15157,10 +15085,10 @@ declare module "winix" {
       stopForFirewall?: boolean;
     };
     readarr: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -15168,11 +15096,11 @@ declare module "winix" {
         server?: Record<string, unknown>;
         update?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     readeck: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
@@ -15191,13 +15119,13 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     recyclarr: {
-      command?: string;
+      command?: string | NixExpr;
       configuration?: Record<string, unknown>;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      schedule?: string;
-      user?: string;
+      schedule?: string | NixExpr;
+      user?: string | NixExpr;
     };
     redis: {
       package?: string | NixExpr;
@@ -15207,7 +15135,7 @@ declare module "winix" {
       vmOverCommit?: boolean;
     };
     redlib: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -15215,7 +15143,7 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     redmine: {
-      address?: string;
+      address?: string | NixExpr;
       components?: {
         breezy?: boolean;
         cvs?: boolean;
@@ -15223,37 +15151,37 @@ declare module "winix" {
         git?: boolean;
         imagemagick?: boolean;
         mercurial?: boolean;
-        minimagick_font_path?: string;
+        minimagick_font_path?: string | NixExpr;
         subversion?: boolean;
       };
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        socket?: string | null;
-        type?: "mysql2" | "postgresql" | "sqlite3";
-        user?: string;
+        socket?: string | null | NixExpr;
+        type?: "mysql2" | "postgresql" | "sqlite3" | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
-      extraEnv?: string;
-      group?: string;
+      extraEnv?: string | NixExpr;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       plugins?: Record<string, string>;
       port?: number;
       settings?: Record<string, unknown>;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
       themes?: Record<string, string>;
-      user?: string;
+      user?: string | NixExpr;
     };
     redshift: {
       brightness?: {
-        day?: string;
-        night?: string;
+        day?: string | NixExpr;
+        night?: string | NixExpr;
       };
       enable?: boolean;
-      executable?: string;
+      executable?: string | NixExpr;
       extraOptions?: string[] | NixExpr;
       package?: string | NixExpr;
       temperature?: {
@@ -15262,24 +15190,22 @@ declare module "winix" {
       };
     };
     redsocks: {
-      chroot?: string | null;
+      chroot?: string | null | NixExpr;
       enable?: boolean;
-      log?: string;
+      log?: string | NixExpr;
       log_debug?: boolean;
       log_info?: boolean;
-      redsocks?: {
-        "*"?: Record<string, unknown>;
-      };
+      redsocks?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
     };
     remark42: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
-      listenAddress?: string;
+      environmentFile?: string | null | NixExpr;
+      listenAddress?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      remarkUrl?: string;
+      remarkUrl?: string | NixExpr;
       settings?: Record<string, string>;
       sites?: string[] | NixExpr;
     };
@@ -15289,68 +15215,68 @@ declare module "winix" {
       environment?: Record<string, string | string | NixExpr | null>;
       package?: string | NixExpr;
       runtimePackages?: (string | NixExpr)[] | NixExpr;
-      schedule?: string | null;
+      schedule?: string | null | NixExpr;
       settings?: Record<string, unknown>;
       validateSettings?: boolean;
     };
     reposilite: {
       database?: {
-        dbname?: string;
-        host?: string;
-        passwordFile?: string | null;
-        path?: string;
+        dbname?: string | NixExpr;
+        host?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
+        path?: string | NixExpr;
         port?: number;
-        type?: "h2" | "mariadb" | "mysql" | "postgresql" | "sqlite";
-        user?: string;
+        type?: "h2" | "mariadb" | "mysql" | "postgresql" | "sqlite" | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      group?: string;
-      keyPasswordFile?: string | null;
+      group?: string | NixExpr;
+      keyPasswordFile?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
       settings?: {
-        basePath?: string;
+        basePath?: string | NixExpr;
         bypassExternalCache?: boolean;
         cachedLogSize?: number;
-        compressionStrategy?: "gzip" | "none";
-        database?: string | null;
+        compressionStrategy?: "gzip" | "none" | NixExpr;
+        database?: string | null | NixExpr;
         databaseThreadPool?: number;
         debugEnabled?: boolean;
         defaultFrontend?: boolean;
         enforceSsl?: boolean;
-        hostname?: string;
+        hostname?: string | NixExpr;
         idleTimeout?: number;
         ioThreadPool?: number;
-        keyPassword?: string | null;
-        keyPath?: string | null;
+        keyPassword?: string | null | NixExpr;
+        keyPath?: string | null | NixExpr;
         port?: number;
         sslEnabled?: boolean;
         sslPort?: number;
         webThreadPool?: number;
       };
-      useACMEHost?: string | null;
-      user?: string;
-      workingDirectory?: string;
+      useACMEHost?: string | null | NixExpr;
+      user?: string | NixExpr;
+      workingDirectory?: string | NixExpr;
     };
     resilio: {
-      apiKey?: string;
+      apiKey?: string | NixExpr;
       checkForUpdates?: boolean;
-      deviceName?: string;
-      directoryRoot?: string;
+      deviceName?: string | NixExpr;
+      directoryRoot?: string | NixExpr;
       downloadLimit?: number;
       enable?: boolean;
       enableWebUI?: boolean;
       encryptLAN?: boolean;
-      httpListenAddr?: string;
+      httpListenAddr?: string | NixExpr;
       httpListenPort?: number;
-      httpLogin?: string;
-      httpPass?: string;
+      httpLogin?: string | NixExpr;
+      httpPass?: string | NixExpr;
       listeningPort?: number;
       package?: string | NixExpr;
       sharedFolders?: Record<string, unknown>[] | NixExpr;
-      storagePath?: string;
+      storagePath?: string | NixExpr;
       uploadLimit?: number;
       useUpnp?: boolean;
     };
@@ -15369,11 +15295,11 @@ declare module "winix" {
       };
       server?: {
         appendOnly?: boolean;
-        dataDir?: string;
+        dataDir?: string | NixExpr;
         enable?: boolean;
         extraFlags?: string[] | NixExpr;
-        "htpasswd-file"?: string | null;
-        listenAddress?: string;
+        "htpasswd-file"?: string | null | NixExpr;
+        listenAddress?: string | NixExpr;
         package?: string | NixExpr;
         privateRepos?: boolean;
         prometheus?: boolean;
@@ -15387,28 +15313,28 @@ declare module "winix" {
       user?: unknown;
     };
     riemann: {
-      config?: string;
-      configFile?: string;
+      config?: string | NixExpr;
+      configFile?: string | NixExpr;
       configFiles?: string[] | NixExpr;
       enable?: boolean;
       extraClasspathEntries?: string[] | NixExpr;
       extraJavaOpts?: string[] | NixExpr;
     };
     "riemann-dash": {
-      config?: string;
-      dataDir?: string;
+      config?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
     };
     "riemann-tools": {
       enableHealth?: boolean;
       extraArgs?: string[] | NixExpr;
-      riemannHost?: string;
+      riemannHost?: string | NixExpr;
     };
     rimgo: {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        ADDRESS?: string;
+        ADDRESS?: string | NixExpr;
         PORT?: number;
       };
     };
@@ -15423,42 +15349,42 @@ declare module "winix" {
       };
     };
     rke2: {
-      agentToken?: string;
-      agentTokenFile?: string | null;
+      agentToken?: string | NixExpr;
+      agentTokenFile?: string | null | NixExpr;
       autoDeployCharts?: {
         "<name>"?: Record<string, unknown>;
       };
       charts?: Record<string, string | string | NixExpr>;
       cisHardening?: boolean;
       cni?: "calico" | "canal" | "cilium" | "flannel" | "none" | null;
-      configPath?: string | null;
-      containerdConfigTemplate?: string | null;
+      configPath?: string | null | NixExpr;
+      containerdConfigTemplate?: string | null | NixExpr;
       disable?: string[] | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraFlags?: string | string[] | NixExpr;
       extraKubeletConfig?: Record<string, unknown>;
       extraKubeProxyConfig?: Record<string, unknown>;
       gracefulNodeShutdown?: {
         enable?: boolean;
-        shutdownGracePeriod?: string;
-        shutdownGracePeriodCriticalPods?: string;
+        shutdownGracePeriod?: string | NixExpr;
+        shutdownGracePeriodCriticalPods?: string | NixExpr;
       };
       images?: (string | NixExpr)[] | NixExpr;
       manifests?: {
         "<name>"?: Record<string, unknown>;
       };
-      nodeExternalIP?: string | null;
-      nodeIP?: string | null;
+      nodeExternalIP?: string | null | NixExpr;
+      nodeIP?: string | null | NixExpr;
       nodeLabel?: string[] | NixExpr;
-      nodeName?: string | null;
+      nodeName?: string | null | NixExpr;
       nodeTaint?: string[] | NixExpr;
       package?: string | NixExpr;
-      role?: "agent" | "server";
+      role?: "agent" | "server" | NixExpr;
       selinux?: boolean;
-      serverAddr?: string;
-      token?: string;
-      tokenFile?: string | null;
+      serverAddr?: string | NixExpr;
+      token?: string | NixExpr;
+      tokenFile?: string | null | NixExpr;
     };
     rkvm: {
       client?: {
@@ -15474,12 +15400,12 @@ declare module "winix" {
     };
     rmfakecloud: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraSettings?: Record<string, string>;
-      logLevel?: "debug" | "error" | "info" | "warn";
+      logLevel?: "debug" | "error" | "info" | "warn" | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      storageUrl?: string;
+      storageUrl?: string | NixExpr;
     };
     "robustirc-bridge": {
       enable?: boolean;
@@ -15487,48 +15413,48 @@ declare module "winix" {
     };
     "roon-bridge": {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     "roon-server": {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     rosenpass: {
-      defaultDevice?: string | null;
+      defaultDevice?: string | null | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
         listen?: string[] | NixExpr;
         peers?: Record<string, unknown>;
-        public_key?: string;
-        secret_key?: string;
-        verbosity?: "Quiet" | "Verbose";
+        public_key?: string | NixExpr;
+        secret_key?: string | NixExpr;
+        verbosity?: "Quiet" | "Verbose" | NixExpr;
       };
     };
     roundcube: {
       configureNginx?: boolean;
       database?: {
-        dbname?: string;
-        host?: string;
-        password?: string;
-        passwordFile?: string;
-        username?: string;
+        dbname?: string | NixExpr;
+        host?: string | NixExpr;
+        password?: string | NixExpr;
+        passwordFile?: string | NixExpr;
+        username?: string | NixExpr;
       };
       dicts?: (string | NixExpr)[] | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      hostName?: string;
+      extraConfig?: string | NixExpr;
+      hostName?: string | NixExpr;
       maxAttachmentSize?: number;
       package?: string | NixExpr;
       plugins?: string[] | NixExpr;
     };
     routedns: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
@@ -15542,10 +15468,10 @@ declare module "winix" {
         expire?: number | null;
         "http-listen"?: string[] | null;
         log?: "default" | "file" | "stderr" | "syslog" | null;
-        "log-file"?: string | null;
+        "log-file"?: string | null | NixExpr;
         "log-level"?: "debug" | "error" | "info" | "warn" | null;
         refresh?: number | null;
-        "repository-dir"?: string;
+        "repository-dir"?: string | NixExpr;
         retry?: number | null;
         "rtr-listen"?: string[] | null;
       };
@@ -15554,20 +15480,20 @@ declare module "winix" {
       enable?: boolean;
     };
     rqbit: {
-      downloadDir?: string;
+      downloadDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      httpHost?: string;
+      group?: string | NixExpr;
+      httpHost?: string | NixExpr;
       httpPort?: number;
       openFirewall?: boolean;
       package?: string | NixExpr;
       peerPort?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     rshim: {
       backend?: "pcie" | "pcie_lf" | "usb" | null;
       config?: Record<string, number | string>;
-      device?: string | null;
+      device?: string | null | NixExpr;
       enable?: boolean;
       index?: number | null;
       "log-level"?: number;
@@ -15577,15 +15503,15 @@ declare module "winix" {
       cronIntervals?: Record<string, string>;
       enable?: boolean;
       enableManualRsnapshot?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
     };
     rspamd: {
       debug?: boolean;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      extraConfig?: string;
-      group?: string;
-      localLuaRules?: string | null;
+      extraConfig?: string | NixExpr;
+      group?: string | NixExpr;
+      localLuaRules?: string | null | NixExpr;
       locals?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -15594,10 +15520,10 @@ declare module "winix" {
       };
       package?: string | NixExpr;
       postfix?: {
-        config?: Record<string, boolean | string | string[]>;
+        config?: Record<string, boolean | string | string[]> | NixExpr;
         enable?: boolean;
       };
-      user?: string;
+      user?: string | NixExpr;
       workers?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -15612,13 +15538,13 @@ declare module "winix" {
         FileCache?: Record<string, unknown>;
         system?: Record<string, unknown>;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      pool?: string | null;
-      user?: string;
-      virtualHost?: string | null;
+      pool?: string | null | NixExpr;
+      user?: string | NixExpr;
+      virtualHost?: string | null | NixExpr;
       webserver?: "caddy" | "nginx" | null;
     };
     rss2email: {
@@ -15627,8 +15553,8 @@ declare module "winix" {
       feeds?: {
         "<name>"?: Record<string, unknown>;
       };
-      interval?: string;
-      to?: string;
+      interval?: string | NixExpr;
+      to?: string | NixExpr;
     };
     rsshub: {
       enable?: boolean;
@@ -15637,7 +15563,7 @@ declare module "winix" {
       redis?: {
         createLocally?: boolean;
         enable?: boolean;
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
       secretFiles?: string[] | NixExpr;
@@ -15649,11 +15575,11 @@ declare module "winix" {
     };
     "rstudio-server": {
       enable?: boolean;
-      listenAddr?: string;
+      listenAddr?: string | NixExpr;
       package?: string | NixExpr;
-      rserverExtraConfig?: string;
-      rsessionExtraConfig?: string;
-      serverWorkingDir?: string;
+      rserverExtraConfig?: string | NixExpr;
+      rsessionExtraConfig?: string | NixExpr;
+      serverWorkingDir?: string | NixExpr;
     };
     rsync: {
       enable?: boolean;
@@ -15672,23 +15598,23 @@ declare module "winix" {
       socketActivated?: boolean;
     };
     rsyslogd: {
-      defaultConfig?: string;
+      defaultConfig?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraParams?: string[] | NixExpr;
     };
     rtorrent: {
-      configText?: string;
-      dataDir?: string;
-      dataPermissions?: string;
-      downloadDir?: string;
+      configText?: string | NixExpr;
+      dataDir?: string | NixExpr;
+      dataPermissions?: string | NixExpr;
+      downloadDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      rpcSocket?: string;
-      user?: string;
+      rpcSocket?: string | NixExpr;
+      user?: string | NixExpr;
     };
     rumno: {
       enable?: boolean;
@@ -15725,48 +15651,48 @@ declare module "winix" {
       cors?: string[] | NixExpr;
       disable_health_access_logs?: boolean;
       enable?: boolean;
-      host?: string;
+      host?: string | NixExpr;
       info_storage?: {
-        dir?: string;
-        type?: "file-info-storage";
+        dir?: string | NixExpr;
+        type?: "file-info-storage" | NixExpr;
       };
-      log_level?: "DEBUG" | "ERROR" | "INFO";
-      max_body_size?: string;
+      log_level?: "DEBUG" | "ERROR" | "INFO" | NixExpr;
+      max_body_size?: string | NixExpr;
       port?: number;
       remove_parts?: boolean;
       storage?: {
-        data_dir?: string;
-        dir_structure?: string;
+        data_dir?: string | NixExpr;
+        dir_structure?: string | NixExpr;
         force_sync?: boolean;
-        s3_access_key_file?: string;
-        s3_bucket?: string;
-        s3_region?: string;
-        s3_secret_key_file?: string;
-        s3_url?: string;
-        type?: "file-storage" | "hybrid-s3";
+        s3_access_key_file?: string | NixExpr;
+        s3_bucket?: string | NixExpr;
+        s3_region?: string | NixExpr;
+        s3_secret_key_file?: string | NixExpr;
+        s3_url?: string | NixExpr;
+        type?: "file-storage" | "hybrid-s3" | NixExpr;
       };
       tus_extensions?: ("checksum" | "concatenation" | "creation" | "creation-defer-length" | "creation-with-upload" | "getting" | "termination")[] | NixExpr;
-      url?: string;
+      url?: string | NixExpr;
     };
     rutorrent: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      hostName?: string;
+      group?: string | NixExpr;
+      hostName?: string | NixExpr;
       nginx?: {
         enable?: boolean;
         exposeInsecureRPC2mount?: boolean;
       };
       plugins?: (string | string | NixExpr)[];
       poolSettings?: Record<string, string | number | boolean>;
-      rpcSocket?: string;
-      user?: string;
+      rpcSocket?: string | NixExpr;
+      user?: string | NixExpr;
     };
     sabnzbd: {
       allowConfigWrite?: boolean;
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       secretFiles?: string[] | NixExpr;
@@ -15775,8 +15701,8 @@ declare module "winix" {
         ntfosd?: Record<string, unknown>;
         servers?: Record<string, unknown>;
       };
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     safeeyes: {
       enable?: boolean;
@@ -15809,7 +15735,7 @@ declare module "winix" {
       };
       usershares?: {
         enable?: boolean;
-        group?: string;
+        group?: string | NixExpr;
       };
       winbindd?: {
         enable?: boolean;
@@ -15818,19 +15744,19 @@ declare module "winix" {
     };
     "samba-wsdd": {
       discovery?: boolean;
-      domain?: string | null;
+      domain?: string | null | NixExpr;
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
       hoplimit?: number | null;
-      hostname?: string | null;
-      interface?: string | null;
-      listen?: string;
+      hostname?: string | null | NixExpr;
+      interface?: string | null | NixExpr;
+      listen?: string | NixExpr;
       openFirewall?: boolean;
-      workgroup?: string | null;
+      workgroup?: string | null | NixExpr;
     };
     saned: {
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
     };
     sanoid: {
       datasets?: {
@@ -15838,7 +15764,7 @@ declare module "winix" {
       };
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      interval?: string;
+      interval?: string | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
       templates?: {
@@ -15846,9 +15772,9 @@ declare module "winix" {
       };
     };
     saslauthd: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
-      mechanism?: string;
+      mechanism?: string | NixExpr;
       package?: string | NixExpr;
     };
     saunafs: {
@@ -15867,33 +15793,33 @@ declare module "winix" {
         openFirewall?: boolean;
         settings?: Record<string, unknown>;
       };
-      masterHost?: string;
+      masterHost?: string | NixExpr;
       metalogger?: {
         enable?: boolean;
         settings?: Record<string, unknown>;
       };
-      sfsUser?: string;
+      sfsUser?: string | NixExpr;
     };
     scanservjs: {
       enable?: boolean;
       extraActions?: string[] | NixExpr;
-      extraConfig?: string;
-      extraDevicesConfig?: string;
-      runAfterScan?: string;
+      extraConfig?: string | NixExpr;
+      extraDevicesConfig?: string | NixExpr;
+      runAfterScan?: string | NixExpr;
       settings?: {
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     schleuder: {
       enable?: boolean;
       enablePostfix?: boolean;
-      extraSettingsFile?: string | null;
+      extraSettingsFile?: string | null | NixExpr;
       listDefaults?: Record<string, unknown>;
       lists?: string[] | NixExpr;
       settings?: {
-        keyserver?: string;
+        keyserver?: string | NixExpr;
       };
     };
     scion: {
@@ -15924,18 +15850,18 @@ declare module "winix" {
       stateless?: boolean;
     };
     scollector: {
-      bosunHost?: string;
+      bosunHost?: string | NixExpr;
       collectors?: Record<string, string[]>;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraOpts?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     screego: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       openFirewall?: boolean;
       settings?: Record<string, string>;
     };
@@ -15943,7 +15869,7 @@ declare module "winix" {
       collector?: {
         enable?: boolean;
         package?: string | NixExpr;
-        schedule?: string;
+        schedule?: string | NixExpr;
         settings?: Record<string, unknown>;
       };
       enable?: boolean;
@@ -15961,7 +15887,7 @@ declare module "winix" {
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       package?: string | NixExpr;
-      scheduler?: "scx_beerland" | "scx_bpfland" | "scx_cake" | "scx_central" | "scx_chaos" | "scx_cosmos" | "scx_flash" | "scx_flatcg" | "scx_flow" | "scx_lavd" | "scx_layered" | "scx_mitosis" | "scx_nest" | "scx_p2dq" | "scx_pair" | "scx_pandemonium" | "scx_prev" | "scx_qmap" | "scx_rlfifo" | "scx_rustland" | "scx_rusty" | "scx_simple" | "scx_tickless" | "scx_userland";
+      scheduler?: "scx_beerland" | "scx_bpfland" | "scx_cake" | "scx_central" | "scx_chaos" | "scx_cosmos" | "scx_flash" | "scx_flatcg" | "scx_flow" | "scx_lavd" | "scx_layered" | "scx_mitosis" | "scx_nest" | "scx_p2dq" | "scx_pair" | "scx_pandemonium" | "scx_prev" | "scx_qmap" | "scx_rlfifo" | "scx_rustland" | "scx_rusty" | "scx_simple" | "scx_tickless" | "scx_userland" | NixExpr;
     };
     sdrplayApi: {
       enable?: boolean;
@@ -15969,86 +15895,86 @@ declare module "winix" {
     searx: {
       configureNginx?: boolean;
       configureUwsgi?: boolean;
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       faviconsSettings?: Record<string, Record<string, unknown>>;
       limiterSettings?: Record<string, Record<string, unknown>>;
       openFirewall?: boolean;
       package?: string | NixExpr;
       redisCreateLocally?: boolean;
       settings?: Record<string, unknown>;
-      settingsFile?: string;
+      settingsFile?: string | NixExpr;
       uwsgiConfig?: unknown;
     };
     seatd: {
       enable?: boolean;
-      group?: string;
-      logLevel?: "debug" | "error" | "info" | "silent";
-      user?: string;
+      group?: string | NixExpr;
+      logLevel?: "debug" | "error" | "info" | "silent" | NixExpr;
+      user?: string | NixExpr;
     };
     seerr: {
-      configDir?: string;
+      configDir?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     "self-deploy": {
-      branch?: string;
+      branch?: string | NixExpr;
       enable?: boolean;
       nixArgs?: Record<string, unknown>;
-      nixAttribute?: string | null;
-      nixFile?: string;
-      repository?: string;
-      sshKeyFile?: string | null;
+      nixAttribute?: string | null | NixExpr;
+      nixFile?: string | NixExpr;
+      repository?: string | NixExpr;
+      sshKeyFile?: string | null | NixExpr;
       startAt?: string | string[] | NixExpr;
-      switchCommand?: "boot" | "dry-activate" | "switch" | "test";
+      switchCommand?: "boot" | "dry-activate" | "switch" | "test" | NixExpr;
     };
     selfoss: {
       database?: {
-        host?: string;
-        name?: string;
-        password?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        password?: string | null | NixExpr;
         port?: number | null;
-        type?: "mysql" | "pgsql" | "sqlite";
-        user?: string;
+        type?: "mysql" | "pgsql" | "sqlite" | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
-      extraConfig?: string;
-      pool?: string;
-      user?: string;
+      extraConfig?: string | NixExpr;
+      pool?: string | NixExpr;
+      user?: string | NixExpr;
     };
     send: {
-      baseUrl?: string | null;
-      dataDir?: string;
+      baseUrl?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environment?: Record<string, boolean | number | string | number[] | null>;
-      environmentFile?: string | null;
-      host?: string;
+      environment?: Record<string, boolean | number | string | number[] | null> | NixExpr;
+      environmentFile?: string | null | NixExpr;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       redis?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
       };
     };
     serviio: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
     };
     sftpgo: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       extraReadWriteDirs?: string[] | NixExpr;
-      group?: string;
-      loadDataFile?: string | null;
+      group?: string | NixExpr;
+      loadDataFile?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: {
         ftpd?: Record<string, unknown>;
@@ -16057,30 +15983,30 @@ declare module "winix" {
         smtp?: Record<string, unknown>;
         webdavd?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     shadowsocks: {
       enable?: boolean;
-      encryptionMethod?: string;
+      encryptionMethod?: string | NixExpr;
       extraConfig?: Record<string, unknown>;
       fastOpen?: boolean;
       localAddress?: string | string[] | NixExpr;
-      mode?: "tcp_and_udp" | "tcp_only" | "udp_only";
+      mode?: "tcp_and_udp" | "tcp_only" | "udp_only" | NixExpr;
       package?: string | NixExpr;
-      password?: string | null;
-      passwordFile?: string | null;
-      plugin?: string | null;
-      pluginOpts?: string;
+      password?: string | null | NixExpr;
+      passwordFile?: string | null | NixExpr;
+      plugin?: string | null | NixExpr;
+      pluginOpts?: string | NixExpr;
       port?: number;
     };
     "shairport-sync": {
-      arguments?: string;
+      arguments?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     sharkey: {
       enable?: boolean;
@@ -16088,13 +16014,13 @@ declare module "winix" {
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
-        address?: string;
+        address?: string | NixExpr;
         fulltextSearch?: Record<string, unknown>;
-        id?: "aid" | "aidx" | "meid" | "objectid" | "ulid";
-        mediaDirectory?: string;
+        id?: "aid" | "aidx" | "meid" | "objectid" | "ulid" | NixExpr;
+        mediaDirectory?: string | NixExpr;
         port?: number;
-        socket?: string | null;
-        url?: string;
+        socket?: string | null | NixExpr;
+        url?: string | NixExpr;
       };
       setupMeilisearch?: boolean;
       setupPostgresql?: boolean;
@@ -16103,9 +16029,9 @@ declare module "winix" {
     shelfmark: {
       enable?: boolean;
       environment?: {
-        CONFIG_DIR?: string;
+        CONFIG_DIR?: string | NixExpr;
         ENABLE_LOGGING?: boolean;
-        FLASK_HOST?: string;
+        FLASK_HOST?: string | NixExpr;
         FLASK_PORT?: number;
       };
       openFirewall?: boolean;
@@ -16115,13 +16041,13 @@ declare module "winix" {
       enable?: boolean;
       keepAliveInterval?: number;
       package?: string | NixExpr;
-      preferredHostname?: string;
-      privateKey?: string;
-      server?: string;
-      tenantId?: string;
+      preferredHostname?: string | NixExpr;
+      privateKey?: string | NixExpr;
+      server?: string | NixExpr;
+      tenantId?: string | NixExpr;
     };
     "shibboleth-sp": {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       fastcgi?: {
         enable?: boolean;
@@ -16130,13 +16056,13 @@ declare module "winix" {
       };
     };
     shiori: {
-      address?: string;
-      databaseUrl?: string | null;
+      address?: string | NixExpr;
+      databaseUrl?: string | null | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      webRoot?: string;
+      webRoot?: string | NixExpr;
     };
     shoko: {
       enable?: boolean;
@@ -16156,37 +16082,37 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     sickbeard: {
-      configFile?: string;
-      dataDir?: string;
+      configFile?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     sillytavern: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       listen?: boolean | null;
-      listenAddressIPv4?: string | null;
-      listenAddressIPv6?: string | null;
+      listenAddressIPv4?: string | null | NixExpr;
+      listenAddressIPv6?: string | null | NixExpr;
       package?: string | NixExpr;
       port?: number | null;
-      user?: string;
+      user?: string | NixExpr;
       whitelist?: boolean | null;
     };
     silverbullet: {
       enable?: boolean;
-      envFile?: string | null;
+      envFile?: string | null | NixExpr;
       extraArgs?: string[] | NixExpr;
-      group?: string;
-      listenAddress?: string;
+      group?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       listenPort?: number;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      spaceDir?: string;
-      user?: string;
+      spaceDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "sing-box": {
       enable?: boolean;
@@ -16194,59 +16120,57 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     "sitespeed-io": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
-      period?: string;
-      runs?: {
-        "*"?: Record<string, unknown>;
-      };
-      user?: string;
+      period?: string | NixExpr;
+      runs?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      user?: string | NixExpr;
     };
     sks: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      extraDbConfig?: string;
+      extraDbConfig?: string | NixExpr;
       hkpAddress?: string[] | NixExpr;
       hkpPort?: number;
       package?: string | NixExpr;
-      webroot?: string | null;
+      webroot?: string | null | NixExpr;
     };
     skydns: {
-      address?: string;
-      domain?: string;
+      address?: string | NixExpr;
+      domain?: string | NixExpr;
       enable?: boolean;
       etcd?: {
-        caCert?: string | null;
+        caCert?: string | null | NixExpr;
         machines?: string[] | NixExpr;
-        tlsKey?: string | null;
-        tlsPem?: string | null;
+        tlsKey?: string | null | NixExpr;
+        tlsPem?: string | null | NixExpr;
       };
       extraConfig?: Record<string, string>;
       nameservers?: string[] | NixExpr;
       package?: string | NixExpr;
     };
     slimserver: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
     slskd: {
-      domain?: string | null;
+      domain?: string | null | NixExpr;
       enable?: boolean;
-      environmentFile?: string;
-      group?: string;
+      environmentFile?: string | NixExpr;
+      group?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -16259,13 +16183,13 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -16281,57 +16205,55 @@ declare module "winix" {
         soulseek?: Record<string, unknown>;
         web?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     slurm: {
       client?: {
         enable?: boolean;
       };
-      clusterName?: string;
-      controlAddr?: string | null;
-      controlMachine?: string | null;
+      clusterName?: string | NixExpr;
+      controlAddr?: string | null | NixExpr;
+      controlMachine?: string | null | NixExpr;
       dbdserver?: {
-        dbdHost?: string;
+        dbdHost?: string | NixExpr;
         enable?: boolean;
-        extraConfig?: string;
-        storagePassFile?: string | null;
-        storageUser?: string;
+        extraConfig?: string | NixExpr;
+        storagePassFile?: string | null | NixExpr;
+        storageUser?: string | NixExpr;
       };
       enableSrunX11?: boolean;
       enableStools?: boolean;
-      extraCgroupConfig?: string;
-      extraConfig?: string;
+      extraCgroupConfig?: string | NixExpr;
+      extraConfig?: string | NixExpr;
       extraConfigPaths?: string[] | NixExpr;
-      extraPlugstackConfig?: string;
+      extraPlugstackConfig?: string | NixExpr;
       mpi?: {
-        extraMpiConfig?: string;
-        PmixCliTmpDirBase?: string;
+        extraMpiConfig?: string | NixExpr;
+        PmixCliTmpDirBase?: string | NixExpr;
       };
       nodeName?: string[] | NixExpr;
       package?: string | NixExpr;
       partitionName?: string[] | NixExpr;
-      procTrackType?: string;
+      procTrackType?: string | NixExpr;
       rest?: {
         enable?: boolean;
         environment?: Record<string, unknown>;
-        options?: string;
+        options?: string | NixExpr;
       };
       server?: {
         enable?: boolean;
         flags?: Record<string, string | boolean | number>;
       };
-      stateSaveLocation?: string;
-      user?: string;
+      stateSaveLocation?: string | NixExpr;
+      user?: string | NixExpr;
     };
     smartd: {
       autodetect?: boolean;
       defaults?: {
-        autodetected?: string;
-        monitored?: string;
+        autodetected?: string | NixExpr;
+        monitored?: string | NixExpr;
       };
-      devices?: {
-        "*"?: Record<string, unknown>;
-      };
+      devices?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
       notifications?: {
@@ -16348,37 +16270,37 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     smokeping: {
-      alertConfig?: string;
-      cgiUrl?: string;
-      config?: string | null;
-      databaseConfig?: string;
+      alertConfig?: string | NixExpr;
+      cgiUrl?: string | NixExpr;
+      config?: string | null | NixExpr;
+      databaseConfig?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      host?: string | null;
-      hostName?: string;
-      imgUrl?: string;
-      linkStyle?: "absolute" | "original" | "relative";
-      mailHost?: string;
-      owner?: string;
-      ownerEmail?: string;
+      extraConfig?: string | NixExpr;
+      host?: string | null | NixExpr;
+      hostName?: string | NixExpr;
+      imgUrl?: string | NixExpr;
+      linkStyle?: "absolute" | "original" | "relative" | NixExpr;
+      mailHost?: string | NixExpr;
+      owner?: string | NixExpr;
+      ownerEmail?: string | NixExpr;
       package?: string | NixExpr;
-      presentationConfig?: string;
-      presentationTemplate?: string;
-      probeConfig?: string;
-      sendmail?: string | null;
-      smokeMailTemplate?: string;
-      targetConfig?: string;
-      user?: string;
+      presentationConfig?: string | NixExpr;
+      presentationTemplate?: string | NixExpr;
+      probeConfig?: string | NixExpr;
+      sendmail?: string | null | NixExpr;
+      smokeMailTemplate?: string | NixExpr;
+      targetConfig?: string | NixExpr;
+      user?: string | NixExpr;
       webService?: boolean;
     };
     snapper: {
-      cleanupInterval?: string;
+      cleanupInterval?: string | NixExpr;
       configs?: {
         "<name>"?: Record<string, unknown>;
       };
-      filters?: string | null;
+      filters?: string | null | NixExpr;
       persistentTimer?: boolean;
-      snapshotInterval?: string;
+      snapshotInterval?: string | NixExpr;
       snapshotRootOnBoot?: boolean;
     };
     snapraid: {
@@ -16386,15 +16308,15 @@ declare module "winix" {
       dataDisks?: Record<string, string>;
       enable?: boolean;
       exclude?: string[] | NixExpr;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       parityFiles?: string[] | NixExpr;
       scrub?: {
-        interval?: string;
+        interval?: string | NixExpr;
         olderThan?: number;
         plan?: number;
       };
       sync?: {
-        interval?: string;
+        interval?: string | NixExpr;
       };
       touchBeforeSync?: boolean;
     };
@@ -16410,44 +16332,44 @@ declare module "winix" {
       };
     };
     "snipe-it": {
-      appKeyFile?: string;
-      appURL?: string;
+      appKeyFile?: string | NixExpr;
+      appURL?: string | NixExpr;
       config?: Record<string, unknown>;
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        user?: string;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      hostName?: string;
+      group?: string | NixExpr;
+      hostName?: string | NixExpr;
       mail?: {
-        backupNotificationAddress?: string;
-        driver?: "sendmail" | "smtp";
+        backupNotificationAddress?: string | NixExpr;
+        driver?: "sendmail" | "smtp" | NixExpr;
         encryption?: "ssl" | "tls" | null;
         from?: Record<string, unknown>;
-        host?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
         replyTo?: Record<string, unknown>;
-        user?: string | null;
+        user?: string | null | NixExpr;
       };
-      maxUploadSize?: string;
+      maxUploadSize?: string | NixExpr;
       nginx?: {
-        acmeFallbackHost?: string | null;
-        acmeRoot?: string | null;
+        acmeFallbackHost?: string | null | NixExpr;
+        acmeRoot?: string | null | NixExpr;
         addSSL?: boolean;
         basicAuth?: Record<string, string>;
-        basicAuthFile?: string | null;
+        basicAuthFile?: string | null | NixExpr;
         default?: boolean;
         enableACME?: boolean;
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
         forceSSL?: boolean;
-        globalRedirect?: string | null;
+        globalRedirect?: string | null | NixExpr;
         http2?: boolean;
         http3?: boolean;
         http3_hq?: boolean;
@@ -16460,49 +16382,49 @@ declare module "winix" {
         redirectCode?: number;
         rejectSSL?: boolean;
         reuseport?: boolean;
-        root?: string | null;
+        root?: string | null | NixExpr;
         serverAliases?: string[] | NixExpr;
-        serverName?: string | null;
-        sslCertificate?: string;
-        sslCertificateKey?: string;
-        sslTrustedCertificate?: string | null;
-        useACMEHost?: string | null;
+        serverName?: string | null | NixExpr;
+        sslCertificate?: string | NixExpr;
+        sslCertificateKey?: string | NixExpr;
+        sslTrustedCertificate?: string | null | NixExpr;
+        useACMEHost?: string | null | NixExpr;
       };
       poolConfig?: Record<string, string | number | boolean>;
-      user?: string;
+      user?: string | NixExpr;
     };
     sniproxy: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      user?: string;
+      group?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "snips-sh": {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: {
-        SNIPS_HTTP_INTERNAL?: string;
-        SNIPS_SSH_INTERNAL?: string;
+        SNIPS_HTTP_INTERNAL?: string | NixExpr;
+        SNIPS_SSH_INTERNAL?: string | NixExpr;
       };
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     snmpd: {
-      configFile?: string;
-      configText?: string;
+      configFile?: string | NixExpr;
+      configText?: string | NixExpr;
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
     };
     "snowflake-proxy": {
-      broker?: string | null;
+      broker?: string | null | NixExpr;
       capacity?: number | null;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      relay?: string | null;
-      stun?: string | null;
+      relay?: string | null | NixExpr;
+      stun?: string | null | NixExpr;
     };
     "soft-serve": {
       enable?: boolean;
@@ -16510,16 +16432,16 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     softether: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       vpnbridge?: {
         enable?: boolean;
       };
       vpnclient?: {
-        down?: string;
+        down?: string | NixExpr;
         enable?: boolean;
-        up?: string;
+        up?: string | NixExpr;
       };
       vpnserver?: {
         enable?: boolean;
@@ -16527,40 +16449,40 @@ declare module "winix" {
     };
     sogo: {
       configReplaces?: Record<string, string>;
-      ealarmsCredFile?: string | null;
+      ealarmsCredFile?: string | null | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      language?: string;
-      timezone?: string;
-      vhostName?: string;
+      extraConfig?: string | NixExpr;
+      language?: string | NixExpr;
+      timezone?: string | NixExpr;
+      vhostName?: string | NixExpr;
     };
     soju: {
       acceptProxyIP?: string[] | NixExpr;
       adminSocket?: {
         enable?: boolean;
       };
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       enableMessageLogging?: boolean;
-      extraConfig?: string;
-      hostName?: string;
+      extraConfig?: string | NixExpr;
+      hostName?: string | NixExpr;
       httpOrigins?: string[] | NixExpr;
       listen?: string[] | NixExpr;
       package?: string | NixExpr;
-      tlsCertificate?: string | null;
-      tlsCertificateKey?: string | null;
+      tlsCertificate?: string | null | NixExpr;
+      tlsCertificateKey?: string | null | NixExpr;
     };
     solanum: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
-      motd?: string | null;
+      motd?: string | null | NixExpr;
       openFilesLimit?: number;
     };
     sonarr: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -16568,7 +16490,7 @@ declare module "winix" {
         server?: Record<string, unknown>;
         update?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     "sonic-server": {
       enable?: boolean;
@@ -16576,28 +16498,28 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     spacecookie: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
       settings?: {
-        hostname?: string;
+        hostname?: string | NixExpr;
         log?: Record<string, unknown>;
-        root?: string;
+        root?: string | NixExpr;
       };
     };
     spamassassin: {
-      config?: string;
+      config?: string | NixExpr;
       debug?: boolean;
       enable?: boolean;
-      initPreConf?: string;
+      initPreConf?: string | NixExpr;
     };
     spark: {
-      confDir?: string;
-      logDir?: string;
+      confDir?: string | NixExpr;
+      logDir?: string | NixExpr;
       master?: {
-        bind?: string;
+        bind?: string | NixExpr;
         enable?: boolean;
         extraEnvironment?: Record<string, string>;
         restartIfChanged?: boolean;
@@ -16606,14 +16528,14 @@ declare module "winix" {
       worker?: {
         enable?: boolean;
         extraEnvironment?: Record<string, string>;
-        master?: string;
+        master?: string | NixExpr;
         restartIfChanged?: boolean;
-        workDir?: string;
+        workDir?: string | NixExpr;
       };
     };
     speechd: {
       clients?: Record<string, unknown>;
-      config?: string | null;
+      config?: string | null | NixExpr;
       enable?: boolean;
       modules?: Record<string, unknown>;
       package?: string | NixExpr;
@@ -16623,22 +16545,22 @@ declare module "winix" {
       package?: string | NixExpr;
     };
     "speedtest-tracker": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       enableNginx?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       settings?: {
-        APP_KEY_FILE?: string;
-        APP_URL?: string;
-        DB_CONNECTION?: "mariadb" | "mysql" | "pgsql" | "sqlite";
-        DB_DATABASE?: string;
-        DB_HOST?: string;
+        APP_KEY_FILE?: string | NixExpr;
+        APP_URL?: string | NixExpr;
+        DB_CONNECTION?: "mariadb" | "mysql" | "pgsql" | "sqlite" | NixExpr;
+        DB_DATABASE?: string | NixExpr;
+        DB_HOST?: string | NixExpr;
         DB_PORT?: number | null;
       };
-      user?: string;
-      virtualHost?: string;
+      user?: string | NixExpr;
+      virtualHost?: string | NixExpr;
     };
     "spice-autorandr": {
       enable?: boolean;
@@ -16659,14 +16581,14 @@ declare module "winix" {
     };
     spire: {
       agent?: {
-        configFile?: string;
+        configFile?: string | NixExpr;
         enable?: boolean;
         expandEnv?: boolean;
         package?: string | NixExpr;
         settings?: Record<string, unknown>;
       };
       server?: {
-        configFile?: string;
+        configFile?: string | NixExpr;
         enable?: boolean;
         expandEnv?: boolean;
         openFirewall?: boolean;
@@ -16677,33 +16599,33 @@ declare module "winix" {
     spoolman: {
       enable?: boolean;
       environment?: Record<string, unknown>;
-      listen?: string;
+      listen?: string | NixExpr;
       openFirewall?: boolean;
       port?: number;
     };
     spotifyd: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
     squeezelite: {
       enable?: boolean;
-      extraArgs?: string;
+      extraArgs?: string | NixExpr;
       mutableName?: boolean;
-      name?: string | null;
+      name?: string | null | NixExpr;
       package?: string | NixExpr;
       pulseaudio?: {
         enable?: boolean;
-        group?: string;
+        group?: string | NixExpr;
       };
     };
     squid: {
-      configText?: string | null;
+      configText?: string | null | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       package?: string | NixExpr;
-      proxyAddress?: string | null;
+      proxyAddress?: string | null | NixExpr;
       proxyPort?: number;
       validateConfig?: boolean;
     };
@@ -16716,7 +16638,7 @@ declare module "winix" {
     };
     sshguard: {
       attack_threshold?: number;
-      blacklist_file?: string;
+      blacklist_file?: string | NixExpr;
       blacklist_threshold?: number | null;
       blocktime?: number;
       detection_time?: number;
@@ -16728,13 +16650,13 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      sharedKeyFile?: string | null;
-      socks5PasswordFile?: string | null;
+      sharedKeyFile?: string | null | NixExpr;
+      socks5PasswordFile?: string | null | NixExpr;
     };
     sslh: {
       enable?: boolean;
       listenAddresses?: unknown;
-      method?: "ev" | "fork" | "select";
+      method?: "ev" | "fork" | "select" | NixExpr;
       port?: number;
       settings?: {
         numeric?: boolean;
@@ -16748,9 +16670,9 @@ declare module "winix" {
       enable?: boolean;
     };
     sssd: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       kcm?: boolean;
       settings?: Record<string, Record<string, unknown>>;
       sshAuthorizedKeysIntegration?: boolean;
@@ -16758,97 +16680,95 @@ declare module "winix" {
     };
     stalwart: {
       credentials?: Record<string, string>;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      stateVersion?: string;
-      user?: string;
+      stateVersion?: string | NixExpr;
+      user?: string | NixExpr;
     };
     stargazer: {
       allowCgiUser?: boolean;
-      certLifetime?: string;
-      certOrg?: string;
+      certLifetime?: string | NixExpr;
+      certOrg?: string | NixExpr;
       connectionLogging?: boolean;
       debugMode?: boolean;
       enable?: boolean;
       genCerts?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       ipLog?: boolean;
       ipLogPartial?: boolean;
       listen?: string[] | NixExpr;
       regenCerts?: boolean;
       requestTimeout?: number;
       responseTimeout?: number;
-      routes?: {
-        "*"?: Record<string, unknown>;
-      };
-      store?: string;
-      user?: string;
+      routes?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
+      store?: string | NixExpr;
+      user?: string | NixExpr;
     };
     stash: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      jwtSecretKeyFile?: string;
+      group?: string | NixExpr;
+      jwtSecretKeyFile?: string | NixExpr;
       mutablePlugins?: boolean;
       mutableScrapers?: boolean;
       mutableSettings?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      passwordFile?: string | null;
+      passwordFile?: string | null | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
       scrapers?: (string | NixExpr)[] | NixExpr;
-      sessionStoreKeyFile?: string;
+      sessionStoreKeyFile?: string | NixExpr;
       settings?: {
-        blobs_path?: string;
-        blobs_storage?: "DATABASE" | "FILESYSTEM";
-        cache?: string;
+        blobs_path?: string | NixExpr;
+        blobs_storage?: "DATABASE" | "FILESYSTEM" | NixExpr;
+        cache?: string | NixExpr;
         calculate_md5?: boolean;
         create_image_clip_from_videos?: boolean;
         dangerous_allow_public_without_auth?: boolean;
-        database?: string;
-        gallery_cover_regex?: string;
-        generated?: string;
-        host?: string;
-        no_proxy?: string;
+        database?: string | NixExpr;
+        gallery_cover_regex?: string | NixExpr;
+        generated?: string | NixExpr;
+        host?: string | NixExpr;
+        no_proxy?: string | NixExpr;
         nobrowser?: boolean;
         notifications_enabled?: boolean;
         parallel_tasks?: number;
-        plugins_path?: string;
+        plugins_path?: string | NixExpr;
         port?: number;
         preview_audio?: boolean;
         preview_exclude_end?: number;
         preview_exclude_start?: number;
         preview_segment_duration?: number;
         preview_segments?: number;
-        scrapers_path?: string;
-        security_tripwire_accessed_from_public_internet?: string | null;
+        scrapers_path?: string | NixExpr;
+        security_tripwire_accessed_from_public_internet?: string | null | NixExpr;
         sequential_scanning?: boolean;
         show_one_time_moved_notification?: boolean;
         sound_on_preview?: boolean;
         stash?: Record<string, unknown>;
         stash_boxes?: Record<string, unknown>;
-        theme_color?: string;
+        theme_color?: string | NixExpr;
         ui?: Record<string, unknown>;
-        video_file_naming_algorithm?: "MD5" | "OSHASH";
+        video_file_naming_algorithm?: "MD5" | "OSHASH" | NixExpr;
         write_image_thumbnails?: boolean;
       };
-      user?: string;
-      username?: string | null;
+      user?: string | NixExpr;
+      username?: string | null | NixExpr;
     };
     "static-web-server": {
       configuration?: Record<string, unknown>;
       enable?: boolean;
-      listen?: string;
-      root?: string;
+      listen?: string | NixExpr;
+      root?: string | NixExpr;
     };
     "step-ca": {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
-      intermediatePasswordFile?: string | null;
+      intermediatePasswordFile?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -16869,14 +16789,14 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     strichliste: {
-      domain?: string;
+      domain?: string | NixExpr;
       enable?: boolean;
       environment?: {
-        APP_CACHE_DIR?: string;
-        APP_ENV?: string;
-        APP_LOG_DIR?: string;
-        CORS_ALLOW_ORIGIN?: string;
-        DATABASE_URL?: string;
+        APP_CACHE_DIR?: string | NixExpr;
+        APP_ENV?: string | NixExpr;
+        APP_LOG_DIR?: string | NixExpr;
+        CORS_ALLOW_ORIGIN?: string | NixExpr;
+        DATABASE_URL?: string | NixExpr;
       };
       environmentFiles?: string[] | NixExpr;
       nginx?: {
@@ -16909,7 +16829,7 @@ declare module "winix" {
       includes?: string[] | NixExpr;
       package?: string | NixExpr;
       strongswan?: {
-        extraConfig?: string;
+        extraConfig?: string | NixExpr;
       };
       swanctl?: {
         authorities?: Record<string, unknown>;
@@ -16924,24 +16844,24 @@ declare module "winix" {
       settings?: Record<string, Record<string, unknown>>;
     };
     stunnel: {
-      clients?: Record<string, Record<string, boolean | number | string | null>>;
+      clients?: Record<string, Record<string, boolean | number | string | null>> | NixExpr;
       enable?: boolean;
       enableInsecureSSLv3?: boolean;
       fipsMode?: boolean;
-      group?: string | null;
-      logLevel?: "alert" | "crit" | "debug" | "emerg" | "err" | "info" | "notice" | "warning";
-      servers?: Record<string, Record<string, boolean | number | string | null>>;
-      user?: string | null;
+      group?: string | null | NixExpr;
+      logLevel?: "alert" | "crit" | "debug" | "emerg" | "err" | "info" | "notice" | "warning" | NixExpr;
+      servers?: Record<string, Record<string, boolean | number | string | null>> | NixExpr;
+      user?: string | null | NixExpr;
     };
     subsonic: {
-      contextPath?: string;
-      defaultMusicFolder?: string;
-      defaultPlaylistFolder?: string;
-      defaultPodcastFolder?: string;
+      contextPath?: string | NixExpr;
+      defaultMusicFolder?: string | NixExpr;
+      defaultPlaylistFolder?: string | NixExpr;
+      defaultPodcastFolder?: string | NixExpr;
       enable?: boolean;
-      home?: string;
+      home?: string | NixExpr;
       httpsPort?: number;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       maxMemory?: number;
       port?: number;
       transcoders?: string[] | NixExpr;
@@ -16968,11 +16888,11 @@ declare module "winix" {
       settings?: Record<string, unknown> | null;
     };
     supybot: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       extraPackages?: unknown;
       plugins?: Record<string, string>;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     suricata: {
       disabledRules?: string[] | NixExpr;
@@ -16983,49 +16903,49 @@ declare module "winix" {
         "af-packet"?: Record<string, unknown>;
         "af-xdp"?: Record<string, unknown>;
         "app-layer"?: Record<string, unknown>;
-        "classification-file"?: string;
-        "default-log-dir"?: string;
-        "default-rule-path"?: string;
+        "classification-file"?: string | NixExpr;
+        "default-log-dir"?: string | NixExpr;
+        "default-rule-path"?: string | NixExpr;
         dpdk?: Record<string, unknown>;
-        "exception-policy"?: "auto" | "bypass" | "drop-flow" | "drop-packet" | "ignore" | "pass-flow" | "pass-packet" | "reject";
-        "host-mode"?: "auto" | "router" | "sniffer-only";
+        "exception-policy"?: "auto" | "bypass" | "drop-flow" | "drop-packet" | "ignore" | "pass-flow" | "pass-packet" | "reject" | NixExpr;
+        "host-mode"?: "auto" | "router" | "sniffer-only" | NixExpr;
         includes?: string[] | null;
         logging?: Record<string, unknown>;
         outputs?: Record<string, unknown>;
         pcap?: Record<string, unknown>;
         "pcap-file"?: Record<string, unknown>;
         plugins?: string[] | null;
-        "reference-config-file"?: string;
+        "reference-config-file"?: string | NixExpr;
         "rule-files"?: string[] | NixExpr;
         "run-as"?: Record<string, unknown>;
         stats?: Record<string, unknown>;
-        "threshold-file"?: string;
+        "threshold-file"?: string | NixExpr;
         "unix-command"?: Record<string, unknown>;
         vars?: Record<string, unknown>;
       };
     };
     surrealdb: {
-      dbPath?: string;
+      dbPath?: string | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      host?: string;
+      host?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
     };
     "suwayomi-server": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
         server?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     svnserve: {
       enable?: boolean;
-      svnBaseDir?: string;
+      svnBaseDir?: string | NixExpr;
     };
     swapspace: {
       enable?: boolean;
@@ -17038,9 +16958,9 @@ declare module "winix" {
         cooldown?: number;
         freetarget?: number;
         lower_freelimit?: number;
-        max_swapsize?: string;
-        min_swapsize?: string;
-        swappath?: string;
+        max_swapsize?: string | NixExpr;
+        min_swapsize?: string | NixExpr;
+        swappath?: string | NixExpr;
         upper_freelimit?: number;
       };
     };
@@ -17051,22 +16971,22 @@ declare module "winix" {
     sympa: {
       database?: {
         createLocally?: boolean;
-        host?: string | null;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | null | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number | null;
-        type?: "MySQL" | "PostgreSQL" | "SQLite";
-        user?: string | null;
+        type?: "MySQL" | "PostgreSQL" | "SQLite" | NixExpr;
+        user?: string | null | NixExpr;
       };
       domains?: {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
-      lang?: string;
+      lang?: string | NixExpr;
       listMasters?: string[] | NixExpr;
-      mainDomain?: string | null;
+      mainDomain?: string | null | NixExpr;
       mta?: {
-        type?: "none" | "postfix";
+        type?: "none" | "postfix" | NixExpr;
       };
       settings?: Record<string, string | number | boolean>;
       settingsFile?: {
@@ -17076,13 +16996,13 @@ declare module "winix" {
         enable?: boolean;
         fcgiProcs?: number;
         https?: boolean;
-        server?: "nginx" | "none";
+        server?: "nginx" | "none" | NixExpr;
       };
     };
     "synapse-auto-compressor": {
       enable?: boolean;
       package?: string | NixExpr;
-      postgresUrl?: string;
+      postgresUrl?: string | NixExpr;
       settings?: {
         chunk_size?: number;
         chunks_to_compress?: number;
@@ -17096,53 +17016,53 @@ declare module "winix" {
       };
       commonArgs?: string[] | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       interval?: string | string[] | NixExpr;
       localSourceAllow?: string[] | NixExpr;
       localTargetAllow?: string[] | NixExpr;
       package?: string | NixExpr;
       service?: Record<string, unknown>;
-      sshKey?: string | null;
-      user?: string;
+      sshKey?: string | null | NixExpr;
+      user?: string | NixExpr;
     };
     syncplay: {
-      certDir?: string | null;
+      certDir?: string | null | NixExpr;
       chat?: boolean;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      interfaceIpv4?: string;
-      interfaceIpv6?: string;
+      interfaceIpv4?: string | NixExpr;
+      interfaceIpv6?: string | NixExpr;
       ipv4Only?: boolean;
       ipv6Only?: boolean;
       isolateRooms?: boolean;
       maxChatMessageLength?: number;
       maxUsernameLength?: number;
-      motd?: string | null;
-      motdFile?: string | null;
+      motd?: string | null | NixExpr;
+      motdFile?: string | null | NixExpr;
       package?: string | NixExpr;
-      passwordFile?: string | null;
+      passwordFile?: string | null | NixExpr;
       permanentRooms?: string[] | NixExpr;
-      permanentRoomsFile?: string | null;
+      permanentRoomsFile?: string | null | NixExpr;
       port?: number;
       ready?: boolean;
-      roomsDBFile?: string | null;
-      salt?: string | null;
-      saltFile?: string | null;
-      statsDBFile?: string | null;
-      useACMEHost?: string | null;
+      roomsDBFile?: string | null | NixExpr;
+      salt?: string | null | NixExpr;
+      saltFile?: string | null | NixExpr;
+      statsDBFile?: string | null | NixExpr;
+      useACMEHost?: string | null | NixExpr;
     };
     syncthing: {
-      all_proxy?: string | null;
-      cert?: string | null;
-      configDir?: string;
-      databaseDir?: string;
-      dataDir?: string;
+      all_proxy?: string | null | NixExpr;
+      cert?: string | null | NixExpr;
+      configDir?: string | NixExpr;
+      databaseDir?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      group?: string;
-      guiAddress?: string;
-      guiPasswordFile?: string | null;
-      key?: string | null;
+      group?: string | NixExpr;
+      guiAddress?: string | NixExpr;
+      guiPasswordFile?: string | null | NixExpr;
+      key?: string | null | NixExpr;
       openDefaultPorts?: boolean;
       overrideDevices?: boolean;
       overrideFolders?: boolean;
@@ -17151,12 +17071,12 @@ declare module "winix" {
         enable?: boolean;
         extraOptions?: string[] | NixExpr;
         globalRateBps?: number | null;
-        listenAddress?: string;
+        listenAddress?: string | NixExpr;
         perSessionRateBps?: number | null;
         pools?: string[] | null;
         port?: number;
-        providedBy?: string;
-        statusListenAddress?: string;
+        providedBy?: string | NixExpr;
+        statusListenAddress?: string | NixExpr;
         statusPort?: number;
       };
       settings?: {
@@ -17165,45 +17085,45 @@ declare module "winix" {
         options?: Record<string, unknown>;
       };
       systemService?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     synergy: {
       client?: {
         autoStart?: boolean;
         enable?: boolean;
-        screenName?: string;
-        serverAddress?: string;
+        screenName?: string | NixExpr;
+        serverAddress?: string | NixExpr;
       };
       server?: {
-        address?: string;
+        address?: string | NixExpr;
         autoStart?: boolean;
-        configFile?: string;
+        configFile?: string | NixExpr;
         enable?: boolean;
-        screenName?: string;
+        screenName?: string | NixExpr;
         tls?: Record<string, unknown>;
       };
     };
     "syslog-ng": {
-      configHeader?: string;
+      configHeader?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraModulePaths?: string[] | NixExpr;
       package?: string | NixExpr;
     };
     syslogd: {
-      defaultConfig?: string;
+      defaultConfig?: string | NixExpr;
       enable?: boolean;
       enableNetworkInput?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraParams?: string[] | NixExpr;
-      tty?: string;
+      tty?: string | NixExpr;
     };
     sysprof: {
       enable?: boolean;
     };
     sysstat: {
-      "collect-args"?: string;
-      "collect-frequency"?: string;
+      "collect-args"?: string | NixExpr;
+      "collect-frequency"?: string | NixExpr;
       enable?: boolean;
     };
     "system-config-printer": {
@@ -17231,8 +17151,8 @@ declare module "winix" {
     };
     SystemdJournal2Gelf: {
       enable?: boolean;
-      extraOptions?: string;
-      graylogServer?: string;
+      extraOptions?: string | NixExpr;
+      graylogServer?: string | NixExpr;
       package?: string | NixExpr;
     };
     szurubooru: {
@@ -17240,30 +17160,30 @@ declare module "winix" {
         package?: string | NixExpr;
       };
       database?: {
-        host?: string;
-        name?: string;
-        passwordFile?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | NixExpr;
         port?: number;
-        user?: string;
+        user?: string | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       server?: {
-        host?: string;
+        host?: string | NixExpr;
         package?: string | NixExpr;
         port?: number;
         settings?: Record<string, unknown>;
         threads?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     tabby: {
       acceleration?: "cpu" | "cuda" | "metal" | "rocm" | null;
       enable?: boolean;
-      host?: string;
-      model?: string;
+      host?: string | NixExpr;
+      model?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       usageCollection?: boolean;
@@ -17287,15 +17207,15 @@ declare module "winix" {
       };
     };
     tailscale: {
-      authKeyFile?: string | null;
+      authKeyFile?: string | null | NixExpr;
       authKeyParameters?: {
-        baseURL?: string | null;
+        baseURL?: string | null | NixExpr;
         ephemeral?: boolean | null;
         preauthorized?: boolean | null;
       };
       derper?: {
         configureNginx?: boolean;
-        domain?: string;
+        domain?: string | NixExpr;
         enable?: boolean;
         openFirewall?: boolean;
         package?: string | NixExpr;
@@ -17309,29 +17229,29 @@ declare module "winix" {
       extraDaemonFlags?: string[] | NixExpr;
       extraSetFlags?: string[] | NixExpr;
       extraUpFlags?: string[] | NixExpr;
-      interfaceName?: string;
+      interfaceName?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      permitCertUid?: string | null;
+      permitCertUid?: string | null | NixExpr;
       port?: number;
       serve?: {
-        configFile?: string | null;
+        configFile?: string | null | NixExpr;
         enable?: boolean;
         services?: Record<string, unknown>;
       };
-      useRoutingFeatures?: "both" | "client" | "none" | "server";
+      useRoutingFeatures?: "both" | "client" | "none" | "server" | NixExpr;
     };
     tailscaleAuth: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      socketPath?: string;
-      user?: string;
+      socketPath?: string | NixExpr;
+      user?: string | NixExpr;
     };
     taler: {
       exchange?: {
         debug?: boolean;
-        denominationConfig?: string;
+        denominationConfig?: string | NixExpr;
         enable?: boolean;
         openFirewall?: boolean;
         package?: string | NixExpr;
@@ -17345,22 +17265,22 @@ declare module "winix" {
         package?: string | NixExpr;
         settings?: Record<string, unknown>;
       };
-      runtimeDir?: string;
+      runtimeDir?: string | NixExpr;
       settings?: {
         taler?: Record<string, unknown>;
       };
     };
     "tandoor-recipes": {
-      address?: string;
+      address?: string | NixExpr;
       database?: {
         createLocally?: boolean;
       };
       enable?: boolean;
       extraConfig?: Record<string, unknown>;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     tang: {
       enable?: boolean;
@@ -17377,16 +17297,16 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
-      keyfile?: string;
+      keyfile?: string | NixExpr;
       package?: string | NixExpr;
     };
     "taskchampion-sync-server": {
       allowClientIds?: string[] | NixExpr;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       dynamicUser?: boolean;
       enable?: boolean;
-      group?: string;
-      host?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -17394,22 +17314,22 @@ declare module "winix" {
         days?: number;
         versions?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     taskserver: {
       allowedClientIDs?: string | string[] | NixExpr;
-      ciphers?: string | null;
+      ciphers?: string | null | NixExpr;
       config?: Record<string, unknown>;
       confirmation?: boolean;
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       debug?: boolean;
       disallowedClientIDs?: string | string[] | NixExpr;
       enable?: boolean;
-      extensions?: string | null;
-      fqdn?: string;
-      group?: string;
+      extensions?: string | null | NixExpr;
+      fqdn?: string | NixExpr;
+      group?: string | NixExpr;
       ipLog?: boolean;
-      listenHost?: string;
+      listenHost?: string | NixExpr;
       listenPort?: number;
       openFirewall?: boolean;
       organisations?: {
@@ -17421,87 +17341,87 @@ declare module "winix" {
       };
       queueSize?: number;
       requestLimit?: number;
-      trust?: "allow all" | "strict";
-      user?: string;
+      trust?: "allow all" | "strict" | NixExpr;
+      user?: string | NixExpr;
     };
     tautulli: {
-      configFile?: string;
-      dataDir?: string;
+      configFile?: string | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     tayga: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       ipv4?: {
-        address?: string | null;
+        address?: string | null | NixExpr;
         pool?: Record<string, unknown>;
         router?: Record<string, unknown>;
       };
       ipv6?: {
-        address?: string | null;
+        address?: string | null | NixExpr;
         pool?: Record<string, unknown>;
         router?: Record<string, unknown>;
       };
       log?: string[] | NixExpr;
       mappings?: Record<string, string>;
       package?: string | NixExpr;
-      tunDevice?: string;
+      tunDevice?: string | NixExpr;
       wkpfStrict?: boolean;
     };
     tcsd: {
-      conformanceCred?: string;
+      conformanceCred?: string | NixExpr;
       enable?: boolean;
-      endorsementCred?: string;
-      firmwarePCRs?: string;
-      group?: string;
-      kernelPCRs?: string;
-      platformCred?: string;
-      stateDir?: string;
-      user?: string;
+      endorsementCred?: string | NixExpr;
+      firmwarePCRs?: string | NixExpr;
+      group?: string | NixExpr;
+      kernelPCRs?: string | NixExpr;
+      platformCred?: string | NixExpr;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     tdarr: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       nodes?: {
         "<name>"?: Record<string, unknown>;
       };
       package?: string | NixExpr;
       server?: {
         auth?: Record<string, unknown>;
-        cronPluginUpdate?: string;
+        cronPluginUpdate?: string | NixExpr;
         enable?: boolean;
-        environmentFile?: string | null;
+        environmentFile?: string | null | NixExpr;
         maxLogSizeMB?: number;
         openFirewall?: boolean;
         package?: string | NixExpr;
         serverBindIP?: boolean;
         serverDualStack?: boolean;
-        serverIP?: string;
+        serverIP?: string | NixExpr;
         serverPort?: number;
         webUIPort?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     teamspeak3: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       defaultVoicePort?: number;
       enable?: boolean;
-      fileTransferIP?: string | null;
+      fileTransferIP?: string | null | NixExpr;
       fileTransferPort?: number;
-      logPath?: string;
+      logPath?: string | NixExpr;
       openFirewall?: boolean;
       openFirewallServerQuery?: boolean;
       queryHttpPort?: number;
-      queryIP?: string | null;
+      queryIP?: string | null | NixExpr;
       queryPort?: number;
       querySshPort?: number;
-      voiceIP?: string | null;
+      voiceIP?: string | null | NixExpr;
     };
     teamviewer: {
       enable?: boolean;
@@ -17517,49 +17437,49 @@ declare module "winix" {
     "tee-supplicant": {
       enable?: boolean;
       package?: string | NixExpr;
-      pluginPath?: string;
-      reeFsParentPath?: string;
+      pluginPath?: string | NixExpr;
+      reeFsParentPath?: string | NixExpr;
       trustedApplications?: string[] | NixExpr;
     };
     teeworlds: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       extraOptions?: string[] | NixExpr;
       game?: {
         enablePowerups?: boolean;
         enableReadyMode?: boolean;
         enableTeamDamage?: boolean;
         enableVoteKick?: boolean;
-        gameType?: string;
-        map?: string;
+        gameType?: string | NixExpr;
+        map?: string | NixExpr;
         playerSlots?: number;
         restrictSpectators?: boolean;
         scoreLimit?: number;
         swapTeams?: boolean;
         timeLimit?: number;
-        tournamentMode?: "disable" | "enable" | "restrictSpectators";
+        tournamentMode?: "disable" | "enable" | "restrictSpectators" | NixExpr;
         voteKickBanTime?: number;
         voteKickMinimumPlayers?: number;
       };
-      motd?: string | null;
-      name?: string;
+      motd?: string | null | NixExpr;
+      name?: string | NixExpr;
       openPorts?: boolean;
       package?: string | NixExpr;
-      password?: string | null;
+      password?: string | null | NixExpr;
       port?: number;
-      rconPassword?: string | null;
+      rconPassword?: string | null | NixExpr;
       register?: boolean;
       server?: {
-        bindAddr?: string | null;
+        bindAddr?: string | null | NixExpr;
         enableHighBandwidth?: boolean;
         enableSpamProtection?: boolean;
-        hostName?: string | null;
-        inactivePenalty?: "kick" | "spectator" | "spectator/kick";
+        hostName?: string | null | NixExpr;
+        inactivePenalty?: "kick" | "spectator" | "spectator/kick" | NixExpr;
         inactiveTime?: number;
         kickInactiveSpectators?: boolean;
         maxClients?: number;
         maxClientsPerIP?: number;
-        skillLevel?: "casual" | "competitive" | "normal";
+        skillLevel?: "casual" | "competitive" | "normal" | NixExpr;
       };
     };
     telegraf: {
@@ -17573,7 +17493,7 @@ declare module "winix" {
     };
     teleport: {
       diag?: {
-        addr?: string;
+        addr?: string | NixExpr;
         enable?: boolean;
         port?: number;
       };
@@ -17585,55 +17505,55 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     tempo: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
       settings?: Record<string, unknown>;
     };
     temporal: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       restartIfChanged?: boolean;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     terraria: {
-      autoCreatedWorldSize?: "large" | "medium" | "small";
-      banListPath?: string | null;
-      dataDir?: string;
+      autoCreatedWorldSize?: "large" | "medium" | "small" | NixExpr;
+      banListPath?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       maxPlayers?: number;
-      messageOfTheDay?: string | null;
+      messageOfTheDay?: string | null | NixExpr;
       noUPnP?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      password?: string | null;
+      password?: string | null | NixExpr;
       port?: number;
       secure?: boolean;
-      worldPath?: string | null;
+      worldPath?: string | null | NixExpr;
     };
     tetrd: {
       enable?: boolean;
     };
     tftpd: {
       enable?: boolean;
-      path?: string;
+      path?: string | NixExpr;
     };
     thanos: {
       compact?: {
         arguments?: string[] | NixExpr;
         compact?: Record<string, unknown>;
-        "consistency-delay"?: string | null;
+        "consistency-delay"?: string | null | NixExpr;
         downsampling?: Record<string, unknown>;
         enable?: boolean;
-        "http-address"?: string | null;
+        "http-address"?: string | null | NixExpr;
         log?: Record<string, unknown>;
         objstore?: Record<string, unknown>;
         retention?: Record<string, unknown>;
-        startAt?: string | null;
-        stateDir?: string;
+        startAt?: string | null | NixExpr;
+        stateDir?: string | NixExpr;
         tracing?: Record<string, unknown>;
       };
       downsample?: {
@@ -17641,7 +17561,7 @@ declare module "winix" {
         enable?: boolean;
         log?: Record<string, unknown>;
         objstore?: Record<string, unknown>;
-        stateDir?: string;
+        stateDir?: string | NixExpr;
         tracing?: Record<string, unknown>;
       };
       package?: string | NixExpr;
@@ -17649,17 +17569,17 @@ declare module "winix" {
         arguments?: string[] | NixExpr;
         enable?: boolean;
         endpoints?: string[] | NixExpr;
-        "grpc-address"?: string | null;
-        "grpc-client-server-name"?: string | null;
-        "grpc-client-tls-ca"?: string | null;
-        "grpc-client-tls-cert"?: string | null;
-        "grpc-client-tls-key"?: string | null;
+        "grpc-address"?: string | null | NixExpr;
+        "grpc-client-server-name"?: string | null | NixExpr;
+        "grpc-client-tls-ca"?: string | null | NixExpr;
+        "grpc-client-tls-cert"?: string | null | NixExpr;
+        "grpc-client-tls-key"?: string | null | NixExpr;
         "grpc-client-tls-secure"?: boolean;
-        "grpc-compression"?: string | null;
-        "grpc-server-tls-cert"?: string | null;
-        "grpc-server-tls-client-ca"?: string | null;
-        "grpc-server-tls-key"?: string | null;
-        "http-address"?: string | null;
+        "grpc-compression"?: string | null | NixExpr;
+        "grpc-server-tls-cert"?: string | null | NixExpr;
+        "grpc-server-tls-client-ca"?: string | null | NixExpr;
+        "grpc-server-tls-key"?: string | null | NixExpr;
+        "http-address"?: string | null | NixExpr;
         log?: Record<string, unknown>;
         query?: Record<string, unknown>;
         "selector-labels"?: Record<string, string>;
@@ -17670,11 +17590,11 @@ declare module "winix" {
       "query-frontend"?: {
         arguments?: string[] | NixExpr;
         enable?: boolean;
-        "grpc-address"?: string | null;
-        "grpc-server-tls-cert"?: string | null;
-        "grpc-server-tls-client-ca"?: string | null;
-        "grpc-server-tls-key"?: string | null;
-        "http-address"?: string | null;
+        "grpc-address"?: string | null | NixExpr;
+        "grpc-server-tls-cert"?: string | null | NixExpr;
+        "grpc-server-tls-client-ca"?: string | null | NixExpr;
+        "grpc-server-tls-key"?: string | null | NixExpr;
+        "http-address"?: string | null | NixExpr;
         log?: Record<string, unknown>;
         "query-frontend"?: Record<string, unknown>;
         tracing?: Record<string, unknown>;
@@ -17682,17 +17602,17 @@ declare module "winix" {
       receive?: {
         arguments?: string[] | NixExpr;
         enable?: boolean;
-        "grpc-address"?: string | null;
-        "grpc-server-tls-cert"?: string | null;
-        "grpc-server-tls-client-ca"?: string | null;
-        "grpc-server-tls-key"?: string | null;
-        "http-address"?: string | null;
+        "grpc-address"?: string | null | NixExpr;
+        "grpc-server-tls-cert"?: string | null | NixExpr;
+        "grpc-server-tls-client-ca"?: string | null | NixExpr;
+        "grpc-server-tls-key"?: string | null | NixExpr;
+        "http-address"?: string | null | NixExpr;
         labels?: Record<string, string>;
         log?: Record<string, unknown>;
         objstore?: Record<string, unknown>;
         receive?: Record<string, unknown>;
         "remote-write"?: Record<string, unknown>;
-        stateDir?: string;
+        stateDir?: string | NixExpr;
         tracing?: Record<string, unknown>;
         tsdb?: Record<string, unknown>;
       };
@@ -17701,18 +17621,18 @@ declare module "winix" {
         alertmanagers?: Record<string, unknown>;
         arguments?: string[] | NixExpr;
         enable?: boolean;
-        "eval-interval"?: string | null;
-        "grpc-address"?: string | null;
-        "grpc-server-tls-cert"?: string | null;
-        "grpc-server-tls-client-ca"?: string | null;
-        "grpc-server-tls-key"?: string | null;
-        "http-address"?: string | null;
+        "eval-interval"?: string | null | NixExpr;
+        "grpc-address"?: string | null | NixExpr;
+        "grpc-server-tls-cert"?: string | null | NixExpr;
+        "grpc-server-tls-client-ca"?: string | null | NixExpr;
+        "grpc-server-tls-key"?: string | null | NixExpr;
+        "http-address"?: string | null | NixExpr;
         labels?: Record<string, string>;
         log?: Record<string, unknown>;
         objstore?: Record<string, unknown>;
         query?: Record<string, unknown>;
         "rule-files"?: string[] | NixExpr;
-        stateDir?: string;
+        stateDir?: string | NixExpr;
         tracing?: Record<string, unknown>;
         tsdb?: Record<string, unknown>;
         web?: Record<string, unknown>;
@@ -17720,11 +17640,11 @@ declare module "winix" {
       sidecar?: {
         arguments?: string[] | NixExpr;
         enable?: boolean;
-        "grpc-address"?: string | null;
-        "grpc-server-tls-cert"?: string | null;
-        "grpc-server-tls-client-ca"?: string | null;
-        "grpc-server-tls-key"?: string | null;
-        "http-address"?: string | null;
+        "grpc-address"?: string | null | NixExpr;
+        "grpc-server-tls-cert"?: string | null | NixExpr;
+        "grpc-server-tls-client-ca"?: string | null | NixExpr;
+        "grpc-server-tls-key"?: string | null | NixExpr;
+        "http-address"?: string | null | NixExpr;
         log?: Record<string, unknown>;
         objstore?: Record<string, unknown>;
         prometheus?: Record<string, unknown>;
@@ -17735,21 +17655,21 @@ declare module "winix" {
       store?: {
         arguments?: string[] | NixExpr;
         "block-sync-concurrency"?: number | null;
-        "chunk-pool-size"?: string | null;
+        "chunk-pool-size"?: string | null | NixExpr;
         enable?: boolean;
-        "grpc-address"?: string | null;
-        "grpc-server-tls-cert"?: string | null;
-        "grpc-server-tls-client-ca"?: string | null;
-        "grpc-server-tls-key"?: string | null;
-        "http-address"?: string | null;
-        "index-cache-size"?: string | null;
+        "grpc-address"?: string | null | NixExpr;
+        "grpc-server-tls-cert"?: string | null | NixExpr;
+        "grpc-server-tls-client-ca"?: string | null | NixExpr;
+        "grpc-server-tls-key"?: string | null | NixExpr;
+        "http-address"?: string | null | NixExpr;
+        "index-cache-size"?: string | null | NixExpr;
         log?: Record<string, unknown>;
-        "max-time"?: string | null;
-        "min-time"?: string | null;
+        "max-time"?: string | null | NixExpr;
+        "min-time"?: string | null | NixExpr;
         objstore?: Record<string, unknown>;
-        stateDir?: string;
+        stateDir?: string | NixExpr;
         store?: Record<string, unknown>;
-        "sync-block-duration"?: string | null;
+        "sync-block-duration"?: string | null | NixExpr;
         tracing?: Record<string, unknown>;
       };
     };
@@ -17762,7 +17682,7 @@ declare module "winix" {
       public?: boolean;
     };
     thermald: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       debug?: boolean;
       enable?: boolean;
       ignoreCpuidCheck?: boolean;
@@ -17771,19 +17691,15 @@ declare module "winix" {
     thinkfan: {
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      fans?: {
-        "*"?: Record<string, unknown>;
-      };
+      fans?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       levels?: unknown[] | NixExpr;
-      sensors?: {
-        "*"?: Record<string, unknown>;
-      };
+      sensors?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       settings?: Record<string, Record<string, unknown>>;
       smartSupport?: boolean;
     };
     throttled: {
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
     };
     tiddlywiki: {
       enable?: boolean;
@@ -17791,18 +17707,18 @@ declare module "winix" {
     };
     tigerbeetle: {
       addresses?: string[] | NixExpr;
-      cacheGridSize?: string;
-      clusterId?: number | string;
+      cacheGridSize?: string | NixExpr;
+      clusterId?: number | string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       replicaCount?: number;
       replicaIndex?: number;
     };
     tika: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       enableOcr?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -17814,7 +17730,7 @@ declare module "winix" {
     };
     timesyncd: {
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       fallbackServers?: string[] | null;
       servers?: string[] | null;
     };
@@ -17824,47 +17740,47 @@ declare module "winix" {
       };
     };
     tinyauth: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string;
-      group?: string;
+      environmentFile?: string | NixExpr;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: {
         ANALYTICS_ENABLED?: boolean;
-        APPURL?: string;
+        APPURL?: string | NixExpr;
         AUTH_LOGINMAXRETRIES?: number;
         AUTH_LOGINTIMEOUT?: number;
-        AUTH_TRUSTEDPROXIES?: string;
+        AUTH_TRUSTEDPROXIES?: string | NixExpr;
         RESOURCES_ENABLED?: boolean;
-        SERVER_ADDRESS?: string;
+        SERVER_ADDRESS?: string | NixExpr;
         SERVER_PORT?: number;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     tinydns: {
-      data?: string;
+      data?: string | NixExpr;
       enable?: boolean;
-      ip?: string;
+      ip?: string | NixExpr;
     };
     tinyproxy: {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
         Anonymous?: string[] | NixExpr;
-        Filter?: string | null;
-        Listen?: string | null;
+        Filter?: string | null | NixExpr;
+        Listen?: string | null | NixExpr;
         Port?: number;
       };
     };
     tlp: {
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       package?: string | NixExpr;
       pd?: {
         enable?: boolean;
         package?: string | NixExpr;
       };
-      settings?: Record<string, boolean | number | string | string[]>;
+      settings?: Record<string, boolean | number | string | string[]> | NixExpr;
     };
     tlsrpt: {
       collectd?: {
@@ -17885,8 +17801,8 @@ declare module "winix" {
     "tmate-ssh-server": {
       advertisedPort?: number;
       enable?: boolean;
-      host?: string;
-      keysDir?: string | null;
+      host?: string | NixExpr;
+      keysDir?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
@@ -17900,14 +17816,14 @@ declare module "winix" {
         enable?: boolean;
         services?: string[] | NixExpr;
       };
-      baseDir?: string;
+      baseDir?: string | NixExpr;
       catalinaOpts?: unknown;
       commonLibs?: string[] | NixExpr;
       enable?: boolean;
       extraConfigFiles?: string[] | NixExpr;
       extraEnvironment?: string[] | NixExpr;
       extraGroups?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       javaOpts?: unknown;
       jdk?: string | NixExpr;
       logDirs?: string[] | NixExpr;
@@ -17915,12 +17831,10 @@ declare module "winix" {
       package?: string | NixExpr;
       port?: number;
       purifyOnStart?: boolean;
-      serverXml?: string;
+      serverXml?: string | NixExpr;
       sharedLibs?: string[] | NixExpr;
-      user?: string;
-      virtualHosts?: {
-        "*"?: Record<string, unknown>;
-      };
+      user?: string | NixExpr;
+      virtualHosts?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       webapps?: string[] | NixExpr;
     };
     tor: {
@@ -17942,12 +17856,12 @@ declare module "winix" {
       relay?: {
         enable?: boolean;
         onionServices?: Record<string, unknown>;
-        role?: "bridge" | "exit" | "private-bridge" | "relay";
+        role?: "bridge" | "exit" | "private-bridge" | "relay" | NixExpr;
       };
       settings?: {
-        AccountingMax?: number | string | null;
-        AccountingStart?: string | null;
-        Address?: string | null;
+        AccountingMax?: number | string | null | NixExpr;
+        AccountingStart?: string | null | NixExpr;
+        Address?: string | null | NixExpr;
         AssumeReachable?: boolean | null;
         AuthDirHasIPv6Connectivity?: boolean | null;
         AuthDirListBadExits?: boolean | null;
@@ -17957,17 +17871,17 @@ declare module "winix" {
         AuthoritativeDirectory?: boolean | null;
         AutomapHostsOnResolve?: boolean | null;
         AutomapHostsSuffixes?: string[] | NixExpr;
-        BandwidthBurst?: number | string | null;
-        BandwidthRate?: number | string | null;
+        BandwidthBurst?: number | string | null | NixExpr;
+        BandwidthRate?: number | string | null | NixExpr;
         BridgeAuthoritativeDir?: boolean | null;
         BridgeRecordUsageByCountry?: boolean | null;
         BridgeRelay?: boolean | null;
-        CacheDirectory?: string | null;
+        CacheDirectory?: string | null | NixExpr;
         CacheDirectoryGroupReadable?: boolean | null;
         CellStatistics?: boolean | null;
         ClientAutoIPv6ORPort?: boolean | null;
         ClientDNSRejectInternalAddresses?: boolean | null;
-        ClientOnionAuthDir?: string | null;
+        ClientOnionAuthDir?: string | null | NixExpr;
         ClientPreferIPv6DirPort?: boolean | null;
         ClientPreferIPv6ORPort?: boolean | null;
         ClientRejectInternalAddresses?: boolean | null;
@@ -17975,22 +17889,22 @@ declare module "winix" {
         ClientUseIPv6?: boolean | null;
         ConnDirectionStatistics?: boolean | null;
         ConstrainedSockets?: boolean | null;
-        ContactInfo?: string | null;
+        ContactInfo?: string | null | NixExpr;
         ControlPort?: number | "auto" | (number | "auto" | Record<string, unknown>)[] | NixExpr;
         ControlPortFileGroupReadable?: boolean | null;
-        ControlPortWriteToFile?: string | null;
-        ControlSocket?: string | null;
+        ControlPortWriteToFile?: string | null | NixExpr;
+        ControlSocket?: string | null | NixExpr;
         ControlSocketsGroupWritable?: boolean | null;
         CookieAuthentication?: boolean | null;
-        CookieAuthFile?: string | null;
+        CookieAuthFile?: string | null | NixExpr;
         CookieAuthFileGroupReadable?: boolean | null;
-        DataDirectory?: string | null;
+        DataDirectory?: string | null | NixExpr;
         DataDirectoryGroupReadable?: boolean | null;
         DirAllowPrivateAddresses?: boolean | null;
         DirCache?: boolean | null;
         DirPolicy?: string[] | NixExpr;
         DirPort?: number | "auto" | (number | "auto" | Record<string, unknown>)[] | NixExpr;
-        DirPortFrontPage?: string | null;
+        DirPortFrontPage?: string | null | NixExpr;
         DirReqStatistics?: boolean | null;
         DisableAllSwap?: boolean | null;
         DisableDebuggerAttachment?: boolean | null;
@@ -18013,7 +17927,7 @@ declare module "winix" {
         ExitRelay?: boolean | null;
         ExtendAllowPrivateAddresses?: boolean | null;
         ExtORPort?: number | "auto" | Record<string, unknown> | null;
-        ExtORPortCookieAuthFile?: string | null;
+        ExtORPortCookieAuthFile?: string | null | NixExpr;
         ExtORPortCookieAuthFileGroupReadable?: boolean | null;
         ExtraInfoStatistics?: boolean | null;
         FascistFirewall?: boolean | null;
@@ -18022,9 +17936,9 @@ declare module "winix" {
         FetchHidServDescriptors?: boolean | null;
         FetchServerDescriptors?: boolean | null;
         FetchUselessDescriptors?: boolean | null;
-        GeoIPFile?: string | null;
-        GeoIPv6File?: string | null;
-        GuardfractionFile?: string | null;
+        GeoIPFile?: string | null | NixExpr;
+        GeoIPv6File?: string | null | NixExpr;
+        GuardfractionFile?: string | null | NixExpr;
         HiddenServiceNonAnonymousMode?: boolean | null;
         HiddenServiceStatistics?: boolean | null;
         HidServAuth?: Record<string, unknown>;
@@ -18032,24 +17946,24 @@ declare module "winix" {
         HSLayer3Nodes?: string[] | NixExpr;
         HTTPTunnelPort?: number | "auto" | Record<string, unknown> | (number | "auto" | Record<string, unknown>)[] | NixExpr;
         IPv6Exit?: boolean | null;
-        KeyDirectory?: string | null;
+        KeyDirectory?: string | null | NixExpr;
         KeyDirectoryGroupReadable?: boolean | null;
         LogMessageDomains?: boolean | null;
         LongLivedPorts?: number[] | NixExpr;
         MainloopStats?: boolean | null;
-        MaxAdvertisedBandwidth?: number | string | null;
+        MaxAdvertisedBandwidth?: number | string | null | NixExpr;
         MaxCircuitDirtiness?: number | null;
         MaxClientCircuitsPending?: number | null;
         NATDPort?: number | "auto" | Record<string, unknown> | (number | "auto" | Record<string, unknown>)[] | NixExpr;
         NewCircuitPeriod?: number | null;
-        Nickname?: string | null;
+        Nickname?: string | null | NixExpr;
         OfflineMasterKey?: boolean | null;
         OptimisticData?: boolean | null;
         ORPort?: number | "auto" | (number | "auto" | Record<string, unknown>)[] | NixExpr;
         PaddingStatistics?: boolean | null;
-        PerConnBWBurst?: number | string | null;
-        PerConnBWRate?: number | string | null;
-        PidFile?: string | null;
+        PerConnBWBurst?: number | string | null | NixExpr;
+        PerConnBWRate?: number | string | null | NixExpr;
+        PidFile?: string | null | NixExpr;
         ProtocolWarnings?: boolean | null;
         PublishHidServDescriptors?: boolean | null;
         PublishServerDescriptor?: "0" | "1" | "bridge" | "v3" | null;
@@ -18059,14 +17973,14 @@ declare module "winix" {
         ReducedExitPolicy?: boolean | null;
         RefuseUnknownExits?: boolean | null;
         RejectPlaintextPorts?: number[] | NixExpr;
-        RelayBandwidthBurst?: number | string | null;
-        RelayBandwidthRate?: number | string | null;
+        RelayBandwidthBurst?: number | string | null | NixExpr;
+        RelayBandwidthRate?: number | string | null | NixExpr;
         Sandbox?: boolean | null;
         ServerDNSAllowBrokenConfig?: boolean | null;
         ServerDNSAllowNonRFC953Hostnames?: boolean | null;
         ServerDNSDetectHijacking?: boolean | null;
         ServerDNSRandomizeCase?: boolean | null;
-        ServerDNSResolvConfFile?: string | null;
+        ServerDNSResolvConfFile?: string | null | NixExpr;
         ServerDNSSearchDomains?: boolean | null;
         ServerTransportPlugin?: Record<string, unknown>;
         ShutdownWaitLength?: number;
@@ -18081,36 +17995,36 @@ declare module "winix" {
         V3AuthoritativeDirectory?: boolean | null;
         V3AuthUseLegacyKey?: boolean | null;
         VersioningAuthoritativeDirectory?: boolean | null;
-        VirtualAddrNetworkIPv4?: string | null;
-        VirtualAddrNetworkIPv6?: string | null;
+        VirtualAddrNetworkIPv4?: string | null | NixExpr;
+        VirtualAddrNetworkIPv6?: string | null | NixExpr;
         WarnPlaintextPorts?: number[] | NixExpr;
       };
       torsocks?: {
         allowInbound?: boolean;
         enable?: boolean;
-        fasterServer?: string;
-        onionAddrRange?: string;
-        server?: string;
-        socks5Password?: string | null;
-        socks5Username?: string | null;
+        fasterServer?: string | NixExpr;
+        onionAddrRange?: string | NixExpr;
+        server?: string | NixExpr;
+        socks5Password?: string | null | NixExpr;
+        socks5Username?: string | null | NixExpr;
       };
       tsocks?: {
-        config?: string;
+        config?: string | NixExpr;
         enable?: boolean;
-        server?: string;
+        server?: string | NixExpr;
       };
     };
     torque: {
       mom?: {
         enable?: boolean;
-        serverNode?: string;
+        serverNode?: string | NixExpr;
       };
       server?: {
         enable?: boolean;
       };
     };
     torrentstream: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
@@ -18122,116 +18036,114 @@ declare module "winix" {
     };
     "tox-node": {
       enable?: boolean;
-      keysFile?: string;
+      keysFile?: string | NixExpr;
       lanDiscovery?: boolean;
-      logType?: "None" | "Stderr" | "Stdout" | "Syslog";
-      motd?: string;
+      logType?: "None" | "Stderr" | "Stdout" | "Syslog" | NixExpr;
+      motd?: string | NixExpr;
       tcpAddresses?: string[] | NixExpr;
       tcpConnectionLimit?: number;
       threads?: number;
-      udpAddress?: string;
+      udpAddress?: string | NixExpr;
     };
     toxBootstrapd: {
       enable?: boolean;
-      extraConfig?: string;
-      keysFile?: string;
+      extraConfig?: string | NixExpr;
+      keysFile?: string | NixExpr;
       port?: number;
     };
     toxvpn: {
       auto_add_peers?: string[] | NixExpr;
       enable?: boolean;
-      localip?: string;
+      localip?: string | NixExpr;
       port?: number;
     };
     "tp-auto-kbbl": {
       arguments?: string[] | NixExpr;
-      device?: string;
+      device?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
     traccar: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       settings?: unknown;
-      settingsFile?: string | null;
+      settingsFile?: string | null | NixExpr;
     };
     traefik: {
-      dataDir?: string;
-      dynamicConfigFile?: string | null;
+      dataDir?: string | NixExpr;
+      dynamicConfigFile?: string | null | NixExpr;
       dynamicConfigOptions?: Record<string, unknown>;
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      staticConfigFile?: string | null;
+      staticConfigFile?: string | null | NixExpr;
       staticConfigOptions?: Record<string, unknown>;
     };
     trafficserver: {
-      cache?: string;
+      cache?: string | NixExpr;
       enable?: boolean;
-      hosting?: string;
+      hosting?: string | NixExpr;
       ipAllow?: Record<string, unknown> | null;
       logging?: Record<string, unknown> | null;
-      parent?: string;
-      plugins?: {
-        "*"?: Record<string, unknown>;
-      };
+      parent?: string | NixExpr;
+      plugins?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       records?: Record<string, unknown>;
-      remap?: string;
+      remap?: string | NixExpr;
       sni?: Record<string, unknown> | null;
-      splitDns?: string;
-      sslMulticert?: string;
-      storage?: string;
+      splitDns?: string | NixExpr;
+      sslMulticert?: string | NixExpr;
+      storage?: string | NixExpr;
       strategies?: Record<string, unknown> | null;
       volume?: Record<string, unknown> | null;
     };
     "transfer-sh": {
       enable?: boolean;
       package?: string | NixExpr;
-      provider?: "gdrive" | "local" | "s3" | "storj";
-      secretFile?: string | null;
+      provider?: "gdrive" | "local" | "s3" | "storj" | NixExpr;
+      secretFile?: string | null | NixExpr;
       settings?: Record<string, unknown>;
     };
     transmission: {
-      credentialsFile?: string;
-      downloadDirPermissions?: string | null;
+      credentialsFile?: string | NixExpr;
+      downloadDirPermissions?: string | null | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      group?: string;
-      home?: string;
+      group?: string | NixExpr;
+      home?: string | NixExpr;
       openFirewall?: boolean;
       openPeerPorts?: boolean;
       openRPCPort?: boolean;
       package?: string | NixExpr;
       performanceNetParameters?: boolean;
       settings?: {
-        "download-dir"?: string;
-        "incomplete-dir"?: string;
+        "download-dir"?: string | NixExpr;
+        "incomplete-dir"?: string | NixExpr;
         "incomplete-dir-enabled"?: boolean;
         "message-level"?: number;
         "peer-port"?: number;
         "peer-port-random-high"?: number;
         "peer-port-random-low"?: number;
         "peer-port-random-on-start"?: boolean;
-        "rpc-bind-address"?: string;
+        "rpc-bind-address"?: string | NixExpr;
         "rpc-port"?: number;
         "script-torrent-done-enabled"?: boolean;
-        "script-torrent-done-filename"?: string | null;
+        "script-torrent-done-filename"?: string | null | NixExpr;
         "trash-original-torrent-files"?: boolean;
-        umask?: number | string;
+        umask?: number | string | NixExpr;
         "utp-enabled"?: boolean;
-        "watch-dir"?: string;
+        "watch-dir"?: string | NixExpr;
         "watch-dir-enabled"?: boolean;
       };
-      user?: string;
-      webHome?: string | null;
+      user?: string | NixExpr;
+      webHome?: string | null | NixExpr;
     };
     "tremor-rs": {
       enable?: boolean;
-      host?: string;
+      host?: string | NixExpr;
       loggerSettings?: Record<string, unknown>;
       port?: number;
-      tremorLibDir?: string;
+      tremorLibDir?: string | NixExpr;
       troyFileList?: string[] | NixExpr;
     };
     trezord: {
@@ -18242,34 +18154,32 @@ declare module "winix" {
       enable?: boolean;
     };
     trickster: {
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       "instance-id"?: number | null;
-      "log-level"?: string;
+      "log-level"?: string | NixExpr;
       "metrics-port"?: number;
-      "origin-type"?: "influxdb" | "prometheus";
-      "origin-url"?: string;
+      "origin-type"?: "influxdb" | "prometheus" | NixExpr;
+      "origin-url"?: string | NixExpr;
       package?: string | NixExpr;
       "profiler-port"?: number | null;
       "proxy-port"?: number;
     };
     triggerhappy: {
-      bindings?: {
-        "*"?: Record<string, unknown>;
-      };
+      bindings?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      user?: string;
+      extraConfig?: string | NixExpr;
+      user?: string | NixExpr;
     };
     "trilium-server": {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
-      host?: string;
-      instanceName?: string;
+      environmentFile?: string | null | NixExpr;
+      host?: string | NixExpr;
+      instanceName?: string | NixExpr;
       nginx?: {
         enable?: boolean;
-        hostName?: string;
+        hostName?: string | NixExpr;
       };
       noAuthentication?: boolean;
       noBackup?: boolean;
@@ -18278,25 +18188,25 @@ declare module "winix" {
     };
     tsidp: {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: {
         debugAllRequests?: boolean;
         debugTsnet?: boolean;
         enableFunnel?: boolean;
         enableSts?: boolean;
-        hostName?: string;
+        hostName?: string | NixExpr;
         localPort?: number | null;
-        logLevel?: "debug" | "error" | "info" | "warn";
+        logLevel?: "debug" | "error" | "info" | "warn" | NixExpr;
         port?: number;
         useLocalTailscaled?: boolean;
       };
     };
     tsmBackup: {
-      autoTime?: string | null;
-      command?: string;
+      autoTime?: string | null | NixExpr;
+      command?: string | NixExpr;
       enable?: boolean;
-      servername?: string;
+      servername?: string | NixExpr;
     };
     "tt-rss": {
       auth?: {
@@ -18305,57 +18215,57 @@ declare module "winix" {
       };
       database?: {
         createLocally?: boolean;
-        host?: string | null;
-        name?: string;
-        password?: string | null;
-        passwordFile?: string | null;
+        host?: string | null | NixExpr;
+        name?: string | NixExpr;
+        password?: string | null | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number | null;
-        type?: "mysql" | "pgsql";
-        user?: string;
+        type?: "mysql" | "pgsql" | NixExpr;
+        user?: string | NixExpr;
       };
       email?: {
-        digestSubject?: string;
-        fromAddress?: string;
-        fromName?: string;
-        login?: string;
-        password?: string;
+        digestSubject?: string | NixExpr;
+        fromAddress?: string | NixExpr;
+        fromName?: string | NixExpr;
+        login?: string | NixExpr;
+        password?: string | NixExpr;
         security?: "" | "ssl" | "tls";
-        server?: string;
+        server?: string | NixExpr;
       };
       enable?: boolean;
       enableGZipOutput?: boolean;
-      extraConfig?: string;
-      feedCryptKey?: string;
+      extraConfig?: string | NixExpr;
+      feedCryptKey?: string | NixExpr;
       forceArticlePurge?: number;
       logDestination?: "" | "sql" | "syslog";
       phpPackage?: string | NixExpr;
       pluginPackages?: (string | NixExpr)[] | NixExpr;
       plugins?: string[] | NixExpr;
-      pool?: string;
+      pool?: string | NixExpr;
       pubSubHubbub?: {
         enable?: boolean;
-        hub?: string;
+        hub?: string | NixExpr;
       };
       registration?: {
         enable?: boolean;
         maxUsers?: number;
-        notifyAddress?: string;
+        notifyAddress?: string | NixExpr;
       };
-      root?: string;
-      selfUrlPath?: string;
+      root?: string | NixExpr;
+      selfUrlPath?: string | NixExpr;
       sessionCookieLifetime?: number;
       simpleUpdateMode?: boolean;
       singleUserMode?: boolean;
       sphinx?: {
         index?: string[] | NixExpr;
-        server?: string;
+        server?: string | NixExpr;
       };
       themePackages?: (string | NixExpr)[] | NixExpr;
       updateDaemon?: {
-        commandFlags?: string;
+        commandFlags?: string | NixExpr;
       };
-      user?: string;
-      virtualHost?: string | null;
+      user?: string | NixExpr;
+      virtualHost?: string | null | NixExpr;
     };
     tts: {
       servers?: {
@@ -18363,26 +18273,26 @@ declare module "winix" {
       };
     };
     ttyd: {
-      caFile?: string | null;
-      certFile?: string | null;
+      caFile?: string | null | NixExpr;
+      certFile?: string | null | NixExpr;
       checkOrigin?: boolean;
       clientOptions?: Record<string, string>;
       enable?: boolean;
       enableIPv6?: boolean;
       enableSSL?: boolean;
       entrypoint?: string[] | NixExpr;
-      indexFile?: string | null;
-      interface?: string | null;
-      keyFile?: string | null;
+      indexFile?: string | null | NixExpr;
+      interface?: string | null | NixExpr;
+      keyFile?: string | null | NixExpr;
       logLevel?: number;
       maxClients?: number;
-      passwordFile?: string | null;
+      passwordFile?: string | null | NixExpr;
       port?: number;
       signal?: number;
-      socket?: string | null;
-      terminalType?: string;
-      user?: string;
-      username?: string | null;
+      socket?: string | null | NixExpr;
+      terminalType?: string | NixExpr;
+      user?: string | NixExpr;
+      username?: string | null | NixExpr;
       writeable?: boolean | null;
     };
     tuliprox: {
@@ -18413,7 +18323,7 @@ declare module "winix" {
         default_instance_priority?: number;
         dynamic_tuning?: boolean;
         globalSection?: Record<string, unknown>;
-        profile_dirs?: string;
+        profile_dirs?: string | NixExpr;
         reapply_sysctl?: boolean;
         recommend_command?: boolean;
         sections?: Record<string, Record<string, unknown>>;
@@ -18425,42 +18335,42 @@ declare module "winix" {
       enable?: boolean;
       timer?: {
         enable?: boolean;
-        period?: string;
+        period?: string | NixExpr;
       };
     };
     "turborepo-remote-cache": {
       enable?: boolean;
-      environment?: Record<string, boolean | number | string | null>;
-      environmentFile?: string | null;
+      environment?: Record<string, boolean | number | string | null> | NixExpr;
+      environmentFile?: string | null | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
     };
     "turn-rs": {
       enable?: boolean;
       package?: string | NixExpr;
-      secretFile?: string | null;
+      secretFile?: string | null | NixExpr;
       settings?: Record<string, unknown>;
     };
     tusd: {
-      basePath?: string;
+      basePath?: string | NixExpr;
       behindProxy?: boolean;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
       hooksEnabledEvents?: string[] | NixExpr;
-      hooksHttp?: string | null;
-      host?: string;
+      hooksHttp?: string | null | NixExpr;
+      host?: string | NixExpr;
       maxSize?: number | null;
-      networkTimeout?: string | null;
+      networkTimeout?: string | null | NixExpr;
       openFirewall?: boolean;
       port?: number;
-      uploadDir?: string;
+      uploadDir?: string | NixExpr;
     };
     twingate: {
       enable?: boolean;
       package?: string | NixExpr;
     };
     typesense: {
-      apiKeyFile?: string;
+      apiKeyFile?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -18472,19 +18382,19 @@ declare module "winix" {
       package?: string | NixExpr;
       timer?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
       };
     };
     u9fs: {
       enable?: boolean;
-      extraArgs?: string;
+      extraArgs?: string | NixExpr;
       listenStreams?: string[] | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     udev: {
       enable?: boolean;
-      extraHwdb?: string;
-      extraRules?: string;
+      extraHwdb?: string | NixExpr;
+      extraRules?: string | NixExpr;
       packages?: string[] | NixExpr;
       path?: string[] | NixExpr;
     };
@@ -18521,50 +18431,50 @@ declare module "winix" {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        APP_SECRET_FILE?: string | null;
-        BASE_PATH?: string;
-        COLLECT_API_ENDPOINT?: string | null;
-        DATABASE_URL?: string | null;
-        DATABASE_URL_FILE?: string | null;
+        APP_SECRET_FILE?: string | null | NixExpr;
+        BASE_PATH?: string | NixExpr;
+        COLLECT_API_ENDPOINT?: string | null | NixExpr;
+        DATABASE_URL?: string | null | NixExpr;
+        DATABASE_URL_FILE?: string | null | NixExpr;
         DISABLE_TELEMETRY?: boolean;
         DISABLE_UPDATES?: boolean;
-        HOSTNAME?: string;
+        HOSTNAME?: string | NixExpr;
         PORT?: number;
         TRACKER_SCRIPT_NAME?: string[] | NixExpr;
       };
     };
     umurmur: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
-        bindaddr?: string;
-        bindaddr6?: string;
+        bindaddr?: string | NixExpr;
+        bindaddr6?: string | NixExpr;
         bindport?: number;
-        ca_path?: string | null;
-        certificate?: string;
+        ca_path?: string | null | NixExpr;
+        certificate?: string | NixExpr;
         channel_links?: Record<string, unknown>[] | NixExpr;
         channels?: Record<string, unknown>[] | NixExpr;
-        default_channel?: string;
+        default_channel?: string | NixExpr;
         max_bandwidth?: number;
         max_users?: number;
-        password?: string | null;
-        private_key?: string;
-        welcometext?: string | null;
+        password?: string | null | NixExpr;
+        private_key?: string | NixExpr;
+        welcometext?: string | null | NixExpr;
       };
     };
     unbound: {
       checkconf?: boolean;
       enable?: boolean;
       enableRootTrustAnchor?: boolean;
-      group?: string;
-      localControlSocketPath?: string | null;
+      group?: string | NixExpr;
+      localControlSocketPath?: string | null | NixExpr;
       package?: string | NixExpr;
       resolveLocalQueries?: boolean;
       settings?: Record<string, unknown>;
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     unclutter: {
       enable?: boolean;
@@ -18615,32 +18525,32 @@ declare module "winix" {
       unifiPackage?: string | NixExpr;
     };
     unit: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      logDir?: string;
+      group?: string | NixExpr;
+      logDir?: string | NixExpr;
       package?: string | NixExpr;
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     unpoller: {
       enable?: boolean;
       influxdb?: {
-        db?: string;
+        db?: string | NixExpr;
         disable?: boolean;
-        interval?: string;
-        pass?: string;
-        url?: string;
-        user?: string;
+        interval?: string | NixExpr;
+        pass?: string | NixExpr;
+        url?: string | NixExpr;
+        user?: string | NixExpr;
         verify_ssl?: boolean;
       };
       loki?: {
-        interval?: string;
-        pass?: string;
-        tenant_id?: string;
-        timeout?: string;
-        url?: string;
-        user?: string;
+        interval?: string | NixExpr;
+        pass?: string | NixExpr;
+        tenant_id?: string | NixExpr;
+        timeout?: string | NixExpr;
+        url?: string | NixExpr;
+        user?: string | NixExpr;
         verify_ssl?: boolean;
       };
       poller?: {
@@ -18650,7 +18560,7 @@ declare module "winix" {
       };
       prometheus?: {
         disable?: boolean;
-        http_listen?: string;
+        http_listen?: string | NixExpr;
         report_errors?: boolean;
       };
       unifi?: {
@@ -18661,7 +18571,7 @@ declare module "winix" {
     };
     upower: {
       allowRiskyCriticalPowerAction?: boolean;
-      criticalPowerAction?: "Hibernate" | "HybridSleep" | "Ignore" | "PowerOff" | "Suspend";
+      criticalPowerAction?: "Hibernate" | "HybridSleep" | "Ignore" | "PowerOff" | "Suspend" | NixExpr;
       enable?: boolean;
       enableWattsUpPro?: boolean;
       ignoreLid?: boolean;
@@ -18678,8 +18588,8 @@ declare module "winix" {
     uptermd: {
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      hostKey?: string | null;
-      listenAddress?: string;
+      hostKey?: string | null | NixExpr;
+      listenAddress?: string | NixExpr;
       openFirewall?: boolean;
       port?: number;
     };
@@ -18705,32 +18615,32 @@ declare module "winix" {
       };
       deviceRulesWithPort?: boolean;
       enable?: boolean;
-      implicitPolicyTarget?: "allow" | "block" | "reject";
-      insertedDevicePolicy?: "apply-policy" | "block" | "reject";
+      implicitPolicyTarget?: "allow" | "block" | "reject" | NixExpr;
+      insertedDevicePolicy?: "apply-policy" | "block" | "reject" | NixExpr;
       IPCAllowedGroups?: string[] | NixExpr;
       IPCAllowedUsers?: string[] | NixExpr;
       package?: string | NixExpr;
-      presentControllerPolicy?: "allow" | "apply-policy" | "block" | "keep" | "reject";
-      presentDevicePolicy?: "allow" | "apply-policy" | "block" | "keep" | "reject";
+      presentControllerPolicy?: "allow" | "apply-policy" | "block" | "keep" | "reject" | NixExpr;
+      presentDevicePolicy?: "allow" | "apply-policy" | "block" | "keep" | "reject" | NixExpr;
       restoreControllerDeviceState?: boolean;
-      ruleFile?: string | null;
-      rules?: string | null;
+      ruleFile?: string | null | NixExpr;
+      rules?: string | null | NixExpr;
     };
     usbmuxd: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     usbrelayd: {
-      broker?: string;
-      clientName?: string;
+      broker?: string | NixExpr;
+      clientName?: string | NixExpr;
       enable?: boolean;
     };
     userborn: {
       enable?: boolean;
       package?: string | NixExpr;
-      passwordFilesLocation?: string;
+      passwordFilesLocation?: string | NixExpr;
       static?: boolean;
     };
     userdbd: {
@@ -18739,10 +18649,10 @@ declare module "winix" {
     };
     ustreamer: {
       autoStart?: boolean;
-      device?: string;
+      device?: string | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
     };
     uvcvideo: {
@@ -18754,15 +18664,15 @@ declare module "winix" {
     uwsgi: {
       capabilities?: string[] | NixExpr;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       instance?: unknown;
       plugins?: string[] | NixExpr;
-      runDir?: string;
-      user?: string;
+      runDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     v2ray: {
       config?: Record<string, unknown> | null;
-      configFile?: string | null;
+      configFile?: string | null | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
     };
@@ -18777,32 +18687,30 @@ declare module "winix" {
       };
     };
     varnish: {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       enableConfigCheck?: boolean;
-      extraCommandLine?: string;
+      extraCommandLine?: string | NixExpr;
       extraModules?: (string | NixExpr)[] | NixExpr;
-      http_address?: string | null;
-      listen?: {
-        "*"?: Record<string, unknown>;
-      };
+      http_address?: string | null | NixExpr;
+      listen?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       package?: string | NixExpr;
     };
     vault: {
-      address?: string;
+      address?: string | NixExpr;
       dev?: boolean;
-      devRootTokenID?: string | null;
+      devRootTokenID?: string | null | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       extraSettingsPaths?: string[] | NixExpr;
-      listenerExtraConfig?: string;
+      listenerExtraConfig?: string | NixExpr;
       package?: string | NixExpr;
-      storageBackend?: "azure" | "consul" | "dynamodb" | "etcd" | "file" | "gcs" | "inmem" | "mssql" | "mysql" | "postgresql" | "raft" | "s3" | "swift" | "zookeeper";
-      storageConfig?: string | null;
-      storagePath?: string | null;
-      telemetryConfig?: string;
-      tlsCertFile?: string | null;
-      tlsKeyFile?: string | null;
+      storageBackend?: "azure" | "consul" | "dynamodb" | "etcd" | "file" | "gcs" | "inmem" | "mssql" | "mysql" | "postgresql" | "raft" | "s3" | "swift" | "zookeeper" | NixExpr;
+      storageConfig?: string | null | NixExpr;
+      storagePath?: string | null | NixExpr;
+      telemetryConfig?: string | NixExpr;
+      tlsCertFile?: string | null | NixExpr;
+      tlsKeyFile?: string | null | NixExpr;
     };
     "vault-agent": {
       instances?: {
@@ -18810,12 +18718,12 @@ declare module "winix" {
       };
     };
     vaultwarden: {
-      backupDir?: string | null;
-      config?: Record<string, boolean | number | string | null>;
+      backupDir?: string | null | NixExpr;
+      config?: Record<string, boolean | number | string | null> | NixExpr;
       configureNginx?: boolean;
       configurePostgres?: boolean;
-      dbBackend?: "mysql" | "postgresql" | "sqlite";
-      domain?: string | null;
+      dbBackend?: "mysql" | "postgresql" | "sqlite" | NixExpr;
+      domain?: string | null | NixExpr;
       enable?: boolean;
       environmentFile?: unknown;
       package?: string | NixExpr;
@@ -18832,10 +18740,10 @@ declare module "winix" {
       enable?: boolean;
       enableLirc?: boolean;
       extraArguments?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       package?: string | NixExpr;
-      user?: string;
-      videoDir?: string;
+      user?: string | NixExpr;
+      videoDir?: string | NixExpr;
     };
     vector: {
       enable?: boolean;
@@ -18855,63 +18763,61 @@ declare module "winix" {
       };
     };
     victorialogs: {
-      basicAuthPasswordFile?: string | null;
-      basicAuthUsername?: string | null;
+      basicAuthPasswordFile?: string | null | NixExpr;
+      basicAuthUsername?: string | null | NixExpr;
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     victoriametrics: {
-      basicAuthPasswordFile?: string | null;
-      basicAuthUsername?: string | null;
+      basicAuthPasswordFile?: string | null | NixExpr;
+      basicAuthUsername?: string | null | NixExpr;
       checkConfig?: boolean;
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       prometheusConfig?: Record<string, unknown>;
-      retentionPeriod?: string | null;
-      stateDir?: string;
+      retentionPeriod?: string | null | NixExpr;
+      stateDir?: string | NixExpr;
     };
     victoriatraces: {
-      basicAuthPasswordFile?: string | null;
-      basicAuthUsername?: string | null;
+      basicAuthPasswordFile?: string | null | NixExpr;
+      basicAuthUsername?: string | null | NixExpr;
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
-      retentionPeriod?: string;
-      stateDir?: string;
+      retentionPeriod?: string | NixExpr;
+      stateDir?: string | NixExpr;
     };
     vikunja: {
-      address?: string;
+      address?: string | NixExpr;
       database?: {
-        database?: string;
-        host?: string;
-        path?: string;
-        type?: "mysql" | "postgres" | "sqlite";
-        user?: string;
+        database?: string | NixExpr;
+        host?: string | NixExpr;
+        path?: string | NixExpr;
+        type?: "mysql" | "postgres" | "sqlite" | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
-      frontendHostname?: string;
-      frontendScheme?: "http" | "https";
+      frontendHostname?: string | NixExpr;
+      frontendScheme?: "http" | "https" | NixExpr;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, unknown>;
     };
     "vinyl-cache": {
-      config?: string;
+      config?: string | NixExpr;
       enable?: boolean;
       enableConfigCheck?: boolean;
       enableFileLogging?: boolean;
-      extraCommandLine?: string;
+      extraCommandLine?: string | NixExpr;
       extraModules?: (string | NixExpr)[] | NixExpr;
-      listen?: {
-        "*"?: Record<string, unknown>;
-      };
+      listen?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
       package?: string | NixExpr;
     };
     vlagent: {
@@ -18920,10 +18826,10 @@ declare module "winix" {
       openFirewall?: boolean;
       package?: string | NixExpr;
       remoteWrite?: {
-        basicAuthPasswordFile?: string | null;
-        basicAuthUsername?: string | null;
-        maxDiskUsagePerUrl?: string | null;
-        url?: string | null;
+        basicAuthPasswordFile?: string | null | NixExpr;
+        basicAuthUsername?: string | null | NixExpr;
+        maxDiskUsagePerUrl?: string | null | NixExpr;
+        url?: string | null | NixExpr;
       };
     };
     vmagent: {
@@ -18934,9 +18840,9 @@ declare module "winix" {
       package?: string | NixExpr;
       prometheusConfig?: Record<string, unknown>;
       remoteWrite?: {
-        basicAuthPasswordFile?: string | null;
-        basicAuthUsername?: string | null;
-        url?: string | null;
+        basicAuthPasswordFile?: string | null | NixExpr;
+        basicAuthUsername?: string | null | NixExpr;
+        url?: string | null | NixExpr;
       };
     };
     vmalert: {
@@ -18952,49 +18858,49 @@ declare module "winix" {
     vsftpd: {
       allowWriteableChroot?: boolean;
       anonymousMkdirEnable?: boolean;
-      anonymousUmask?: string;
+      anonymousUmask?: string | NixExpr;
       anonymousUploadEnable?: boolean;
       anonymousUser?: boolean;
-      anonymousUserHome?: string;
+      anonymousUserHome?: string | NixExpr;
       anonymousUserNoPassword?: boolean;
       chrootlocalUser?: boolean;
       enable?: boolean;
       enableVirtualUsers?: boolean;
-      extraConfig?: string;
+      extraConfig?: string | NixExpr;
       forceLocalDataSSL?: boolean;
       forceLocalLoginsSSL?: boolean;
-      localRoot?: string | null;
+      localRoot?: string | null | NixExpr;
       localUsers?: boolean;
       portPromiscuous?: boolean;
-      rsaCertFile?: string | null;
-      rsaKeyFile?: string | null;
+      rsaCertFile?: string | null | NixExpr;
+      rsaKeyFile?: string | null | NixExpr;
       ssl_sslv2?: boolean;
       ssl_sslv3?: boolean;
       ssl_tlsv1?: boolean;
-      userDbPath?: string | null;
+      userDbPath?: string | null | NixExpr;
       userlist?: string[] | NixExpr;
       userlistDeny?: boolean;
       userlistEnable?: boolean;
-      userlistFile?: string;
+      userlistFile?: string | NixExpr;
       virtualUseLocalPrivs?: boolean;
       writeEnable?: boolean;
     };
     "vsmartcard-vpcd": {
       enable?: boolean;
-      hostname?: string;
+      hostname?: string | NixExpr;
       port?: number;
     };
     vwifi: {
       client?: {
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
-        serverAddress?: string | null;
+        serverAddress?: string | null | NixExpr;
         serverPort?: number | null;
         spy?: boolean;
       };
       module?: {
         enable?: boolean;
-        macPrefix?: string;
+        macPrefix?: string | NixExpr;
         numRadios?: number;
       };
       package?: string | NixExpr;
@@ -19023,22 +18929,22 @@ declare module "winix" {
       database?: {
         createLocally?: boolean;
         dialect?: "cockroach" | "mssql" | "mysql" | "postgres" | "sqlite3" | null;
-        name?: string;
-        user?: string;
+        name?: string | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     warpgate: {
-      databaseUrlFile?: string | null;
+      databaseUrlFile?: string | null | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: {
-        database_url?: string | null;
-        external_host?: string | null;
+        database_url?: string | null | NixExpr;
+        external_host?: string | null | NixExpr;
         http?: Record<string, unknown>;
         kubernetes?: Record<string, unknown>;
         log?: Record<string, unknown>;
@@ -19050,39 +18956,39 @@ declare module "winix" {
       };
     };
     wasabibackend: {
-      customConfigFile?: string | null;
-      dataDir?: string;
+      customConfigFile?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       endpoint?: {
-        ip?: string;
+        ip?: string | NixExpr;
         port?: number;
       };
-      group?: string;
-      network?: "mainnet" | "regtest" | "testnet";
+      group?: string | NixExpr;
+      network?: "mainnet" | "regtest" | "testnet" | NixExpr;
       rpc?: {
-        ip?: string;
-        password?: string;
-        passwordFile?: string | null;
+        ip?: string | NixExpr;
+        password?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        user?: string;
+        user?: string | NixExpr;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     wastebin: {
       enable?: boolean;
       package?: string | NixExpr;
-      secretFile?: string | null;
+      secretFile?: string | null | NixExpr;
       settings?: {
-        RUST_LOG?: string;
-        WASTEBIN_ADDRESS_PORT?: string;
-        WASTEBIN_BASE_URL?: string;
+        RUST_LOG?: string | NixExpr;
+        WASTEBIN_ADDRESS_PORT?: string | NixExpr;
+        WASTEBIN_BASE_URL?: string | NixExpr;
         WASTEBIN_CACHE_SIZE?: number;
-        WASTEBIN_DATABASE_PATH?: string;
+        WASTEBIN_DATABASE_PATH?: string | NixExpr;
         WASTEBIN_HTTP_TIMEOUT?: number;
         WASTEBIN_MAX_BODY_SIZE?: number;
-        WASTEBIN_TITLE?: string;
+        WASTEBIN_TITLE?: string | NixExpr;
       };
-      stateDir?: string;
+      stateDir?: string | NixExpr;
     };
     watchdogd: {
       enable?: boolean;
@@ -19097,54 +19003,54 @@ declare module "winix" {
       };
     };
     webdav: {
-      configFile?: string;
+      configFile?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
-      group?: string;
+      environmentFile?: string | null | NixExpr;
+      group?: string | NixExpr;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     "webdav-server-rs": {
-      configFile?: string;
+      configFile?: string | NixExpr;
       debug?: boolean;
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       settings?: Record<string, unknown>;
-      user?: string;
+      user?: string | NixExpr;
     };
     webhook: {
       enable?: boolean;
       enableTemplates?: boolean;
       environment?: Record<string, string>;
       extraArgs?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       hooks?: {
         "<name>"?: Record<string, unknown>;
       };
       hooksTemplated?: Record<string, string>;
-      ip?: string;
+      ip?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      urlPrefix?: string;
-      user?: string;
+      urlPrefix?: string | NixExpr;
+      user?: string | NixExpr;
       verbose?: boolean;
     };
     weblate: {
       configurePostgresql?: boolean;
-      djangoSecretKeyFile?: string;
+      djangoSecretKeyFile?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      localDomain?: string;
+      extraConfig?: string | NixExpr;
+      localDomain?: string | NixExpr;
       package?: string | NixExpr;
       smtp?: {
         enable?: boolean;
-        from?: string;
-        host?: string;
-        passwordFile?: string | null;
+        from?: string | NixExpr;
+        host?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        user?: string | null;
+        user?: string | null | NixExpr;
       };
     };
     websurfx: {
@@ -19152,25 +19058,25 @@ declare module "winix" {
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
-        binding_ip?: string;
+        binding_ip?: string | NixExpr;
         port?: number;
       };
     };
     weechat: {
-      binary?: string;
+      binary?: string | NixExpr;
       enable?: boolean;
       headless?: boolean;
       package?: string | NixExpr;
-      root?: string;
-      sessionName?: string;
+      root?: string | NixExpr;
+      sessionName?: string | NixExpr;
     };
     "wg-access-server": {
       enable?: boolean;
       package?: string | NixExpr;
-      secretsFile?: string;
+      secretsFile?: string | NixExpr;
       settings?: {
         dns?: Record<string, unknown>;
-        storage?: string;
+        storage?: string | NixExpr;
       };
     };
     "wg-netmanager": {
@@ -19180,22 +19086,22 @@ declare module "winix" {
       enable?: boolean;
       enableGossipEncryption?: boolean;
       enablePersistence?: boolean;
-      gossipSecretFile?: string;
-      logLevel?: "debug" | "error" | "info" | "trace" | "warn";
+      gossipSecretFile?: string | NixExpr;
+      logLevel?: "debug" | "error" | "info" | "trace" | "warn" | NixExpr;
       openFirewall?: boolean;
       settings?: {
         gossip_port?: number;
-        interface?: string;
+        interface?: string | NixExpr;
         lan_discovery?: boolean;
         peers?: Record<string, unknown>;
         upnp_forward_external_port?: number | null;
       };
     };
     whisparr: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       environmentFiles?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -19203,11 +19109,11 @@ declare module "winix" {
         server?: Record<string, unknown>;
         update?: Record<string, unknown>;
       };
-      user?: string;
+      user?: string | NixExpr;
     };
     whitebophir: {
       enable?: boolean;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
     };
@@ -19220,32 +19126,32 @@ declare module "winix" {
     "whoogle-search": {
       enable?: boolean;
       extraEnv?: Record<string, string>;
-      listenAddress?: string;
+      listenAddress?: string | NixExpr;
       port?: number;
     };
     "wiki-js": {
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       settings?: {
-        bindIP?: string;
+        bindIP?: string | NixExpr;
         db?: Record<string, unknown>;
-        logLevel?: "debug" | "error" | "info" | "silly" | "verbose" | "warn";
+        logLevel?: "debug" | "error" | "info" | "silly" | "verbose" | "warn" | NixExpr;
         offline?: boolean;
         port?: number;
       };
-      stateDirectoryName?: string;
+      stateDirectoryName?: string | NixExpr;
     };
     windmill: {
-      baseUrl?: string;
+      baseUrl?: string | NixExpr;
       database?: {
         createLocally?: boolean;
-        name?: string;
-        url?: string;
-        urlPath?: string | null;
-        user?: string;
+        name?: string | NixExpr;
+        url?: string | NixExpr;
+        urlPath?: string | null | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
-      logLevel?: "debug" | "error" | "info" | "trace" | "warn";
+      logLevel?: "debug" | "error" | "info" | "trace" | "warn" | NixExpr;
       lspPort?: number;
       package?: string | NixExpr;
       serverPort?: number;
@@ -19287,12 +19193,12 @@ declare module "winix" {
       sites?: {
         "<name>"?: Record<string, unknown>;
       };
-      webserver?: "caddy" | "httpd" | "nginx";
+      webserver?: "caddy" | "httpd" | "nginx" | NixExpr;
     };
     "workout-tracker": {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       port?: number;
       settings?: Record<string, string>;
@@ -19302,26 +19208,26 @@ declare module "winix" {
         enable?: boolean;
       };
       admin?: {
-        initialPasswordFile?: string;
-        name?: string | null;
+        initialPasswordFile?: string | NixExpr;
+        name?: string | null | NixExpr;
       };
       database?: {
         createLocally?: boolean;
-        host?: string;
+        host?: string | NixExpr;
         migrate?: boolean;
-        name?: string;
-        passwordFile?: string | null;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
         tls?: boolean;
-        type?: "mysql" | "sqlite3";
-        user?: string | null;
+        type?: "mysql" | "sqlite3" | NixExpr;
+        user?: string | null | NixExpr;
       };
       email?: {
-        smtpPasswordFile?: string | null;
+        smtpPasswordFile?: string | null | NixExpr;
       };
       enable?: boolean;
-      group?: string;
-      host?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       nginx?: {
         enable?: boolean;
         forceSSL?: boolean;
@@ -19331,8 +19237,8 @@ declare module "winix" {
         app?: Record<string, unknown>;
         server?: Record<string, unknown>;
       };
-      stateDir?: string;
-      user?: string;
+      stateDir?: string | NixExpr;
+      user?: string | NixExpr;
     };
     wstunnel: {
       clients?: {
@@ -19356,24 +19262,24 @@ declare module "winix" {
         refractorySeconds?: number;
         threshold?: number;
         triggerLevel?: number;
-        uri?: string;
+        uri?: string | NixExpr;
       };
       piper?: {
         package?: string | NixExpr;
         servers?: Record<string, unknown>;
       };
       satellite?: {
-        area?: string | null;
+        area?: string | null | NixExpr;
         enable?: boolean;
         extraArgs?: string[] | NixExpr;
-        group?: string;
+        group?: string | NixExpr;
         microphone?: Record<string, unknown>;
-        name?: string;
+        name?: string | NixExpr;
         package?: string | NixExpr;
         sound?: Record<string, unknown>;
         sounds?: Record<string, unknown>;
-        uri?: string;
-        user?: string;
+        uri?: string | NixExpr;
+        user?: string | NixExpr;
         vad?: Record<string, unknown>;
       };
     };
@@ -19387,19 +19293,19 @@ declare module "winix" {
       };
     };
     xandikos: {
-      address?: string;
+      address?: string | NixExpr;
       enable?: boolean;
       extraOptions?: string[] | NixExpr;
       nginx?: {
         enable?: boolean;
-        hostName?: string;
+        hostName?: string | NixExpr;
       };
       package?: string | NixExpr;
       port?: number;
-      routePrefix?: string;
+      routePrefix?: string | NixExpr;
     };
     xbanish: {
-      arguments?: string;
+      arguments?: string | NixExpr;
       enable?: boolean;
     };
     "xe-guest-utilities": {
@@ -19410,17 +19316,15 @@ declare module "winix" {
     };
     xinetd: {
       enable?: boolean;
-      extraDefaults?: string;
-      services?: {
-        "*"?: Record<string, unknown>;
-      };
+      extraDefaults?: string | NixExpr;
+      services?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
     };
     xl2tpd: {
-      clientIpRange?: string;
+      clientIpRange?: string | NixExpr;
       enable?: boolean;
-      extraPppdOptions?: string;
-      extraXl2tpOptions?: string;
-      serverIp?: string;
+      extraPppdOptions?: string | NixExpr;
+      extraXl2tpOptions?: string | NixExpr;
+      serverIp?: string | NixExpr;
     };
     xmrig: {
       enable?: boolean;
@@ -19428,41 +19332,41 @@ declare module "winix" {
       settings?: Record<string, unknown>;
     };
     xonotic: {
-      appendConfig?: string | null;
-      dataDir?: string;
+      appendConfig?: string | null | NixExpr;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      prependConfig?: string | null;
+      prependConfig?: string | null | NixExpr;
       settings?: {
-        hostname?: string;
+        hostname?: string | NixExpr;
         maxplayers?: number;
-        net_address?: string;
+        net_address?: string | NixExpr;
         port?: number;
-        sv_motd?: string;
+        sv_motd?: string | NixExpr;
         sv_public?: number;
-        sv_termsofservice_url?: string;
+        sv_termsofservice_url?: string | NixExpr;
       };
     };
     xray: {
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown> | null;
-      settingsFile?: string | null;
+      settingsFile?: string | null | NixExpr;
     };
     xrdp: {
       audio?: {
         enable?: boolean;
         package?: string | NixExpr;
       };
-      defaultWindowManager?: string;
+      defaultWindowManager?: string | NixExpr;
       enable?: boolean;
-      extraConfDirCommands?: string;
+      extraConfDirCommands?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       port?: number;
-      sslCert?: string;
-      sslKey?: string;
+      sslCert?: string | NixExpr;
+      sslKey?: string | NixExpr;
     };
     xscreensaver: {
       enable?: boolean;
@@ -19475,9 +19379,9 @@ declare module "winix" {
       autorun?: boolean;
       cmt?: {
         enable?: boolean;
-        models?: "atlas" | "auron_paine" | "auron_yuna" | "banjo" | "candy" | "caroline" | "cave" | "celes" | "clapper" | "cyan" | "daisy" | "daisy_skate" | "elan" | "elm" | "enguarde" | "eve" | "expresso" | "falco" | "gandof" | "glimmer" | "gnawty" | "heli" | "kevin" | "kip" | "leon" | "lulu" | "nyan_big" | "nyan_blaze" | "orco" | "pbody" | "peppy" | "pi" | "pit" | "puppy" | "quawks" | "rambi" | "samus" | "snappy" | "spring" | "squawks" | "swanky" | "veyron_jaq" | "veyron_jerry" | "veyron_mighty" | "veyron_minnie" | "veyron_speedy" | "winky" | "wolf";
+        models?: "atlas" | "auron_paine" | "auron_yuna" | "banjo" | "candy" | "caroline" | "cave" | "celes" | "clapper" | "cyan" | "daisy" | "daisy_skate" | "elan" | "elm" | "enguarde" | "eve" | "expresso" | "falco" | "gandof" | "glimmer" | "gnawty" | "heli" | "kevin" | "kip" | "leon" | "lulu" | "nyan_big" | "nyan_blaze" | "orco" | "pbody" | "peppy" | "pi" | "pit" | "puppy" | "quawks" | "rambi" | "samus" | "snappy" | "spring" | "squawks" | "swanky" | "veyron_jaq" | "veyron_jerry" | "veyron_mighty" | "veyron_minnie" | "veyron_speedy" | "winky" | "wolf" | NixExpr;
       };
-      config?: string;
+      config?: string | NixExpr;
       defaultDepth?: number;
       desktopManager?: {
         cde?: Record<string, unknown>;
@@ -19495,7 +19399,7 @@ declare module "winix" {
         xfce?: Record<string, unknown>;
         xterm?: Record<string, unknown>;
       };
-      deviceSection?: string;
+      deviceSection?: string | NixExpr;
       digimend?: {
         enable?: boolean;
       };
@@ -19503,13 +19407,13 @@ declare module "winix" {
       displayManager?: {
         lightdm?: Record<string, unknown>;
         session?: Record<string, unknown>[] | NixExpr;
-        sessionCommands?: string;
-        setupCommands?: string;
+        sessionCommands?: string | NixExpr;
+        setupCommands?: string | NixExpr;
         startx?: Record<string, unknown>;
         sx?: Record<string, unknown>;
         xpra?: Record<string, unknown>;
         xserverArgs?: string[] | NixExpr;
-        xserverBin?: string;
+        xserverBin?: string | NixExpr;
       };
       dpi?: number | null;
       enable?: boolean;
@@ -19518,36 +19422,36 @@ declare module "winix" {
       enableTearFree?: boolean;
       excludePackages?: (string | NixExpr)[] | NixExpr;
       exportConfiguration?: boolean;
-      extraConfig?: string;
-      extraDisplaySettings?: string;
-      filesSection?: string;
-      fontPath?: string | null;
+      extraConfig?: string | NixExpr;
+      extraDisplaySettings?: string | NixExpr;
+      filesSection?: string | NixExpr;
+      fontPath?: string | null | NixExpr;
       imwheel?: {
         enable?: boolean;
         extraOptions?: string[] | NixExpr;
         rules?: Record<string, string>;
       };
       inputClassSections?: string[] | NixExpr;
-      logFile?: string | null;
+      logFile?: string | null | NixExpr;
       modules?: string[] | NixExpr;
-      moduleSection?: string;
-      monitorSection?: string;
+      moduleSection?: string | NixExpr;
+      monitorSection?: string | NixExpr;
       resolutions?: Record<string, unknown>[] | NixExpr;
-      screenSection?: string;
-      serverFlagsSection?: string;
-      serverLayoutSection?: string;
+      screenSection?: string | NixExpr;
+      serverFlagsSection?: string | NixExpr;
+      serverLayoutSection?: string | NixExpr;
       synaptics?: {
-        accelFactor?: string | null;
-        additionalOptions?: string;
+        accelFactor?: string | null | NixExpr;
+        additionalOptions?: string | NixExpr;
         buttonsMap?: number[] | NixExpr;
-        dev?: string | null;
+        dev?: string | null | NixExpr;
         enable?: boolean;
         fingersMap?: number[] | NixExpr;
         horizEdgeScroll?: boolean;
         horizontalScroll?: boolean;
         horizTwoFingerScroll?: boolean;
-        maxSpeed?: string | null;
-        minSpeed?: string | null;
+        maxSpeed?: string | null | NixExpr;
+        minSpeed?: string | null | NixExpr;
         palmDetect?: boolean;
         palmMinWidth?: number | null;
         palmMinZ?: number | null;
@@ -19561,7 +19465,7 @@ declare module "winix" {
       updateDbusEnvironment?: boolean;
       upscaleDefaultCursor?: boolean;
       verbose?: number | null;
-      videoDriver?: string | null;
+      videoDriver?: string | null | NixExpr;
       videoDrivers?: string[] | NixExpr;
       virtualScreen?: Record<string, unknown> | null;
       wacom?: {
@@ -19619,40 +19523,38 @@ declare module "winix" {
         enable?: boolean;
         enableNotifier?: boolean;
         extraOptions?: string[] | NixExpr;
-        killer?: string | null;
+        killer?: string | null | NixExpr;
         killtime?: number;
-        locker?: string;
-        notifier?: string | null;
+        locker?: string | NixExpr;
+        notifier?: string | null | NixExpr;
         notify?: number;
-        nowlocker?: string | null;
+        nowlocker?: string | null | NixExpr;
         time?: number;
       };
       xkb?: {
-        dir?: string;
+        dir?: string | NixExpr;
         extraLayouts?: Record<string, unknown>;
-        layout?: string;
-        model?: string;
-        options?: string;
-        variant?: string;
+        layout?: string | NixExpr;
+        model?: string | NixExpr;
+        options?: string | NixExpr;
+        variant?: string | NixExpr;
       };
-      xrandrHeads?: {
-        "*"?: Record<string, unknown>;
-      };
+      xrandrHeads?: Record<string, unknown> | Record<string, unknown>[] | NixExpr;
     };
     "yandex-disk": {
-      directory?: string;
+      directory?: string | NixExpr;
       enable?: boolean;
-      excludes?: string;
-      password?: string;
-      user?: string | null;
-      username?: string;
+      excludes?: string | NixExpr;
+      password?: string | NixExpr;
+      user?: string | null | NixExpr;
+      username?: string | NixExpr;
     };
     yarr: {
-      address?: string;
-      authFilePath?: string | null;
-      baseUrl?: string | null;
+      address?: string | NixExpr;
+      authFilePath?: string | null | NixExpr;
+      baseUrl?: string | null | NixExpr;
       enable?: boolean;
-      environmentFile?: string | null;
+      environmentFile?: string | null | NixExpr;
       package?: string | NixExpr;
       port?: number;
     };
@@ -19660,7 +19562,7 @@ declare module "winix" {
       denyDhcpcdInterfaces?: string[] | NixExpr;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      group?: string | null;
+      group?: string | null | NixExpr;
       openMulticastPort?: boolean;
       package?: string | NixExpr;
       persistentKeys?: boolean;
@@ -19668,7 +19570,7 @@ declare module "winix" {
         AllowedPublicKeys?: string[] | NixExpr;
         Listen?: string[] | NixExpr;
         Peers?: string[] | NixExpr;
-        PrivateKeyPath?: string | null;
+        PrivateKeyPath?: string | null | NixExpr;
       };
     };
     "yggdrasil-jumper": {
@@ -19676,8 +19578,8 @@ declare module "winix" {
       detectWireguard?: boolean;
       enable?: boolean;
       extraArgs?: string[] | NixExpr;
-      extraConfig?: string;
-      logLevel?: "debug" | "error" | "info" | "off" | "trace" | "warn";
+      extraConfig?: string | NixExpr;
+      logLevel?: "debug" | "error" | "info" | "off" | "trace" | "warn" | NixExpr;
       package?: string | NixExpr;
       retrieveListenAddresses?: boolean;
       settings?: Record<string, unknown>;
@@ -19685,46 +19587,46 @@ declare module "winix" {
     ympd: {
       enable?: boolean;
       mpd?: {
-        host?: string;
+        host?: string | NixExpr;
         port?: number;
       };
-      webPort?: string | number;
+      webPort?: string | number | NixExpr;
     };
     your_spotify: {
       clientPackage?: string | NixExpr;
       enable?: boolean;
       enableLocalDB?: boolean;
-      nginxVirtualHost?: string | null;
+      nginxVirtualHost?: string | null | NixExpr;
       package?: string | NixExpr;
       settings?: {
-        API_ENDPOINT?: string;
-        CLIENT_ENDPOINT?: string;
-        MONGO_ENDPOINT?: string;
+        API_ENDPOINT?: string | NixExpr;
+        CLIENT_ENDPOINT?: string | NixExpr;
+        MONGO_ENDPOINT?: string | NixExpr;
         PORT?: number;
-        SPOTIFY_PUBLIC?: string;
+        SPOTIFY_PUBLIC?: string | NixExpr;
       };
-      spotifySecretFile?: string;
+      spotifySecretFile?: string | NixExpr;
     };
     youtrack: {
-      address?: string;
+      address?: string | NixExpr;
       autoUpgrade?: boolean;
       enable?: boolean;
       environmentalParameters?: {
-        "listen-address"?: string;
+        "listen-address"?: string | NixExpr;
         "listen-port"?: number;
       };
       generalParameters?: string[] | NixExpr;
       package?: string | NixExpr;
-      statePath?: string;
-      virtualHost?: string | null;
+      statePath?: string | NixExpr;
+      virtualHost?: string | null | NixExpr;
     };
     "ytdl-sub": {
-      group?: string;
+      group?: string | NixExpr;
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
       package?: string | NixExpr;
-      user?: string;
+      user?: string | NixExpr;
     };
     "yubikey-agent": {
       enable?: boolean;
@@ -19734,74 +19636,74 @@ declare module "winix" {
       enable?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
       listen?: {
-        ip?: string;
+        ip?: string | NixExpr;
         port?: number;
       };
       modules?: Record<string, string | NixExpr>;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      server?: string;
-      settings?: Record<string, number | string | string[]>;
+      server?: string | NixExpr;
+      settings?: Record<string, number | string | string[]> | NixExpr;
     };
     zabbixProxy: {
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        socket?: string | null;
-        type?: "mysql" | "pgsql" | "sqlite";
-        user?: string;
+        socket?: string | null | NixExpr;
+        type?: "mysql" | "pgsql" | "sqlite" | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
       listen?: {
-        ip?: string;
+        ip?: string | NixExpr;
         port?: number;
       };
       modules?: Record<string, string | NixExpr>;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      server?: string;
-      settings?: Record<string, number | string | string[]>;
+      server?: string | NixExpr;
+      settings?: Record<string, number | string | string[]> | NixExpr;
     };
     zabbixServer: {
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        socket?: string | null;
-        type?: "mysql" | "pgsql";
-        user?: string;
+        socket?: string | null | NixExpr;
+        type?: "mysql" | "pgsql" | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
       extraPackages?: (string | NixExpr)[] | NixExpr;
       listen?: {
-        ip?: string;
+        ip?: string | NixExpr;
         port?: number;
       };
       modules?: Record<string, string | NixExpr>;
       openFirewall?: boolean;
       package?: string | NixExpr;
-      settings?: Record<string, number | string | string[]>;
+      settings?: Record<string, number | string | string[]> | NixExpr;
     };
     zabbixWeb: {
       database?: {
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number;
-        socket?: string | null;
-        type?: "mysql" | "oracle" | "pgsql";
-        user?: string;
+        socket?: string | null | NixExpr;
+        type?: "mysql" | "oracle" | "pgsql" | NixExpr;
+        user?: string | NixExpr;
       };
       enable?: boolean;
-      extraConfig?: string;
-      frontend?: "httpd" | "nginx";
-      hostname?: string;
+      extraConfig?: string | NixExpr;
+      frontend?: "httpd" | "nginx" | NixExpr;
+      hostname?: string | NixExpr;
       httpd?: {
         virtualHost?: Record<string, unknown>;
       };
@@ -19811,45 +19713,45 @@ declare module "winix" {
       package?: string | NixExpr;
       poolConfig?: Record<string, string | number | boolean>;
       server?: {
-        address?: string;
+        address?: string | NixExpr;
         port?: number;
       };
     };
     zammad: {
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        passwordFile?: string | null;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        passwordFile?: string | null | NixExpr;
         port?: number | null;
         settings?: Record<string, unknown>;
-        user?: string | null;
+        user?: string | null | NixExpr;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      group?: string;
-      host?: string;
+      group?: string | NixExpr;
+      host?: string | NixExpr;
       nginx?: {
         configure?: boolean;
-        domain?: string;
+        domain?: string | NixExpr;
       };
       package?: string | NixExpr;
       port?: number;
       redis?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
         port?: number;
       };
-      secretKeyBaseFile?: string | null;
-      user?: string;
+      secretKeyBaseFile?: string | null | NixExpr;
+      user?: string | NixExpr;
       websocketPort?: number;
     };
     zapret: {
       blacklist?: string[] | NixExpr;
       configureFirewall?: boolean;
       enable?: boolean;
-      httpMode?: "first" | "full";
+      httpMode?: "first" | "full" | NixExpr;
       httpSupport?: boolean;
       package?: string | NixExpr;
       params?: string[] | NixExpr;
@@ -19866,19 +19768,19 @@ declare module "winix" {
       enable?: boolean;
       env?: Record<string, string>;
       extraOptions?: string[] | NixExpr;
-      home?: string;
+      home?: string | NixExpr;
       package?: string | NixExpr;
       plugins?: (string | NixExpr)[] | NixExpr;
       settings?: Record<string, unknown>;
     };
     zerobin: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
-      extraConfig?: string;
-      group?: string;
-      listenAddress?: string;
+      extraConfig?: string | NixExpr;
+      group?: string | NixExpr;
+      listenAddress?: string | NixExpr;
       listenPort?: number;
-      user?: string;
+      user?: string | NixExpr;
     };
     zeronet: {
       enable?: boolean;
@@ -19903,44 +19805,44 @@ declare module "winix" {
     };
     zeyple: {
       enable?: boolean;
-      group?: string;
+      group?: string | NixExpr;
       keys?: string[] | NixExpr;
       rotateLogs?: boolean;
       settings?: Record<string, Record<string, unknown>>;
-      user?: string;
+      user?: string | NixExpr;
     };
     zfs: {
       autoReplication?: {
         enable?: boolean;
         followDelete?: boolean;
-        host?: string;
-        identityFilePath?: string;
-        localFilesystem?: string;
+        host?: string | NixExpr;
+        identityFilePath?: string | NixExpr;
+        localFilesystem?: string | NixExpr;
         package?: string | NixExpr;
         recursive?: boolean;
-        remoteFilesystem?: string;
-        username?: string;
+        remoteFilesystem?: string | NixExpr;
+        username?: string | NixExpr;
       };
       autoScrub?: {
         enable?: boolean;
-        interval?: string;
+        interval?: string | NixExpr;
         pools?: string[] | NixExpr;
-        randomizedDelaySec?: string;
+        randomizedDelaySec?: string | NixExpr;
       };
       autoSnapshot?: {
         daily?: number;
         enable?: boolean;
-        flags?: string;
+        flags?: string | NixExpr;
         frequent?: number;
         hourly?: number;
         monthly?: number;
         weekly?: number;
       };
-      expandOnBoot?: "all" | "disabled";
+      expandOnBoot?: "all" | "disabled" | NixExpr;
       trim?: {
         enable?: boolean;
-        interval?: string;
-        randomizedDelaySec?: string;
+        interval?: string | NixExpr;
+        randomizedDelaySec?: string | NixExpr;
       };
       zed?: {
         enableMail?: boolean;
@@ -19948,7 +19850,7 @@ declare module "winix" {
       };
     };
     zigbee2mqtt: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       package?: string | NixExpr;
       settings?: Record<string, unknown>;
@@ -19961,7 +19863,7 @@ declare module "winix" {
       environmentFiles?: string[] | NixExpr;
       package?: string | NixExpr;
       settings?: {
-        CORE_HOSTNAME?: string;
+        CORE_HOSTNAME?: string | NixExpr;
         CORE_PORT?: number;
       };
     };
@@ -19969,8 +19871,8 @@ declare module "winix" {
       enable?: boolean;
       extraSettingsPaths?: string[] | NixExpr;
       extraStepsPaths?: string[] | NixExpr;
-      group?: string;
-      masterKeyFile?: string;
+      group?: string | NixExpr;
+      masterKeyFile?: string | NixExpr;
       openFirewall?: boolean;
       package?: string | NixExpr;
       settings?: {
@@ -19978,8 +19880,8 @@ declare module "winix" {
         TLS?: Record<string, unknown>;
       };
       steps?: Record<string, unknown>;
-      tlsMode?: "disabled" | "enabled" | "external";
-      user?: string;
+      tlsMode?: "disabled" | "enabled" | "external" | NixExpr;
+      user?: string | NixExpr;
     };
     znapzend: {
       autoCreation?: boolean;
@@ -19993,9 +19895,9 @@ declare module "winix" {
         skipIntermediates?: boolean;
         zfsGetType?: boolean;
       };
-      logLevel?: "alert" | "debug" | "err" | "info" | "warning";
-      logTo?: string;
-      mailErrorSummaryTo?: string;
+      logLevel?: "alert" | "debug" | "err" | "info" | "warning" | NixExpr;
+      logTo?: string | NixExpr;
+      mailErrorSummaryTo?: string | NixExpr;
       noDestroy?: boolean;
       pure?: boolean;
       zetup?: {
@@ -20004,59 +19906,59 @@ declare module "winix" {
     };
     znc: {
       config?: Record<string, unknown>;
-      configFile?: string;
+      configFile?: string | NixExpr;
       confOptions?: {
-        extraZncConf?: string;
+        extraZncConf?: string | NixExpr;
         modules?: string[] | NixExpr;
         networks?: Record<string, unknown>;
-        nick?: string;
-        passBlock?: string;
+        nick?: string | NixExpr;
+        passBlock?: string | NixExpr;
         port?: number;
-        uriPrefix?: string | null;
+        uriPrefix?: string | null | NixExpr;
         userModules?: string[] | NixExpr;
-        userName?: string;
+        userName?: string | NixExpr;
         useSSL?: boolean;
       };
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraFlags?: string[] | NixExpr;
-      group?: string;
+      group?: string | NixExpr;
       modulePackages?: (string | NixExpr)[] | NixExpr;
       mutable?: boolean;
       openFirewall?: boolean;
       useLegacyConfig?: boolean;
-      user?: string;
+      user?: string | NixExpr;
     };
     zoneminder: {
       cameras?: number;
       database?: {
         createLocally?: boolean;
-        host?: string;
-        name?: string;
-        password?: string;
-        username?: string;
+        host?: string | NixExpr;
+        name?: string | NixExpr;
+        password?: string | NixExpr;
+        username?: string | NixExpr;
       };
       enable?: boolean;
-      extraConfig?: string;
-      hostname?: string;
+      extraConfig?: string | NixExpr;
+      hostname?: string | NixExpr;
       openFirewall?: boolean;
       port?: number;
-      storageDir?: string | null;
-      webserver?: "nginx" | "none";
+      storageDir?: string | null | NixExpr;
+      webserver?: "nginx" | "none" | NixExpr;
     };
     zookeeper: {
-      dataDir?: string;
+      dataDir?: string | NixExpr;
       enable?: boolean;
       extraCmdLineOptions?: string[] | NixExpr;
-      extraConf?: string;
+      extraConf?: string | NixExpr;
       id?: number;
       jre?: string | NixExpr;
-      logging?: string;
+      logging?: string | NixExpr;
       package?: string | NixExpr;
       port?: number;
       preferIPv4?: boolean;
       purgeInterval?: number;
-      servers?: string;
+      servers?: string | NixExpr;
     };
     "zram-generator": {
       enable?: boolean;
@@ -20073,8 +19975,8 @@ declare module "winix" {
       extraFlags?: string[] | NixExpr;
       package?: string | NixExpr;
       port?: number;
-      secretsConfigFile?: string;
-      serialPort?: string;
+      secretsConfigFile?: string | NixExpr;
+      serialPort?: string | NixExpr;
       settings?: {
         storage?: Record<string, unknown>;
       };
@@ -20082,7 +19984,7 @@ declare module "winix" {
     "zwave-js-ui": {
       enable?: boolean;
       package?: string | NixExpr;
-      serialPort?: string;
+      serialPort?: string | NixExpr;
       settings?: Record<string, unknown>;
     };
   }

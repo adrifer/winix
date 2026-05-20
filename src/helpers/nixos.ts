@@ -1,4 +1,5 @@
 import { normalizeArgs } from "./utils.ts";
+import type { ProgramOptions, ServiceOptions } from "./options.ts";
 import type { Fragment } from "../core/types.ts";
 import type { FirewallOptions, NixosOptions, PackageRef, SystemdOptions } from "../types/index.ts";
 
@@ -21,17 +22,13 @@ export interface NixosServiceOptions {}
 type ProgramOpts = Record<string, unknown>;
 
 export interface NixosHelper {
-  program<K extends string>(
+  program<const K extends string>(
     name: K,
-    opts?: K extends keyof NixosProgramOptions
-      ? Omit<NixosProgramOptions[K], "enable">
-      : Record<string, unknown>
+    opts?: ProgramOptions<NixosProgramOptions, K>
   ): Fragment;
-  service<K extends string>(
+  service<const K extends string>(
     name: K,
-    opts?: K extends keyof NixosServiceOptions
-      ? Omit<NixosServiceOptions[K], "enable">
-      : Record<string, unknown>
+    opts?: ServiceOptions<NixosServiceOptions, K>
   ): Fragment;
   packages(packages: PackageRef[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
@@ -75,4 +72,3 @@ export const nixos: NixosHelper = {
   raw: (config: string | Record<string, unknown>): Fragment =>
     typeof config === "string" ? { nixos: { __raw: [config] } } : { nixos: config },
 };
-

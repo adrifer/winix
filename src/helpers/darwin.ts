@@ -1,4 +1,5 @@
 import { normalizeArgs } from "./utils.ts";
+import type { ProgramOptions, ServiceOptions } from "./options.ts";
 import type { Fragment } from "../core/types.ts";
 import type { DarwinOptions, PackageRef } from "../types/index.ts";
 
@@ -17,17 +18,13 @@ export interface DarwinServiceOptions {}
 type ProgramOpts = Record<string, unknown>;
 
 export interface DarwinHelper {
-  program<K extends string>(
+  program<const K extends string>(
     name: K,
-    opts?: K extends keyof DarwinProgramOptions
-      ? Omit<DarwinProgramOptions[K], "enable">
-      : Record<string, unknown>
+    opts?: ProgramOptions<DarwinProgramOptions, K>
   ): Fragment;
-  service<K extends string>(
+  service<const K extends string>(
     name: K,
-    opts?: K extends keyof DarwinServiceOptions
-      ? Omit<DarwinServiceOptions[K], "enable">
-      : Record<string, unknown>
+    opts?: ServiceOptions<DarwinServiceOptions, K>
   ): Fragment;
   packages(packages: PackageRef[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
@@ -53,4 +50,3 @@ export const darwin: DarwinHelper = {
   raw: (config: string | Record<string, unknown>): Fragment =>
     typeof config === "string" ? { darwin: { __raw: [config] } } : { darwin: config },
 };
-
