@@ -3,11 +3,33 @@ import type { FirewallOptions, PackageRef, SystemdOptions } from "../types/index
 
 export type SysctlSettings = Record<string, number | string | boolean>;
 
+/**
+ * Map of NixOS program names to their option types.
+ * Starts empty; augmented by generated types (`winix types generate`).
+ * Allows typed autocomplete for `nixos.program("name", { ... })`.
+ */
+export interface NixosProgramOptions {}
+
+/**
+ * Map of NixOS service names to their option types.
+ * Starts empty; augmented by generated types (`winix types generate`).
+ * Allows typed autocomplete for `nixos.service("name", { ... })`.
+ */
+export interface NixosServiceOptions {}
+
 type ProgramOpts = Record<string, unknown>;
 
 export interface NixosHelper {
-  program<T extends ProgramOpts = ProgramOpts>(name: string, opts?: T): Fragment;
-  service<T extends ProgramOpts = ProgramOpts>(name: string, opts?: T): Fragment;
+  program<K extends keyof NixosProgramOptions>(
+    name: K,
+    opts?: Omit<NixosProgramOptions[K], "enable">
+  ): Fragment;
+  program(name: string, opts?: Record<string, unknown>): Fragment;
+  service<K extends keyof NixosServiceOptions>(
+    name: K,
+    opts?: Omit<NixosServiceOptions[K], "enable">
+  ): Fragment;
+  service(name: string, opts?: Record<string, unknown>): Fragment;
   packages(packages: PackageRef[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
   sysctl(settings: SysctlSettings): Fragment;

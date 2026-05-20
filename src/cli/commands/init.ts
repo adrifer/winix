@@ -9,6 +9,7 @@ interface InitOptions {
 export async function init(cwd: string, opts: InitOptions): Promise<void> {
   await mkdir(cwd, { recursive: true });
   await writeIfAllowed(join(cwd, "winix.config.ts"), CONFIG, opts.force);
+  await writeIfAllowed(join(cwd, "tsconfig.json"), TSCONFIG, opts.force);
   await writeIfAllowed(join(cwd, "package.json"), PACKAGE_JSON, opts.force);
   await writeIfAllowed(join(cwd, ".gitignore"), GITIGNORE, opts.force);
   console.log("✓ Initialized Winix project");
@@ -56,4 +57,19 @@ const PACKAGE_JSON = `{
 
 const GITIGNORE = `.winix/
 node_modules/
+`;
+
+const TSCONFIG = `{
+  "compilerOptions": {
+    "strict": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "esnext",
+    "noEmit": true
+  },
+  "include": [
+    "**/*.ts",
+    "node_modules/winix/types/bundled/nixos-unstable.d.ts"
+  ]
+}
 `;

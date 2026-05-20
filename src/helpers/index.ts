@@ -7,8 +7,8 @@ export type { NixGcHelperOpts, NixNamespace, PkgHelper, ScriptHelper } from "./n
 export { overlay } from "./overlay.ts";
 export type { OverlayHelper } from "./overlay.ts";
 export { home } from "./home.ts";
-export type { ActivationOpts, HomeHelper } from "./home.ts";
+export type { ActivationOpts, HomeHelper, HomeProgramOptions, HomeServiceOptions } from "./home.ts";
 export { nixos } from "./nixos.ts";
-export type { NixosHelper, SysctlSettings } from "./nixos.ts";
+export type { NixosHelper, NixosProgramOptions, NixosServiceOptions, SysctlSettings } from "./nixos.ts";
 export { darwin } from "./darwin.ts";
-export type { DarwinHelper } from "./darwin.ts";
+export type { DarwinHelper, DarwinProgramOptions, DarwinServiceOptions } from "./darwin.ts";

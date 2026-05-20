@@ -1,9 +1,29 @@
 import type { Fragment, NixExpr } from "../core/types.ts";
 import type { PackageRef, XdgFile } from "../types/index.ts";
 
+/**
+ * Map of Home Manager program names to their option types.
+ * Starts empty; augmented by generated types.
+ */
+export interface HomeProgramOptions {}
+
+/**
+ * Map of Home Manager service names to their option types.
+ * Starts empty; augmented by generated types.
+ */
+export interface HomeServiceOptions {}
+
 export interface HomeHelper {
-  program<T extends ProgramOpts = ProgramOpts>(name: string, opts?: T): Fragment;
-  service<T extends ProgramOpts = ProgramOpts>(name: string, opts?: T): Fragment;
+  program<K extends keyof HomeProgramOptions>(
+    name: K,
+    opts?: Omit<HomeProgramOptions[K], "enable">
+  ): Fragment;
+  program(name: string, opts?: Record<string, unknown>): Fragment;
+  service<K extends keyof HomeServiceOptions>(
+    name: K,
+    opts?: Omit<HomeServiceOptions[K], "enable">
+  ): Fragment;
+  service(name: string, opts?: Record<string, unknown>): Fragment;
   env(vars: Record<string, string>): Fragment;
   path(paths: string[]): Fragment;
   path(...paths: string[]): Fragment;

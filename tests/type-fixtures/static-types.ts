@@ -1,7 +1,7 @@
 import { home, type Fragment, type ZshOptions } from "winix";
 import type { GitOptions } from "winix/types";
 
-home.program<ZshOptions>("zsh", {
+home.program("zsh", {
   enable: true,
   shellAliases: { g: "lazygit" },
 });
