@@ -13,6 +13,9 @@
     "./types": {
       "import": "./dist/types/index.js",
       "types": "./dist/types/index.d.ts"
+    },
+    "./types/bundled": {
+      "types": "./types/index.d.ts"
     }
   },
   "bin": {
@@ -20,6 +23,7 @@
   },
   "files": [
     "dist",
+    "types/bundled",
     "README.md"
   ],
   "scripts": {
@@ -28,7 +32,11 @@
     "test": "vitest",
     "lint": "eslint src/",
     "check": "tsc --noEmit",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "generate:types": "tsx scripts/generate-types.ts",
+    "generate:types:nixos": "tsx scripts/generate-types.ts nixos",
+    "generate:types:hm": "tsx scripts/generate-types.ts home-manager",
+    "generate:types:darwin": "tsx scripts/generate-types.ts darwin"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
