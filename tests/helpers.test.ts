@@ -412,7 +412,7 @@ describe("curated helpers", () => {
   });
 
   it("home.program() accepts static option types and explicit enable overrides", () => {
-    const zshProgram = home.program<ZshOptions>("zsh", {
+    const zshProgram = home.program("zsh", {
       enable: false,
       shellAliases: { g: "lazygit" },
     });
