@@ -13,9 +13,6 @@
     "./types": {
       "import": "./dist/types/index.js",
       "types": "./dist/types/index.d.ts"
-    },
-    "./generated": {
-      "types": "./types/bundled/nixos-unstable.d.ts"
     }
   },
   "bin": {
@@ -23,8 +20,7 @@
   },
   "files": [
     "dist",
-    "README.md",
-    "types/bundled"
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/fix-dts-imports.mjs",
