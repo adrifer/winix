@@ -16,7 +16,6 @@ export async function init(cwd: string, opts: InitOptions): Promise<void> {
   console.log("");
   console.log("Next steps:");
   console.log("  npm install");
-  console.log("  winix types generate   (for typed autocomplete)");
 }
 
 async function writeIfAllowed(path: string, content: string, force: boolean): Promise<void> {
@@ -55,7 +54,6 @@ const PACKAGE_JSON = `{
     "check": "winix check",
     "apply": "winix apply",
     "switch": "winix switch",
-    "types": "winix types generate"
   }
 }
 `;
@@ -75,7 +73,7 @@ const TSCONFIG = `{
   },
   "include": [
     "**/*.ts",
-    ".winix/types/generated/index.d.ts"
+    "node_modules/winix/types/bundled/*.d.ts"
   ]
 }
 `;

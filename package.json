@@ -4,15 +4,18 @@
   "description": "TypeScript-first system configuration",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./index.d.ts",
+      "import": "./dist/index.js"
     },
     "./types": {
       "import": "./dist/types/index.js",
       "types": "./dist/types/index.d.ts"
+    },
+    "./types/bundled": {
+      "types": "./types/index.d.ts"
     }
   },
   "bin": {
@@ -20,6 +23,8 @@
   },
   "files": [
     "dist",
+    "types",
+    "index.d.ts",
     "README.md"
   ],
   "scripts": {
@@ -28,7 +33,11 @@
     "test": "vitest",
     "lint": "eslint src/",
     "check": "tsc --noEmit",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "generate:types": "npx tsx scripts/generate-types.ts",
+    "generate:types:nixos": "npx tsx scripts/generate-types.ts nixos",
+    "generate:types:hm": "npx tsx scripts/generate-types.ts home-manager",
+    "generate:types:darwin": "npx tsx scripts/generate-types.ts darwin"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

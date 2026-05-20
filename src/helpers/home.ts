@@ -1,4 +1,5 @@
 import { normalizeArgs } from "./utils.ts";
+import type { ProgramOptions, ServiceOptions } from "./options.ts";
 import type { Fragment, NixExpr } from "../core/types.ts";
 import type { HomeOptions, PackageRef, XdgFile } from "../types/index.ts";
 
@@ -15,17 +16,13 @@ export interface HomeProgramOptions {}
 export interface HomeServiceOptions {}
 
 export interface HomeHelper {
-  program<K extends string>(
+  program<const K extends string>(
     name: K,
-    opts?: K extends keyof HomeProgramOptions
-      ? Omit<HomeProgramOptions[K], "enable">
-      : Record<string, unknown>
+    opts?: ProgramOptions<HomeProgramOptions, K>
   ): Fragment;
-  service<K extends string>(
+  service<const K extends string>(
     name: K,
-    opts?: K extends keyof HomeServiceOptions
-      ? Omit<HomeServiceOptions[K], "enable">
-      : Record<string, unknown>
+    opts?: ServiceOptions<HomeServiceOptions, K>
   ): Fragment;
   env(vars: Record<string, string>): Fragment;
   path(paths: string[]): Fragment;
@@ -96,4 +93,3 @@ export const home: HomeHelper = {
     };
   },
 };
-
