@@ -32,6 +32,15 @@ const darwin = platform("darwin", () => ({
 
 describe("curated helpers", () => {
   it("platform package helpers target their platform namespaces", () => {
+    expect(nixosHelpers({ networking: { hostName: "wsl" } })).toEqual({
+      nixos: { networking: { hostName: "wsl" } },
+    });
+    expect(darwinHelpers({ homebrew: { enable: true } })).toEqual({
+      darwin: { homebrew: { enable: true } },
+    });
+    expect(home({ programs: { git: { enable: true } } })).toEqual({
+      homeManager: { programs: { git: { enable: true } } },
+    });
     expect(nixosHelpers.packages("ripgrep", "fd")).toEqual({
       nixos: { packages: ["ripgrep", "fd"] },
     });

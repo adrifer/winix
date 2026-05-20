@@ -22,6 +22,7 @@ export interface NixosServiceOptions {}
 type ProgramOpts = Record<string, unknown>;
 
 export interface NixosHelper {
+  (config: NixosOptions): Fragment;
   program<const K extends string>(
     name: K,
     opts?: ProgramOptions<NixosProgramOptions, K>
@@ -35,40 +36,42 @@ export interface NixosHelper {
   sysctl(settings: SysctlSettings): Fragment;
   firewall(opts: FirewallOptions): Fragment;
   systemd(opts: SystemdOptions): Fragment;
-  raw(config: string | NixosOptions): Fragment;
+  raw(config: string): Fragment;
 }
 
-export const nixos: NixosHelper = {
-  program: <T extends ProgramOpts = ProgramOpts>(
-    name: string,
-    opts: T = {} as T
-  ): Fragment => ({
-    nixos: { programs: { [name]: { enable: true, ...opts } } },
-  }),
-  service: <T extends ProgramOpts = ProgramOpts>(
-    name: string,
-    opts: T = {} as T
-  ): Fragment => ({
-    nixos: { services: { [name]: { enable: true, ...opts } } },
-  }),
-  packages: (...args: PackageRef[] | [PackageRef[]]): Fragment => ({
-    nixos: { packages: normalizeArgs(args) },
-  }),
-  sysctl: (settings: SysctlSettings): Fragment => ({
-    nixos: {
-      boot: {
-        kernel: {
-          sysctl: settings,
+export const nixos: NixosHelper = Object.assign(
+  (config: NixosOptions): Fragment => ({ nixos: config }),
+  {
+    program: <T extends ProgramOpts = ProgramOpts>(
+      name: string,
+      opts: T = {} as T
+    ): Fragment => ({
+      nixos: { programs: { [name]: { enable: true, ...opts } } },
+    }),
+    service: <T extends ProgramOpts = ProgramOpts>(
+      name: string,
+      opts: T = {} as T
+    ): Fragment => ({
+      nixos: { services: { [name]: { enable: true, ...opts } } },
+    }),
+    packages: (...args: PackageRef[] | [PackageRef[]]): Fragment => ({
+      nixos: { packages: normalizeArgs(args) },
+    }),
+    sysctl: (settings: SysctlSettings): Fragment => ({
+      nixos: {
+        boot: {
+          kernel: {
+            sysctl: settings,
+          },
         },
       },
-    },
-  }),
-  firewall: (opts: FirewallOptions): Fragment => ({
-    nixos: { networking: { firewall: opts } },
-  }),
-  systemd: (opts: SystemdOptions): Fragment => ({
-    nixos: { systemd: opts },
-  }),
-  raw: (config: string | Record<string, unknown>): Fragment =>
-    typeof config === "string" ? { nixos: { __raw: [config] } } : { nixos: config },
-};
+    }),
+    firewall: (opts: FirewallOptions): Fragment => ({
+      nixos: { networking: { firewall: opts } },
+    }),
+    systemd: (opts: SystemdOptions): Fragment => ({
+      nixos: { systemd: opts },
+    }),
+    raw: (config: string): Fragment => ({ nixos: { __raw: [config] } }),
+  }
+);

@@ -18,6 +18,7 @@ export interface DarwinServiceOptions {}
 type ProgramOpts = Record<string, unknown>;
 
 export interface DarwinHelper {
+  (config: DarwinOptions): Fragment;
   program<const K extends string>(
     name: K,
     opts?: ProgramOptions<DarwinProgramOptions, K>
@@ -28,25 +29,27 @@ export interface DarwinHelper {
   ): Fragment;
   packages(packages: PackageRef[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
-  raw(config: string | DarwinOptions): Fragment;
+  raw(config: string): Fragment;
 }
 
-export const darwin: DarwinHelper = {
-  program: <T extends ProgramOpts = ProgramOpts>(
-    name: string,
-    opts: T = {} as T
-  ): Fragment => ({
-    darwin: { programs: { [name]: { enable: true, ...opts } } },
-  }),
-  service: <T extends ProgramOpts = ProgramOpts>(
-    name: string,
-    opts: T = {} as T
-  ): Fragment => ({
-    darwin: { services: { [name]: { enable: true, ...opts } } },
-  }),
-  packages: (...args: PackageRef[] | [PackageRef[]]): Fragment => ({
-    darwin: { packages: normalizeArgs(args) },
-  }),
-  raw: (config: string | Record<string, unknown>): Fragment =>
-    typeof config === "string" ? { darwin: { __raw: [config] } } : { darwin: config },
-};
+export const darwin: DarwinHelper = Object.assign(
+  (config: DarwinOptions): Fragment => ({ darwin: config }),
+  {
+    program: <T extends ProgramOpts = ProgramOpts>(
+      name: string,
+      opts: T = {} as T
+    ): Fragment => ({
+      darwin: { programs: { [name]: { enable: true, ...opts } } },
+    }),
+    service: <T extends ProgramOpts = ProgramOpts>(
+      name: string,
+      opts: T = {} as T
+    ): Fragment => ({
+      darwin: { services: { [name]: { enable: true, ...opts } } },
+    }),
+    packages: (...args: PackageRef[] | [PackageRef[]]): Fragment => ({
+      darwin: { packages: normalizeArgs(args) },
+    }),
+    raw: (config: string): Fragment => ({ darwin: { __raw: [config] } }),
+  }
+);

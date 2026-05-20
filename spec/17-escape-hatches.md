@@ -45,7 +45,15 @@ Variants:
 | `home.raw(expr)` | Home Manager configuration |
 | `darwin.raw(expr)` | nix-darwin configuration |
 
-The expression is passed verbatim to the Nix backend. No TypeScript type checking occurs on the content.
+The expression is passed verbatim to the Nix backend. No TypeScript type
+checking occurs on the content. `.raw()` accepts raw Nix strings only; typed
+option objects use the callable helpers instead:
+
+```ts
+nixos({ networking: { hostName: "wsl" } })
+home({ programs: { git: { enable: true } } })
+darwin({ homebrew: { enable: true } })
+```
 
 ### Level 2: `rawModule()` — existing .nix files
 
@@ -144,7 +152,7 @@ winix check --escape-report
 
 1. **Day 1:** Use `rawModule()` for all existing .nix files. Everything works as before.
 2. **Week 1:** Convert simple modules (packages, sysctl, git) to typed fragments.
-3. **Ongoing:** Complex modules with Nix logic stay as `*.raw()` or `nix.expr()` until types cover them or `winix types generate` adds support.
+3. **Ongoing:** Complex modules with Nix logic stay as `*.raw("...")` or `nix.expr()` until types cover them or `winix types generate` adds support. Typed object fragments use `nixos({...})`, `home({...})`, or `darwin({...})`.
 
 ## Backend-specific escape hatches
 

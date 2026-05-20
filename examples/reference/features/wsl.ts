@@ -1,4 +1,4 @@
-import { feature, nix } from "winix";
+import { feature, home, nix, nixos } from "winix";
 
 interface WslOpts {
   defaultUser?: string;
@@ -8,8 +8,8 @@ interface WslOpts {
  * @description WSL integration with NixOS-WSL module, nix-ld, clipboard, and interop
  * @category platform
  */
-export const wsl = feature("wsl", (opts?: WslOpts) => ({
-  nixos: {
+export const wsl = feature("wsl", (opts?: WslOpts) => [
+  nixos({
     imports: ["nixos-wsl"],
     wsl: {
       enable: true,
@@ -28,18 +28,11 @@ export const wsl = feature("wsl", (opts?: WslOpts) => ({
       },
       interop: { register: true },
     },
-    packages: ["wl-clipboard"],
-    programs: {
-      nixLd: {
-        enable: true,
-        libraries: nix.withPkgs(["icu", "zlib", "openssl"]),
-      },
-    },
-  },
-  homeManager: {
-    home: {
-      packages: [nix.pkg.stable("wslu")],
-      sessionVariables: { BROWSER: "wslview" },
-    },
-  },
-}));
+  }),
+  nixos.packages("wl-clipboard"),
+  nixos.program("nixLd", {
+    libraries: nix.withPkgs(["icu", "zlib", "openssl"]),
+  }),
+  home.packages(nix.pkg.stable("wslu")),
+  home.env({ BROWSER: "wslview" }),
+]);

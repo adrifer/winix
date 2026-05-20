@@ -1,14 +1,14 @@
-import { feature } from "winix";
+import { darwin, feature } from "winix";
 
 /**
  * @description Homebrew package manager for macOS via nix-homebrew
  * @category platform
  */
-export const homebrew = feature("homebrew", () => ({
-  darwin: {
+export const homebrew = feature("homebrew", () =>
+  darwin({
     "nix-homebrew": {
       user: "adrifer",
     },
     homebrew: { enable: true },
-  },
-}));
+  })
+);

@@ -16,6 +16,7 @@ export interface HomeProgramOptions {}
 export interface HomeServiceOptions {}
 
 export interface HomeHelper {
+  (config: HomeOptions): Fragment;
   program<const K extends string>(
     name: K,
     opts?: ProgramOptions<HomeProgramOptions, K>
@@ -31,7 +32,7 @@ export interface HomeHelper {
   packages(...packages: PackageRef[]): Fragment;
   configFile(name: string, opts: XdgFile): Fragment;
   configFiles(files: Record<string, XdgFile>): Fragment;
-  raw(config: string | HomeOptions): Fragment;
+  raw(config: string): Fragment;
   activation(name: string, opts: ActivationOpts): Fragment;
 }
 
@@ -44,52 +45,52 @@ export interface ActivationOpts {
   script: string;
 }
 
-export const home: HomeHelper = {
-  program: <T extends ProgramOpts = ProgramOpts>(
-    name: string,
-    opts: T = {} as T
-  ): Fragment => ({
-    homeManager: { programs: { [name]: { enable: true, ...opts } } },
-  }),
-  service: <T extends ProgramOpts = ProgramOpts>(
-    name: string,
-    opts: T = {} as T
-  ): Fragment => ({
-    homeManager: { services: { [name]: { enable: true, ...opts } } },
-  }),
-  env: (vars: Record<string, string>): Fragment => ({
-    homeManager: { home: { sessionVariables: vars } },
-  }),
-  path: (...args: string[] | [string[]]): Fragment => ({
-    homeManager: { home: { sessionPath: normalizeArgs(args) } },
-  }),
-  packages: (...args: PackageRef[] | [PackageRef[]]): Fragment => ({
-    homeManager: { home: { packages: normalizeArgs(args) } },
-  }),
-  configFile: (name: string, opts: XdgFile): Fragment => ({
-    homeManager: { xdg: { configFile: { [name]: opts } } },
-  }),
-  configFiles: (files: Record<string, XdgFile>): Fragment => ({
-    homeManager: { xdg: { configFile: files } },
-  }),
-  raw: (config: string | Record<string, unknown>): Fragment =>
-    typeof config === "string"
-      ? { homeManager: { __raw: [config] } }
-      : { homeManager: config },
-  activation: (name: string, opts: ActivationOpts): Fragment => {
-    const after = opts.after ?? ["writeBoundary"];
-    const afterList = after.map((s) => JSON.stringify(s)).join(" ");
-    return {
-      homeManager: {
-        home: {
-          activation: {
-            [name]: {
-              __winixNixExpr: true,
-              expr: `lib.hm.dag.entryAfter [ ${afterList} ] ''\n${opts.script}\n''`,
-            } as NixExpr,
+export const home: HomeHelper = Object.assign(
+  (config: HomeOptions): Fragment => ({ homeManager: config }),
+  {
+    program: <T extends ProgramOpts = ProgramOpts>(
+      name: string,
+      opts: T = {} as T
+    ): Fragment => ({
+      homeManager: { programs: { [name]: { enable: true, ...opts } } },
+    }),
+    service: <T extends ProgramOpts = ProgramOpts>(
+      name: string,
+      opts: T = {} as T
+    ): Fragment => ({
+      homeManager: { services: { [name]: { enable: true, ...opts } } },
+    }),
+    env: (vars: Record<string, string>): Fragment => ({
+      homeManager: { home: { sessionVariables: vars } },
+    }),
+    path: (...args: string[] | [string[]]): Fragment => ({
+      homeManager: { home: { sessionPath: normalizeArgs(args) } },
+    }),
+    packages: (...args: PackageRef[] | [PackageRef[]]): Fragment => ({
+      homeManager: { home: { packages: normalizeArgs(args) } },
+    }),
+    configFile: (name: string, opts: XdgFile): Fragment => ({
+      homeManager: { xdg: { configFile: { [name]: opts } } },
+    }),
+    configFiles: (files: Record<string, XdgFile>): Fragment => ({
+      homeManager: { xdg: { configFile: files } },
+    }),
+    raw: (config: string): Fragment => ({ homeManager: { __raw: [config] } }),
+    activation: (name: string, opts: ActivationOpts): Fragment => {
+      const after = opts.after ?? ["writeBoundary"];
+      const afterList = after.map((s) => JSON.stringify(s)).join(" ");
+      return {
+        homeManager: {
+          home: {
+            activation: {
+              [name]: {
+                __winixNixExpr: true,
+                expr: `lib.hm.dag.entryAfter [ ${afterList} ] ''\n${opts.script}\n''`,
+              } as NixExpr,
+            },
           },
         },
-      },
-    };
-  },
-};
+      };
+    },
+  }
+);

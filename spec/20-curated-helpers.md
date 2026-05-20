@@ -16,11 +16,14 @@ anything not covered.
 
 ## Helpers
 
-### `nixos.*` and `darwin.*`
+### `nixos()` / `nixos.*` and `darwin()` / `darwin.*`
 
-Platform-level helpers target NixOS or nix-darwin explicitly.
+Platform-level helpers target NixOS or nix-darwin explicitly. The namespace
+itself is callable for typed option objects; methods cover common patterns, and
+`.raw()` is reserved for raw Nix string literals.
 
 ```ts
+nixos({ networking: { hostName: "wsl" } })
 nixos.program("nix-ld", { libraries: nix.withPkgs(["icu", "zlib"]) })
 nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
 nixos.packages("ripgrep", "fd", "jq")
@@ -29,6 +32,7 @@ nixos.firewall({ allowedTCPPorts: [80, 443] })
 nixos.systemd({ services: { backup: { script: nix.script`echo backup` } } })
 nixos.raw("environment.variables.FOO = \"bar\";")
 
+darwin({ homebrew: { enable: true } })
 darwin.program("zsh")
 darwin.service("some-agent")
 darwin.packages("mas")
@@ -37,6 +41,29 @@ darwin.raw("system.defaults.dock.autohide = true;")
 
 Program and service helpers add `enable: true` by default. Explicit `enable` in
 `opts` wins.
+
+Type contract:
+
+```ts
+interface NixosHelper {
+  (config: NixosOptions): Fragment;
+  raw(config: string): Fragment;
+  program<const K extends string>(name: K, opts?: ProgramOptions<NixosProgramOptions, K>): Fragment;
+  service<const K extends string>(name: K, opts?: ServiceOptions<NixosServiceOptions, K>): Fragment;
+  packages(...packages: PackageRef[]): Fragment;
+  sysctl(settings: SysctlSettings): Fragment;
+  firewall(opts: FirewallOptions): Fragment;
+  systemd(opts: SystemdOptions): Fragment;
+}
+
+interface DarwinHelper {
+  (config: DarwinOptions): Fragment;
+  raw(config: string): Fragment;
+  program<const K extends string>(name: K, opts?: ProgramOptions<DarwinProgramOptions, K>): Fragment;
+  service<const K extends string>(name: K, opts?: ServiceOptions<DarwinServiceOptions, K>): Fragment;
+  packages(...packages: PackageRef[]): Fragment;
+}
+```
 
 ### `account(username: string, opts?: AccountOpts): LazyFragment`
 
@@ -66,11 +93,13 @@ interface AccountOpts {
 }
 ```
 
-### `home.program(name, opts?): Fragment`
+### `home()` / `home.program(name, opts?): Fragment`
 
 Home Manager program configuration with `enable: true` by default.
 
 ```ts
+home({ programs: { git: { enable: true } } })
+
 home.program("git", {
   userName: "Adrian Fernandez Garcia",
   userEmail: "tracker086@outlook.com",
@@ -118,6 +147,27 @@ home.activation("ensureNpmrc", { script: "mkdir -p \"$HOME/.config/npm\"" })
 ```
 
 `nix.gc({ olderThan: "14d" })` remains available for NixOS garbage collection.
+
+Type contract:
+
+```ts
+interface HomeHelper {
+  (config: HomeOptions): Fragment;
+  raw(config: string): Fragment;
+  program<const K extends string>(name: K, opts?: ProgramOptions<HomeProgramOptions, K>): Fragment;
+  service<const K extends string>(name: K, opts?: ServiceOptions<HomeServiceOptions, K>): Fragment;
+  env(vars: Record<string, string>): Fragment;
+  path(...paths: string[]): Fragment;
+  packages(...packages: PackageRef[]): Fragment;
+  configFile(name: string, opts: XdgFile): Fragment;
+  configFiles(files: Record<string, XdgFile>): Fragment;
+  activation(name: string, opts: ActivationOpts): Fragment;
+}
+```
+
+`nixos(config)`, `home(config)`, and `darwin(config)` accept typed option
+objects only. `nixos.raw(expr)`, `home.raw(expr)`, and `darwin.raw(expr)` accept
+raw Nix strings only.
 
 ## Removed Helpers
 
