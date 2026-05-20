@@ -154,6 +154,7 @@ async function fetchNixBuildOptions(flakeRef: string, output: string): Promise<O
   // or just an options.json file directly
   const candidates = [
     join(storePath, "share", "doc", "home-manager", "options.json"),
+    join(storePath, "share", "doc", "darwin", "options.json"),
     join(storePath, "share", "doc", "nix-darwin", "options.json"),
     join(storePath, "options.json"),
     storePath, // might be the file itself
