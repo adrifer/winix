@@ -106,8 +106,8 @@ PowerShell) using the same fragment/helper model.
 ## 📋 Backlog (no priority assigned)
 
 ### Type system
-- [ ] Dynamic type generation for Home Manager (local nix eval)
-- [ ] Dynamic type generation for nix-darwin (local nix eval)
+- [x] Dynamic type generation for Home Manager (local nix eval)
+- [x] Dynamic type generation for nix-darwin (local nix eval)
 
 ### Advanced Nix features
 - [ ] Merge modifiers: `override()`, `prepend()`, `replace()`, `without()`, `force()`
