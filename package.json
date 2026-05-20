@@ -33,10 +33,10 @@
     "lint": "eslint src/",
     "check": "tsc --noEmit",
     "prepack": "npm run build",
-    "generate:types": "tsx scripts/generate-types.ts",
-    "generate:types:nixos": "tsx scripts/generate-types.ts nixos",
-    "generate:types:hm": "tsx scripts/generate-types.ts home-manager",
-    "generate:types:darwin": "tsx scripts/generate-types.ts darwin"
+    "generate:types": "npx tsx scripts/generate-types.ts",
+    "generate:types:nixos": "npx tsx scripts/generate-types.ts nixos",
+    "generate:types:hm": "npx tsx scripts/generate-types.ts home-manager",
+    "generate:types:darwin": "npx tsx scripts/generate-types.ts darwin"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
