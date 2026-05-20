@@ -104,7 +104,7 @@ function emitHelperAugmentations(
     lines.push("  interface NixosProgramOptions {");
     for (const [name, node] of [...programsNode.children.entries()].sort(([a], [b]) => a.localeCompare(b))) {
       const typeBody = emitInlineObject(node, 2);
-      lines.push(`    ${quoteProperty(name)}?: ${typeBody};`);
+      lines.push(`    ${quoteProperty(name)}: ${typeBody};`);
     }
     lines.push("  }");
   }
@@ -113,7 +113,7 @@ function emitHelperAugmentations(
     lines.push("  interface NixosServiceOptions {");
     for (const [name, node] of [...servicesNode.children.entries()].sort(([a], [b]) => a.localeCompare(b))) {
       const typeBody = emitInlineObject(node, 2);
-      lines.push(`    ${quoteProperty(name)}?: ${typeBody};`);
+      lines.push(`    ${quoteProperty(name)}: ${typeBody};`);
     }
     lines.push("  }");
   }
@@ -123,9 +123,11 @@ function emitHelperAugmentations(
 
 /**
  * Emit a TypeNode as an inline object type (for helper map values).
+ * Uses inlined types (no PackageRef/NixExpr references) to avoid
+ * import issues inside declare module blocks.
  */
 function emitInlineObject(node: TypeNode, indent: number): string {
-  if (node.children.size === 0 && node.type) return node.type;
+  if (node.children.size === 0 && node.type) return inlineType(node.type);
   if (node.children.size === 0) return "Record<string, unknown>";
 
   const pad = "  ".repeat(indent);
@@ -138,12 +140,25 @@ function emitInlineObject(node: TypeNode, indent: number): string {
     } else if (child.children.size > 0) {
       entries.push(`${innerPad}${quoteProperty(key)}?: ${emitInlineObject(child, indent + 1)};`);
     } else {
-      entries.push(`${innerPad}${quoteProperty(key)}?: ${child.type ?? "unknown"};`);
+      entries.push(`${innerPad}${quoteProperty(key)}?: ${inlineType(child.type ?? "unknown")};`);
     }
   }
 
   const recordSuffix = node.overflow ? " & Record<string, unknown>" : "";
   return `{\n${entries.join("\n")}\n${pad}}${recordSuffix}`;
+}
+
+/**
+ * Replace type aliases that require imports with their inline equivalents.
+ * PackageRef = string | NixExpr → string (good enough for autocomplete)
+ * NixExpr → string
+ */
+function inlineType(type: string): string {
+  return type
+    .replace(/PackageRef\[\] \| NixExpr/g, "string[]")
+    .replace(/PackageRef\[\]/g, "string[]")
+    .replace(/PackageRef/g, "string")
+    .replace(/NixExpr/g, "string");
 }
 
 function emitRootNode(node: TypeNode, indent: number): string {

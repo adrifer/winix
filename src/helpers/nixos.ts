@@ -20,16 +20,18 @@ export interface NixosServiceOptions {}
 type ProgramOpts = Record<string, unknown>;
 
 export interface NixosHelper {
-  program<K extends keyof NixosProgramOptions>(
+  program<K extends string>(
     name: K,
-    opts?: Omit<NixosProgramOptions[K], "enable">
+    opts?: K extends keyof NixosProgramOptions
+      ? Omit<NixosProgramOptions[K], "enable">
+      : Record<string, unknown>
   ): Fragment;
-  program(name: string, opts?: Record<string, unknown>): Fragment;
-  service<K extends keyof NixosServiceOptions>(
+  service<K extends string>(
     name: K,
-    opts?: Omit<NixosServiceOptions[K], "enable">
+    opts?: K extends keyof NixosServiceOptions
+      ? Omit<NixosServiceOptions[K], "enable">
+      : Record<string, unknown>
   ): Fragment;
-  service(name: string, opts?: Record<string, unknown>): Fragment;
   packages(packages: PackageRef[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
   sysctl(settings: SysctlSettings): Fragment;

@@ -16,16 +16,18 @@ export interface DarwinServiceOptions {}
 type ProgramOpts = Record<string, unknown>;
 
 export interface DarwinHelper {
-  program<K extends keyof DarwinProgramOptions>(
+  program<K extends string>(
     name: K,
-    opts?: Omit<DarwinProgramOptions[K], "enable">
+    opts?: K extends keyof DarwinProgramOptions
+      ? Omit<DarwinProgramOptions[K], "enable">
+      : Record<string, unknown>
   ): Fragment;
-  program(name: string, opts?: Record<string, unknown>): Fragment;
-  service<K extends keyof DarwinServiceOptions>(
+  service<K extends string>(
     name: K,
-    opts?: Omit<DarwinServiceOptions[K], "enable">
+    opts?: K extends keyof DarwinServiceOptions
+      ? Omit<DarwinServiceOptions[K], "enable">
+      : Record<string, unknown>
   ): Fragment;
-  service(name: string, opts?: Record<string, unknown>): Fragment;
   packages(packages: PackageRef[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
   raw(config: string | Record<string, unknown>): Fragment;

@@ -23509,36 +23509,36 @@ declare module "winix" {
   interface SystemdOptions extends NixosGeneratedSystemd {}
   interface UsersOptions extends NixosGeneratedUsers {}
   interface NixosProgramOptions {
-    _1password?: {
+    _1password: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "_1password-gui"?: {
+    "_1password-gui": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       polkitPolicyOwners?: string[];
     };
-    alvr?: {
+    alvr: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "amnezia-vpn"?: {
+    "amnezia-vpn": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "appgate-sdp"?: {
+    "appgate-sdp": {
       enable?: boolean;
     };
-    appimage?: {
+    appimage: {
       binfmt?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "arp-scan"?: {
+    "arp-scan": {
       enable?: boolean;
     };
-    atop?: {
+    atop: {
       atopacctService?: {
         enable?: boolean;
       };
@@ -23554,15 +23554,15 @@ declare module "winix" {
       enable?: boolean;
       netatop?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       setuidWrapper?: {
         enable?: boolean;
       };
     };
-    atuin?: {
+    atuin: {
       daemon?: {
         enable?: boolean;
         logLevel?: "debug" | "error" | "info" | "trace" | "warn";
@@ -23572,31 +23572,31 @@ declare module "winix" {
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
       flags?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       themes?: Record<string, unknown>;
     };
-    ausweisapp?: {
+    ausweisapp: {
       enable?: boolean;
       openFirewall?: boolean;
     };
-    autoenv?: {
+    autoenv: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    autojump?: {
-      enable?: boolean;
-    };
-    bandwhich?: {
+    autojump: {
       enable?: boolean;
     };
-    bash?: {
+    bandwhich: {
+      enable?: boolean;
+    };
+    bash: {
       blesh?: {
         enable?: boolean;
       };
       completion?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       enable?: boolean;
       enableLsColors?: boolean;
@@ -23614,43 +23614,43 @@ declare module "winix" {
       };
       vteIntegration?: boolean;
     };
-    "bash-my-aws"?: {
+    "bash-my-aws": {
       enable?: boolean;
     };
-    bat?: {
+    bat: {
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
-      package?: PackageRef;
+      extraPackages?: string[];
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    bazecor?: {
+    bazecor: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    bcc?: {
+    bcc: {
       enable?: boolean;
     };
-    benchexec?: {
+    benchexec: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       users?: unknown[];
     };
-    browserpass?: {
+    browserpass: {
       enable?: boolean;
     };
-    calls?: {
+    calls: {
       enable?: boolean;
     };
-    "captive-browser"?: {
+    "captive-browser": {
       bindInterface?: boolean;
       browser?: string;
       "dhcp-dns"?: string;
       enable?: boolean;
       interface?: string;
-      package?: PackageRef;
+      package?: string;
       "socks5-addr"?: string;
     };
-    ccache?: {
+    ccache: {
       cacheDir?: string;
       enable?: boolean;
       group?: string;
@@ -23658,16 +23658,16 @@ declare module "winix" {
       packageNames?: string[];
       trace?: boolean;
     };
-    cdemu?: {
+    cdemu: {
       enable?: boolean;
       group?: string;
       gui?: boolean;
       "image-analyzer"?: boolean;
     };
-    "cfs-zen-tweaks"?: {
+    "cfs-zen-tweaks": {
       enable?: boolean;
     };
-    chromium?: {
+    chromium: {
       defaultSearchProviderEnabled?: boolean | null;
       defaultSearchProviderSearchURL?: string | null;
       defaultSearchProviderSuggestURL?: string | null;
@@ -23677,55 +23677,55 @@ declare module "winix" {
       extraOpts?: unknown;
       homepageLocation?: string | null;
       initialPrefs?: unknown;
-      plasmaBrowserIntegrationPackage?: PackageRef;
+      plasmaBrowserIntegrationPackage?: string;
     };
-    chrysalis?: {
+    chrysalis: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "clash-verge"?: {
+    "clash-verge": {
       autoStart?: boolean;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       serviceMode?: boolean;
       tunMode?: boolean;
     };
-    cnping?: {
+    cnping: {
       enable?: boolean;
     };
-    "command-not-found"?: {
+    "command-not-found": {
       dbPath?: string;
       enable?: boolean;
     };
-    coolercontrol?: {
+    coolercontrol: {
       enable?: boolean;
     };
-    corectrl?: {
+    corectrl: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    corefreq?: {
+    corefreq: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "cpu-energy-meter"?: {
+    "cpu-energy-meter": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    criu?: {
+    criu: {
       enable?: boolean;
     };
-    dconf?: {
+    dconf: {
       enable?: boolean;
-      packages?: PackageRef[] | NixExpr;
+      packages?: string[];
       profiles?: Record<string, unknown>;
     };
-    digitalbitbox?: {
+    digitalbitbox: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    direnv?: {
+    direnv: {
       angrr?: {
         autoUse?: boolean;
         enable?: boolean;
@@ -23739,17 +23739,17 @@ declare module "winix" {
       loadInNixShell?: boolean;
       "nix-direnv"?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       silent?: boolean;
     };
-    dmrconfig?: {
+    dmrconfig: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "dms-shell"?: {
+    "dms-shell": {
       enable?: boolean;
       enableAudioWavelength?: boolean;
       enableCalendarEvents?: boolean;
@@ -23757,12 +23757,12 @@ declare module "winix" {
       enableDynamicTheming?: boolean;
       enableSystemMonitoring?: boolean;
       enableVPN?: boolean;
-      package?: PackageRef;
+      package?: string;
       plugins?: {
         "<name>"?: Record<string, unknown>;
       };
       quickshell?: {
-        package?: PackageRef;
+        package?: string;
       };
       systemd?: {
         enable?: boolean;
@@ -23770,81 +23770,81 @@ declare module "winix" {
         target?: string;
       };
     };
-    droidcam?: {
+    droidcam: {
       enable?: boolean;
     };
-    dsearch?: {
+    dsearch: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       systemd?: {
         enable?: boolean;
         target?: string;
       };
     };
-    "dublin-traceroute"?: {
+    "dublin-traceroute": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    dwl?: {
+    dwl: {
       enable?: boolean;
       extraSessionCommands?: string;
-      package?: PackageRef;
+      package?: string;
     };
-    "ente-auth"?: {
+    "ente-auth": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    envision?: {
-      enable?: boolean;
-      openFirewall?: boolean;
-      package?: PackageRef;
-    };
-    evince?: {
-      enable?: boolean;
-      package?: PackageRef;
-    };
-    evolution?: {
-      enable?: boolean;
-      plugins?: PackageRef[] | NixExpr;
-    };
-    "extra-container"?: {
-      enable?: boolean;
-    };
-    "fcast-receiver"?: {
+    envision: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    feedbackd?: {
+    evince: {
       enable?: boolean;
-      package?: PackageRef;
-      "theme-package"?: PackageRef | null;
+      package?: string;
     };
-    firefox?: {
+    evolution: {
+      enable?: boolean;
+      plugins?: string[];
+    };
+    "extra-container": {
+      enable?: boolean;
+    };
+    "fcast-receiver": {
+      enable?: boolean;
+      openFirewall?: boolean;
+      package?: string;
+    };
+    feedbackd: {
+      enable?: boolean;
+      package?: string;
+      "theme-package"?: string | null;
+    };
+    firefox: {
       autoConfig?: string;
       autoConfigFiles?: string[];
       enable?: boolean;
       languagePacks?: ("ach" | "af" | "an" | "ar" | "ast" | "az" | "be" | "bg" | "bn" | "br" | "bs" | "ca" | "ca-valencia" | "cak" | "cs" | "cy" | "da" | "de" | "dsb" | "el" | "en-CA" | "en-GB" | "en-US" | "eo" | "es-AR" | "es-CL" | "es-ES" | "es-MX" | "et" | "eu" | "fa" | "ff" | "fi" | "fr" | "fur" | "fy-NL" | "ga-IE" | "gd" | "gl" | "gn" | "gu-IN" | "he" | "hi-IN" | "hr" | "hsb" | "hu" | "hy-AM" | "ia" | "id" | "is" | "it" | "ja" | "ka" | "kab" | "kk" | "km" | "kn" | "ko" | "lij" | "lt" | "lv" | "mk" | "mr" | "ms" | "my" | "nb-NO" | "ne-NP" | "nl" | "nn-NO" | "oc" | "pa-IN" | "pl" | "pt-BR" | "pt-PT" | "rm" | "ro" | "ru" | "sat" | "sc" | "sco" | "si" | "sk" | "skr" | "sl" | "son" | "sq" | "sr" | "sv-SE" | "szl" | "ta" | "te" | "tg" | "th" | "tl" | "tr" | "trs" | "uk" | "ur" | "uz" | "vi" | "xh" | "zh-CN" | "zh-TW")[];
       nativeMessagingHosts?: {
-        packages?: PackageRef[] | NixExpr;
+        packages?: string[];
       };
-      package?: PackageRef;
+      package?: string;
       policies?: unknown;
       preferences?: Record<string, unknown>;
       preferencesStatus?: "clear" | "default" | "locked" | "user";
       wrapperConfig?: unknown;
     };
-    firejail?: {
+    firejail: {
       enable?: boolean;
       wrappedBinaries?: Record<string, unknown>;
     };
-    fish?: {
+    fish: {
       enable?: boolean;
-      extraCompletionPackages?: PackageRef[] | NixExpr;
+      extraCompletionPackages?: string[];
       generateCompletions?: boolean;
       interactiveShellInit?: string;
       loginShellInit?: string;
-      package?: PackageRef;
+      package?: string;
       promptInit?: string;
       shellAbbrs?: Record<string, string>;
       shellAliases?: Record<string, unknown | null>;
@@ -23856,132 +23856,132 @@ declare module "winix" {
         functions?: Record<string, unknown>;
       };
     };
-    flashprog?: {
+    flashprog: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    flashrom?: {
+    flashrom: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "flexoptix-app"?: {
+    "flexoptix-app": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    foot?: {
+    foot: {
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       theme?: string | null;
       xdg?: {
         serverAutostart?: boolean;
       };
     };
-    fuse?: {
+    fuse: {
       enable?: boolean;
       mountMax?: number;
       userAllowOther?: boolean;
     };
-    fzf?: {
+    fzf: {
       fuzzyCompletion?: boolean;
       keybindings?: boolean;
     };
-    gamemode?: {
+    gamemode: {
       enable?: boolean;
       enableRenice?: boolean;
       settings?: Record<string, unknown>;
     };
-    gamescope?: {
+    gamescope: {
       args?: string[];
       capSysNice?: boolean;
       enable?: boolean;
       env?: Record<string, string>;
-      package?: PackageRef;
+      package?: string;
     };
-    "gdk-pixbuf"?: {
-      modulePackages?: PackageRef[] | NixExpr;
+    "gdk-pixbuf": {
+      modulePackages?: string[];
     };
-    geary?: {
+    geary: {
       enable?: boolean;
     };
-    ghidra?: {
+    ghidra: {
       enable?: boolean;
       gdb?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    git?: {
+    git: {
       attributes?: string;
       config?: unknown;
       enable?: boolean;
       lfs?: {
         enable?: boolean;
         enablePureSSHTransfer?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
-      package?: PackageRef;
+      package?: string;
       prompt?: {
         enable?: boolean;
       };
     };
-    "git-worktree-switcher"?: {
+    "git-worktree-switcher": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "gnome-disks"?: {
-      enable?: boolean;
-    };
-    "gnome-terminal"?: {
+    "gnome-disks": {
       enable?: boolean;
     };
-    gnupg?: {
+    "gnome-terminal": {
+      enable?: boolean;
+    };
+    gnupg: {
       agent?: {
         enable?: boolean;
         enableBrowserSocket?: boolean;
         enableExtraSocket?: boolean;
         enableSSHSupport?: boolean;
-        pinentryPackage?: PackageRef | null;
+        pinentryPackage?: string | null;
         settings?: Record<string, unknown>;
       };
       dirmngr?: {
         enable?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    gpaste?: {
+    gpaste: {
       enable?: boolean;
     };
-    gphoto2?: {
+    gphoto2: {
       enable?: boolean;
     };
-    "gpu-screen-recorder"?: {
+    "gpu-screen-recorder": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    gtklock?: {
+    gtklock: {
       config?: Record<string, unknown>;
       enable?: boolean;
-      modules?: PackageRef[] | NixExpr;
-      package?: PackageRef;
+      modules?: string[];
+      package?: string;
       style?: string | null;
     };
-    haguichi?: {
+    haguichi: {
       enable?: boolean;
     };
-    hamster?: {
+    hamster: {
       enable?: boolean;
     };
-    htop?: {
+    htop: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    hyprland?: {
+    hyprland: {
       enable?: boolean;
-      package?: PackageRef;
-      portalPackage?: PackageRef;
+      package?: string;
+      portalPackage?: string;
       systemd?: {
         setPath?: Record<string, unknown>;
       };
@@ -23990,90 +23990,90 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    hyprlock?: {
+    hyprlock: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    i3lock?: {
+    i3lock: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       u2fSupport?: boolean;
     };
-    iay?: {
+    iay: {
       enable?: boolean;
       minimalPrompt?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    idescriptor?: {
+    idescriptor: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       users?: string[];
     };
-    iftop?: {
+    iftop: {
       enable?: boolean;
     };
-    "iio-hyprland"?: {
+    "iio-hyprland": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    immersed?: {
+    immersed: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    iotop?: {
+    iotop: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    java?: {
+    java: {
       binfmt?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "joycond-cemuhook"?: {
+    "joycond-cemuhook": {
       enable?: boolean;
     };
-    k3b?: {
+    k3b: {
       enable?: boolean;
     };
-    "k40-whisperer"?: {
+    "k40-whisperer": {
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
     };
-    kbdlight?: {
+    kbdlight: {
       enable?: boolean;
     };
-    kclock?: {
+    kclock: {
       enable?: boolean;
     };
-    "kde-pim"?: {
+    "kde-pim": {
       enable?: boolean;
       kmail?: boolean;
       kontact?: boolean;
       merkuro?: boolean;
     };
-    kdeconnect?: {
+    kdeconnect: {
       enable?: boolean;
-      package?: PackageRef | null;
+      package?: string | null;
     };
-    kubeswitch?: {
+    kubeswitch: {
       commandName?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    labwc?: {
+    labwc: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    ladybird?: {
+    ladybird: {
       enable?: boolean;
     };
-    lazygit?: {
+    lazygit: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    less?: {
+    less: {
       clearDefaultCommands?: boolean;
       commands?: Record<string, string>;
       configFile?: string | null;
@@ -24082,85 +24082,85 @@ declare module "winix" {
       lessclose?: string | null;
       lessopen?: string | null;
       lineEditingKeys?: Record<string, string>;
-      package?: PackageRef;
+      package?: string;
     };
-    liboping?: {
+    liboping: {
       enable?: boolean;
     };
-    librepods?: {
+    librepods: {
       enable?: boolean;
     };
-    localsend?: {
+    localsend: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    mangowc?: {
+    mangowc: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    mdevctl?: {
+    mdevctl: {
       enable?: boolean;
     };
-    mepo?: {
+    mepo: {
       enable?: boolean;
       locationBackends?: {
         geoclue?: boolean;
         gpsd?: boolean;
       };
     };
-    mininet?: {
+    mininet: {
       enable?: boolean;
     };
-    minipro?: {
+    minipro: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    miriway?: {
+    miriway: {
       config?: string;
       enable?: boolean;
     };
-    mosh?: {
+    mosh: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       withUtempter?: boolean;
     };
-    "mouse-actions"?: {
+    "mouse-actions": {
       autorun?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    msmtp?: {
+    msmtp: {
       accounts?: Record<string, unknown>;
       defaults?: unknown;
       enable?: boolean;
       extraConfig?: string;
-      package?: PackageRef;
+      package?: string;
       setSendmail?: boolean;
     };
-    mtr?: {
+    mtr: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    nano?: {
+    nano: {
       enable?: boolean;
       nanorc?: string;
-      package?: PackageRef;
+      package?: string;
       syntaxHighlight?: boolean;
     };
-    "nautilus-open-any-terminal"?: {
+    "nautilus-open-any-terminal": {
       enable?: boolean;
       terminal?: string | null;
     };
-    nbd?: {
+    nbd: {
       enable?: boolean;
     };
-    neovim?: {
+    neovim: {
       configure?: unknown;
       defaultEditor?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       runtime?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -24170,14 +24170,14 @@ declare module "winix" {
       withPython3?: boolean;
       withRuby?: boolean;
     };
-    nethoscope?: {
+    nethoscope: {
       enable?: boolean;
     };
-    nexttrace?: {
+    nexttrace: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    nh?: {
+    nh: {
       clean?: {
         dates?: unknown;
         enable?: boolean;
@@ -24185,26 +24185,26 @@ declare module "winix" {
       };
       enable?: boolean;
       flake?: string | null;
-      package?: PackageRef;
+      package?: string;
     };
-    niri?: {
+    niri: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       useNautilus?: boolean;
     };
-    "nix-index"?: {
+    "nix-index": {
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "nix-ld"?: {
+    "nix-ld": {
       enable?: boolean;
-      libraries?: PackageRef[] | NixExpr;
-      package?: PackageRef;
+      libraries?: string[];
+      package?: string;
     };
-    "nix-required-mounts"?: {
+    "nix-required-mounts": {
       allowedPatterns?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -24215,54 +24215,54 @@ declare module "winix" {
         zluda?: Record<string, unknown>;
       };
     };
-    nixbit?: {
+    nixbit: {
       enable?: boolean;
       forceAutostart?: boolean;
-      package?: PackageRef;
+      package?: string;
       repository?: string;
     };
-    "nm-applet"?: {
+    "nm-applet": {
       enable?: boolean;
       indicator?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    nncp?: {
+    nncp: {
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       secrets?: string[];
       settings?: unknown;
     };
-    noisetorch?: {
+    noisetorch: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    npm?: {
+    npm: {
       enable?: boolean;
       npmrc?: string;
-      package?: PackageRef;
+      package?: string;
     };
-    "ns-usbloader"?: {
+    "ns-usbloader": {
       enable?: boolean;
     };
-    nxdumpclient?: {
+    nxdumpclient: {
       enable?: boolean;
     };
-    "obs-studio"?: {
+    "obs-studio": {
       enable?: boolean;
       enableVirtualCamera?: boolean;
-      package?: PackageRef | null;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string | null;
+      plugins?: string[];
     };
-    oddjobd?: {
+    oddjobd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    opengamepadui?: {
+    opengamepadui: {
       args?: string[];
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
-      fontPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
+      fontPackages?: string[];
       gamescopeSession?: {
         args?: string[];
         enable?: boolean;
@@ -24271,12 +24271,12 @@ declare module "winix" {
       inputplumber?: {
         enable?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       powerstation?: {
         enable?: boolean;
       };
     };
-    openvpn3?: {
+    openvpn3: {
       enable?: boolean;
       "log-service"?: {
         settings?: Record<string, unknown>;
@@ -24284,38 +24284,38 @@ declare module "winix" {
       netcfg?: {
         settings?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    "partition-manager"?: {
+    "partition-manager": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "pay-respects"?: {
+    "pay-respects": {
       aiIntegration?: Record<string, unknown>;
       alias?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       runtimeRules?: unknown[];
     };
-    plotinus?: {
+    plotinus: {
       enable?: boolean;
     };
-    pmount?: {
+    pmount: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    projecteur?: {
+    projecteur: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    proxychains?: {
+    proxychains: {
       chain?: {
         length?: number | null;
         type?: "dynamic" | "random" | "strict";
       };
       enable?: boolean;
       localnet?: string;
-      package?: PackageRef;
+      package?: string;
       proxies?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -24325,124 +24325,124 @@ declare module "winix" {
       tcpConnectTimeOut?: number;
       tcpReadTimeOut?: number;
     };
-    pulseview?: {
+    pulseview: {
       enable?: boolean;
     };
-    qdmr?: {
+    qdmr: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    qgroundcontrol?: {
+    qgroundcontrol: {
       blacklistModemManagerFromTTYUSB?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "quark-goldleaf"?: {
+    "quark-goldleaf": {
       enable?: boolean;
     };
-    regreet?: {
+    regreet: {
       cageArgs?: string[];
       cursorTheme?: {
         name?: string;
-        package?: PackageRef;
+        package?: string;
       };
       enable?: boolean;
       extraCss?: unknown;
       font?: {
         name?: string;
-        package?: PackageRef;
+        package?: string;
         size?: unknown;
       };
       iconTheme?: {
         name?: string;
-        package?: PackageRef;
+        package?: string;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       theme?: {
         name?: string;
-        package?: PackageRef;
+        package?: string;
       };
     };
-    "river-classic"?: {
+    "river-classic": {
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
-      package?: PackageRef | null;
+      extraPackages?: string[];
+      package?: string | null;
       xwayland?: {
         enable?: boolean;
       };
     };
-    "rog-control-center"?: {
+    "rog-control-center": {
       autoStart?: boolean;
       enable?: boolean;
     };
-    rush?: {
+    rush: {
       enable?: boolean;
       global?: string;
-      package?: PackageRef;
+      package?: string;
       rules?: Record<string, string>;
       shell?: unknown;
       wrap?: boolean;
     };
-    "rust-motd"?: {
+    "rust-motd": {
       enable?: boolean;
       enableMotdInSSHD?: boolean;
       order?: string[];
       refreshInterval?: string;
       settings?: Record<string, unknown>;
     };
-    "ryzen-monitor-ng"?: {
+    "ryzen-monitor-ng": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    schroot?: {
+    schroot: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       profiles?: {
         "<name>"?: Record<string, unknown>;
       };
       settings?: Record<string, unknown>;
     };
-    screen?: {
+    screen: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       screenrc?: string;
     };
-    seahorse?: {
+    seahorse: {
       enable?: boolean;
     };
-    sedutil?: {
+    sedutil: {
       enable?: boolean;
     };
-    sharing?: {
+    sharing: {
       enable?: boolean;
     };
-    singularity?: {
+    singularity: {
       enable?: boolean;
       enableExternalLocalStateDir?: boolean;
       enableFakeroot?: boolean;
       enableSuid?: boolean;
-      package?: PackageRef;
-      packageOverriden?: PackageRef | null;
+      package?: string;
+      packageOverriden?: string | null;
       systemBinPaths?: string[];
     };
-    skim?: {
+    skim: {
       enable?: boolean;
       keybindings?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    slock?: {
+    slock: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    sniffnet?: {
+    sniffnet: {
       enable?: boolean;
     };
-    soundmodem?: {
+    soundmodem: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    ssh?: {
+    ssh: {
       agentPKCS11Whitelist?: string | null;
       agentTimeout?: string | null;
       askPassword?: string;
@@ -24457,7 +24457,7 @@ declare module "winix" {
       };
       knownHostsFiles?: string[];
       macs?: string[] | null;
-      package?: PackageRef;
+      package?: string;
       pubkeyAcceptedKeyTypes?: string[];
       setXAuthLocation?: boolean;
       startAgent?: boolean;
@@ -24465,10 +24465,10 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    starship?: {
+    starship: {
       enable?: boolean;
       interactiveOnly?: boolean;
-      package?: PackageRef;
+      package?: string;
       presets?: string[];
       settings?: unknown;
       transientPrompt?: {
@@ -24477,7 +24477,7 @@ declare module "winix" {
         right?: unknown | null;
       };
     };
-    steam?: {
+    steam: {
       dedicatedServer?: {
         openFirewall?: boolean;
       };
@@ -24485,9 +24485,9 @@ declare module "winix" {
       extest?: {
         enable?: boolean;
       };
-      extraCompatPackages?: PackageRef[] | NixExpr;
-      extraPackages?: PackageRef[] | NixExpr;
-      fontPackages?: PackageRef[] | NixExpr;
+      extraCompatPackages?: string[];
+      extraPackages?: string[];
+      fontPackages?: string[];
       gamescopeSession?: {
         args?: string[];
         enable?: boolean;
@@ -24497,30 +24497,30 @@ declare module "winix" {
       localNetworkGameTransfers?: {
         openFirewall?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       protontricks?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       remotePlay?: {
         openFirewall?: boolean;
       };
     };
-    streamcontroller?: {
+    streamcontroller: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "streamdeck-ui"?: {
+    "streamdeck-ui": {
       autoStart?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    sway?: {
+    sway: {
       enable?: boolean;
       extraOptions?: string[];
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       extraSessionCommands?: string;
-      package?: PackageRef | null;
+      package?: string | null;
       wrapperFeatures?: {
         base?: boolean;
         gtk?: boolean;
@@ -24529,45 +24529,45 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    sysdig?: {
+    sysdig: {
       enable?: boolean;
     };
-    "system-config-printer"?: {
+    "system-config-printer": {
       enable?: boolean;
     };
-    systemtap?: {
+    systemtap: {
       enable?: boolean;
     };
-    tcpdump?: {
+    tcpdump: {
       enable?: boolean;
     };
-    television?: {
+    television: {
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableFishIntegration?: boolean;
       enableZshIntegration?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    throne?: {
+    throne: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       tunMode?: {
         enable?: boolean;
         setuid?: boolean;
       };
     };
-    thunar?: {
+    thunar: {
       enable?: boolean;
-      plugins?: PackageRef[] | NixExpr;
+      plugins?: string[];
     };
-    thunderbird?: {
+    thunderbird: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       policies?: unknown;
       preferences?: Record<string, unknown>;
       preferencesStatus?: "clear" | "default" | "locked" | "user";
     };
-    tmux?: {
+    tmux: {
       aggressiveResize?: boolean;
       baseIndex?: number;
       clock24?: boolean;
@@ -24579,8 +24579,8 @@ declare module "winix" {
       historyLimit?: number;
       keyMode?: "emacs" | "vi";
       newSession?: boolean;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       resizeAmount?: number;
       reverseSplit?: boolean;
       secureSocket?: boolean;
@@ -24588,169 +24588,169 @@ declare module "winix" {
       terminal?: string;
       withUtempter?: boolean;
     };
-    traceroute?: {
+    traceroute: {
       enable?: boolean;
     };
-    trippy?: {
+    trippy: {
       enable?: boolean;
     };
-    tsmClient?: {
+    tsmClient: {
       defaultServername?: unknown | null;
       dsmSysText?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       servers?: {
         "<name>"?: Record<string, unknown>;
       };
-      wrappedPackage?: PackageRef;
+      wrappedPackage?: string;
     };
-    turbovnc?: {
+    turbovnc: {
       ensureHeadlessSoftwareOpenGL?: boolean;
     };
-    tuxclocker?: {
+    tuxclocker: {
       enable?: boolean;
       enabledNVIDIADevices?: number[];
       useUnfree?: boolean;
     };
-    udevil?: {
+    udevil: {
       enable?: boolean;
     };
-    usbtop?: {
+    usbtop: {
       enable?: boolean;
     };
-    uwsm?: {
+    uwsm: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       waylandCompositors?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    vim?: {
+    vim: {
       defaultEditor?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "virt-manager"?: {
+    "virt-manager": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    vivid?: {
+    vivid: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       theme?: string;
     };
-    vscode?: {
+    vscode: {
       defaultEditor?: boolean;
       enable?: boolean;
-      extensions?: PackageRef[] | NixExpr;
-      package?: PackageRef;
+      extensions?: string[];
+      package?: string;
     };
-    wavemon?: {
+    wavemon: {
       enable?: boolean;
     };
-    waybar?: {
+    waybar: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       systemd?: {
         target?: string;
       };
     };
-    wayfire?: {
+    wayfire: {
       enable?: boolean;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       xwayland?: {
         enable?: boolean;
       };
     };
-    wayland?: {
+    wayland: {
       "miracle-wm"?: {
         enable?: boolean;
       };
     };
-    wayvnc?: {
+    wayvnc: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    weylus?: {
+    weylus: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       users?: string[];
     };
-    whois?: {
+    whois: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         "*"?: Record<string, unknown>;
       };
     };
-    winbox?: {
+    winbox: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    wireshark?: {
+    wireshark: {
       dumpcap?: {
         enable?: boolean;
       };
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       usbmon?: {
         enable?: boolean;
       };
     };
-    wshowkeys?: {
+    wshowkeys: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    xastir?: {
-      enable?: boolean;
-    };
-    xfconf?: {
+    xastir: {
       enable?: boolean;
     };
-    xfs_quota?: {
+    xfconf: {
+      enable?: boolean;
+    };
+    xfs_quota: {
       projects?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    xonsh?: {
+    xonsh: {
       bashCompletion?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       config?: string;
       enable?: boolean;
       extraPackages?: unknown;
-      package?: PackageRef;
+      package?: string;
     };
-    xppen?: {
+    xppen: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    xscreensaver?: {
+    xscreensaver: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       sonar?: {
         enable?: boolean;
       };
     };
-    "xss-lock"?: {
+    "xss-lock": {
       enable?: boolean;
       extraOptions?: string[];
       lockerCommand?: unknown;
     };
-    xwayland?: {
+    xwayland: {
       defaultFontPath?: string;
       enable?: boolean;
       package?: string;
     };
-    yazi?: {
+    yazi: {
       enable?: boolean;
       flavors?: Record<string, unknown>;
       initLua?: string | null;
-      package?: PackageRef;
+      package?: string;
       plugins?: Record<string, unknown>;
       settings?: {
         keymap?: unknown;
@@ -24759,37 +24759,37 @@ declare module "winix" {
         yazi?: unknown;
       };
     };
-    ydotool?: {
+    ydotool: {
       enable?: boolean;
       group?: string;
     };
-    "yubikey-manager"?: {
+    "yubikey-manager": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "yubikey-touch-detector"?: {
+    "yubikey-touch-detector": {
       enable?: boolean;
       libnotify?: boolean;
       unixSocket?: boolean;
       verbose?: boolean;
     };
-    zmap?: {
+    zmap: {
       enable?: boolean;
     };
-    "zoom-us"?: {
+    "zoom-us": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    zoxide?: {
+    zoxide: {
       enable?: boolean;
       enableBashIntegration?: boolean;
       enableFishIntegration?: boolean;
       enableXonshIntegration?: boolean;
       enableZshIntegration?: boolean;
       flags?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    zsh?: {
+    zsh: {
       autosuggestions?: {
         async?: boolean;
         enable?: boolean;
@@ -24809,9 +24809,9 @@ declare module "winix" {
       ohMyZsh?: {
         cacheDir?: string;
         custom?: string | null;
-        customPkgs?: PackageRef[] | NixExpr;
+        customPkgs?: string[];
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
         plugins?: string[];
         preLoaded?: string;
         theme?: string;
@@ -24829,12 +24829,12 @@ declare module "winix" {
       vteIntegration?: boolean;
       "zsh-autoenv"?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
     };
   }
   interface NixosServiceOptions {
-    _3proxy?: {
+    _3proxy: {
       confFile?: string;
       denyPrivate?: boolean;
       enable?: boolean;
@@ -24851,15 +24851,15 @@ declare module "winix" {
       };
       usersFile?: string | null;
     };
-    a2boot?: {
+    a2boot: {
       enable?: boolean;
     };
-    "accounts-daemon"?: {
+    "accounts-daemon": {
       enable?: boolean;
     };
-    "acme-dns"?: {
+    "acme-dns": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         api?: Record<string, unknown>;
         database?: Record<string, unknown>;
@@ -24867,7 +24867,7 @@ declare module "winix" {
         logconfig?: Record<string, unknown>;
       };
     };
-    acpid?: {
+    acpid: {
       acEventCommands?: string;
       enable?: boolean;
       handlers?: {
@@ -24877,7 +24877,7 @@ declare module "winix" {
       logEvents?: boolean;
       powerEventCommands?: string;
     };
-    activemq?: {
+    activemq: {
       baseDir?: string;
       configurationDir?: string;
       configurationURI?: string;
@@ -24885,18 +24885,18 @@ declare module "winix" {
       extraJavaOptions?: unknown;
       javaProperties?: unknown;
     };
-    actkbd?: {
+    actkbd: {
       bindings?: {
         "*"?: Record<string, unknown>;
       };
       enable?: boolean;
       extraConfig?: string;
     };
-    actual?: {
+    actual: {
       enable?: boolean;
       group?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         dataDir?: string;
         hostname?: string;
@@ -24906,30 +24906,30 @@ declare module "winix" {
       };
       user?: string | null;
     };
-    adguardhome?: {
+    adguardhome: {
       allowDHCP?: boolean;
       enable?: boolean;
       extraArgs?: string[];
       host?: string;
       mutableSettings?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: {
         schema_version?: number;
       };
     };
-    aerospike?: {
+    aerospike: {
       enable?: boolean;
       extraConfig?: string;
       networkConfig?: string;
-      package?: PackageRef;
+      package?: string;
       workDir?: string;
     };
-    aesmd?: {
+    aesmd: {
       enable?: boolean;
       environment?: Record<string, string>;
-      package?: PackageRef;
+      package?: string;
       quoteProviderLibrary?: string | null;
       settings?: {
         defaultQuotingType?: "ecdsa_256" | "epid_linkable" | "epid_unlinkable" | null;
@@ -24938,7 +24938,7 @@ declare module "winix" {
         whitelistUrl?: string | null;
       };
     };
-    agate?: {
+    agate: {
       addresses?: string[];
       certificatesDir?: string;
       contentDir?: string;
@@ -24947,9 +24947,9 @@ declare module "winix" {
       hostnames?: string[];
       language?: string | null;
       onlyTls_1_3?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    agorakit?: {
+    agorakit: {
       appKeyFile?: string;
       appURL?: string;
       config?: Record<string, unknown>;
@@ -25007,15 +25007,15 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      phpPackage?: PackageRef;
+      phpPackage?: string;
       poolConfig?: Record<string, unknown>;
       user?: string;
     };
-    airsonic?: {
+    airsonic: {
       contextPath?: string;
       enable?: boolean;
       home?: string;
-      jre?: PackageRef;
+      jre?: string;
       jvmOptions?: string[];
       listenAddress?: string;
       maxMemory?: number;
@@ -25025,7 +25025,7 @@ declare module "winix" {
       virtualHost?: string | null;
       war?: string;
     };
-    akkoma?: {
+    akkoma: {
       config?: {
         ":joken"?: Record<string, unknown>;
         ":logger"?: Record<string, unknown>;
@@ -25041,7 +25041,7 @@ declare module "winix" {
         portMin?: unknown;
       };
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       extraStatic?: Record<string, unknown> | null;
       frontends?: {
         "<name>"?: Record<string, unknown>;
@@ -25085,10 +25085,10 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       user?: unknown;
     };
-    alerta?: {
+    alerta: {
       authenticationRequired?: boolean;
       bind?: string;
       corsOrigins?: string[];
@@ -25100,19 +25100,19 @@ declare module "winix" {
       port?: unknown;
       signupEnabled?: boolean;
     };
-    "alice-lg"?: {
+    "alice-lg": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    alloy?: {
+    alloy: {
       configPath?: string;
       enable?: boolean;
       environmentFile?: string | null;
       extraFlags?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    alps?: {
+    alps: {
       bindIP?: string;
       enable?: boolean;
       imaps?: {
@@ -25126,22 +25126,22 @@ declare module "winix" {
       };
       theme?: "alps" | "sourcehut";
     };
-    "amazon-cloudwatch-agent"?: {
+    "amazon-cloudwatch-agent": {
       commonConfiguration?: unknown;
       commonConfigurationFile?: string;
       configuration?: unknown;
       configurationFile?: string;
       enable?: boolean;
       mode?: string;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    "amazon-ssm-agent"?: {
+    "amazon-ssm-agent": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    amule?: {
-      amuleWebPackage?: PackageRef;
+    amule: {
+      amuleWebPackage?: string;
       dataDir?: string;
       enable?: boolean;
       ExternalConnectPasswordFile?: string | null;
@@ -25150,7 +25150,7 @@ declare module "winix" {
       openExternalConnectPort?: boolean;
       openPeerPorts?: boolean;
       openWebServerPort?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         eMule?: Record<string, unknown>;
         ExternalConnect?: Record<string, unknown>;
@@ -25159,22 +25159,22 @@ declare module "winix" {
       user?: string;
       WebServerPasswordFile?: string | null;
     };
-    ananicy?: {
+    ananicy: {
       enable?: boolean;
       extraCgroups?: unknown[];
       extraRules?: unknown[];
       extraTypes?: unknown[];
-      package?: PackageRef;
-      rulesProvider?: PackageRef;
+      package?: string;
+      rulesProvider?: string;
       settings?: Record<string, unknown>;
     };
-    angrr?: {
+    angrr: {
       configFile?: string | null;
       enable?: boolean;
       enableNixGcIntegration?: boolean;
       extraArgs?: string[];
       logLevel?: "debug" | "error" | "info" | "off" | "trace" | "warn";
-      package?: PackageRef;
+      package?: string;
       settings?: {
         "owned-only"?: "auto" | "false" | "true";
         "profile-policies"?: Record<string, unknown>;
@@ -25186,18 +25186,18 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    "anki-sync-server"?: {
+    "anki-sync-server": {
       address?: string;
       baseDirectory?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       users?: {
         "*"?: Record<string, unknown>;
       };
     };
-    anubis?: {
+    anubis: {
       defaultOptions?: {
         enable?: boolean;
         extraFlags?: string[];
@@ -25209,9 +25209,9 @@ declare module "winix" {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    "anuko-time-tracker"?: {
+    "anuko-time-tracker": {
       database?: {
         createLocally?: boolean;
         host?: string;
@@ -25253,7 +25253,7 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       settings?: {
         defaultCurrency?: string;
@@ -25269,7 +25269,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    "apache-kafka"?: {
+    "apache-kafka": {
       clusterId?: string | null;
       configFiles?: {
         log4jProperties?: string;
@@ -25278,28 +25278,28 @@ declare module "winix" {
       enable?: boolean;
       formatLogDirs?: boolean;
       formatLogDirsIgnoreFormatted?: boolean;
-      jre?: PackageRef;
+      jre?: string;
       jvmOptions?: string[];
       log4jProperties?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         "broker.id"?: number | null;
         listeners?: string[];
         "log.dirs"?: string[];
       };
     };
-    apcupsd?: {
+    apcupsd: {
       configText?: string;
       enable?: boolean;
       hooks?: Record<string, string>;
     };
-    arbtt?: {
+    arbtt: {
       enable?: boolean;
       logFile?: string;
-      package?: PackageRef;
+      package?: string;
       sampleRate?: number;
     };
-    archisteamfarm?: {
+    archisteamfarm: {
       bots?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -25307,14 +25307,14 @@ declare module "winix" {
       enable?: boolean;
       ipcPasswordFile?: string | null;
       ipcSettings?: unknown;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       "web-ui"?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
     };
-    aria2?: {
+    aria2: {
       downloadDirPermission?: string;
       enable?: boolean;
       openPorts?: boolean;
@@ -25329,12 +25329,12 @@ declare module "winix" {
         "save-session"?: unknown;
       };
     };
-    armagetronad?: {
+    armagetronad: {
       servers?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    arsenik?: {
+    arsenik: {
       anglemod?: boolean;
       enable?: boolean;
       hold_timeout?: number;
@@ -25345,18 +25345,18 @@ declare module "winix" {
       lt?: boolean;
       mac?: boolean;
       num?: boolean;
-      package?: PackageRef;
+      package?: string;
       run?: string;
       tap_timeout?: number;
       vim?: boolean;
       wide?: boolean;
     };
-    artalk?: {
+    artalk: {
       allowModify?: boolean;
       configFile?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         host?: string;
         port?: unknown;
@@ -25364,15 +25364,15 @@ declare module "winix" {
       user?: string;
       workdir?: string;
     };
-    asterisk?: {
+    asterisk: {
       confFiles?: Record<string, string>;
       enable?: boolean;
       extraArguments?: string[];
       extraConfig?: string;
-      package?: PackageRef;
+      package?: string;
       useTheseDefaultConfFiles?: string[];
     };
-    asusd?: {
+    asusd: {
       animeConfig?: {
         source?: string | null;
         text?: string | null;
@@ -25389,7 +25389,7 @@ declare module "winix" {
         source?: string | null;
         text?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       profileConfig?: {
         source?: string | null;
         text?: string | null;
@@ -25399,23 +25399,23 @@ declare module "winix" {
         text?: string | null;
       };
     };
-    atalkd?: {
+    atalkd: {
       configFile?: string | null;
       enable?: boolean;
       interfaces?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    atd?: {
+    atd: {
       allowEveryone?: boolean;
       enable?: boolean;
     };
-    atftpd?: {
+    atftpd: {
       enable?: boolean;
       extraOptions?: string[];
       root?: string;
     };
-    athens?: {
+    athens: {
       basicAuthPass?: string | null;
       basicAuthUser?: string | null;
       cloudRuntime?: "GCP" | "none";
@@ -25428,7 +25428,7 @@ declare module "winix" {
       forceSSL?: boolean;
       githubToken?: string | null;
       globalEndpoint?: string;
-      goBinary?: PackageRef;
+      goBinary?: string;
       goBinaryEnvVars?: unknown;
       goEnv?: "development" | "production";
       goGetDir?: string | null;
@@ -25443,7 +25443,7 @@ declare module "winix" {
       netrcPath?: string | null;
       networkMode?: "fallback" | "offline" | "strict";
       noSumPatterns?: string[];
-      package?: PackageRef;
+      package?: string;
       pathPrefix?: string | null;
       port?: unknown;
       pprofPort?: unknown;
@@ -25476,16 +25476,16 @@ declare module "winix" {
       unixSocket?: string | null;
       validatorHook?: string | null;
     };
-    atticd?: {
+    atticd: {
       enable?: boolean;
       environmentFile?: string | null;
       group?: string;
       mode?: "api-server" | "garbage-collector" | "monolithic";
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       user?: string;
     };
-    atuin?: {
+    atuin: {
       database?: {
         createLocally?: boolean;
         uri?: string | null;
@@ -25496,40 +25496,40 @@ declare module "winix" {
       maxHistoryLength?: number;
       openFirewall?: boolean;
       openRegistration?: boolean;
-      package?: PackageRef;
+      package?: string;
       path?: string;
       port?: unknown;
     };
-    audiobookshelf?: {
+    audiobookshelf: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
       host?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    authelia?: {
+    authelia: {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    "auto-cpufreq"?: {
+    "auto-cpufreq": {
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
-    "auto-epp"?: {
+    "auto-epp": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         Settings?: Record<string, unknown>;
       };
     };
-    autobrr?: {
+    autobrr: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       secretFile?: string;
       settings?: {
         checkForUpdates?: boolean;
@@ -25537,29 +25537,29 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    autofs?: {
+    autofs: {
       autoMaster?: string;
       debug?: boolean;
       enable?: boolean;
       timeout?: number;
     };
-    "automatic-timezoned"?: {
+    "automatic-timezoned": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    automx2?: {
+    automx2: {
       domain?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: unknown;
     };
-    automysqlbackup?: {
+    automysqlbackup: {
       calendar?: string;
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
-    autorandr?: {
+    autorandr: {
       defaultTarget?: string;
       enable?: boolean;
       hooks?: {
@@ -25573,22 +25573,22 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    autossh?: {
+    autossh: {
       sessions?: {
         "*"?: Record<string, unknown>;
       };
     };
-    "autossh-ng"?: {
+    "autossh-ng": {
       sessions?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    autosuspend?: {
+    autosuspend: {
       checks?: {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         suspend_cmd?: string;
         wakeup_cmd?: string;
@@ -25597,12 +25597,12 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    autotierfs?: {
+    autotierfs: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    avahi?: {
+    avahi: {
       allowInterfaces?: string[] | null;
       allowPointToPoint?: boolean;
       browseDomains?: string[];
@@ -25619,7 +25619,7 @@ declare module "winix" {
       nssmdns4?: boolean;
       nssmdns6?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       publish?: {
         addresses?: boolean;
         domain?: boolean;
@@ -25631,7 +25631,7 @@ declare module "winix" {
       reflector?: boolean;
       wideArea?: boolean;
     };
-    awstats?: {
+    awstats: {
       configs?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -25639,27 +25639,27 @@ declare module "winix" {
       enable?: boolean;
       updateAt?: string | null;
     };
-    ax25?: {
+    ax25: {
       axlisten?: {
         config?: string;
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       axports?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    "ayatana-indicators"?: {
+    "ayatana-indicators": {
       enable?: boolean;
-      packages?: PackageRef[] | NixExpr;
+      packages?: string[];
     };
-    babeld?: {
+    babeld: {
       enable?: boolean;
       extraConfig?: string;
       interfaceDefaults?: Record<string, unknown> | null;
       interfaces?: Record<string, Record<string, unknown>>;
     };
-    "bacula-dir"?: {
+    "bacula-dir": {
       enable?: boolean;
       extraConfig?: string;
       extraDirectorConfig?: string;
@@ -25677,7 +25677,7 @@ declare module "winix" {
         verifyPeer?: boolean | null;
       };
     };
-    "bacula-fd"?: {
+    "bacula-fd": {
       director?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -25696,7 +25696,7 @@ declare module "winix" {
         verifyPeer?: boolean | null;
       };
     };
-    "bacula-sd"?: {
+    "bacula-sd": {
       autochanger?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -25721,35 +25721,35 @@ declare module "winix" {
         verifyPeer?: boolean | null;
       };
     };
-    baikal?: {
+    baikal: {
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
-      phpPackage?: PackageRef;
+      package?: string;
+      phpPackage?: string;
       pool?: string;
       user?: string;
       virtualHost?: string | null;
     };
-    bamf?: {
+    bamf: {
       enable?: boolean;
     };
-    bazarr?: {
+    bazarr: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
       listenPort?: unknown;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    bcachefs?: {
+    bcachefs: {
       autoScrub?: {
         enable?: boolean;
         fileSystems?: string[];
         interval?: string;
       };
     };
-    bcg?: {
+    bcg: {
       automaticRemoveKitFromNames?: boolean;
       automaticRenameGenericNodes?: boolean;
       automaticRenameKitNodes?: boolean;
@@ -25768,13 +25768,13 @@ declare module "winix" {
         username?: string | null;
       };
       name?: string | null;
-      package?: PackageRef;
+      package?: string;
       qosNodeMessages?: number;
       rename?: Record<string, string>;
       retainNodeMessages?: boolean;
       verbose?: "CRITICAL" | "DEBUG" | "ERROR" | "INFO" | "WARNING";
     };
-    beanstalkd?: {
+    beanstalkd: {
       enable?: boolean;
       listen?: {
         address?: string;
@@ -25782,20 +25782,20 @@ declare module "winix" {
       };
       openFirewall?: boolean;
     };
-    bee?: {
+    bee: {
       daemonNiceLevel?: number;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       user?: string;
     };
-    beesd?: {
+    beesd: {
       filesystems?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    below?: {
+    below: {
       cgroupFilterOut?: string | null;
       collect?: {
         diskStats?: boolean;
@@ -25815,7 +25815,7 @@ declare module "winix" {
         time?: number | null;
       };
     };
-    bentopdf?: {
+    bentopdf: {
       caddy?: {
         enable?: boolean;
         virtualHost?: Record<string, unknown>;
@@ -25826,22 +25826,22 @@ declare module "winix" {
         enable?: boolean;
         virtualHost?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    bepasty?: {
+    bepasty: {
       enable?: boolean;
       servers?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    beszel?: {
+    beszel: {
       agent?: {
         enable?: boolean;
         environment?: Record<string, unknown>;
         environmentFile?: string | null;
-        extraPath?: PackageRef[] | NixExpr;
+        extraPath?: string[];
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         smartmon?: Record<string, unknown>;
       };
       hub?: {
@@ -25850,15 +25850,15 @@ declare module "winix" {
         environment?: Record<string, string>;
         environmentFile?: string | null;
         host?: string;
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
       };
     };
-    biboumi?: {
+    biboumi: {
       credentialsFile?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         admin?: string[];
         ca_file?: string;
@@ -25875,7 +25875,7 @@ declare module "winix" {
         xmpp_server_ip?: string;
       };
     };
-    bind?: {
+    bind: {
       blockedNetworks?: string[];
       cacheNetworks?: string[];
       checkConfig?: boolean;
@@ -25892,20 +25892,20 @@ declare module "winix" {
       listenOnIpv6?: string[];
       listenOnIpv6Port?: unknown;
       listenOnPort?: unknown;
-      package?: PackageRef;
+      package?: string;
       zones?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    bird?: {
+    bird: {
       autoReload?: boolean;
       checkConfig?: boolean;
       config?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       preCheckConfig?: string;
     };
-    "bird-lg"?: {
+    "bird-lg": {
       frontend?: {
         bgpMapInfo?: string[];
         dnsInterface?: string;
@@ -25924,7 +25924,7 @@ declare module "winix" {
         whois?: string;
       };
       group?: string;
-      package?: PackageRef;
+      package?: string;
       proxy?: {
         allowedIPs?: string[];
         birdSocket?: string;
@@ -25935,19 +25935,19 @@ declare module "winix" {
       };
       user?: string;
     };
-    birdwatcher?: {
+    birdwatcher: {
       enable?: boolean;
       flags?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: string;
     };
-    "bitbox-bridge"?: {
+    "bitbox-bridge": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       runOnMount?: boolean;
     };
-    bitcoind?: {
+    bitcoind: {
       "<name>"?: {
         configFile?: string | null;
         dataDir?: string;
@@ -25956,7 +25956,7 @@ declare module "winix" {
         extraCmdlineOptions?: string[];
         extraConfig?: string;
         group?: string;
-        package?: PackageRef;
+        package?: string;
         pidFile?: string;
         port?: unknown | null;
         prune?: unknown | null;
@@ -25965,7 +25965,7 @@ declare module "winix" {
         user?: string;
       };
     };
-    bitlbee?: {
+    bitlbee: {
       authBackend?: "pam" | "storage";
       authMode?: "Closed" | "Open" | "Registered";
       configDir?: string;
@@ -25974,16 +25974,16 @@ declare module "winix" {
       extraSettings?: string;
       hostName?: string;
       interface?: string;
-      libpurple_plugins?: PackageRef[] | NixExpr;
-      plugins?: PackageRef[] | NixExpr;
+      libpurple_plugins?: string[];
+      plugins?: string[];
       portNumber?: unknown;
       protocols?: string;
     };
-    bitmagnet?: {
+    bitmagnet: {
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         dht_server?: Record<string, unknown>;
         http_server?: Record<string, unknown>;
@@ -25992,7 +25992,7 @@ declare module "winix" {
       useLocalPostgresDB?: boolean;
       user?: string;
     };
-    "bitwarden-directory-connector-cli"?: {
+    "bitwarden-directory-connector-cli": {
       domain?: string;
       enable?: boolean;
       interval?: string;
@@ -26006,7 +26006,7 @@ declare module "winix" {
         startTls?: boolean;
         username?: string;
       };
-      package?: PackageRef;
+      package?: string;
       secrets?: {
         bitwarden?: Record<string, unknown>;
         ldap?: string;
@@ -26033,20 +26033,20 @@ declare module "winix" {
       };
       user?: string;
     };
-    "blackfire-agent"?: {
+    "blackfire-agent": {
       enable?: boolean;
       settings?: {
         "server-id"?: string;
         "server-token"?: string;
       };
     };
-    blendfarm?: {
+    blendfarm: {
       basicSecurityPasswordFile?: string | null;
-      blenderPackage?: PackageRef;
+      blenderPackage?: string;
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       serverConfig?: {
         BroadcastPort?: unknown;
         BypassScriptUpdate?: boolean;
@@ -26054,7 +26054,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    "blockbook-frontend"?: {
+    "blockbook-frontend": {
       "<name>"?: {
         certFile?: string | null;
         coinName?: string;
@@ -26068,7 +26068,7 @@ declare module "winix" {
         group?: string;
         internal?: string | null;
         messageQueueBinding?: string;
-        package?: PackageRef;
+        package?: string;
         public?: string | null;
         rpc?: Record<string, unknown>;
         sync?: boolean;
@@ -26076,21 +26076,21 @@ declare module "winix" {
         user?: string;
       };
     };
-    blocky?: {
+    blocky: {
       enable?: boolean;
       enableConfigCheck?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    bloop?: {
+    bloop: {
       extraOptions?: string[];
       install?: boolean;
     };
-    blueman?: {
+    blueman: {
       enable?: boolean;
       withApplet?: boolean;
     };
-    bluemap?: {
+    bluemap: {
       coreSettings?: {
         data?: string;
         metrics?: boolean;
@@ -26115,13 +26115,13 @@ declare module "winix" {
         enabled?: boolean;
       };
     };
-    "bluesky-pds"?: {
+    "bluesky-pds": {
       enable?: boolean;
       environmentFiles?: string[];
       goat?: {
         enable?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       pdsadmin?: {
         enable?: boolean;
       };
@@ -26142,23 +26142,23 @@ declare module "winix" {
         PDS_REPORT_SERVICE_URL?: string;
       };
     };
-    boinc?: {
+    boinc: {
       allowRemoteGuiRpc?: boolean;
       dataDir?: string;
       enable?: boolean;
-      extraEnvPackages?: PackageRef[] | NixExpr;
-      package?: PackageRef;
+      extraEnvPackages?: string[];
+      package?: string;
     };
-    bonsaid?: {
+    bonsaid: {
       configFile?: string;
       enable?: boolean;
       extraFlags?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         "*"?: Record<string, unknown>;
       };
     };
-    bookstack?: {
+    bookstack: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
@@ -26195,7 +26195,7 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       settings?: {
         APP_KEY_FILE?: string;
@@ -26206,16 +26206,16 @@ declare module "winix" {
       };
       user?: string;
     };
-    borgbackup?: {
+    borgbackup: {
       jobs?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       repos?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    borgmatic?: {
+    borgmatic: {
       configurations?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -26226,7 +26226,7 @@ declare module "winix" {
         source_directories?: string[];
       };
     };
-    bosun?: {
+    bosun: {
       checkFrequency?: string;
       enable?: boolean;
       extraConfig?: string;
@@ -26235,29 +26235,29 @@ declare module "winix" {
       ledisDir?: string;
       listenAddress?: string;
       opentsdbHost?: string | null;
-      package?: PackageRef;
+      package?: string;
       stateFile?: string;
       user?: string;
     };
-    botamusique?: {
+    botamusique: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         bot?: Record<string, unknown>;
         server?: Record<string, unknown>;
       };
     };
-    bpftune?: {
+    bpftune: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    brltty?: {
+    brltty: {
       enable?: boolean;
     };
-    "broadcast-box"?: {
+    "broadcast-box": {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       web?: {
         host?: string;
@@ -26265,8 +26265,8 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    btrbk?: {
-      extraPackages?: PackageRef[] | NixExpr;
+    btrbk: {
+      extraPackages?: string[];
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -26276,7 +26276,7 @@ declare module "winix" {
         "*"?: Record<string, unknown>;
       };
     };
-    btrfs?: {
+    btrfs: {
       autoScrub?: {
         enable?: boolean;
         fileSystems?: string[];
@@ -26284,11 +26284,11 @@ declare module "winix" {
         limit?: unknown | null;
       };
     };
-    buffyboard?: {
+    buffyboard: {
       configFile?: string;
       enable?: boolean;
       extraFlags?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         input?: Record<string, unknown>;
         keyboard?: Record<string, unknown>;
@@ -26296,7 +26296,7 @@ declare module "winix" {
         theme?: Record<string, unknown>;
       };
     };
-    "buildbot-master"?: {
+    "buildbot-master": {
       buildbotDir?: string;
       buildbotUrl?: string;
       builders?: string[];
@@ -26312,8 +26312,8 @@ declare module "winix" {
       home?: string;
       listenAddress?: string;
       masterCfg?: string;
-      package?: PackageRef;
-      packages?: PackageRef[] | NixExpr;
+      package?: string;
+      packages?: string[];
       pbPort?: unknown;
       port?: unknown;
       pythonPackages?: unknown;
@@ -26324,7 +26324,7 @@ declare module "winix" {
       user?: string;
       workers?: string[];
     };
-    "buildbot-worker"?: {
+    "buildbot-worker": {
       adminMessage?: string | null;
       buildbotDir?: string;
       enable?: boolean;
@@ -26334,14 +26334,14 @@ declare module "winix" {
       hostMessage?: string | null;
       keepalive?: number;
       masterUrl?: string;
-      package?: PackageRef;
-      packages?: PackageRef[] | NixExpr;
+      package?: string;
+      packages?: string[];
       user?: string;
       workerPass?: string;
       workerPassFile?: string;
       workerUser?: string;
     };
-    "buildkite-agents"?: {
+    "buildkite-agents": {
       "<name>"?: {
         dataDir?: string;
         enable?: boolean;
@@ -26350,23 +26350,23 @@ declare module "winix" {
         hooks?: Record<string, string>;
         hooksPath?: string;
         name?: string;
-        package?: PackageRef;
+        package?: string;
         privateSshKeyPath?: string | null;
-        runtimePackages?: PackageRef[] | NixExpr;
+        runtimePackages?: string[];
         shell?: string;
         tags?: Record<string, unknown>;
         tokenPath?: string;
       };
     };
-    byedpi?: {
+    byedpi: {
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    "c2fmzq-server"?: {
+    "c2fmzq-server": {
       bindIP?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       passphraseFile?: string;
       port?: unknown;
       settings?: {
@@ -26374,32 +26374,32 @@ declare module "winix" {
         verbose?: number;
       };
     };
-    cachefilesd?: {
+    cachefilesd: {
       cacheDir?: string;
       enable?: boolean;
       extraConfig?: string;
     };
-    "cachix-agent"?: {
+    "cachix-agent": {
       credentialsFile?: string;
       enable?: boolean;
       host?: string | null;
       name?: string;
-      package?: PackageRef;
+      package?: string;
       profile?: string | null;
       verbose?: boolean;
     };
-    "cachix-watch-store"?: {
+    "cachix-watch-store": {
       cacheName?: string;
       cachixTokenFile?: string;
       compressionLevel?: number | null;
       enable?: boolean;
       host?: string | null;
       jobs?: unknown | null;
-      package?: PackageRef;
+      package?: string;
       signingKeyFile?: string | null;
       verbose?: boolean;
     };
-    caddy?: {
+    caddy: {
       acmeCA?: string | null;
       adapter?: string | null;
       configFile?: string;
@@ -26416,7 +26416,7 @@ declare module "winix" {
       logDir?: string;
       logFormat?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       resume?: boolean;
       settings?: unknown;
       user?: string;
@@ -26424,7 +26424,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    cadvisor?: {
+    cadvisor: {
       enable?: boolean;
       extraOptions?: string[];
       listenAddress?: string;
@@ -26437,15 +26437,15 @@ declare module "winix" {
       storageDriverSecure?: boolean;
       storageDriverUser?: string;
     };
-    cage?: {
+    cage: {
       enable?: boolean;
       environment?: Record<string, string>;
       extraArguments?: string[];
-      package?: PackageRef;
+      package?: string;
       program?: string;
       user?: string;
     };
-    "calibre-server"?: {
+    "calibre-server": {
       auth?: {
         enable?: boolean;
         mode?: "auto" | "basic" | "digest";
@@ -26457,12 +26457,12 @@ declare module "winix" {
       host?: string;
       libraries?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    "calibre-web"?: {
-      calibrePackage?: PackageRef;
+    "calibre-web": {
+      calibrePackage?: string;
       dataDir?: string;
       enable?: boolean;
       group?: string;
@@ -26478,14 +26478,14 @@ declare module "winix" {
         enableKepubify?: boolean;
         reverseProxyAuth?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    canaille?: {
+    canaille: {
       enable?: boolean;
       jwtPrivateKeyFile?: string | null;
       ldapBindPasswordFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       secretKeyFile?: string;
       settings?: {
         CANAILLE?: Record<string, unknown>;
@@ -26498,10 +26498,10 @@ declare module "winix" {
       };
       smtpPasswordFile?: string | null;
     };
-    "canto-daemon"?: {
+    "canto-daemon": {
       enable?: boolean;
     };
-    cassandra?: {
+    cassandra: {
       allowClients?: boolean;
       clusterName?: string;
       enable?: boolean;
@@ -26525,14 +26525,14 @@ declare module "winix" {
       logbackConfig?: string;
       mallocArenaMax?: number | null;
       maxHeapSize?: string | null;
-      package?: PackageRef;
+      package?: string;
       remoteJmx?: boolean;
       rpcAddress?: string | null;
       rpcInterface?: string | null;
       seedAddresses?: string[];
       user?: string;
     };
-    castopod?: {
+    castopod: {
       configureNginx?: boolean;
       database?: {
         createLocally?: boolean;
@@ -26546,23 +26546,23 @@ declare module "winix" {
       environmentFile?: string | null;
       localDomain?: string;
       maxUploadSize?: string;
-      package?: PackageRef;
+      package?: string;
       poolSettings?: Record<string, unknown>;
       settings?: Record<string, unknown>;
     };
-    "cato-client"?: {
+    "cato-client": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    centrifugo?: {
+    centrifugo: {
       credentials?: Record<string, string>;
       enable?: boolean;
       environmentFiles?: string[];
       extraGroups?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    ceph?: {
+    ceph: {
       client?: {
         enable?: boolean;
         extraConfig?: Record<string, Record<string, string>>;
@@ -26587,61 +26587,61 @@ declare module "winix" {
         daemons?: string[];
         enable?: boolean;
         extraConfig?: Record<string, string>;
-        package?: PackageRef;
+        package?: string;
       };
       mgr?: {
         daemons?: string[];
         enable?: boolean;
         extraConfig?: Record<string, string>;
-        package?: PackageRef;
+        package?: string;
       };
       mon?: {
         daemons?: string[];
         enable?: boolean;
         extraConfig?: Record<string, string>;
-        package?: PackageRef;
+        package?: string;
       };
       osd?: {
         daemons?: string[];
         enable?: boolean;
         extraConfig?: Record<string, string>;
-        package?: PackageRef;
+        package?: string;
       };
       rgw?: {
         daemons?: string[];
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
     };
-    certmgr?: {
+    certmgr: {
       defaultRemote?: string;
       enable?: boolean;
       metricsAddress?: string;
       metricsPort?: unknown;
-      package?: PackageRef;
+      package?: string;
       renewInterval?: string;
       specs?: Record<string, unknown>;
       svcManager?: "circus" | "command" | "dummy" | "openrc" | "systemd" | "sysv";
       validMin?: string;
     };
-    certspotter?: {
+    certspotter: {
       emailRecipients?: string[];
       enable?: boolean;
       extraFlags?: string[];
       hooks?: string[];
-      package?: PackageRef;
+      package?: string;
       sendmailPath?: string | null;
       startAtEnd?: boolean;
       watchlist?: string[];
     };
-    cfdyndns?: {
+    cfdyndns: {
       apikeyFile?: string | null;
       apiTokenFile?: string | null;
       email?: string;
       enable?: boolean;
       records?: string[];
     };
-    cfssl?: {
+    cfssl: {
       address?: string;
       ca?: string;
       caBundle?: string | null;
@@ -26667,29 +26667,29 @@ declare module "winix" {
       tlsKey?: string | null;
       tlsRemoteCa?: string | null;
     };
-    cgit?: {
+    cgit: {
       "<name>"?: {
         enable?: boolean;
         extraConfig?: string;
         gitHttpBackend?: Record<string, unknown>;
         group?: string;
         nginx?: Record<string, unknown>;
-        package?: PackageRef;
+        package?: string;
         repos?: Record<string, Record<string, unknown>>;
         scanPath?: string | null;
         settings?: Record<string, unknown>;
         user?: string;
       };
     };
-    cgminer?: {
+    cgminer: {
       config?: Record<string, unknown>;
       enable?: boolean;
       hardware?: Record<string, unknown>[];
-      package?: PackageRef;
+      package?: string;
       pools?: Record<string, string>[];
       user?: string;
     };
-    "changedetection-io"?: {
+    "changedetection-io": {
       baseURL?: string | null;
       behindProxy?: boolean;
       chromePort?: unknown;
@@ -26698,16 +26698,16 @@ declare module "winix" {
       environmentFile?: string | null;
       group?: string;
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       playwrightSupport?: boolean;
       port?: unknown;
       user?: string;
       webDriverSupport?: boolean;
     };
-    "chhoto-url"?: {
+    "chhoto-url": {
       enable?: boolean;
       environmentFiles?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         allow_capital_letters?: boolean;
         cache_control_header?: string | null;
@@ -26725,7 +26725,7 @@ declare module "winix" {
         try_longer_slugs?: boolean;
       };
     };
-    "chisel-server"?: {
+    "chisel-server": {
       authfile?: string | null;
       backend?: string | null;
       enable?: boolean;
@@ -26735,15 +26735,15 @@ declare module "winix" {
       reverse?: boolean;
       socks5?: boolean;
     };
-    chromadb?: {
+    chromadb: {
       dbpath?: string;
       enable?: boolean;
       host?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    chrony?: {
+    chrony: {
       autotrimThreshold?: unknown;
       directory?: string;
       dispatcherScript?: boolean;
@@ -26762,16 +26762,16 @@ declare module "winix" {
         limit?: unknown;
         threshold?: unknown;
       };
-      package?: PackageRef;
+      package?: string;
       serverOption?: "iburst" | "offline";
       servers?: string[];
     };
-    cinnamon?: {
+    cinnamon: {
       apps?: {
         enable?: boolean;
       };
     };
-    cjdns?: {
+    cjdns: {
       addExtraHosts?: boolean;
       admin?: {
         bind?: string;
@@ -26790,7 +26790,7 @@ declare module "winix" {
         connectTo?: Record<string, unknown>;
       };
     };
-    clamav?: {
+    clamav: {
       clamonacc?: {
         enable?: boolean;
       };
@@ -26803,7 +26803,7 @@ declare module "winix" {
         interval?: string;
         settings?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       scanner?: {
         enable?: boolean;
         interval?: string;
@@ -26816,21 +26816,21 @@ declare module "winix" {
         settings?: Record<string, unknown>;
       };
     };
-    clatd?: {
+    clatd: {
       enable?: boolean;
       enableNetworkManagerIntegration?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    clickhouse?: {
+    clickhouse: {
       enable?: boolean;
       extraServerConfig?: string;
       extraUsersConfig?: string;
-      package?: PackageRef;
+      package?: string;
       serverConfig?: unknown;
       usersConfig?: unknown;
     };
-    clight?: {
+    clight: {
       enable?: boolean;
       settings?: Record<string, unknown | null>;
       temperature?: {
@@ -26838,15 +26838,15 @@ declare module "winix" {
         night?: number;
       };
     };
-    clipcat?: {
+    clipcat: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    clipmenu?: {
+    clipmenu: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "cloud-init"?: {
+    "cloud-init": {
       btrfs?: {
         enable?: boolean;
       };
@@ -26855,7 +26855,7 @@ declare module "winix" {
       ext4?: {
         enable?: boolean;
       };
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       network?: {
         enable?: boolean;
       };
@@ -26864,7 +26864,7 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    "cloudflare-ddns"?: {
+    "cloudflare-ddns": {
       cacheExpiration?: string;
       credentialsFile?: string;
       deleteOnStop?: boolean;
@@ -26875,7 +26875,7 @@ declare module "winix" {
       healthchecks?: string | null;
       ip4Domains?: string[] | null;
       ip6Domains?: string[] | null;
-      package?: PackageRef;
+      package?: string;
       provider?: {
         ipv4?: string;
         ipv6?: string;
@@ -26892,7 +26892,7 @@ declare module "winix" {
       wafListDescription?: string;
       wafLists?: string[];
     };
-    "cloudflare-dyndns"?: {
+    "cloudflare-dyndns": {
       apiTokenFile?: unknown;
       deleteMissing?: boolean;
       domains?: string[];
@@ -26900,25 +26900,25 @@ declare module "winix" {
       frequency?: string | null;
       ipv4?: boolean;
       ipv6?: boolean;
-      package?: PackageRef;
+      package?: string;
       proxied?: boolean;
     };
-    "cloudflare-warp"?: {
+    "cloudflare-warp": {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       rootDir?: string;
       udpPort?: unknown;
     };
-    cloudflared?: {
+    cloudflared: {
       certificateFile?: string | null;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       tunnels?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    cloudlog?: {
+    cloudlog: {
       baseUrl?: string;
       database?: {
         createLocally?: boolean;
@@ -26966,7 +26966,7 @@ declare module "winix" {
       user?: string;
       virtualHost?: string | null;
     };
-    cntlm?: {
+    cntlm: {
       configText?: string;
       domain?: string;
       enable?: boolean;
@@ -26978,17 +26978,17 @@ declare module "winix" {
       proxy?: string[];
       username?: string;
     };
-    cockpit?: {
+    cockpit: {
       "allowed-origins"?: string[];
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       port?: unknown;
       settings?: Record<string, unknown>;
       showBanner?: boolean;
     };
-    cockroachdb?: {
+    cockroachdb: {
       cache?: string;
       certsDir?: string | null;
       enable?: boolean;
@@ -27007,13 +27007,13 @@ declare module "winix" {
       locality?: string | null;
       maxSqlMemory?: string;
       openPorts?: boolean;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    cocoon?: {
+    cocoon: {
       enable?: boolean;
       environmentFiles?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         COCOON_ADDR?: string;
         COCOON_CONTACT_EMAIL?: string;
@@ -27028,7 +27028,7 @@ declare module "winix" {
         COCOON_SESSION_COOKIE_KEY?: string;
       };
     };
-    "code-server"?: {
+    "code-server": {
       auth?: "none" | "password";
       disableFileDownloads?: boolean;
       disableGettingStartedOverride?: boolean;
@@ -27040,11 +27040,11 @@ declare module "winix" {
       extraArguments?: string[];
       extraEnvironment?: Record<string, string>;
       extraGroups?: string[];
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       group?: string;
       hashedPassword?: string;
       host?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       proxyDomain?: string | null;
       socket?: string | null;
@@ -27052,7 +27052,7 @@ declare module "winix" {
       user?: string;
       userDataDir?: string | null;
     };
-    coder?: {
+    coder: {
       accessUrl?: string | null;
       database?: {
         createLocally?: boolean;
@@ -27070,23 +27070,23 @@ declare module "winix" {
       group?: string;
       homeDir?: string;
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       tlsCert?: string | null;
       tlsKey?: string | null;
       user?: string;
       wildcardAccessUrl?: string | null;
     };
-    "collabora-online"?: {
+    "collabora-online": {
       aliasGroups?: {
         "*"?: Record<string, unknown>;
       };
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: unknown;
     };
-    collectd?: {
+    collectd: {
       autoLoadPlugin?: boolean;
       buildMinimalPackage?: boolean;
       dataDir?: string;
@@ -27094,58 +27094,58 @@ declare module "winix" {
       extraConfig?: string;
       finalPackage?: unknown;
       include?: string[];
-      package?: PackageRef;
+      package?: string;
       plugins?: Record<string, string>;
       user?: string | null;
       validateConfig?: boolean;
     };
-    colord?: {
+    colord: {
       enable?: boolean;
     };
-    commafeed?: {
+    commafeed: {
       enable?: boolean;
       environment?: Record<string, unknown>;
       environmentFile?: string | null;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       stateDir?: string;
       user?: string;
     };
-    compton?: Record<string, unknown>;
-    confd?: {
+    compton: Record<string, unknown>;
+    confd: {
       backend?: "consul" | "etcd" | "redis" | "zookeeper";
       confDir?: string;
       enable?: boolean;
       interval?: number;
       logLevel?: "debug" | "info";
       nodes?: string[];
-      package?: PackageRef;
+      package?: string;
       prefix?: string;
       watch?: boolean;
     };
-    conman?: {
+    conman: {
       config?: string | null;
       configFile?: string | null;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    connman?: {
+    connman: {
       enable?: boolean;
       enableVPN?: boolean;
       extraConfig?: string;
       extraFlags?: string[];
       networkInterfaceBlacklist?: string[];
-      package?: PackageRef;
+      package?: string;
       wifi?: {
         backend?: "iwd" | "wpa_supplicant";
       };
     };
-    consul?: {
+    consul: {
       alerts?: {
         consulAddr?: string;
         enable?: boolean;
         listenAddr?: string;
-        package?: PackageRef;
+        package?: string;
         watchChecks?: boolean;
         watchEvents?: boolean;
       };
@@ -27160,62 +27160,62 @@ declare module "winix" {
         bind?: string | null;
       };
       leaveOnStop?: boolean;
-      package?: PackageRef;
+      package?: string;
       webUi?: boolean;
     };
-    "consul-template"?: {
+    "consul-template": {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    convos?: {
+    convos: {
       enable?: boolean;
       listenAddress?: string;
       listenPort?: unknown;
       reverseProxy?: boolean;
     };
-    "cook-cli"?: {
+    "cook-cli": {
       autoStart?: boolean;
       basePath?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    coredns?: {
+    coredns: {
       config?: string;
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    corerad?: {
+    corerad: {
       configFile?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    corosync?: {
+    corosync: {
       clusterName?: string;
       enable?: boolean;
       extraOptions?: string[];
       nodelist?: {
         "*"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    corteza?: {
+    corteza: {
       address?: string;
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: {
         HTTP_WEBAPP_ENABLED?: boolean;
       };
       user?: string;
     };
-    coturn?: {
+    coturn: {
       "alt-listening-port"?: unknown;
       "alt-tls-listening-port"?: unknown;
       cert?: string | null;
@@ -27247,7 +27247,7 @@ declare module "winix" {
       "tls-listening-port"?: unknown;
       "use-auth-secret"?: boolean;
     };
-    couchdb?: {
+    couchdb: {
       adminPass?: string | null;
       adminUser?: string;
       argsFile?: string;
@@ -27259,53 +27259,53 @@ declare module "winix" {
       extraConfigFiles?: string[];
       group?: string;
       logFile?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       uriFile?: string;
       user?: string;
       viewIndexDir?: string;
     };
-    "cpuminer-cryptonight"?: {
+    "cpuminer-cryptonight": {
       enable?: boolean;
       pass?: string;
       threads?: unknown;
       url?: string;
       user?: string;
     };
-    "cpupower-gui"?: {
+    "cpupower-gui": {
       enable?: boolean;
     };
-    "crab-hole"?: {
+    "crab-hole": {
       configFile?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         blocklist?: Record<string, unknown>;
       };
       supplementaryGroups?: string[];
     };
-    create_ap?: {
+    create_ap: {
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
-    croc?: {
+    croc: {
       debug?: boolean;
       enable?: boolean;
       openFirewall?: boolean;
       pass?: unknown;
       ports?: unknown[];
     };
-    cron?: {
+    cron: {
       cronFiles?: string[];
       enable?: boolean;
       mailto?: string | null;
       systemCronJobs?: string[];
     };
-    "cross-seed"?: {
+    "cross-seed": {
       configDir?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         dataDirs?: string[];
         linkDirs?: string[];
@@ -27317,21 +27317,21 @@ declare module "winix" {
       useGenConfigDefaults?: boolean;
       user?: string;
     };
-    "crossfire-server"?: {
+    "crossfire-server": {
       configFiles?: Record<string, string>;
       dataDir?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       stateDir?: string;
     };
-    crossmacro?: {
-      daemonPackage?: PackageRef;
+    crossmacro: {
+      daemonPackage?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       users?: string[];
     };
-    crowdsec?: {
+    crowdsec: {
       autoUpdateService?: boolean;
       enable?: boolean;
       group?: string;
@@ -27349,14 +27349,14 @@ declare module "winix" {
         contexts?: unknown[];
         notifications?: unknown[];
         parsers?: Record<string, unknown>;
-        patterns?: PackageRef[] | NixExpr;
+        patterns?: string[];
         postOverflows?: Record<string, unknown>;
         profiles?: unknown[];
         scenarios?: unknown[];
       };
       name?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         capi?: Record<string, unknown>;
         console?: Record<string, unknown>;
@@ -27366,10 +27366,10 @@ declare module "winix" {
       };
       user?: string;
     };
-    "crowdsec-firewall-bouncer"?: {
+    "crowdsec-firewall-bouncer": {
       createRulesets?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       registerBouncer?: {
         bouncerName?: unknown;
         enable?: boolean;
@@ -27383,10 +27383,10 @@ declare module "winix" {
         mode?: string;
       };
     };
-    cryptpad?: {
+    cryptpad: {
       configureNginx?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         adminKeys?: string[];
         blockDailyCheck?: boolean;
@@ -27401,7 +27401,7 @@ declare module "winix" {
         websocketPort?: unknown;
       };
     };
-    "cyrus-imap"?: {
+    "cyrus-imap": {
       cyrusConfigFile?: string | null;
       cyrusSettings?: {
         DAEMON?: unknown;
@@ -27423,7 +27423,7 @@ declare module "winix" {
       tmpDBDir?: string;
       user?: string | null;
     };
-    dae?: {
+    dae: {
       assets?: string[];
       assetsPath?: string;
       config?: string | null;
@@ -27434,13 +27434,13 @@ declare module "winix" {
         enable?: boolean;
         port?: unknown;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    dante?: {
+    dante: {
       config?: string;
       enable?: boolean;
     };
-    darkhttpd?: {
+    darkhttpd: {
       address?: string;
       enable?: boolean;
       extraArgs?: string[];
@@ -27448,20 +27448,20 @@ declare module "winix" {
       port?: unknown;
       rootDir?: string;
     };
-    das_watchdog?: {
+    das_watchdog: {
       enable?: boolean;
     };
-    dashy?: {
+    dashy: {
       enable?: boolean;
-      finalDrv?: PackageRef;
-      package?: PackageRef;
+      finalDrv?: string;
+      package?: string;
       settings?: unknown;
       virtualHost?: {
         domain?: string;
         enableNginx?: boolean;
       };
     };
-    "datadog-agent"?: {
+    "datadog-agent": {
       apiKeyFile?: string;
       checks?: Record<string, unknown>;
       ddUrl?: string | null;
@@ -27474,18 +27474,18 @@ declare module "winix" {
       hostname?: string | null;
       logLevel?: "DEBUG" | "ERROR" | "INFO" | "WARN" | null;
       networkCheck?: unknown;
-      package?: PackageRef;
-      processAgentPackage?: PackageRef;
+      package?: string;
+      processAgentPackage?: string;
       site?: string | null;
       tags?: string[] | null;
     };
-    davfs2?: {
+    davfs2: {
       davGroup?: string;
       davUser?: string;
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
-    davis?: {
+    davis: {
       adminLogin?: string;
       adminPasswordFile?: string;
       appSecretFile?: string;
@@ -27536,16 +27536,16 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       user?: string;
     };
-    davmail?: {
+    davmail: {
       config?: unknown;
       enable?: boolean;
       url?: string;
     };
-    dawarich?: {
+    dawarich: {
       automaticMigrations?: boolean;
       configureNginx?: boolean;
       database?: {
@@ -27561,7 +27561,7 @@ declare module "winix" {
       extraEnvFiles?: string[];
       group?: string;
       localDomain?: string;
-      package?: PackageRef;
+      package?: string;
       redis?: {
         createLocally?: boolean;
         host?: string;
@@ -27582,11 +27582,11 @@ declare module "winix" {
       user?: string;
       webPort?: unknown;
     };
-    "db-rest"?: {
+    "db-rest": {
       enable?: boolean;
       group?: string;
       host?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       redis?: {
         createLocally?: boolean;
@@ -27599,24 +27599,24 @@ declare module "winix" {
       };
       user?: string;
     };
-    dbus?: {
+    dbus: {
       apparmor?: "disabled" | "enabled" | "required";
-      brokerPackage?: PackageRef;
-      dbusPackage?: PackageRef;
+      brokerPackage?: string;
+      dbusPackage?: string;
       implementation?: "broker" | "dbus";
       packages?: string[];
     };
-    ddccontrol?: {
+    ddccontrol: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    ddclient?: {
+    ddclient: {
       configFile?: string | null;
       domains?: string[];
       enable?: boolean;
       extraConfig?: string;
       interval?: string;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string | null;
       protocol?: string;
       quiet?: boolean;
@@ -27631,12 +27631,12 @@ declare module "winix" {
       verbose?: boolean;
       zone?: string;
     };
-    "ddns-updater"?: {
+    "ddns-updater": {
       enable?: boolean;
       environment?: Record<string, string>;
-      package?: PackageRef;
+      package?: string;
     };
-    deconz?: {
+    deconz: {
       allowRebootSystem?: boolean;
       allowRestartService?: boolean;
       allowSetSystemTime?: boolean;
@@ -27646,20 +27646,20 @@ declare module "winix" {
       httpPort?: unknown;
       listenAddress?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       wsPort?: unknown;
     };
-    deluge?: {
+    deluge: {
       authFile?: string;
       config?: unknown;
       dataDir?: string;
       declarative?: boolean;
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       group?: string;
       openFilesLimit?: unknown;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       user?: string;
       web?: {
         enable?: boolean;
@@ -27667,7 +27667,7 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    dendrite?: {
+    dendrite: {
       enable?: boolean;
       environmentFile?: string | null;
       httpPort?: unknown | null;
@@ -27690,7 +27690,7 @@ declare module "winix" {
       tlsCert?: string | null;
       tlsKey?: string | null;
     };
-    "dependency-track"?: {
+    "dependency-track": {
       database?: {
         createLocally?: boolean;
         databaseName?: string;
@@ -27723,7 +27723,7 @@ declare module "winix" {
         usernameClaim?: string;
         userProvisioning?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: {
         "alpine.data.directory"?: string;
@@ -27742,13 +27742,13 @@ declare module "winix" {
         "alpine.oidc.username.claim"?: string;
       };
     };
-    desktopManager?: {
+    desktopManager: {
       budgie?: {
         enable?: boolean;
         extraGSettingsOverridePackages?: string[];
         extraGSettingsOverrides?: string;
-        extraPlugins?: PackageRef[] | NixExpr;
-        sessionPath?: PackageRef[] | NixExpr;
+        extraPlugins?: string[];
+        sessionPath?: string[];
       };
       cosmic?: {
         enable?: boolean;
@@ -27761,7 +27761,7 @@ declare module "winix" {
         extraGSettingsOverridePackages?: string[];
         extraGSettingsOverrides?: string;
         flashback?: Record<string, unknown>;
-        sessionPath?: PackageRef[] | NixExpr;
+        sessionPath?: string[];
       };
       lomiri?: {
         enable?: boolean;
@@ -27771,60 +27771,60 @@ declare module "winix" {
         enable?: boolean;
         extraGSettingsOverridePackages?: string[];
         extraGSettingsOverrides?: string;
-        extraSwitchboardPlugs?: PackageRef[] | NixExpr | null;
-        extraWingpanelIndicators?: PackageRef[] | NixExpr | null;
-        sessionPath?: PackageRef[] | NixExpr;
+        extraSwitchboardPlugs?: string[] | null;
+        extraWingpanelIndicators?: string[] | null;
+        sessionPath?: string[];
       };
       plasma6?: {
         enable?: boolean;
         enableQt5Integration?: boolean;
-        notoPackage?: PackageRef;
+        notoPackage?: string;
       };
     };
-    devmon?: {
+    devmon: {
       enable?: boolean;
     };
-    "devpi-server"?: {
+    "devpi-server": {
       enable?: boolean;
       extraPackages?: unknown;
       host?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       primaryUrl?: string;
       replica?: boolean;
       secretFile?: string | null;
     };
-    dex?: {
+    dex: {
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    "deye-dummycloud"?: {
+    "deye-dummycloud": {
       enable?: boolean;
       mqttBrokerUrl?: string;
       mqttPassword?: string;
       mqttUsername?: string;
     };
-    dgraph?: {
+    dgraph: {
       alpha?: {
         host?: string;
         port?: unknown;
       };
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       zero?: {
         host?: string;
         port?: unknown;
       };
     };
-    dictd?: {
-      DBs?: PackageRef[] | NixExpr;
+    dictd: {
+      DBs?: string[];
       enable?: boolean;
     };
-    diod?: {
+    diod: {
       allsquash?: boolean;
       authRequired?: boolean;
       enable?: boolean;
@@ -27839,7 +27839,7 @@ declare module "winix" {
       statfsPassthru?: boolean;
       userdb?: boolean;
     };
-    discourse?: {
+    discourse: {
       admin?: {
         email?: string;
         fullName?: string;
@@ -27869,8 +27869,8 @@ declare module "winix" {
       nginx?: {
         enable?: boolean;
       };
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       redis?: {
         dbNumber?: number;
         host?: string;
@@ -27884,22 +27884,22 @@ declare module "winix" {
       sslCertificateKey?: string | null;
       unicornTimeout?: number;
     };
-    disnix?: {
+    disnix: {
       enable?: boolean;
       enableMultiUser?: boolean;
       enableProfilePath?: boolean;
-      package?: PackageRef;
+      package?: string;
       profiles?: string[];
       useWebServiceInterface?: boolean;
     };
-    displayManager?: {
+    displayManager: {
       autoLogin?: {
         enable?: boolean;
         user?: string | null;
       };
       "cosmic-greeter"?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       defaultSession?: unknown;
       "dms-greeter"?: {
@@ -27908,7 +27908,7 @@ declare module "winix" {
         configHome?: string | null;
         enable?: boolean;
         logs?: Record<string, unknown>;
-        package?: PackageRef;
+        package?: string;
         quickshell?: Record<string, unknown>;
       };
       enable?: boolean;
@@ -27918,7 +27918,7 @@ declare module "winix" {
         banner?: string | null;
         debug?: boolean;
         enable?: boolean;
-        extraPackages?: PackageRef[] | NixExpr;
+        extraPackages?: string[];
         settings?: Record<string, unknown>;
         wayland?: boolean;
       };
@@ -27931,20 +27931,20 @@ declare module "winix" {
       hiddenUsers?: string[];
       lemurs?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
         settings?: unknown;
       };
       logToFile?: boolean;
       logToJournal?: boolean;
       ly?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
         x11Support?: boolean;
       };
       "plasma-login-manager"?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
       };
       sddm?: {
@@ -27952,8 +27952,8 @@ declare module "winix" {
         autoNumlock?: boolean;
         enable?: boolean;
         enableHidpi?: boolean;
-        extraPackages?: PackageRef[] | NixExpr;
-        package?: PackageRef;
+        extraPackages?: string[];
+        package?: string;
         settings?: Record<string, unknown>;
         setupScript?: string;
         stopScript?: string;
@@ -27962,7 +27962,7 @@ declare module "winix" {
       };
       sessionPackages?: unknown[];
     };
-    distccd?: {
+    distccd: {
       allowedClients?: string[];
       enable?: boolean;
       jobTimeout?: number | null;
@@ -27970,7 +27970,7 @@ declare module "winix" {
       maxJobs?: number | null;
       nice?: number | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       stats?: {
         enable?: boolean;
@@ -27978,7 +27978,7 @@ declare module "winix" {
       };
       zeroconf?: boolean;
     };
-    "dkimproxy-out"?: {
+    "dkimproxy-out": {
       domains?: string[];
       enable?: boolean;
       keySize?: number;
@@ -27986,24 +27986,24 @@ declare module "winix" {
       relay?: string;
       selector?: string;
     };
-    dleyna?: {
+    dleyna: {
       enable?: boolean;
     };
-    dnscache?: {
+    dnscache: {
       clientIps?: string[];
       domainServers?: Record<string, string[]>;
       enable?: boolean;
       forwardOnly?: boolean;
       ip?: string;
     };
-    "dnscrypt-proxy"?: {
+    "dnscrypt-proxy": {
       configFile?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       upstreamDefaults?: boolean;
     };
-    dnsdist?: {
+    dnsdist: {
       dnscrypt?: {
         certLifetime?: unknown;
         enable?: boolean;
@@ -28017,26 +28017,26 @@ declare module "winix" {
       listenAddress?: string;
       listenPort?: unknown;
     };
-    dnsmasq?: {
+    dnsmasq: {
       alwaysKeepRunning?: boolean;
-      configFile?: PackageRef;
+      configFile?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       resolveLocalQueries?: boolean;
       settings?: {
         server?: string[];
       };
     };
-    dnsproxy?: {
+    dnsproxy: {
       enable?: boolean;
       flags?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    "do-agent"?: {
+    "do-agent": {
       enable?: boolean;
     };
-    dockerRegistry?: {
+    dockerRegistry: {
       configFile?: string;
       enable?: boolean;
       enableDelete?: boolean;
@@ -28046,23 +28046,23 @@ declare module "winix" {
       garbageCollectDates?: string;
       listenAddress?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       redisPassword?: string;
       redisUrl?: string;
       storagePath?: string | null;
     };
-    "docling-serve"?: {
+    "docling-serve": {
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFile?: string | null;
       host?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       stateDir?: string;
     };
-    documize?: {
+    documize: {
       cert?: string | null;
       db?: string;
       dbtype?: "mariadb" | "mysql" | "percona" | "postgresql" | "sqlserver";
@@ -28071,17 +28071,17 @@ declare module "winix" {
       key?: string | null;
       location?: string | null;
       offline?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       salt?: string | null;
       stateDirectoryName?: string;
     };
-    docuseal?: {
+    docuseal: {
       enable?: boolean;
       extraConfig?: unknown;
       extraEnvFiles?: string[];
       host?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       redis?: {
         createLocally?: boolean;
@@ -28091,21 +28091,21 @@ declare module "winix" {
       };
       secretKeyBaseFile?: string;
     };
-    docuum?: {
+    docuum: {
       deletionChunkSize?: number;
       enable?: boolean;
       keep?: string[];
       minAge?: string | null;
       threshold?: string;
     };
-    "doh-proxy-rust"?: {
+    "doh-proxy-rust": {
       enable?: boolean;
       flags?: string[];
     };
-    "doh-server"?: {
+    "doh-server": {
       configFile?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         ecs_allow_non_global_ip?: boolean;
         ecs_use_precise_ip?: boolean;
@@ -28119,13 +28119,13 @@ declare module "winix" {
       };
       useACMEHost?: string | null;
     };
-    dokuwiki?: {
+    dokuwiki: {
       sites?: {
         "<name>"?: Record<string, unknown>;
       };
       webserver?: "caddy" | "nginx";
     };
-    dolibarr?: {
+    dolibarr: {
       database?: {
         createLocally?: boolean;
         host?: string;
@@ -28178,18 +28178,18 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       settings?: Record<string, unknown>;
       stateDir?: string;
       user?: string;
     };
-    domoticz?: {
+    domoticz: {
       bind?: string;
       enable?: boolean;
       port?: unknown;
     };
-    dovecot2?: {
+    dovecot2: {
       configFile?: string | null;
       createMailUser?: boolean;
       enable?: boolean;
@@ -28202,7 +28202,7 @@ declare module "winix" {
         globally?: Record<string, unknown>;
         perProtocol?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: {
         auth_mechanisms?: unknown;
         base_dir?: string;
@@ -28229,7 +28229,7 @@ declare module "winix" {
         scripts?: Record<string, string>;
       };
     };
-    dragonflydb?: {
+    dragonflydb: {
       bind?: string | null;
       cacheMode?: boolean | null;
       dbNum?: unknown | null;
@@ -28241,17 +28241,17 @@ declare module "winix" {
       requirePass?: string | null;
       user?: string;
     };
-    drasl?: {
+    drasl: {
       enable?: boolean;
       enableDebug?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         RegistrationOIDC?: Record<string, unknown>;
       };
     };
-    draupnir?: {
+    draupnir: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       secrets?: {
         accessToken?: string | null;
         pantalaimon?: Record<string, unknown>;
@@ -28264,15 +28264,15 @@ declare module "winix" {
         rawHomeserverUrl?: string;
       };
     };
-    drbd?: {
+    drbd: {
       config?: string;
       enable?: boolean;
     };
-    druid?: {
+    druid: {
       broker?: {
         config?: Record<string, unknown>;
         enable?: boolean;
-        jdk?: PackageRef;
+        jdk?: string;
         jvmArgs?: string;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
@@ -28282,7 +28282,7 @@ declare module "winix" {
       coordinator?: {
         config?: Record<string, unknown>;
         enable?: boolean;
-        jdk?: PackageRef;
+        jdk?: string;
         jvmArgs?: string;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
@@ -28292,7 +28292,7 @@ declare module "winix" {
       historical?: {
         config?: Record<string, unknown>;
         enable?: boolean;
-        jdk?: PackageRef;
+        jdk?: string;
         jvmArgs?: string;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
@@ -28302,7 +28302,7 @@ declare module "winix" {
       middleManager?: {
         config?: Record<string, unknown>;
         enable?: boolean;
-        jdk?: PackageRef;
+        jdk?: string;
         jvmArgs?: string;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
@@ -28310,32 +28310,32 @@ declare module "winix" {
       overlord?: {
         config?: Record<string, unknown>;
         enable?: boolean;
-        jdk?: PackageRef;
+        jdk?: string;
         jvmArgs?: string;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       router?: {
         config?: Record<string, unknown>;
         enable?: boolean;
-        jdk?: PackageRef;
+        jdk?: string;
         jvmArgs?: string;
         openFirewall?: boolean;
         restartIfChanged?: boolean;
       };
     };
-    drupal?: {
+    drupal: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       sites?: {
         "<name>"?: Record<string, unknown>;
       };
       webserver?: "caddy" | "nginx";
     };
-    dsnet?: {
+    dsnet: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         ExternalHostname?: string | null;
         ExternalIP?: string | null;
@@ -28347,7 +28347,7 @@ declare module "winix" {
         Networks?: string[] | null;
       };
     };
-    dspam?: {
+    dspam: {
       domainSocket?: string | null;
       enable?: boolean;
       extraConfig?: string;
@@ -28356,39 +28356,39 @@ declare module "winix" {
       storageDriver?: string;
       user?: string;
     };
-    duckdns?: {
+    duckdns: {
       domains?: string[] | null;
       domainsFile?: string | null;
       enable?: boolean;
       tokenFile?: string;
     };
-    duckling?: {
+    duckling: {
       enable?: boolean;
       port?: unknown;
     };
-    "dump1090-fa"?: {
+    "dump1090-fa": {
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    dunst?: {
+    dunst: {
       enable?: boolean;
       enableWayland?: boolean;
       enableX11?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, Record<string, unknown>>;
     };
-    duplicati?: {
+    duplicati: {
       dataDir?: string;
       enable?: boolean;
       interface?: string;
-      package?: PackageRef;
+      package?: string;
       parameters?: string;
       parametersFile?: string | null;
       port?: unknown;
       user?: string;
     };
-    duplicity?: {
+    duplicity: {
       cleanup?: {
         maxAge?: string | null;
         maxFull?: number | null;
@@ -28406,14 +28406,14 @@ declare module "winix" {
       secretFile?: string | null;
       targetUrl?: string;
     };
-    "dwm-status"?: {
+    "dwm-status": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         order?: ("audio" | "backlight" | "battery" | "cpu_load" | "network" | "time")[];
       };
     };
-    dysnomia?: {
+    dysnomia: {
       components?: Record<string, unknown>;
       containers?: Record<string, unknown>;
       enable?: boolean;
@@ -28425,11 +28425,11 @@ declare module "winix" {
       package?: string;
       properties?: unknown;
     };
-    "e-imzo"?: {
+    "e-imzo": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    earlyoom?: {
+    earlyoom: {
       enable?: boolean;
       enableDebugInfo?: boolean;
       enableNotifications?: boolean;
@@ -28439,18 +28439,18 @@ declare module "winix" {
       freeSwapKillThreshold?: number | null;
       freeSwapThreshold?: number;
       killHook?: string | null;
-      package?: PackageRef;
+      package?: string;
       reportInterval?: number;
     };
-    easytier?: {
+    easytier: {
       allowSystemForward?: boolean;
       enable?: boolean;
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    ebusd?: {
+    ebusd: {
       configpath?: string;
       device?: string;
       enable?: boolean;
@@ -28473,31 +28473,31 @@ declare module "winix" {
         retain?: boolean;
         user?: string;
       };
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       readonly?: boolean;
       scanconfig?: string;
     };
-    echoip?: {
+    echoip: {
       enable?: boolean;
       enablePortLookup?: boolean;
       enableReverseHostnameLookups?: boolean;
       extraArgs?: string[];
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       remoteIpHeader?: string | null;
       virtualHost?: string | null;
     };
-    "ecs-agent"?: {
+    "ecs-agent": {
       enable?: boolean;
       "extra-environment"?: Record<string, string>;
-      package?: PackageRef;
+      package?: string;
     };
-    "eg25-manager"?: {
+    "eg25-manager": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    ejabberd?: {
+    ejabberd: {
       configFile?: string | null;
       ctlConfig?: string;
       enable?: boolean;
@@ -28505,11 +28505,11 @@ declare module "winix" {
       imagemagick?: boolean;
       loadDumps?: string[];
       logsDir?: string;
-      package?: PackageRef;
+      package?: string;
       spoolDir?: string;
       user?: string;
     };
-    elasticsearch?: {
+    elasticsearch: {
       cluster_name?: string;
       dataDir?: string;
       enable?: boolean;
@@ -28518,43 +28518,43 @@ declare module "winix" {
       extraJavaOptions?: string[];
       listenAddress?: string;
       logging?: string;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       port?: unknown;
       restartIfChanged?: boolean;
       single_node?: boolean;
       tcp_port?: unknown;
     };
-    "elasticsearch-curator"?: {
+    "elasticsearch-curator": {
       actionYAML?: string;
       enable?: boolean;
       hosts?: string[];
       interval?: string;
       port?: unknown;
     };
-    elephant?: {
+    elephant: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    emacs?: {
+    emacs: {
       defaultEditor?: boolean;
       enable?: boolean;
       install?: boolean;
-      package?: PackageRef;
+      package?: string;
       startWithGraphical?: boolean;
     };
-    endlessh?: {
+    endlessh: {
       enable?: boolean;
       extraOptions?: string[];
       openFirewall?: boolean;
       port?: unknown;
     };
-    "endlessh-go"?: {
+    "endlessh-go": {
       enable?: boolean;
       extraOptions?: string[];
       listenAddress?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       prometheus?: {
         enable?: boolean;
@@ -28562,50 +28562,50 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    engelsystem?: {
+    engelsystem: {
       createDatabase?: boolean;
       domain?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    ente?: {
+    ente: {
       api?: {
         domain?: string;
         enable?: boolean;
         enableLocalDB?: boolean;
         group?: string;
         nginx?: Record<string, unknown>;
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
         user?: string;
       };
       web?: {
         domains?: Record<string, unknown>;
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
     };
-    envfs?: {
+    envfs: {
       enable?: boolean;
       extraFallbackPathCommands?: string;
-      package?: PackageRef;
+      package?: string;
     };
-    envoy?: {
+    envoy: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       requireValidConfig?: boolean;
       settings?: unknown;
     };
-    epgstation?: {
+    epgstation: {
       database?: {
         name?: string;
         passwordFile?: string;
       };
       enable?: boolean;
-      ffmpeg?: PackageRef;
+      ffmpeg?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         clientSocketioPort?: unknown;
         concurrentEncodeNum?: unknown;
@@ -28617,12 +28617,12 @@ declare module "winix" {
       };
       usePreconfiguredStreaming?: boolean;
     };
-    epmd?: {
+    epmd: {
       enable?: boolean;
       listenStream?: unknown;
-      package?: PackageRef;
+      package?: string;
     };
-    ergo?: {
+    ergo: {
       api?: {
         keyHash?: string | null;
         listen?: Record<string, unknown>;
@@ -28638,43 +28638,43 @@ declare module "winix" {
       testnet?: boolean;
       user?: string;
     };
-    ergochat?: {
+    ergochat: {
       configFile?: string;
       enable?: boolean;
       openFilesLimit?: number;
       settings?: unknown;
     };
-    erigon?: {
+    erigon: {
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
       secretJwtPath?: string;
       settings?: unknown;
     };
-    errbot?: {
+    errbot: {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    ersatztv?: {
+    ersatztv: {
       baseUrl?: string;
       enable?: boolean;
       environment?: Record<string, unknown>;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    esdm?: {
+    esdm: {
       enable?: boolean;
       enableLinuxCompatServices?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    espanso?: {
+    espanso: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    esphome?: {
+    esphome: {
       address?: string;
       allowedDevices?: string[];
       enable?: boolean;
@@ -28682,11 +28682,11 @@ declare module "winix" {
       environment?: Record<string, string>;
       environmentFile?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       usePing?: boolean;
     };
-    etcd?: {
+    etcd: {
       advertiseClientUrls?: string[];
       certFile?: string | null;
       clientCertAuth?: boolean;
@@ -28703,18 +28703,18 @@ declare module "winix" {
       listenPeerUrls?: string[];
       name?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       peerCertFile?: string | null;
       peerClientCertAuth?: boolean;
       peerKeyFile?: string | null;
       peerTrustedCaFile?: string | null;
       trustedCaFile?: string | null;
     };
-    "etebase-server"?: {
+    "etebase-server": {
       dataDir?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown | null;
       settings?: {
         allowed_hosts?: Record<string, unknown>;
@@ -28724,14 +28724,14 @@ declare module "winix" {
       unixSocket?: string | null;
       user?: string;
     };
-    "eternal-terminal"?: {
+    "eternal-terminal": {
       enable?: boolean;
       logSize?: number;
       port?: unknown;
       silent?: boolean;
       verbosity?: unknown;
     };
-    "etesync-dav"?: {
+    "etesync-dav": {
       apiUrl?: string;
       enable?: boolean;
       host?: string;
@@ -28740,18 +28740,18 @@ declare module "winix" {
       sslCertificate?: string | null;
       sslCertificateKey?: string | null;
     };
-    evcc?: {
+    evcc: {
       enable?: boolean;
       environmentFile?: string | null;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    evdevremapkeys?: {
+    evdevremapkeys: {
       enable?: boolean;
       settings?: unknown;
     };
-    evremap?: {
+    evremap: {
       enable?: boolean;
       settings?: {
         device_name?: string;
@@ -28760,19 +28760,19 @@ declare module "winix" {
         remap?: Record<string, unknown>;
       };
     };
-    exim?: {
+    exim: {
       config?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       queueRunnerInterval?: string;
       spoolDir?: string;
       user?: string;
     };
-    expressvpn?: {
+    expressvpn: {
       enable?: boolean;
     };
-    factorio?: {
+    factorio: {
       admins?: string[];
       allowedPlayers?: string[];
       "autosave-interval"?: number | null;
@@ -28787,11 +28787,11 @@ declare module "winix" {
       "game-password"?: string | null;
       lan?: boolean;
       loadLatestSave?: boolean;
-      mods?: PackageRef[] | NixExpr;
+      mods?: string[];
       "mods-dat"?: string | null;
       nonBlockingSaving?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       password?: string | null;
       port?: unknown;
       public?: boolean;
@@ -28801,7 +28801,7 @@ declare module "winix" {
       token?: string | null;
       username?: string | null;
     };
-    fail2ban?: {
+    fail2ban: {
       banaction?: string;
       "banaction-allports"?: string;
       bantime?: string;
@@ -28816,23 +28816,23 @@ declare module "winix" {
       };
       daemonSettings?: Record<string, unknown>;
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       ignoreIP?: string[];
       jails?: Record<string, unknown>;
       maxretry?: unknown;
-      package?: PackageRef;
-      packageFirewall?: PackageRef;
+      package?: string;
+      packageFirewall?: string;
     };
-    fakeroute?: {
+    fakeroute: {
       enable?: boolean;
       route?: string[];
     };
-    fanout?: {
+    fanout: {
       bufferSize?: number;
       enable?: boolean;
       fanoutDevices?: number;
     };
-    "fastnetmon-advanced"?: {
+    "fastnetmon-advanced": {
       bgpPeers?: Record<string, unknown>;
       enable?: boolean;
       enableAdvancedTrafficPersistence?: boolean;
@@ -28842,12 +28842,12 @@ declare module "winix" {
         settings?: unknown;
       };
     };
-    fcgiwrap?: {
+    fcgiwrap: {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    fcron?: {
+    fcron: {
       allow?: string[];
       deny?: string[];
       enable?: boolean;
@@ -28855,7 +28855,7 @@ declare module "winix" {
       queuelen?: number | null;
       systab?: string;
     };
-    fedimintd?: {
+    fedimintd: {
       "<name>"?: {
         api_iroh?: Record<string, unknown>;
         api_ws?: Record<string, unknown>;
@@ -28866,11 +28866,11 @@ declare module "winix" {
         environment?: Record<string, string>;
         nginx?: Record<string, unknown>;
         p2p?: Record<string, unknown>;
-        package?: PackageRef;
+        package?: string;
         ui?: Record<string, unknown>;
       };
     };
-    fediwall?: {
+    fediwall: {
       enable?: boolean;
       hostName?: string;
       nginx?: {
@@ -28904,7 +28904,7 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: {
         hideBoosts?: boolean;
         hideBots?: boolean;
@@ -28919,20 +28919,20 @@ declare module "winix" {
         tags?: string[];
       };
     };
-    felix?: {
-      bundles?: PackageRef[] | NixExpr;
+    felix: {
+      bundles?: string[];
       enable?: boolean;
       group?: string;
       user?: string;
     };
-    ferm?: {
+    ferm: {
       config?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    ferretdb?: {
+    ferretdb: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         FERRETDB_HANDLER?: "pg" | "sqlite";
         FERRETDB_POSTGRESQL_URL?: string;
@@ -28940,7 +28940,7 @@ declare module "winix" {
         FERRETDB_TELEMETRY?: "disable" | "enable";
       };
     };
-    fider?: {
+    fider: {
       database?: {
         url?: string;
       };
@@ -28948,9 +28948,9 @@ declare module "winix" {
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFiles?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    filebeat?: {
+    filebeat: {
       enable?: boolean;
       inputs?: {
         "<name>"?: Record<string, unknown>;
@@ -28958,16 +28958,16 @@ declare module "winix" {
       modules?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: {
         output?: Record<string, unknown>;
       };
     };
-    filebrowser?: {
+    filebrowser: {
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         address?: string;
         "cache-dir"?: string;
@@ -28977,19 +28977,19 @@ declare module "winix" {
       };
       user?: string;
     };
-    firebird?: {
+    firebird: {
       baseDir?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    "firefly-iii"?: {
+    "firefly-iii": {
       dataDir?: string;
       enable?: boolean;
       enableNginx?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       settings?: {
         APP_ENV?: "local" | "production" | "testing";
@@ -29002,18 +29002,18 @@ declare module "winix" {
       user?: string;
       virtualHost?: string;
     };
-    "firefly-iii-data-importer"?: {
+    "firefly-iii-data-importer": {
       dataDir?: string;
       enable?: boolean;
       enableNginx?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       settings?: Record<string, unknown>;
       user?: string;
       virtualHost?: string;
     };
-    "firefox-syncserver"?: {
+    "firefox-syncserver": {
       database?: {
         createLocally?: boolean;
         host?: string;
@@ -29022,7 +29022,7 @@ declare module "winix" {
       };
       enable?: boolean;
       logLevel?: string;
-      package?: PackageRef;
+      package?: string;
       secrets?: string;
       settings?: {
         port?: unknown;
@@ -29037,15 +29037,15 @@ declare module "winix" {
         url?: string;
       };
     };
-    fireqos?: {
+    fireqos: {
       config?: string;
       enable?: boolean;
     };
-    firewalld?: {
+    firewalld: {
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
-      packages?: PackageRef[] | NixExpr;
+      package?: string;
+      packages?: string[];
       services?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -29069,14 +29069,14 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    firezone?: {
+    firezone: {
       gateway?: {
         apiUrl?: unknown;
         enable?: boolean;
         enableTelemetry?: boolean;
         logLevel?: string;
         name?: string;
-        package?: PackageRef;
+        package?: string;
         tokenFile?: string;
       };
       "gui-client"?: {
@@ -29084,7 +29084,7 @@ declare module "winix" {
         enable?: boolean;
         logLevel?: string;
         name?: string;
-        package?: PackageRef;
+        package?: string;
       };
       "headless-client"?: {
         apiUrl?: unknown;
@@ -29092,7 +29092,7 @@ declare module "winix" {
         enableTelemetry?: boolean;
         logLevel?: string;
         name?: string;
-        package?: PackageRef;
+        package?: string;
         tokenFile?: string;
       };
       relay?: {
@@ -29104,7 +29104,7 @@ declare module "winix" {
         lowestPort?: unknown;
         name?: string;
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
         publicIpv4?: string | null;
         publicIpv6?: string | null;
@@ -29125,7 +29125,7 @@ declare module "winix" {
         web?: Record<string, unknown>;
       };
     };
-    flannel?: {
+    flannel: {
       backend?: unknown;
       enable?: boolean;
       etcd?: {
@@ -29140,20 +29140,20 @@ declare module "winix" {
       kubeconfig?: string | null;
       network?: string;
       nodeName?: string | null;
-      package?: PackageRef;
+      package?: string;
       publicIp?: string | null;
       storageBackend?: "etcd" | "kubernetes";
       subnetLen?: number;
       subnetMax?: string | null;
       subnetMin?: string | null;
     };
-    flaresolverr?: {
+    flaresolverr: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    flarum?: {
+    flarum: {
       adminEmail?: string;
       adminUser?: string;
       baseUrl?: string;
@@ -29164,45 +29164,45 @@ declare module "winix" {
       forumTitle?: string;
       group?: string;
       initialAdminPassword?: string;
-      package?: PackageRef;
+      package?: string;
       stateDir?: string;
       user?: string;
     };
-    flatpak?: {
+    flatpak: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    flexget?: {
+    flexget: {
       config?: string;
       enable?: boolean;
       homeDir?: string;
       interval?: string;
-      package?: PackageRef;
+      package?: string;
       systemScheduler?: boolean;
       user?: string;
     };
-    flood?: {
+    flood: {
       enable?: boolean;
       extraArgs?: string[];
       host?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    "fluent-bit"?: {
+    "fluent-bit": {
       configurationFile?: string;
       enable?: boolean;
       graceLimit?: unknown | null;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    fluentd?: {
+    fluentd: {
       config?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       plugins?: string[];
     };
-    fluidd?: {
+    fluidd: {
       enable?: boolean;
       hostName?: string;
       nginx?: {
@@ -29236,17 +29236,17 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    foldingathome?: {
+    foldingathome: {
       daemonNiceLevel?: number;
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
       team?: number;
       user?: string | null;
     };
-    forgejo?: {
+    forgejo: {
       customDir?: string;
       database?: {
         createDatabase?: boolean;
@@ -29273,7 +29273,7 @@ declare module "winix" {
         contentDir?: string;
         enable?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       repositoryRoot?: string;
       secrets?: Record<string, unknown>;
       settings?: {
@@ -29285,7 +29285,7 @@ declare module "winix" {
       user?: string;
       useWizard?: boolean;
     };
-    foundationdb?: {
+    foundationdb: {
       backupProcesses?: number;
       class?: "stateless" | "storage" | "transaction" | null;
       dataDir?: string;
@@ -29305,7 +29305,7 @@ declare module "winix" {
       maxLogSize?: string;
       memory?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       pidfile?: string;
       publicAddress?: string;
       restartDelay?: number;
@@ -29319,20 +29319,20 @@ declare module "winix" {
       traceFormat?: "json" | "xml";
       user?: string;
     };
-    fprintd?: {
+    fprintd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       tod?: {
-        driver?: PackageRef;
+        driver?: string;
         enable?: boolean;
       };
     };
-    fractalart?: {
+    fractalart: {
       enable?: boolean;
       height?: number | null;
       width?: number | null;
     };
-    freeciv?: {
+    freeciv: {
       enable?: boolean;
       openFirewall?: boolean;
       settings?: {
@@ -29349,29 +29349,29 @@ declare module "winix" {
         saves?: string | null;
       };
     };
-    freefall?: {
+    freefall: {
       devices?: string[];
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    freenet?: {
+    freenet: {
       enable?: boolean;
       nice?: number;
     };
-    freeradius?: {
+    freeradius: {
       configDir?: string;
       debug?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    freeswitch?: {
+    freeswitch: {
       configDir?: Record<string, string>;
       configTemplate?: string;
       enable?: boolean;
       enableReload?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    freshrss?: {
+    freshrss: {
       api?: {
         enable?: boolean;
       };
@@ -29389,20 +29389,20 @@ declare module "winix" {
       dataDir?: string;
       defaultUser?: string;
       enable?: boolean;
-      extensions?: PackageRef[] | NixExpr;
+      extensions?: string[];
       language?: string;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string | null;
       pool?: string | null;
       user?: string;
       virtualHost?: string;
       webserver?: "caddy" | "nginx";
     };
-    frigate?: {
+    frigate: {
       checkConfig?: boolean;
       enable?: boolean;
       hostname?: string;
-      package?: PackageRef;
+      package?: string;
       preCheckConfig?: string;
       settings?: {
         cameras?: Record<string, unknown>;
@@ -29412,23 +29412,23 @@ declare module "winix" {
       };
       vaapiDriver?: "i965" | "iHD" | "nouveau" | "nvidia" | "radeonsi" | "vdpau" | null;
     };
-    "froide-govplan"?: {
+    "froide-govplan": {
       dataDir?: string;
       enable?: boolean;
       hostName?: string;
-      package?: PackageRef;
+      package?: string;
       secretKeyFile?: string | null;
       settings?: {
         ALLOWED_HOSTS?: string[];
       };
     };
-    frp?: {
+    frp: {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    frr?: {
+    frr: {
       babeld?: {
         enable?: boolean;
         extraOptions?: string[];
@@ -29535,16 +29535,16 @@ declare module "winix" {
         options?: string[];
       };
     };
-    fstrim?: {
+    fstrim: {
       enable?: boolean;
       interval?: string;
     };
-    fusionInventory?: {
+    fusionInventory: {
       enable?: boolean;
       extraConfig?: string;
       servers?: string[];
     };
-    fwupd?: {
+    fwupd: {
       daemonSettings?: {
         DisabledDevices?: string[];
         DisabledPlugins?: string[];
@@ -29553,21 +29553,21 @@ declare module "winix" {
       enable?: boolean;
       extraRemotes?: string[];
       extraTrustedKeys?: string[];
-      package?: PackageRef;
+      package?: string;
       uefiCapsuleSettings?: Record<string, unknown>;
     };
-    g3proxy?: {
+    g3proxy: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    "g810-led"?: {
+    "g810-led": {
       earlySetup?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       profile?: string | null;
     };
-    galene?: {
+    galene: {
       certFile?: string | null;
       dataDir?: string;
       enable?: boolean;
@@ -29577,14 +29577,14 @@ declare module "winix" {
       httpPort?: unknown;
       insecure?: boolean;
       keyFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       recordingsDir?: string;
       stateDir?: string;
       staticDir?: string;
       turnAddress?: string;
       user?: string;
     };
-    "gammu-smsd"?: {
+    "gammu-smsd": {
       backend?: {
         files?: Record<string, unknown>;
         service?: "files" | "null" | "sql";
@@ -29608,7 +29608,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    gancio?: {
+    gancio: {
       enable?: boolean;
       nginx?: {
         acmeFallbackHost?: string | null;
@@ -29641,8 +29641,8 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       settings?: {
         baseurl?: string;
         db?: Record<string, unknown>;
@@ -29654,31 +29654,31 @@ declare module "winix" {
       user?: string;
       userLocale?: Record<string, Record<string, Record<string, string>>>;
     };
-    garage?: {
+    garage: {
       enable?: boolean;
       environmentFile?: string | null;
       extraEnvironment?: Record<string, string>;
       logLevel?: "debug" | "error" | "info" | "trace" | "warn";
-      package?: PackageRef;
+      package?: string;
       settings?: {
         data_dir?: unknown;
         metadata_dir?: string;
       };
     };
-    gatus?: {
+    gatus: {
       configFile?: string;
       enable?: boolean;
       environmentFile?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         web?: Record<string, unknown>;
       };
     };
-    gdomap?: {
+    gdomap: {
       enable?: boolean;
     };
-    gemstash?: {
+    gemstash: {
       enable?: boolean;
       openFirewall?: boolean;
       settings?: {
@@ -29688,7 +29688,7 @@ declare module "winix" {
         db_url?: string | null;
       };
     };
-    geoclue2?: {
+    geoclue2: {
       appConfig?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -29701,7 +29701,7 @@ declare module "winix" {
       enableStatic?: boolean;
       enableWifi?: boolean;
       geoProviderUrl?: string;
-      package?: PackageRef;
+      package?: string;
       staticAccuracy?: unknown;
       staticAltitude?: unknown;
       staticLatitude?: unknown;
@@ -29711,7 +29711,7 @@ declare module "winix" {
       submitData?: boolean;
       whitelistedAgents?: string[];
     };
-    geoipupdate?: {
+    geoipupdate: {
       enable?: boolean;
       interval?: string;
       settings?: {
@@ -29721,29 +29721,29 @@ declare module "winix" {
         LicenseKey?: unknown;
       };
     };
-    geph?: {
+    geph: {
       configFile?: unknown;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    gerbil?: {
+    gerbil: {
       environmentFile?: string | null;
       port?: unknown;
     };
-    gerrit?: {
+    gerrit: {
       builtinPlugins?: ("codemirror-editor" | "commit-message-length-validator" | "delete-project" | "download-commands" | "gitiles" | "hooks" | "plugin-manager" | "replication" | "reviewnotes" | "singleusergroup" | "webhooks")[];
       enable?: boolean;
       jvmHeapLimit?: string;
       jvmOpts?: string[];
-      jvmPackage?: PackageRef;
+      jvmPackage?: string;
       listenAddress?: string;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       replicationSettings?: unknown;
       serverId?: string;
       settings?: unknown;
     };
-    geth?: {
+    geth: {
       "<name>"?: {
         authrpc?: Record<string, unknown>;
         enable?: boolean;
@@ -29753,13 +29753,13 @@ declare module "winix" {
         maxpeers?: number;
         metrics?: Record<string, unknown>;
         network?: "holesky" | "sepolia" | null;
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
         syncmode?: "fast" | "full" | "light" | "snap";
         websocket?: Record<string, unknown>;
       };
     };
-    getty?: {
+    getty: {
       autologinOnce?: boolean;
       autologinUser?: string | null;
       extraArgs?: string[];
@@ -29768,26 +29768,26 @@ declare module "winix" {
       loginOptions?: string | null;
       loginProgram?: string;
     };
-    ghostunnel?: {
+    ghostunnel: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       servers?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    gitDaemon?: {
+    gitDaemon: {
       basePath?: string;
       enable?: boolean;
       exportAll?: boolean;
       group?: string;
       listenAddress?: string;
       options?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       repositories?: string[];
       user?: string;
     };
-    gitea?: {
+    gitea: {
       appName?: string;
       camoHmacKeyFile?: string | null;
       captcha?: {
@@ -29830,7 +29830,7 @@ declare module "winix" {
       metricsTokenFile?: string | null;
       minioAccessKeyId?: string | null;
       minioSecretAccessKey?: string | null;
-      package?: PackageRef;
+      package?: string;
       repositoryRoot?: string;
       settings?: {
         log?: Record<string, unknown>;
@@ -29842,24 +29842,24 @@ declare module "winix" {
       stateDir?: string;
       user?: string;
     };
-    "gitea-actions-runner"?: {
+    "gitea-actions-runner": {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    "github-runners"?: {
+    "github-runners": {
       "<name>"?: {
         enable?: boolean;
         ephemeral?: boolean;
         extraEnvironment?: unknown;
         extraLabels?: string[];
-        extraPackages?: PackageRef[] | NixExpr;
+        extraPackages?: string[];
         group?: string | null;
         name?: string | null;
         noDefaultLabels?: boolean;
         nodeRuntimes?: unknown;
-        package?: PackageRef;
+        package?: string;
         replace?: boolean;
         runnerGroup?: string | null;
         serviceOverrides?: unknown;
@@ -29870,7 +29870,7 @@ declare module "winix" {
         workDir?: string | null;
       };
     };
-    gitlab?: {
+    gitlab: {
       backup?: {
         keepTime?: number;
         path?: string;
@@ -29901,11 +29901,11 @@ declare module "winix" {
         keep?: number;
       };
       packages?: {
-        gitaly?: PackageRef;
-        gitlab?: PackageRef;
-        "gitlab-shell"?: PackageRef;
-        "gitlab-workhorse"?: PackageRef;
-        pages?: PackageRef;
+        gitaly?: string;
+        gitlab?: string;
+        "gitlab-shell"?: string;
+        "gitlab-workhorse"?: string;
+        pages?: string;
       };
       pages?: {
         enable?: boolean;
@@ -29927,7 +29927,7 @@ declare module "winix" {
         host?: string;
         issuer?: string;
         keyFile?: string;
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
         serviceName?: string;
       };
@@ -29962,7 +29962,7 @@ declare module "winix" {
         config?: unknown;
       };
     };
-    "gitlab-runner"?: {
+    "gitlab-runner": {
       "clear-docker-cache"?: {
         dates?: string;
         enable?: boolean;
@@ -29971,16 +29971,16 @@ declare module "winix" {
       };
       configFile?: string | null;
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       gracefulTermination?: boolean;
       gracefulTimeout?: string;
-      package?: PackageRef;
+      package?: string;
       services?: {
         "<name>"?: Record<string, unknown>;
       };
       settings?: Record<string, unknown>;
     };
-    gitolite?: {
+    gitolite: {
       adminPubkey?: string;
       commonHooks?: string[];
       dataDir?: string;
@@ -29991,7 +29991,7 @@ declare module "winix" {
       group?: string;
       user?: string;
     };
-    gitwatch?: {
+    gitwatch: {
       "<name>"?: {
         branch?: string | null;
         enable?: boolean;
@@ -30001,29 +30001,29 @@ declare module "winix" {
         user?: string;
       };
     };
-    gitweb?: {
+    gitweb: {
       extraConfig?: string;
       gitwebTheme?: boolean;
       projectroot?: string;
     };
-    glance?: {
+    glance: {
       enable?: boolean;
       environmentFile?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         pages?: unknown;
         server?: Record<string, unknown>;
       };
     };
-    glances?: {
+    glances: {
       enable?: boolean;
       extraArgs?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    glitchtip?: {
+    glitchtip: {
       database?: {
         createLocally?: boolean;
       };
@@ -30034,7 +30034,7 @@ declare module "winix" {
         createLocally?: boolean;
         domain?: string;
       };
-      package?: PackageRef;
+      package?: string;
       redis?: {
         createLocally?: boolean;
       };
@@ -30049,13 +30049,13 @@ declare module "winix" {
       stateDir?: string;
       user?: string;
     };
-    glpiAgent?: {
+    glpiAgent: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       stateDir?: string;
     };
-    glusterfs?: {
+    glusterfs: {
       enable?: boolean;
       enableGlustereventsd?: boolean;
       extraFlags?: string[];
@@ -30069,17 +30069,17 @@ declare module "winix" {
       };
       useRpcbind?: boolean;
     };
-    gmediarender?: {
+    gmediarender: {
       audioDevice?: string | null;
       audioSink?: string | null;
       enable?: boolean;
       friendlyName?: string | null;
       initialVolume?: number | null;
-      package?: PackageRef;
+      package?: string;
       port?: unknown | null;
       uuid?: string | null;
     };
-    gnome?: {
+    gnome: {
       "at-spi2-core"?: {
         enable?: boolean;
       };
@@ -30097,14 +30097,14 @@ declare module "winix" {
       };
       "evolution-data-server"?: {
         enable?: boolean;
-        plugins?: PackageRef[] | NixExpr;
+        plugins?: string[];
       };
       games?: {
         enable?: boolean;
       };
       "gcr-ssh-agent"?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       "glib-networking"?: {
         enable?: boolean;
@@ -30138,7 +30138,7 @@ declare module "winix" {
       };
       rygel?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       sushi?: {
         enable?: boolean;
@@ -30147,7 +30147,7 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    "gns3-server"?: {
+    "gns3-server": {
       auth?: {
         enable?: boolean;
         passwordFile?: string | null;
@@ -30155,14 +30155,14 @@ declare module "winix" {
       };
       dynamips?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       enable?: boolean;
       log?: {
         debug?: boolean;
         file?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       ssl?: {
         certFile?: string | null;
@@ -30171,14 +30171,14 @@ declare module "winix" {
       };
       ubridge?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       vpcs?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
     };
-    gnunet?: {
+    gnunet: {
       enable?: boolean;
       extraOptions?: string;
       fileSharing?: {
@@ -30189,7 +30189,7 @@ declare module "winix" {
         maxNetDownBandwidth?: number;
         maxNetUpBandwidth?: number;
       };
-      package?: PackageRef;
+      package?: string;
       tcp?: {
         port?: unknown;
       };
@@ -30197,11 +30197,11 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    "go-autoconfig"?: {
+    "go-autoconfig": {
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
-    "go-camo"?: {
+    "go-camo": {
       enable?: boolean;
       extraOptions?: string[];
       keyFile?: string;
@@ -30210,57 +30210,57 @@ declare module "winix" {
       sslKey?: string | null;
       sslListen?: string | null;
     };
-    "go-csp-collector"?: {
+    "go-csp-collector": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         "output-format"?: "json" | "text";
         port?: unknown;
       };
     };
-    "go-httpbin"?: {
+    "go-httpbin": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         HOST?: string;
         PORT?: unknown;
       };
     };
-    "go-neb"?: {
+    "go-neb": {
       baseUrl?: string;
       bindAddress?: string;
       config?: unknown;
       enable?: boolean;
       secretFile?: string | null;
     };
-    "go-shadowsocks2"?: {
+    "go-shadowsocks2": {
       server?: {
         enable?: boolean;
         listenAddress?: string;
       };
     };
-    go2rtc?: {
+    go2rtc: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         api?: Record<string, unknown>;
         ffmpeg?: Record<string, unknown>;
         streams?: Record<string, unknown>;
       };
     };
-    goatcounter?: {
+    goatcounter: {
       address?: string;
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       proxy?: boolean;
     };
-    gobgpd?: {
+    gobgpd: {
       enable?: boolean;
       settings?: unknown;
     };
-    "gocd-agent"?: {
+    "gocd-agent": {
       agentConfig?: string;
       enable?: boolean;
       environment?: Record<string, string>;
@@ -30270,12 +30270,12 @@ declare module "winix" {
       group?: string;
       initialJavaHeapSize?: string;
       maxJavaHeapMemory?: string;
-      packages?: PackageRef[] | NixExpr;
+      packages?: string[];
       startupOptions?: string[];
       user?: string;
       workDir?: string;
     };
-    "gocd-server"?: {
+    "gocd-server": {
       enable?: boolean;
       environment?: Record<string, string>;
       extraGroups?: string[];
@@ -30284,26 +30284,26 @@ declare module "winix" {
       initialJavaHeapSize?: string;
       listenAddress?: string;
       maxJavaHeapMemory?: string;
-      packages?: PackageRef[] | NixExpr;
+      packages?: string[];
       port?: unknown;
       sslPort?: unknown;
       startupOptions?: string[];
       user?: string;
       workDir?: string;
     };
-    godns?: {
+    godns: {
       enable?: boolean;
       loadCredential?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    goeland?: {
+    goeland: {
       enable?: boolean;
       schedule?: string;
       settings?: unknown;
       stateDir?: string;
     };
-    gokapi?: {
+    gokapi: {
       enable?: boolean;
       environment?: {
         GOKAPI_CONFIG_DIR?: string;
@@ -30312,11 +30312,11 @@ declare module "winix" {
         GOKAPI_PORT?: unknown;
       };
       mutableSettings?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       settingsFile?: string | null;
     };
-    gollum?: {
+    gollum: {
       address?: string;
       allowUploads?: "dir" | "page" | null;
       branch?: string;
@@ -30327,24 +30327,24 @@ declare module "winix" {
       "h1-title"?: boolean;
       math?: boolean;
       "no-edit"?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       stateDir?: string;
       user?: string;
       "user-icons"?: "gravatar" | "identicon" | null;
     };
-    gonic?: {
+    gonic: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    goss?: {
+    goss: {
       enable?: boolean;
       environment?: Record<string, string>;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    gotenberg?: {
+    gotenberg: {
       bindIP?: string | null;
       bodyLimit?: string | null;
       chromium?: {
@@ -30352,7 +30352,7 @@ declare module "winix" {
         disableJavascript?: boolean;
         disableRoutes?: boolean;
         maxQueueSize?: unknown;
-        package?: PackageRef;
+        package?: string;
       };
       downloadFrom?: {
         allowList?: string | null;
@@ -30364,16 +30364,16 @@ declare module "winix" {
       enableBasicAuth?: boolean;
       environmentFile?: string | null;
       extraArgs?: string[];
-      extraFontPackages?: PackageRef[] | NixExpr;
+      extraFontPackages?: string[];
       libreoffice?: {
         autoStart?: boolean;
         disableRoutes?: boolean;
         maxQueueSize?: unknown;
-        package?: PackageRef;
+        package?: string;
         restartAfter?: unknown;
       };
       logLevel?: "debug" | "error" | "info" | "warn";
-      package?: PackageRef;
+      package?: string;
       pdfEngines?: {
         convert?: unknown[];
         disableRoutes?: boolean;
@@ -30385,51 +30385,51 @@ declare module "winix" {
       rootPath?: string;
       timeout?: string | null;
     };
-    gotify?: {
+    gotify: {
       enable?: boolean;
       environment?: Record<string, unknown>;
       environmentFiles?: string[];
-      package?: PackageRef;
+      package?: string;
       stateDirectoryName?: string;
     };
-    gotosocial?: {
+    gotosocial: {
       enable?: boolean;
       environmentFile?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       setupPostgresqlDB?: boolean;
     };
-    goupile?: {
+    goupile: {
       configFile?: string;
       enable?: boolean;
       enableSandbox?: boolean;
       hostName?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         Data?: Record<string, unknown>;
         HTTP?: Record<string, unknown>;
       };
     };
-    govee2mqtt?: {
+    govee2mqtt: {
       enable?: boolean;
       environmentFile?: string;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    "goxlr-utility"?: {
+    "goxlr-utility": {
       autoStart?: {
         xdg?: boolean;
       };
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    gpm?: {
+    gpm: {
       enable?: boolean;
       protocol?: string;
     };
-    gpsd?: {
+    gpsd: {
       debugLevel?: number;
       devices?: string[];
       enable?: boolean;
@@ -30439,12 +30439,12 @@ declare module "winix" {
       port?: unknown;
       readonly?: boolean;
     };
-    grafana?: {
+    grafana: {
       dataDir?: string;
       declarativePlugins?: string[] | null;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       provision?: {
         alerting?: Record<string, unknown>;
         dashboards?: Record<string, unknown>;
@@ -30462,7 +30462,7 @@ declare module "winix" {
         users?: Record<string, unknown>;
       };
     };
-    grafana_reporter?: {
+    grafana_reporter: {
       addr?: string;
       enable?: boolean;
       grafana?: {
@@ -30473,7 +30473,7 @@ declare module "winix" {
       port?: unknown;
       templateDir?: unknown;
     };
-    "grafana-image-renderer"?: {
+    "grafana-image-renderer": {
       enable?: boolean;
       provisionGrafana?: boolean;
       settings?: {
@@ -30481,9 +30481,9 @@ declare module "winix" {
         server?: Record<string, unknown>;
       };
     };
-    "grafana-to-ntfy"?: {
+    "grafana-to-ntfy": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         address?: string;
         bauthPass?: string | null;
@@ -30495,7 +30495,7 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    graphite?: {
+    graphite: {
       carbon?: {
         aggregationRules?: string | null;
         blacklist?: string | null;
@@ -30525,17 +30525,17 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    grav?: {
+    grav: {
       enable?: boolean;
       maxUploadSize?: string;
-      package?: PackageRef;
-      phpPackage?: PackageRef;
+      package?: string;
+      phpPackage?: string;
       pool?: string;
       root?: string;
       systemSettings?: unknown;
       virtualHost?: string | null;
     };
-    graylog?: {
+    graylog: {
       dataDir?: string;
       elasticsearchHosts?: string[];
       enable?: boolean;
@@ -30544,25 +30544,25 @@ declare module "winix" {
       messageJournalDir?: string;
       mongodbUri?: string;
       nodeIdFile?: string;
-      package?: PackageRef;
+      package?: string;
       passwordSecret?: string;
-      plugins?: PackageRef[] | NixExpr;
+      plugins?: string[];
       rootPasswordSha2?: string;
       rootUsername?: string;
       user?: string;
     };
-    greenclip?: {
+    greenclip: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    greetd?: {
+    greetd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       restart?: boolean;
       settings?: unknown;
       useTextGreeter?: boolean;
     };
-    grocy?: {
+    grocy: {
       dataDir?: string;
       enable?: boolean;
       extraConfig?: string;
@@ -30570,7 +30570,7 @@ declare module "winix" {
       nginx?: {
         enableSSL?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       phpfpm?: {
         settings?: Record<string, unknown>;
       };
@@ -30581,22 +30581,22 @@ declare module "winix" {
         entryPage?: "batteries" | "calendar" | "chores" | "equipment" | "mealplan" | "recipes" | "shoppinglist" | "stock" | "tasks";
       };
     };
-    "guacamole-client"?: {
+    "guacamole-client": {
       enable?: boolean;
       enableWebserver?: boolean;
       logbackXml?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       userMappingXml?: string | null;
     };
-    "guacamole-server"?: {
+    "guacamole-server": {
       enable?: boolean;
       extraEnvironment?: Record<string, string>;
       host?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    guix?: {
+    guix: {
       enable?: boolean;
       extraArgs?: string[];
       gc?: {
@@ -30606,7 +30606,7 @@ declare module "winix" {
       };
       group?: string;
       nrBuildUsers?: unknown;
-      package?: PackageRef;
+      package?: string;
       publish?: {
         enable?: boolean;
         extraArgs?: string[];
@@ -30621,11 +30621,11 @@ declare module "winix" {
         urls?: string[];
       };
     };
-    gvfs?: {
+    gvfs: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    gvpe?: {
+    gvpe: {
       configFile?: string | null;
       configText?: string | null;
       customIFSetup?: string;
@@ -30634,7 +30634,7 @@ declare module "winix" {
       nodename?: string | null;
       subnet?: string | null;
     };
-    h2o?: {
+    h2o: {
       defaultHTTPListenPort?: unknown;
       defaultTLSListenPort?: unknown;
       defaultTLSRecommendations?: "intermediate" | "modern" | "old" | null;
@@ -30643,11 +30643,11 @@ declare module "winix" {
       hosts?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       user?: unknown;
     };
-    hadoop?: {
+    hadoop: {
       containerExecutorCfg?: Record<string, unknown>;
       coreSite?: Record<string, unknown>;
       extraConfDirs?: string[];
@@ -30657,7 +30657,7 @@ declare module "winix" {
       };
       hbase?: {
         master?: Record<string, unknown>;
-        package?: PackageRef;
+        package?: string;
         regionServer?: Record<string, unknown>;
         rest?: Record<string, unknown>;
         rootdir?: string;
@@ -30679,7 +30679,7 @@ declare module "winix" {
       log4jProperties?: string;
       mapredSite?: Record<string, unknown>;
       mapredSiteDefault?: Record<string, unknown>;
-      package?: PackageRef;
+      package?: string;
       yarn?: {
         nodemanager?: Record<string, unknown>;
         resourcemanager?: Record<string, unknown>;
@@ -30687,20 +30687,20 @@ declare module "winix" {
       yarnSite?: Record<string, unknown>;
       yarnSiteDefault?: Record<string, unknown>;
     };
-    "handheld-daemon"?: {
+    "handheld-daemon": {
       adjustor?: {
         enable?: boolean;
         loadAcpiCallModule?: boolean;
       };
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       ui?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       user?: string;
     };
-    hans?: {
+    hans: {
       clients?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -30712,30 +30712,30 @@ declare module "winix" {
         respondToSystemPings?: boolean;
       };
     };
-    haproxy?: {
+    haproxy: {
       config?: string | null;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    hardware?: {
+    hardware: {
       argonone?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       bolt?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       "deepcool-digital-linux"?: {
         enable?: boolean;
         extraArgs?: string[];
-        package?: PackageRef;
+        package?: string;
       };
       "dell-bios-fan-control"?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       lcd?: {
         client?: Record<string, unknown>;
@@ -30746,7 +30746,7 @@ declare module "winix" {
       openrgb?: {
         enable?: boolean;
         motherboard?: "amd" | "intel" | null;
-        package?: PackageRef;
+        package?: string;
         server?: Record<string, unknown>;
         startupProfile?: string | null;
       };
@@ -30755,7 +30755,7 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    harmonia?: {
+    harmonia: {
       cache?: {
         enable?: boolean;
         settings?: unknown;
@@ -30769,16 +30769,16 @@ declare module "winix" {
         socketPath?: string;
         storeDir?: string;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    "haste-server"?: {
+    "haste-server": {
       enable?: boolean;
       openFirewall?: boolean;
       settings?: unknown;
     };
-    hatsu?: {
+    hatsu: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         HATSU_DATABASE_URL?: string;
         HATSU_DOMAIN?: string;
@@ -30787,38 +30787,38 @@ declare module "winix" {
         HATSU_PRIMARY_ACCOUNT?: string;
       };
     };
-    haveged?: {
+    haveged: {
       enable?: boolean;
       refill_threshold?: number;
     };
-    haven?: {
+    haven: {
       blastrRelays?: string[];
       enable?: boolean;
       environmentFile?: string | null;
       importRelays?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    "hbase-standalone"?: {
+    "hbase-standalone": {
       dataDir?: string;
       enable?: boolean;
       group?: string;
       logDir?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       user?: string;
     };
-    hdapsd?: {
+    hdapsd: {
       enable?: boolean;
     };
-    hddfancontrol?: {
+    hddfancontrol: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         "<drive-bay-name>"?: Record<string, unknown>;
       };
     };
-    headphones?: {
+    headphones: {
       configFile?: string;
       dataDir?: string;
       enable?: boolean;
@@ -30827,13 +30827,13 @@ declare module "winix" {
       port?: unknown;
       user?: string;
     };
-    headplane?: {
+    headplane: {
       agent?: {
-        package?: PackageRef;
+        package?: string;
       };
       debug?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         headscale?: Record<string, unknown>;
         integration?: Record<string, unknown>;
@@ -30841,12 +30841,12 @@ declare module "winix" {
         server?: Record<string, unknown>;
       };
     };
-    headscale?: {
+    headscale: {
       address?: string;
       configFile?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: {
         database?: Record<string, unknown>;
@@ -30867,12 +30867,12 @@ declare module "winix" {
       };
       user?: string;
     };
-    healthchecks?: {
+    healthchecks: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: {
         ALLOWED_HOSTS?: string[];
@@ -30885,25 +30885,25 @@ declare module "winix" {
       settingsFile?: string | null;
       user?: string;
     };
-    heapster?: {
+    heapster: {
       enable?: boolean;
       extraOpts?: unknown;
-      package?: PackageRef;
+      package?: string;
       sink?: string;
       source?: string;
     };
-    heartbeat?: {
+    heartbeat: {
       enable?: boolean;
       extraConfig?: string;
       name?: string;
-      package?: PackageRef;
+      package?: string;
       stateDir?: string;
       tags?: string[];
     };
-    hebbot?: {
+    hebbot: {
       botPasswordFile?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       templates?: {
         project?: string;
@@ -30911,11 +30911,11 @@ declare module "winix" {
         section?: string;
       };
     };
-    hedgedoc?: {
+    hedgedoc: {
       configureNginx?: boolean;
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         allowGravatar?: boolean;
         allowOrigin?: string[];
@@ -30930,7 +30930,7 @@ declare module "winix" {
         useSSL?: boolean;
       };
     };
-    heisenbridge?: {
+    heisenbridge: {
       address?: string;
       debug?: boolean;
       enable?: boolean;
@@ -30942,13 +30942,13 @@ declare module "winix" {
       };
       namespaces?: Record<string, unknown>;
       owner?: string | null;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       registrationUrl?: string;
     };
-    "hercules-ci-agent"?: {
+    "hercules-ci-agent": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         apiBaseUrl?: string;
         baseDirectory?: string;
@@ -30961,11 +30961,11 @@ declare module "winix" {
         workDirectory?: string;
       };
     };
-    "hickory-dns"?: {
+    "hickory-dns": {
       configFile?: string;
       debug?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       quiet?: boolean;
       settings?: {
         directory?: string;
@@ -30975,7 +30975,7 @@ declare module "winix" {
         zones?: Record<string, unknown>;
       };
     };
-    hitch?: {
+    hitch: {
       backend?: string;
       ciphers?: string;
       enable?: boolean;
@@ -30988,7 +30988,7 @@ declare module "winix" {
       "pem-files"?: string[];
       user?: string;
     };
-    "hledger-web"?: {
+    "hledger-web": {
       allow?: "add" | "edit" | "sandstorm" | "view";
       baseUrl?: string | null;
       enable?: boolean;
@@ -30999,17 +30999,17 @@ declare module "winix" {
       serveApi?: boolean;
       stateDir?: string;
     };
-    hockeypuck?: {
+    hockeypuck: {
       enable?: boolean;
       port?: unknown;
       settings?: unknown;
     };
-    "hologram-agent"?: {
+    "hologram-agent": {
       dialAddress?: string;
       enable?: boolean;
       httpPort?: string;
     };
-    "hologram-server"?: {
+    "hologram-server": {
       awsAccount?: string;
       awsDefaultRole?: string;
       cacheTimeoutSeconds?: number;
@@ -31026,7 +31026,7 @@ declare module "winix" {
       roleAttr?: string;
       statsAddress?: string;
     };
-    "home-assistant"?: {
+    "home-assistant": {
       blueprints?: {
         automation?: unknown[];
         script?: unknown[];
@@ -31040,7 +31040,7 @@ declare module "winix" {
       configDir?: string;
       configWritable?: boolean;
       customComponents?: unknown[];
-      customLovelaceModules?: PackageRef[] | NixExpr;
+      customLovelaceModules?: string[];
       defaultIntegrations?: ("3_day_blinds" | "abode" | "acaia" | "accuweather" | "acer_projector" | "acmeda" | "acomax" | "actiontec" | "actron_air" | "adax" | "adguard" | "ads" | "advantage_air" | "aemet" | "aep_ohio" | "aep_texas" | "aftership" | "agent_dvr" | "ai_task" | "air_quality" | "airgradient" | "airly" | "airnow" | "airobot" | "airos" | "airpatrol" | "airq" | "airthings" | "airthings_ble" | "airtouch4" | "airtouch5" | "airvisual" | "airvisual_pro" | "airzone" | "airzone_cloud" | "aladdin_connect" | "alarm_control_panel" | "alarmdecoder" | "alert" | "alexa" | "alexa_devices" | "alpha_vantage" | "altruist" | "amazon_polly" | "amberelectric" | "ambient_network" | "ambient_station" | "amcrest" | "amp_motorization" | "ampio" | "analytics" | "analytics_insights" | "android_ip_webcam" | "androidtv" | "androidtv_remote" | "anel_pwrctrl" | "anglian_water" | "anova" | "anthemav" | "anthropic" | "anwb_energie" | "aosmith" | "apache_kafka" | "apcupsd" | "api" | "apollo_automation" | "appalachianpower" | "apple_tv" | "application_credentials" | "apprise" | "aprilaire" | "aprs" | "apsystems" | "aquacell" | "aqualogic" | "aquostv" | "aranet" | "arcam_fmj" | "arest" | "arris_tg2492lg" | "artsound" | "aruba" | "arve" | "arwn" | "aseko_pool_live" | "assist_pipeline" | "assist_satellite" | "asuswrt" | "atag" | "aten_pe" | "atlanticcityelectric" | "atome" | "august" | "august_ble" | "aurora" | "aurora_abb_powerone" | "aussie_broadband" | "autarco" | "auth" | "automation" | "autoskope" | "avea" | "avion" | "awair" | "aws" | "aws_s3" | "axis" | "azure_data_explorer" | "azure_devops" | "azure_event_hub" | "azure_service_bus" | "azure_storage" | "backblaze_b2" | "backup" | "baf" | "baidu" | "balay" | "balboa" | "bang_olufsen" | "battery" | "bauknecht" | "bayesian" | "bbox" | "beewi_smartclim" | "bge" | "binary_sensor" | "bitcoin" | "bizkaibus" | "blackbird" | "blebox" | "blink" | "bliss_automation" | "bloc_blinds" | "blockchain" | "blue_current" | "bluemaestro" | "blueprint" | "bluesound" | "bluetooth" | "bluetooth_adapters" | "bluetooth_le_tracker" | "bmw_connected_drive" | "bond" | "bosch_alarm" | "bosch_shc" | "brands" | "brandt" | "braviatv" | "brel_home" | "bring" | "broadlink" | "brother" | "brottsplatskartan" | "browser" | "brunt" | "bryant_evolution" | "bsblan" | "bswitch" | "bt_home_hub_5" | "bt_smarthub" | "bthome" | "bticino" | "bubendorff" | "buienradar" | "burbank_water_and_power" | "button" | "caldav" | "calendar" | "cambridge_audio" | "camera" | "canary" | "casper_glow" | "cast" | "ccm15" | "cert_expiry" | "chacon_dio" | "channels" | "chess_com" | "cisco_ios" | "cisco_mobility_express" | "cisco_webex_teams" | "citybikes" | "clementine" | "clickatell" | "clicksend" | "clicksend_tts" | "climate" | "cloud" | "cloudflare" | "cloudflare_r2" | "cmus" | "co2signal" | "coautilities" | "coinbase" | "color_extractor" | "comed" | "comed_hourly_pricing" | "comelit" | "comfoconnect" | "command_line" | "compensation" | "compit" | "concord232" | "coned" | "config" | "configurator" | "constructa" | "control4" | "conversation" | "cookidoo" | "coolmaster" | "cosori" | "counter" | "cover" | "cozytouch" | "cppm_tracker" | "cpuspeed" | "cribl" | "crownstone" | "currencylayer" | "cync" | "dacia" | "daikin" | "danfoss_air" | "datadog" | "date" | "datetime" | "ddwrt" | "deako" | "debugpy" | "deconz" | "decora_wifi" | "decorquip" | "default_config" | "delijn" | "delmarva" | "deluge" | "demo" | "denon" | "denon_rs232" | "denonavr" | "derivative" | "devialet" | "device_automation" | "device_sun_light_trigger" | "device_tracker" | "devolo_home_control" | "devolo_home_network" | "dexcom" | "dhcp" | "diagnostics" | "dialogflow" | "diaz" | "digital_loggers" | "digital_ocean" | "directv" | "discogs" | "discord" | "discovergy" | "dlink" | "dlna_dmr" | "dlna_dms" | "dnsip" | "doods" | "door" | "doorbell" | "doorbird" | "dooya" | "dormakaba_dkey" | "downloader" | "dremel_3d_printer" | "drop_connect" | "dropbox" | "droplet" | "dsmr" | "dsmr_reader" | "dublin_bus_transport" | "duckdns" | "duco" | "dunehd" | "duotecno" | "duquesne_light" | "dwd_weather_warnings" | "dynalite" | "eafm" | "earn_e_p1" | "eastron" | "easyenergy" | "ebox" | "ebusd" | "ecoal_boiler" | "ecobee" | "ecoforest" | "econet" | "ecovacs" | "ecowitt" | "edimax" | "edl21" | "efergy" | "egardia" | "egauge" | "eheimdigital" | "eight_sleep" | "ekeybionyx" | "electrasmart" | "electric_kiwi" | "elevenlabs" | "elgato" | "eliqonline" | "elkm1" | "elmax" | "elv" | "elvia" | "emby" | "emoncms" | "emoncms_history" | "emonitor" | "emulated_hue" | "emulated_kasa" | "emulated_roku" | "energenie_power_sockets" | "energie_vanons" | "energy" | "energyid" | "energyzero" | "enigma2" | "enocean" | "enphase_envoy" | "entur_public_transport" | "environment_canada" | "envisalink" | "ephember" | "epic_games_store" | "epion" | "epson" | "eq3btsmart" | "escea" | "esera_onewire" | "esphome" | "essent" | "etherscan" | "eufy" | "eufylife_ble" | "eurotronic_cometblue" | "event" | "evergy" | "everlights" | "evil_genius_labs" | "evohome" | "ezviz" | "faa_delays" | "facebook" | "fail2ban" | "familyhub" | "fan" | "fastdotcom" | "feedreader" | "ffmpeg" | "ffmpeg_motion" | "ffmpeg_noise" | "fibaro" | "fido" | "file" | "file_upload" | "filesize" | "filter" | "fing" | "fints" | "fire_tv" | "firefly_iii" | "fireservicerota" | "firmata" | "fish_audio" | "fitbit" | "fivem" | "fixer" | "fjaraskupan" | "fleetgo" | "flexit" | "flexit_bacnet" | "flexom" | "flic" | "flipr" | "flo" | "flock" | "flume" | "fluss" | "flux" | "flux_led" | "folder" | "folder_watcher" | "foobot" | "forecast_solar" | "forked_daapd" | "fortios" | "foscam" | "foursquare" | "frankever" | "free_mobile" | "freebox" | "freedns" | "freedompro" | "freshr" | "fressnapf_tracker" | "fritz" | "fritzbox" | "fritzbox_callmonitor" | "fronius" | "frontend" | "frontier_silicon" | "fujitsu_anywair" | "fujitsu_fglair" | "fully_kiosk" | "fumis" | "futurenow" | "fyta" | "gaggenau" | "garadget" | "garage_door" | "garages_amsterdam" | "gardena_bluetooth" | "gate" | "gaviota" | "gc100" | "gdacs" | "generic" | "generic_hygrostat" | "generic_thermostat" | "geniushub" | "gentex_homelink" | "geo_json_events" | "geo_location" | "geo_rss_events" | "geocaching" | "geofency" | "geonetnz_quakes" | "geonetnz_volcano" | "ghost" | "gios" | "github" | "gitlab_ci" | "gitter" | "glances" | "go2rtc" | "goalzero" | "gogogate2" | "goodwe" | "google" | "google_air_quality" | "google_assistant" | "google_assistant_sdk" | "google_cloud" | "google_drive" | "google_generative_ai_conversation" | "google_mail" | "google_maps" | "google_photos" | "google_pubsub" | "google_sheets" | "google_tasks" | "google_translate" | "google_travel_time" | "google_weather" | "google_wifi" | "govee_ble" | "govee_light_local" | "gpsd" | "gpslogger" | "graphite" | "gree" | "green_planet_energy" | "greeneye_monitor" | "greenwave" | "group" | "growatt_server" | "gtfs" | "guardian" | "habitica" | "hanna" | "hardkernel" | "hardware" | "harman_kardon_avr" | "harmony" | "harvey" | "hassio" | "havana_shade" | "haveibeenpwned" | "hddtemp" | "hdfury" | "hdmi_cec" | "heatmiser" | "hegel" | "heicko" | "heiwa" | "heos" | "here_travel_time" | "hexaom" | "hi_kumo" | "hikvision" | "hikvisioncam" | "hisense_aehw4a1" | "history" | "history_stats" | "hitron_coda" | "hive" | "hko" | "hlk_sw16" | "holiday" | "home_connect" | "home_plus_control" | "homeassistant" | "homeassistant_alerts" | "homeassistant_connect_zbt2" | "homeassistant_green" | "homeassistant_hardware" | "homeassistant_sky_connect" | "homeassistant_yellow" | "homee" | "homekit" | "homekit_controller" | "homematic" | "homematicip_cloud" | "homevolt" | "homewizard" | "homeworks" | "honeywell" | "honeywell_string_lights" | "horizon" | "hp_ilo" | "hr_energy_qube" | "html5" | "http" | "huawei_lte" | "hue" | "hue_ble" | "huisbaasje" | "humidifier" | "humidity" | "hunterdouglas_powerview" | "hurrican_shutters_wholesale" | "husqvarna_automower" | "husqvarna_automower_ble" | "huum" | "hvv_departures" | "hydrawise" | "hyperion" | "hypontech" | "ialarm" | "iammeter" | "iaqualink" | "ibeacon" | "icloud" | "idasen_desk" | "idrive_e2" | "idteck_prox" | "ifttt" | "iglo" | "igloohome" | "ign_sismologia" | "ihc" | "illuminance" | "image" | "image_processing" | "image_upload" | "imap" | "imeon_inverter" | "imgw_pib" | "immich" | "improv_ble" | "incomfort" | "indevolt" | "indianamichiganpower" | "inels" | "influxdb" | "infrared" | "inkbird" | "input_boolean" | "input_button" | "input_datetime" | "input_number" | "input_select" | "input_text" | "inspired_shades" | "insteon" | "integration" | "intelliclima" | "intellifire" | "intent" | "intent_script" | "intesishome" | "iometer" | "ios" | "iotawatt" | "iotty" | "iperf3" | "ipma" | "ipp" | "iqvia" | "irish_rail_transport" | "irm_kmi" | "iron_os" | "isal" | "iskra" | "islamic_prayer_times" | "ismartwindow" | "israel_rail" | "iss" | "ista_ecotrend" | "isy994" | "itach" | "itunes" | "ituran" | "izone" | "jellyfin" | "jewish_calendar" | "joaoapps_join" | "juicenet" | "justnimbus" | "jvc_projector" | "kaiser_nienhaus" | "kaiterra" | "kaleidescape" | "kankun" | "keba" | "keenetic_ndms2" | "kef" | "kegtron" | "kentuckypower" | "keyboard_remote" | "keymitt_ble" | "kiosker" | "kira" | "kitchen_sink" | "kiwi" | "kmtronic" | "knocki" | "knx" | "kodi" | "konnected" | "konnected_esphome" | "kostal_plenticore" | "kraken" | "krispol" | "kulersky" | "kwb" | "labs" | "lacrosse" | "lacrosse_view" | "lamarzocco" | "lametric" | "landisgyr_heat_meter" | "lannouncer" | "lastfm" | "launch_library" | "laundrify" | "lawn_mower" | "lcn" | "ld2410_ble" | "leaone" | "led_ble" | "legrand" | "lektrico" | "letpot" | "levoit" | "lg_infrared" | "lg_netcast" | "lg_soundbar" | "lg_thinq" | "libre_hardware_monitor" | "lichess" | "lidarr" | "liebherr" | "life360" | "lifx" | "lifx_cloud" | "light" | "lightwave" | "limitlessled" | "linak" | "linkedgo" | "linkplay" | "linksys_smart" | "linode" | "linux_battery" | "linx" | "litejet" | "litterrobot" | "livisi" | "llamalab_automate" | "local_calendar" | "local_file" | "local_ip" | "local_todo" | "locative" | "lock" | "logbook" | "logentries" | "logger" | "lojack" | "london_air" | "london_underground" | "lookin" | "loqed" | "lovelace" | "luci" | "luftdaten" | "lunatone" | "lupusec" | "lutron" | "lutron_caseta" | "luxaflex" | "lw12wifi" | "lyric" | "madeco" | "madvr" | "mailgun" | "manual" | "manual_mqtt" | "marantz" | "martec" | "marytts" | "mastodon" | "matrix" | "matter" | "maxcube" | "maytag" | "mazda" | "mcp" | "mcp_server" | "mealie" | "meater" | "medcom_ble" | "media_extractor" | "media_player" | "media_source" | "mediaroom" | "melcloud" | "melissa" | "melnor" | "meraki" | "message_bird" | "met" | "met_eireann" | "meteo_france" | "meteo_lt" | "meteoalarm" | "meteoclimatic" | "metoffice" | "mfi" | "microbees" | "microsoft" | "microsoft_face" | "microsoft_face_detect" | "microsoft_face_identify" | "miele" | "mijndomein_energie" | "mikrotik" | "mill" | "min_max" | "minecraft_server" | "minio" | "mjpeg" | "moat" | "mobile_app" | "mochad" | "modbus" | "modem_callerid" | "modern_forms" | "moehlenhoff_alpha2" | "moisture" | "mold_indicator" | "monarch_money" | "monessen" | "monoprice" | "monzo" | "moon" | "mopeka" | "motion" | "motion_blinds" | "motionblinds_ble" | "motioneye" | "motionmount" | "mpd" | "mqtt" | "mqtt_eventstream" | "mqtt_json" | "mqtt_room" | "mqtt_statestream" | "msteams" | "mta" | "mullvad" | "music_assistant" | "mutesync" | "mvglive" | "my" | "myneomitis" | "myq" | "mysensors" | "mystrom" | "mythicbeastsdns" | "myuplink" | "nad" | "nam" | "namecheapdns" | "nanoleaf" | "nasweb" | "national_grid_us" | "neato" | "nederlandse_spoorwegen" | "neff" | "neo" | "ness_alarm" | "nest" | "netatmo" | "netdata" | "netgear" | "netgear_lte" | "netio" | "network" | "neurio_energy" | "nexia" | "nexity" | "nextbus" | "nextcloud" | "nextdns" | "nfandroidtv" | "nibe_heatpump" | "nice_go" | "nightscout" | "niko_home_control" | "nilu" | "nina" | "nintendo_parental_controls" | "nissan_leaf" | "nmap_tracker" | "nmbs" | "no_ip" | "noaa_tides" | "nobo_hub" | "nordpool" | "norway_air" | "notify" | "notify_events" | "notion" | "novy_cooker_hood" | "nrgkick" | "nsw_fuel_station" | "nsw_rural_fire_service_feed" | "ntfy" | "nuheat" | "nuki" | "numato" | "number" | "nut" | "nutrichef" | "nws" | "nx584" | "nyt_games" | "nzbget" | "oasa_telematics" | "obihai" | "occupancy" | "octoprint" | "oem" | "ogemray" | "ohmconnect" | "ohme" | "ollama" | "ombi" | "omie" | "omnilogic" | "onboarding" | "oncue" | "ondilo_ico" | "onedrive" | "onedrive_for_business" | "onewire" | "onkyo" | "onvif" | "open_meteo" | "open_router" | "openai_conversation" | "openalpr_cloud" | "opendisplay" | "openerz" | "openevse" | "openexchangerates" | "opengarage" | "openhardwaremonitor" | "openhome" | "openrgb" | "opensensemap" | "opensky" | "opentherm_gw" | "openuv" | "openweathermap" | "opnsense" | "opower" | "opple" | "oralb" | "oru" | "oru_opower" | "orvibo" | "osoenergy" | "osramlightify" | "otbr" | "otp" | "ourgroceries" | "overkiz" | "overseerr" | "ovo_energy" | "owntracks" | "p1_monitor" | "palazzetti" | "panasonic_bluray" | "panasonic_viera" | "panel_custom" | "paperless_ngx" | "pcs_lighting" | "peblar" | "peco" | "peco_opower" | "pegel_online" | "pencom" | "pepco" | "permobil" | "persistent_notification" | "person" | "pge" | "pglab" | "philips_js" | "pi_hole" | "picnic" | "picotts" | "pinecil" | "ping" | "pioneer" | "piper" | "pitsos" | "pjlink" | "plaato" | "plant" | "playstation_network" | "plex" | "plugwise" | "plum_lightpad" | "pocketcasts" | "point" | "pooldose" | "poolsense" | "portainer" | "portlandgeneral" | "power" | "powerfox" | "powerfox_local" | "powerwall" | "prana" | "private_ble_device" | "probe_plus" | "profiler" | "profilo" | "progettihwsw" | "proliphix" | "prometheus" | "prosegur" | "prowl" | "proximity" | "proxmoxve" | "proxy" | "prusalink" | "ps4" | "pse" | "psoklahoma" | "pterodactyl" | "pulseaudio_loopback" | "pure_energie" | "purpleair" | "push" | "pushbullet" | "pushover" | "pushsafer" | "pvoutput" | "pvpc_hourly_pricing" | "pyload" | "python_script" | "qbittorrent" | "qbus" | "qingping" | "qld_bushfire" | "qnap" | "qnap_qsw" | "qrcode" | "quadrafire" | "quantum_gateway" | "qvr_pro" | "qwikswitch" | "rabbitair" | "rachio" | "radarr" | "radio_browser" | "radio_frequency" | "radiotherm" | "rainbird" | "raincloud" | "rainforest_eagle" | "rainforest_raven" | "rainmachine" | "random" | "rapt_ble" | "raspberry_pi" | "raspyrfm" | "raven_rock_mfg" | "rdw" | "recollect_waste" | "recorder" | "recovery_mode" | "recswitch" | "reddit" | "redgtech" | "refoss" | "rehlko" | "rejseplanen" | "remember_the_milk" | "remote" | "remote_calendar" | "remote_rpi_gpio" | "renault" | "renson" | "reolink" | "repairs" | "repetier" | "rest" | "rest_command" | "rexel" | "rflink" | "rfxtrx" | "rhasspy" | "ridwell" | "ring" | "ripple" | "risco" | "rituals_perfume_genie" | "rmvtransport" | "roborock" | "rocketchat" | "roku" | "romy" | "roomba" | "roon" | "route53" | "route_b_smart_meter" | "rova" | "rpi_power" | "rss_feed_template" | "rtorrent" | "ruckus_unleashed" | "russound_rio" | "russound_rnet" | "ruuvi_gateway" | "ruuvitag_ble" | "rympro" | "sabnzbd" | "saj" | "samsam" | "samsungtv" | "sanix" | "satel_integra" | "saunum" | "scene" | "schedule" | "schlage" | "schluter" | "scl" | "scrape" | "screenaway" | "screenlogic" | "script" | "scsgate" | "search" | "season" | "select" | "sendgrid" | "sense" | "sensibo" | "sensirion_ble" | "sensor" | "sensorblue" | "sensorpro" | "sensorpush" | "sensorpush_cloud" | "sensoterra" | "sentry" | "senz" | "serial" | "serial_pm" | "sesame" | "seven_segments" | "seventeentrack" | "sfr_box" | "sftp_storage" | "sharkiq" | "shell_command" | "shelly" | "shodan" | "shopping_list" | "sia" | "siemens" | "sigfox" | "sighthound" | "signal_messenger" | "simplefin" | "simplepush" | "simplisafe" | "simply_automated" | "simu" | "sinch" | "siren" | "sisyphus" | "sky_hub" | "sky_remote" | "skybeacon" | "skybell" | "slack" | "sleep_as_android" | "sleepiq" | "slide" | "slide_local" | "slimproto" | "sma" | "smappee" | "smarla" | "smart_blinds" | "smart_home" | "smart_meter_texas" | "smart_rollos" | "smarther" | "smartthings" | "smarttub" | "smarty" | "smhi" | "smlight" | "smtp" | "smud" | "snapcast" | "snmp" | "snoo" | "snooz" | "solaredge" | "solaredge_local" | "solarlog" | "solarman" | "solax" | "soma" | "somfy" | "somfy_mylink" | "sonarr" | "songpal" | "sonos" | "sony_projector" | "soundtouch" | "spaceapi" | "spc" | "speedtestdotnet" | "spider" | "splunk" | "spotify" | "sql" | "squeezebox" | "srp_energy" | "ssdp" | "starline" | "starlingbank" | "starlink" | "startca" | "statistics" | "statsd" | "steam_online" | "steamist" | "stiebel_eltron" | "stookwijzer" | "stream" | "streamlabswater" | "stt" | "subaru" | "suez_water" | "sun" | "sunricher_dali" | "sunweg" | "supervisord" | "supla" | "surepetcare" | "swepco" | "swiss_hydrological_data" | "swiss_public_transport" | "swisscom" | "switch" | "switch_as_x" | "switchbee" | "switchbot" | "switchbot_cloud" | "switcher_kis" | "switchmate" | "symfonisk" | "syncthing" | "syncthru" | "synology_chat" | "synology_dsm" | "synology_srm" | "syslog" | "system_bridge" | "system_health" | "system_log" | "systemmonitor" | "systemnexa2" | "tado" | "tag" | "tailscale" | "tailwind" | "tami4" | "tank_utility" | "tankerkoenig" | "tapsaff" | "tasmota" | "tautulli" | "tcp" | "technove" | "ted5000" | "tedee" | "telegram" | "telegram_bot" | "teleinfo" | "tellduslive" | "tellstick" | "telnet" | "teltonika" | "temper" | "temperature" | "template" | "tesla_fleet" | "tesla_wall_connector" | "teslemetry" | "tessie" | "text" | "thermador" | "thermobeacon" | "thermoplus" | "thermopro" | "thethingsnetwork" | "thingspeak" | "thinkingcleaner" | "thomson" | "thread" | "threshold" | "tibber" | "tikteck" | "tile" | "tilt_ble" | "tilt_pi" | "time" | "time_date" | "timer" | "tmb" | "tod" | "todo" | "todoist" | "togrill" | "tolo" | "tomato" | "tomorrowio" | "toon" | "torque" | "totalconnect" | "touchline" | "touchline_sl" | "tplink" | "tplink_lte" | "tplink_omada" | "tplink_tapo" | "traccar" | "traccar_server" | "trace" | "tractive" | "tradfri" | "trafikverket_camera" | "trafikverket_ferry" | "trafikverket_train" | "trafikverket_weatherstation" | "trane" | "transmission" | "transport_nsw" | "travisci" | "trend" | "triggercmd" | "trmnl" | "tts" | "tuya" | "twentemilieu" | "twilio" | "twilio_call" | "twilio_sms" | "twinkly" | "twitch" | "twitter" | "ubiwizz" | "ublockout" | "ubus" | "uhoo" | "uk_transport" | "ukraine_alarm" | "ultraloq" | "unifi" | "unifi_access" | "unifi_direct" | "unifi_discovery" | "unifiled" | "unifiprotect" | "universal" | "upb" | "upc_connect" | "upcloud" | "update" | "upnp" | "uprise_smart_shades" | "uptime" | "uptime_kuma" | "uptimerobot" | "usage_prediction" | "usb" | "usgs_earthquakes_feed" | "utility_meter" | "uvc" | "v2c" | "vacuum" | "vagner_pool" | "vallox" | "valve" | "vasttrafik" | "vegehub" | "velbus" | "velux" | "venstar" | "vera" | "verisure" | "vermont_castings" | "versasense" | "version" | "vesync" | "viaggiatreno" | "vicare" | "victron_ble" | "victron_gx" | "victron_remote_monitoring" | "vilfo" | "vivotek" | "vizio" | "vlc" | "vlc_telnet" | "vodafone_station" | "voicerss" | "voip" | "volkszaehler" | "volumio" | "volvo" | "volvooncall" | "w800rf32" | "wake_on_lan" | "wake_word" | "wallbox" | "waqi" | "water_heater" | "waterfurnace" | "watergate" | "watts" | "watttime" | "waze_travel_time" | "weather" | "weatherflow" | "weatherflow_cloud" | "weatherkit" | "web_rtc" | "webdav" | "webhook" | "webmin" | "webostv" | "websocket_api" | "weheat" | "wemo" | "whirlpool" | "whisper" | "whois" | "wiffi" | "wiim" | "wilight" | "window" | "wirelesstag" | "withings" | "wiz" | "wled" | "wmspro" | "wolflink" | "workday" | "worldclock" | "worldtidesinfo" | "worxlandroid" | "ws66i" | "wsdot" | "wyoming" | "x10" | "xbox" | "xeoma" | "xiaomi" | "xiaomi_aqara" | "xiaomi_ble" | "xiaomi_miio" | "xiaomi_tv" | "xmpp" | "xs1" | "yale" | "yale_smart_alarm" | "yalexs_ble" | "yamaha" | "yamaha_musiccast" | "yandex_transport" | "yandextts" | "yardian" | "yeelight" | "yeelightsunflower" | "yi" | "yolink" | "youless" | "youtube" | "zabbix" | "zamg" | "zbox_hub" | "zengge" | "zeroconf" | "zerproc" | "zestimate" | "zeversolar" | "zha" | "zhong_hong" | "ziggo_mediabox_xl" | "zimi" | "zinvolt" | "zodiac" | "zondergas" | "zone" | "zoneminder" | "zwave_js" | "zwave_me")[];
       enable?: boolean;
       extraArgs?: string[];
@@ -31050,30 +31050,30 @@ declare module "winix" {
       lovelaceConfigFile?: string | null;
       lovelaceConfigWritable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       themes?: unknown[];
     };
-    "home-assistant-matter-hub"?: {
+    "home-assistant-matter-hub": {
       accessTokenFile?: unknown;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         homeAssistantUrl?: string;
         httpPort?: unknown;
       };
     };
-    homebox?: {
+    homebox: {
       database?: {
         createLocally?: boolean;
       };
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       user?: string;
     };
-    homebridge?: {
+    homebridge: {
       enable?: boolean;
       environmentFile?: string | null;
       group?: string;
@@ -31095,14 +31095,14 @@ declare module "winix" {
       user?: string;
       userStoragePath?: string;
     };
-    homed?: {
+    homed: {
       enable?: boolean;
       promptOnFirstBoot?: boolean;
       settings?: {
         Home?: Record<string, unknown>;
       };
     };
-    "homepage-dashboard"?: {
+    "homepage-dashboard": {
       allowedHosts?: string;
       bookmarks?: unknown;
       customCSS?: string;
@@ -31113,15 +31113,15 @@ declare module "winix" {
       kubernetes?: unknown;
       listenPort?: unknown;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       proxmox?: unknown;
       services?: unknown;
       settings?: unknown;
       widgets?: unknown;
     };
-    homer?: {
+    homer: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       virtualHost?: {
         caddy?: Record<string, unknown>;
@@ -31129,18 +31129,18 @@ declare module "winix" {
         nginx?: Record<string, unknown>;
       };
     };
-    honk?: {
+    honk: {
       enable?: boolean;
       extraCSS?: string | null;
       extraJS?: string | null;
       host?: string;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string;
       port?: unknown;
       servername?: string;
       username?: string;
     };
-    hoogle?: {
+    hoogle: {
       enable?: boolean;
       extraOptions?: string[];
       haskellPackages?: unknown;
@@ -31149,29 +31149,29 @@ declare module "winix" {
       packages?: unknown;
       port?: unknown;
     };
-    hostapd?: {
+    hostapd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       radios?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    hound?: {
+    hound: {
       enable?: boolean;
       group?: string;
       home?: string;
       listen?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       user?: string;
     };
-    howdy?: {
+    howdy: {
       control?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    hqplayerd?: {
+    hqplayerd: {
       auth?: {
         password?: string | null;
         username?: string | null;
@@ -31181,13 +31181,13 @@ declare module "winix" {
       licenseFile?: string | null;
       openFirewall?: boolean;
     };
-    htpdate?: {
+    htpdate: {
       enable?: boolean;
       extraOptions?: string;
       proxy?: string;
       servers?: string[];
     };
-    httpd?: {
+    httpd: {
       adminAddr?: string | null;
       configFile?: string;
       customLogFormat?: string;
@@ -31205,9 +31205,9 @@ declare module "winix" {
       maxClients?: unknown;
       maxRequestsPerChild?: unknown;
       mpm?: "event" | "prefork" | "worker";
-      package?: PackageRef;
+      package?: string;
       phpOptions?: string;
-      phpPackage?: PackageRef;
+      phpPackage?: string;
       sslCiphers?: string;
       sslProtocols?: string;
       user?: string;
@@ -31215,7 +31215,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    "https-dns-proxy"?: {
+    "https-dns-proxy": {
       address?: string;
       enable?: boolean;
       extraArgs?: string[];
@@ -31227,7 +31227,7 @@ declare module "winix" {
         url?: string;
       };
     };
-    hydra?: {
+    hydra: {
       buildMachinesFiles?: string[];
       dbi?: string;
       debugServer?: boolean;
@@ -31244,13 +31244,13 @@ declare module "winix" {
       minimumDiskFreeEvaluator?: number;
       minSpareServers?: number;
       notificationSender?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       smtpHost?: string | null;
       tracker?: string;
       useSubstitutes?: boolean;
     };
-    hylafax?: {
+    hylafax: {
       areaCode?: unknown | null;
       autostart?: boolean;
       commonModemConfig?: Record<string, unknown>;
@@ -31275,25 +31275,25 @@ declare module "winix" {
       modems?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       sendmailPath?: string;
       spoolAreaPath?: string;
       spoolExtraInit?: string;
       userAccessFile?: string;
     };
-    hypridle?: {
+    hypridle: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "hyprwhspr-rs"?: {
+    "hyprwhspr-rs": {
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
     };
-    i2p?: {
+    i2p: {
       enable?: boolean;
     };
-    i2pd?: {
+    i2pd: {
       address?: string | null;
       addressbook?: {
         defaulturl?: string;
@@ -31339,7 +31339,7 @@ declare module "winix" {
       outTunnels?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       port?: unknown | null;
       precomputation?: {
         elgamal?: boolean;
@@ -31389,7 +31389,7 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    icecast?: {
+    icecast: {
       admin?: {
         password?: string;
         user?: string;
@@ -31402,7 +31402,7 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    icecream?: {
+    icecream: {
       daemon?: {
         cacheLimit?: unknown;
         enable?: boolean;
@@ -31414,7 +31414,7 @@ declare module "winix" {
         noRemote?: boolean;
         openBroadcast?: boolean;
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         schedulerHost?: string | null;
         user?: string;
       };
@@ -31424,18 +31424,18 @@ declare module "winix" {
         netName?: string | null;
         openFirewall?: boolean;
         openTelnet?: boolean;
-        package?: PackageRef;
+        package?: string;
         persistentClientConnection?: boolean;
         port?: unknown;
       };
     };
-    icingaweb2?: {
+    icingaweb2: {
       authentications?: unknown | null;
       enable?: boolean;
       generalConfig?: unknown | null;
       groupBackends?: unknown | null;
-      libraryPaths?: Record<string, PackageRef>;
-      modulePackages?: Record<string, PackageRef>;
+      libraryPaths?: Record<string, string>;
+      modulePackages?: Record<string, string>;
       modules?: {
         doc?: Record<string, unknown>;
         migrate?: Record<string, unknown>;
@@ -31450,27 +31450,27 @@ declare module "winix" {
       timezone?: string;
       virtualHost?: string | null;
     };
-    ifm?: {
+    ifm: {
       dataDir?: string;
       enable?: boolean;
       listenAddress?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
     };
-    ihaskell?: {
+    ihaskell: {
       enable?: boolean;
       extraPackages?: unknown;
     };
-    "iio-niri"?: {
+    "iio-niri": {
       enable?: boolean;
       extraArgs?: string[];
       niriUnit?: unknown;
-      package?: PackageRef;
+      package?: string;
     };
-    illum?: {
+    illum: {
       enable?: boolean;
     };
-    imaginary?: {
+    imaginary: {
       address?: string;
       enable?: boolean;
       port?: unknown;
@@ -31478,7 +31478,7 @@ declare module "winix" {
         "return-size"?: boolean;
       };
     };
-    immich?: {
+    immich: {
       accelerationDevices?: string[] | null;
       database?: {
         createDB?: boolean;
@@ -31498,7 +31498,7 @@ declare module "winix" {
       };
       mediaLocation?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       redis?: {
         enable?: boolean;
@@ -31512,32 +31512,32 @@ declare module "winix" {
       };
       user?: string;
     };
-    "immich-kiosk"?: {
+    "immich-kiosk": {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         immich_url?: string;
         kiosk?: Record<string, unknown>;
       };
     };
-    "immich-public-proxy"?: {
+    "immich-public-proxy": {
       enable?: boolean;
       immichUrl?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
     };
-    immichframe?: {
+    immichframe: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: {
         Accounts?: Record<string, unknown>;
       };
     };
-    inadyn?: {
+    inadyn: {
       configFile?: string | null;
       enable?: boolean;
       group?: string;
@@ -31551,21 +31551,21 @@ declare module "winix" {
       };
       user?: string;
     };
-    incron?: {
+    incron: {
       allow?: string[] | null;
       deny?: string[] | null;
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       systab?: string;
     };
-    infinoted?: {
+    infinoted: {
       certificateChain?: string | null;
       certificateFile?: string | null;
       enable?: boolean;
       extraConfig?: string;
       group?: string;
       keyFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string | null;
       plugins?: string[];
       port?: unknown;
@@ -31573,17 +31573,17 @@ declare module "winix" {
       securityPolicy?: "allow-tls" | "no-tls" | "require-tls";
       user?: string;
     };
-    influxdb?: {
+    influxdb: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       user?: string;
     };
-    influxdb2?: {
+    influxdb2: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       provision?: {
         enable?: boolean;
         initialSetup?: Record<string, unknown>;
@@ -31592,34 +31592,34 @@ declare module "winix" {
       };
       settings?: unknown;
     };
-    infnoise?: {
+    infnoise: {
       enable?: boolean;
       fillDevRandom?: boolean;
     };
-    "input-remapper"?: {
+    "input-remapper": {
       enable?: boolean;
       enableUdevRules?: boolean;
-      package?: PackageRef;
+      package?: string;
       serviceWantedBy?: string[];
     };
-    inputplumber?: {
+    inputplumber: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    inspircd?: {
+    inspircd: {
       config?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "interception-tools"?: {
+    "interception-tools": {
       enable?: boolean;
-      plugins?: PackageRef[] | NixExpr;
+      plugins?: string[];
       udevmonConfig?: unknown;
     };
-    intune?: {
+    intune: {
       enable?: boolean;
     };
-    invidious?: {
+    invidious: {
       address?: string;
       database?: {
         createLocally?: boolean;
@@ -31633,22 +31633,22 @@ declare module "winix" {
       hmacKeyFile?: string | null;
       "http3-ytproxy"?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       nginx?: {
         enable?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       serviceScale?: number;
       settings?: unknown;
       "sig-helper"?: {
         enable?: boolean;
         listenAddress?: string;
-        package?: PackageRef;
+        package?: string;
       };
     };
-    "invidious-router"?: {
+    "invidious-router": {
       address?: string;
       enable?: boolean;
       nginx?: {
@@ -31656,17 +31656,17 @@ declare module "winix" {
         enable?: boolean;
         extraDomains?: string[];
       };
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
     };
-    invoiceplane?: {
+    invoiceplane: {
       sites?: {
         "<name>"?: Record<string, unknown>;
       };
       webserver?: "caddy" | "nginx";
     };
-    iodine?: {
+    iodine: {
       clients?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -31678,7 +31678,7 @@ declare module "winix" {
         passwordFile?: string;
       };
     };
-    iperf3?: {
+    iperf3: {
       affinity?: unknown | null;
       authorizedUsersFile?: string | null;
       bind?: string | null;
@@ -31687,12 +31687,12 @@ declare module "winix" {
       extraFlags?: string[];
       forceFlush?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       rsaPrivateKey?: string | null;
       verbose?: boolean;
     };
-    "ipfs-cluster"?: {
+    "ipfs-cluster": {
       consensus?: "crdt" | "raft";
       dataDir?: string;
       enable?: boolean;
@@ -31700,17 +31700,17 @@ declare module "winix" {
       openSwarmPort?: boolean;
       secretFile?: string | null;
     };
-    "ipp-usb"?: {
+    "ipp-usb": {
       enable?: boolean;
     };
-    iptsd?: {
+    iptsd: {
       config?: {
         Stylus?: Record<string, unknown>;
         Touchscreen?: Record<string, unknown>;
       };
       enable?: boolean;
     };
-    ircdHybrid?: {
+    ircdHybrid: {
       adminEmail?: string;
       certificate?: string | null;
       description?: string;
@@ -31721,24 +31721,24 @@ declare module "winix" {
       serverName?: string;
       sid?: string;
     };
-    irkerd?: {
+    irkerd: {
       enable?: boolean;
       listenAddress?: string;
       nick?: string;
       openPorts?: boolean;
     };
-    irqbalance?: {
+    irqbalance: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    isso?: {
+    isso: {
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
-    ivpn?: {
+    ivpn: {
       enable?: boolean;
     };
-    jack?: {
+    jack: {
       alsa?: {
         enable?: boolean;
         support32Bit?: boolean;
@@ -31756,16 +31756,16 @@ declare module "winix" {
         session?: string;
       };
     };
-    jackett?: {
+    jackett: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    jboss?: {
+    jboss: {
       deployDir?: string;
       enable?: boolean;
       libUrl?: string;
@@ -31775,7 +31775,7 @@ declare module "winix" {
       useJK?: boolean;
       user?: string;
     };
-    jellyfin?: {
+    jellyfin: {
       cacheDir?: string;
       configDir?: string;
       dataDir?: string;
@@ -31789,7 +31789,7 @@ declare module "winix" {
       };
       logDir?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       transcoding?: {
         deleteSegments?: boolean;
         enableHardwareEncoding?: boolean;
@@ -31807,7 +31807,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    jenkins?: {
+    jenkins: {
       enable?: boolean;
       environment?: Record<string, string>;
       extraGroups?: string[];
@@ -31815,7 +31815,7 @@ declare module "winix" {
       extraOptions?: string[];
       group?: string;
       home?: string;
-      javaPackage?: PackageRef;
+      javaPackage?: string;
       jobBuilder?: {
         accessToken?: string;
         accessTokenFile?: string;
@@ -31826,22 +31826,22 @@ declare module "winix" {
         yamlJobs?: string;
       };
       listenAddress?: string;
-      package?: PackageRef;
-      packages?: PackageRef[] | NixExpr;
-      plugins?: Record<string, PackageRef> | null;
+      package?: string;
+      packages?: string[];
+      plugins?: Record<string, string> | null;
       port?: unknown;
       prefix?: string;
       user?: string;
       withCLI?: boolean;
     };
-    jenkinsSlave?: {
+    jenkinsSlave: {
       enable?: boolean;
       group?: string;
       home?: string;
-      javaPackage?: PackageRef;
+      javaPackage?: string;
       user?: string;
     };
-    jibri?: {
+    jibri: {
       config?: unknown;
       enable?: boolean;
       finalizeScript?: string;
@@ -31850,7 +31850,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    jicofo?: {
+    jicofo: {
       bridgeMuc?: string;
       componentPasswordFile?: string;
       config?: unknown;
@@ -31861,7 +31861,7 @@ declare module "winix" {
       xmppDomain?: string | null;
       xmppHost?: string;
     };
-    jigasi?: {
+    jigasi: {
       bridgeMuc?: string;
       componentPasswordFile?: string;
       config?: Record<string, string>;
@@ -31874,7 +31874,7 @@ declare module "winix" {
       xmppDomain?: string | null;
       xmppHost?: string;
     };
-    jirafeau?: {
+    jirafeau: {
       adminPasswordSha256?: string;
       dataDir?: string;
       enable?: boolean;
@@ -31913,10 +31913,10 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
     };
-    "jitsi-meet"?: {
+    "jitsi-meet": {
       caddy?: {
         enable?: boolean;
       };
@@ -31955,7 +31955,7 @@ declare module "winix" {
         passwordFile?: string | null;
       };
     };
-    "jitsi-videobridge"?: {
+    "jitsi-videobridge": {
       colibriRestApi?: boolean;
       config?: unknown;
       enable?: boolean;
@@ -31970,33 +31970,33 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    "jitterentropy-rngd"?: {
+    "jitterentropy-rngd": {
       enable?: boolean;
       flags?: number;
       "forceSP800-90B"?: boolean;
       osr?: number;
-      package?: PackageRef;
+      package?: string;
       verbose?: boolean;
     };
-    jmusicbot?: {
+    jmusicbot: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       stateDir?: string;
     };
-    "jotta-cli"?: {
+    "jotta-cli": {
       enable?: boolean;
       options?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    journalbeat?: {
+    journalbeat: {
       enable?: boolean;
       extraConfig?: string;
       name?: string;
-      package?: PackageRef;
+      package?: string;
       stateDir?: string;
       tags?: string[];
     };
-    journald?: {
+    journald: {
       audit?: unknown;
       console?: string;
       extraConfig?: string;
@@ -32026,7 +32026,7 @@ declare module "winix" {
         settings?: Record<string, unknown>;
       };
     };
-    journaldriver?: {
+    journaldriver: {
       applicationCredentials?: string | null;
       enable?: boolean;
       googleCloudProject?: string | null;
@@ -32034,7 +32034,7 @@ declare module "winix" {
       logName?: string | null;
       logStream?: string | null;
     };
-    journalwatch?: {
+    journalwatch: {
       accuracy?: string;
       enable?: boolean;
       extraConfig?: string;
@@ -32045,18 +32045,18 @@ declare module "winix" {
       mailBinary?: string;
       mailFrom?: string;
       mailTo?: string | null;
-      package?: PackageRef;
+      package?: string;
       priority?: number;
     };
-    joycond?: {
+    joycond: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    jupyter?: {
+    jupyter: {
       command?: string;
       enable?: boolean;
       extraEnvironmentVariables?: Record<string, unknown | null>;
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       group?: string;
       ip?: string;
       kernels?: {
@@ -32064,18 +32064,18 @@ declare module "winix" {
       };
       notebookConfig?: string;
       notebookDir?: string;
-      package?: PackageRef;
+      package?: string;
       password?: string;
       port?: unknown;
       user?: string;
     };
-    jupyterhub?: {
+    jupyterhub: {
       authentication?: string;
       enable?: boolean;
       extraConfig?: string;
       host?: string;
-      jupyterhubEnv?: PackageRef;
-      jupyterlabEnv?: PackageRef;
+      jupyterhubEnv?: string;
+      jupyterlabEnv?: string;
       kernels?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -32083,7 +32083,7 @@ declare module "winix" {
       spawner?: string;
       stateDirectory?: string;
     };
-    k3s?: {
+    k3s: {
       agentToken?: string;
       agentTokenFile?: string | null;
       autoDeployCharts?: {
@@ -32105,7 +32105,7 @@ declare module "winix" {
         shutdownGracePeriod?: unknown;
         shutdownGracePeriodCriticalPods?: unknown;
       };
-      images?: PackageRef[] | NixExpr;
+      images?: string[];
       manifests?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -32114,21 +32114,21 @@ declare module "winix" {
       nodeLabel?: string[];
       nodeName?: string | null;
       nodeTaint?: string[];
-      package?: PackageRef;
+      package?: string;
       role?: "agent" | "server";
       selinux?: boolean;
       serverAddr?: string;
       token?: string;
       tokenFile?: string | null;
     };
-    kanata?: {
+    kanata: {
       enable?: boolean;
       keyboards?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    kanboard?: {
+    kanboard: {
       dataDir?: string;
       domain?: string;
       enable?: boolean;
@@ -32164,19 +32164,19 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       phpfpm?: {
         settings?: Record<string, unknown>;
       };
       settings?: Record<string, unknown>;
       user?: string;
     };
-    kanidm?: {
+    kanidm: {
       client?: {
         enable?: boolean;
         settings?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       provision?: {
         acceptInvalidCerts?: boolean;
         adminPasswordFile?: string | null;
@@ -32199,7 +32199,7 @@ declare module "winix" {
         sshIntegration?: boolean;
       };
     };
-    kapacitor?: {
+    kapacitor: {
       alerta?: {
         enable?: boolean;
         environment?: string;
@@ -32223,7 +32223,7 @@ declare module "winix" {
       taskSnapshotInterval?: string;
       user?: string;
     };
-    karakeep?: {
+    karakeep: {
       browser?: {
         enable?: boolean;
         exe?: string;
@@ -32236,20 +32236,20 @@ declare module "winix" {
         enable?: boolean;
         experimental_dumpless_upgrade?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    karma?: {
+    karma: {
       configFile?: string;
       enable?: boolean;
       environment?: Record<string, string>;
       extraOptions?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         listen?: Record<string, unknown>;
       };
     };
-    kasmweb?: {
+    kasmweb: {
       datastorePath?: string;
       defaultAdminPassword?: string;
       defaultGuacToken?: string;
@@ -32268,10 +32268,10 @@ declare module "winix" {
       sslCertificate?: string | null;
       sslCertificateKey?: string | null;
     };
-    kavita?: {
+    kavita: {
       dataDir?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         IpAddresses?: unknown;
         Port?: unknown;
@@ -32279,13 +32279,13 @@ declare module "winix" {
       tokenKeyFile?: string;
       user?: string;
     };
-    kbfs?: {
+    kbfs: {
       enable?: boolean;
       enableRedirector?: boolean;
       extraFlags?: string[];
       mountPoint?: string;
     };
-    kea?: {
+    kea: {
       "ctrl-agent"?: {
         configFile?: string | null;
         enable?: boolean;
@@ -32310,15 +32310,15 @@ declare module "winix" {
         extraArgs?: string[];
         settings?: unknown;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    keepalived?: {
+    keepalived: {
       enable?: boolean;
       enableScriptSecurity?: boolean;
       extraConfig?: string;
       extraGlobalDefs?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       secretFile?: string | null;
       snmp?: {
         enable?: boolean;
@@ -32337,7 +32337,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    kerberos_server?: {
+    kerberos_server: {
       enable?: boolean;
       extraKDCArgs?: string[];
       settings?: {
@@ -32347,7 +32347,7 @@ declare module "winix" {
         realms?: Record<string, unknown>;
       };
     };
-    keter?: {
+    keter: {
       bundle?: {
         appName?: string;
         domain?: string;
@@ -32361,13 +32361,13 @@ declare module "winix" {
         listeners?: Record<string, unknown>;
         "rotate-logs"?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       root?: string;
     };
-    keybase?: {
+    keybase: {
       enable?: boolean;
     };
-    keycloak?: {
+    keycloak: {
       database?: {
         caCert?: string | null;
         createLocally?: boolean;
@@ -32381,7 +32381,7 @@ declare module "winix" {
       };
       enable?: boolean;
       initialAdminPassword?: string | null;
-      package?: PackageRef;
+      package?: string;
       plugins?: string[];
       realmFiles?: string[];
       settings?: {
@@ -32394,22 +32394,22 @@ declare module "winix" {
       };
       sslCertificate?: string | null;
       sslCertificateKey?: string | null;
-      themes?: Record<string, PackageRef>;
+      themes?: Record<string, string>;
     };
-    keyd?: {
+    keyd: {
       enable?: boolean;
       keyboards?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    kimai?: {
+    kimai: {
       sites?: {
         "<name>"?: Record<string, unknown>;
       };
       webserver?: unknown;
     };
-    kismet?: {
+    kismet: {
       dataDir?: string;
       enable?: boolean;
       extraConfig?: string;
@@ -32420,23 +32420,23 @@ declare module "winix" {
         port?: unknown;
       };
       logTypes?: string[];
-      package?: PackageRef;
+      package?: string;
       serverDescription?: string;
       serverName?: string;
       settings?: unknown;
       user?: string;
     };
-    "kiwix-serve"?: {
+    "kiwix-serve": {
       address?: string;
       enable?: boolean;
       extraArgs?: string[];
       library?: Record<string, string>;
       libraryPath?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    klipper?: {
+    klipper: {
       apiSocket?: string | null;
       configDir?: string;
       configFile?: string | null;
@@ -32450,19 +32450,19 @@ declare module "winix" {
       logFile?: string | null;
       mutableConfig?: boolean;
       octoprintIntegration?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown> | null;
       user?: string | null;
     };
-    kmonad?: {
+    kmonad: {
       enable?: boolean;
       extraArgs?: string[];
       keyboards?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    kmscon?: {
+    kmscon: {
       enable?: boolean;
       extraConfig?: string;
       extraOptions?: unknown;
@@ -32470,29 +32470,29 @@ declare module "winix" {
         "*"?: Record<string, unknown>;
       };
       hwRender?: boolean;
-      package?: PackageRef;
+      package?: string;
       term?: string | null;
       useXkbConfig?: boolean;
     };
-    knot?: {
+    knot: {
       checkConfig?: boolean;
       enable?: boolean;
       enableXDP?: boolean;
       extraArgs?: string[];
       keyFiles?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       settingsFile?: string | null;
     };
-    "knot-resolver"?: {
+    "knot-resolver": {
       enable?: boolean;
-      managerPackage?: PackageRef;
+      managerPackage?: string;
       settings?: {
         network?: Record<string, unknown>;
         workers?: unknown;
       };
     };
-    komga?: {
+    komga: {
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
@@ -32502,7 +32502,7 @@ declare module "winix" {
       stateDir?: string;
       user?: string;
     };
-    "komodo-periphery"?: {
+    "komodo-periphery": {
       allowedIps?: string[];
       bindIp?: string;
       configFile?: string | null;
@@ -32522,7 +32522,7 @@ declare module "winix" {
         otlpEndpoint?: string;
         stdio?: "json" | "none" | "standard";
       };
-      package?: PackageRef;
+      package?: string;
       passkeys?: string[];
       port?: unknown;
       rootDirectory?: string;
@@ -32534,16 +32534,16 @@ declare module "winix" {
       statsPollingRate?: string;
       user?: string;
     };
-    kresd?: {
+    kresd: {
       enable?: boolean;
       extraConfig?: string;
       instances?: unknown;
       listenDoH?: string[];
       listenPlain?: string[];
       listenTLS?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    kthxbye?: {
+    kthxbye: {
       alertmanager?: {
         timeout?: string;
         uri?: string;
@@ -32558,10 +32558,10 @@ declare module "winix" {
       logJSON?: boolean;
       maxDuration?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    kubernetes?: {
+    kubernetes: {
       addonManager?: {
         addons?: Record<string, unknown>;
         bootstrapAddons?: Record<string, unknown>;
@@ -32655,7 +32655,7 @@ declare module "winix" {
         nodeIp?: string | null;
         port?: unknown;
         registerNode?: boolean;
-        seedDockerImages?: PackageRef[] | NixExpr;
+        seedDockerImages?: string[];
         taints?: Record<string, unknown>;
         tlsCertFile?: string | null;
         tlsKeyFile?: string | null;
@@ -32664,8 +32664,8 @@ declare module "winix" {
       };
       lib?: unknown;
       masterAddress?: string;
-      package?: PackageRef;
-      path?: PackageRef[] | NixExpr;
+      package?: string;
+      path?: string[];
       pki?: {
         caCertPathPrefix?: string;
         caSpec?: unknown;
@@ -32700,7 +32700,7 @@ declare module "winix" {
       };
       secretsPath?: string;
     };
-    kubo?: {
+    kubo: {
       autoMigrate?: boolean;
       autoMount?: boolean;
       dataDir?: string;
@@ -32711,7 +32711,7 @@ declare module "winix" {
       extraFlags?: string[];
       group?: string;
       localDiscovery?: boolean;
-      package?: PackageRef;
+      package?: string;
       serviceFdlimit?: number | null;
       settings?: {
         Addresses?: Record<string, unknown>;
@@ -32720,41 +32720,41 @@ declare module "winix" {
       startWhenNeeded?: boolean;
       user?: string;
     };
-    labgrid?: {
+    labgrid: {
       coordinator?: {
         bindAddress?: string;
         debug?: boolean;
         enable?: boolean;
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
       };
     };
-    lact?: {
+    lact: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    lambdabot?: {
+    lambdabot: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       script?: string;
     };
-    languagetool?: {
+    languagetool: {
       allowOrigin?: string | null;
       enable?: boolean;
       jvmOptions?: string[];
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       public?: boolean;
       settings?: {
         cacheSize?: unknown;
       };
     };
-    lanraragi?: {
+    lanraragi: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string | null;
       port?: unknown;
       redis?: {
@@ -32762,14 +32762,14 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    "lasuite-docs"?: {
-      backendPackage?: PackageRef;
+    "lasuite-docs": {
+      backendPackage?: string;
       bind?: string;
       celery?: {
         extraArgs?: string[];
       };
       collaborationServer?: {
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
         settings?: Record<string, unknown>;
       };
@@ -32777,7 +32777,7 @@ declare module "winix" {
       enable?: boolean;
       enableNginx?: boolean;
       environmentFile?: string | null;
-      frontendPackage?: PackageRef;
+      frontendPackage?: string;
       gunicorn?: {
         extraArgs?: string[];
       };
@@ -32800,7 +32800,7 @@ declare module "winix" {
         REDIS_URL?: string | null;
       };
     };
-    "lasuite-meet"?: {
+    "lasuite-meet": {
       addons?: unknown[];
       bind?: string;
       celery?: {
@@ -32819,7 +32819,7 @@ declare module "winix" {
         openFirewall?: boolean;
         settings?: unknown;
       };
-      package?: PackageRef;
+      package?: string;
       postgresql?: {
         createLocally?: boolean;
       };
@@ -32839,13 +32839,13 @@ declare module "winix" {
         REDIS_URL?: string | null;
       };
     };
-    lauti?: {
+    lauti: {
       dataDir?: string;
       enable?: boolean;
       secrets?: string[];
       settings?: Record<string, string>;
     };
-    lavalink?: {
+    lavalink: {
       address?: string;
       enable?: boolean;
       enableHttp2?: boolean;
@@ -32855,7 +32855,7 @@ declare module "winix" {
       home?: string;
       jvmArgs?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       password?: string | null;
       plugins?: {
         "*"?: Record<string, unknown>;
@@ -32863,16 +32863,16 @@ declare module "winix" {
       port?: unknown;
       user?: string;
     };
-    leaps?: {
+    leaps: {
       address?: string;
       enable?: boolean;
       path?: string;
       port?: unknown;
     };
-    legit?: {
+    legit: {
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         dirs?: Record<string, unknown>;
         meta?: Record<string, unknown>;
@@ -32881,7 +32881,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    lemmy?: {
+    lemmy: {
       adminPasswordFile?: string | null;
       caddy?: {
         enable?: boolean;
@@ -32897,7 +32897,7 @@ declare module "winix" {
       };
       pictrsApiKeyFile?: string | null;
       server?: {
-        package?: PackageRef;
+        package?: string;
       };
       settings?: {
         captcha?: Record<string, unknown>;
@@ -32906,18 +32906,18 @@ declare module "winix" {
       };
       smtpPasswordFile?: string | null;
       ui?: {
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
       };
     };
-    libeufin?: {
+    libeufin: {
       bank?: {
         createLocalDatabase?: boolean;
         debug?: boolean;
         enable?: boolean;
         initialAccounts?: unknown[];
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
       };
       nexus?: {
@@ -32925,12 +32925,12 @@ declare module "winix" {
         debug?: boolean;
         enable?: boolean;
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
       };
       settings?: Record<string, unknown>;
     };
-    libinput?: {
+    libinput: {
       enable?: boolean;
       mouse?: {
         accelPointsFallback?: unknown[] | null;
@@ -32987,7 +32987,7 @@ declare module "winix" {
         transformationMatrix?: string | null;
       };
     };
-    librechat?: {
+    librechat: {
       credentials?: Record<string, string>;
       credentialsFile?: string | null;
       dataDir?: string;
@@ -33002,11 +33002,11 @@ declare module "winix" {
         enable?: boolean;
       };
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       user?: string;
     };
-    librenms?: {
+    librenms: {
       database?: {
         createLocally?: boolean;
         database?: string;
@@ -33032,7 +33032,7 @@ declare module "winix" {
       enableOneMinutePolling?: boolean;
       environmentFile?: string | null;
       extraConfig?: string | null;
-      finalPackage?: PackageRef;
+      finalPackage?: string;
       group?: string;
       hostname?: string;
       logDir?: string;
@@ -33067,7 +33067,7 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       phpOptions?: Record<string, unknown>;
       pollerThreads?: number;
       poolConfig?: Record<string, unknown>;
@@ -33075,7 +33075,7 @@ declare module "winix" {
       useDistributedPollers?: boolean;
       user?: string;
     };
-    librespeed?: {
+    librespeed: {
       domain?: unknown | null;
       downloadIPDB?: boolean;
       enable?: boolean;
@@ -33087,21 +33087,21 @@ declare module "winix" {
         settings?: Record<string, unknown> | null;
         useNginx?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       secrets?: Record<string, unknown> | null;
       settings?: Record<string, unknown | null> | null;
       tlsCertificate?: unknown | null;
       tlsKey?: unknown | null;
       useACMEHost?: unknown | null;
     };
-    libreswan?: {
+    libreswan: {
       configSetup?: string;
       connections?: Record<string, string>;
       disableRedirects?: boolean;
       enable?: boolean;
       policies?: Record<string, string>;
     };
-    libretranslate?: {
+    libretranslate: {
       configureNginx?: boolean;
       dataDir?: string;
       disableWebUI?: boolean;
@@ -33111,13 +33111,13 @@ declare module "winix" {
       extraArgs?: Record<string, unknown | null>;
       group?: string;
       host?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       threads?: unknown | null;
       updateModels?: boolean;
       user?: string;
     };
-    libvirtd?: {
+    libvirtd: {
       autoSnapshot?: {
         calendar?: string;
         enable?: boolean;
@@ -33127,13 +33127,13 @@ declare module "winix" {
         vms?: Record<string, unknown>[] | null;
       };
     };
-    lidarr?: {
+    lidarr: {
       dataDir?: string;
       enable?: boolean;
       environmentFiles?: string[];
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         log?: Record<string, unknown>;
         server?: Record<string, unknown>;
@@ -33141,7 +33141,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    lifecycled?: {
+    lifecycled: {
       awsRegion?: string | null;
       cloudwatchGroup?: string | null;
       cloudwatchStream?: string | null;
@@ -33158,7 +33158,7 @@ declare module "winix" {
       };
       snsTopic?: string | null;
     };
-    lighthouse?: {
+    lighthouse: {
       beacon?: {
         address?: string;
         dataDir?: string;
@@ -33173,7 +33173,7 @@ declare module "winix" {
       };
       extraArgs?: string;
       network?: "chiado" | "gnosis" | "holesky" | "mainnet" | "sepolia";
-      package?: PackageRef;
+      package?: string;
       validator?: {
         beaconNodes?: string[];
         dataDir?: string;
@@ -33182,7 +33182,7 @@ declare module "winix" {
         metrics?: Record<string, unknown>;
       };
     };
-    lighttpd?: {
+    lighttpd: {
       cgit?: {
         configText?: string;
         enable?: boolean;
@@ -33203,10 +33203,10 @@ declare module "winix" {
       };
       mod_status?: boolean;
       mod_userdir?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    limesurvey?: {
+    limesurvey: {
       config?: unknown;
       database?: {
         createLocally?: boolean;
@@ -33228,11 +33228,11 @@ declare module "winix" {
       nginx?: {
         virtualHost?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       webserver?: "httpd" | "nginx";
     };
-    linkding?: {
+    linkding: {
       address?: string;
       contextPath?: string;
       database?: {
@@ -33248,12 +33248,12 @@ declare module "winix" {
       environmentFile?: string | null;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, string>;
       user?: string;
     };
-    linkwarden?: {
+    linkwarden: {
       cacheLocation?: string;
       database?: {
         createLocally?: boolean;
@@ -33269,50 +33269,50 @@ declare module "winix" {
       group?: string;
       host?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       secretFiles?: Record<string, string | null>;
       storageLocation?: string;
       user?: string;
     };
-    "linux-enable-ir-emitter"?: {
+    "linux-enable-ir-emitter": {
       device?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    linyaps?: {
-      boxPackage?: PackageRef;
+    linyaps: {
+      boxPackage?: string;
       enable?: boolean;
-      package?: PackageRef;
-      webStoreInstallerPackage?: PackageRef;
+      package?: string;
+      webStoreInstallerPackage?: string;
     };
-    liquidsoap?: {
+    liquidsoap: {
       streams?: Record<string, unknown>;
     };
-    lirc?: {
+    lirc: {
       configs?: string[];
       enable?: boolean;
       extraArguments?: string[];
       options?: string;
     };
-    listmonk?: {
+    listmonk: {
       database?: {
         createLocally?: boolean;
         mutableSettings?: boolean;
         settings?: Record<string, unknown>;
       };
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       secretFile?: string | null;
       settings?: Record<string, unknown>;
     };
-    litellm?: {
+    litellm: {
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFile?: string | null;
       host?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: {
         environment_variables?: unknown;
@@ -33323,31 +33323,31 @@ declare module "winix" {
       };
       stateDir?: string;
     };
-    litestream?: {
+    litestream: {
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    livebook?: {
+    livebook: {
       enableUserService?: boolean;
       environment?: Record<string, unknown | null>;
       environmentFile?: string | null;
-      extraPackages?: PackageRef[] | NixExpr;
-      package?: PackageRef;
+      extraPackages?: string[];
+      package?: string;
     };
-    livekit?: {
+    livekit: {
       enable?: boolean;
       ingress?: {
         enable?: boolean;
         environmentFile?: string | null;
         openFirewall?: Record<string, unknown>;
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
       };
       keyFile?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       redis?: {
         createLocally?: boolean;
         host?: string | null;
@@ -33359,14 +33359,14 @@ declare module "winix" {
         rtc?: Record<string, unknown>;
       };
     };
-    "lk-jwt-service"?: {
+    "lk-jwt-service": {
       enable?: boolean;
       keyFile?: string;
       livekitUrl?: unknown;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    "llama-cpp"?: {
+    "llama-cpp": {
       enable?: boolean;
       extraFlags?: string[];
       host?: string;
@@ -33374,14 +33374,14 @@ declare module "winix" {
       modelsDir?: string | null;
       modelsPreset?: Record<string, unknown> | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    "llama-swap"?: {
+    "llama-swap": {
       enable?: boolean;
       listenAddress?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
       tls?: {
@@ -33390,7 +33390,7 @@ declare module "winix" {
         keyFile?: string | null;
       };
     };
-    lldap?: {
+    lldap: {
       database?: {
         createLocally?: boolean;
         type?: "mariadb" | "postgresql" | "sqlite";
@@ -33398,7 +33398,7 @@ declare module "winix" {
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         database_url?: string | null;
         force_ldap_user_pass_reset?: unknown;
@@ -33416,34 +33416,34 @@ declare module "winix" {
       };
       silenceForceUserPassResetWarning?: boolean;
     };
-    lldpd?: {
+    lldpd: {
       enable?: boolean;
       extraArgs?: string[];
     };
-    "local-content-share"?: {
+    "local-content-share": {
       enable?: boolean;
       listenAddress?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    localtimed?: {
+    localtimed: {
       enable?: boolean;
-      geoclue2Package?: PackageRef;
-      package?: PackageRef;
+      geoclue2Package?: string;
+      package?: string;
     };
-    locate?: {
+    locate: {
       enable?: boolean;
       extraFlags?: string[];
       interval?: string;
       output?: string;
-      package?: PackageRef;
+      package?: string;
       pruneBindMounts?: boolean;
       pruneFS?: string[];
       pruneNames?: string[];
       prunePaths?: string[];
     };
-    logcheck?: {
+    logcheck: {
       config?: string;
       enable?: boolean;
       extraGroups?: string[];
@@ -33460,25 +33460,25 @@ declare module "winix" {
       timeOfDay?: string;
       user?: string;
     };
-    logind?: {
+    logind: {
       enable?: boolean;
       settings?: {
         Login?: Record<string, unknown>;
       };
     };
-    logiops?: {
+    logiops: {
       config?: Record<string, unknown>;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    logkeys?: {
+    logkeys: {
       device?: string | null;
       enable?: boolean;
     };
-    "logmein-hamachi"?: {
+    "logmein-hamachi": {
       enable?: boolean;
     };
-    logrotate?: {
+    logrotate: {
       allowNetworking?: boolean;
       checkConfig?: boolean;
       configFile?: string;
@@ -33488,7 +33488,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    logstash?: {
+    logstash: {
       dataDir?: string;
       enable?: boolean;
       extraJvmOptions?: string;
@@ -33499,30 +33499,30 @@ declare module "winix" {
       listenAddress?: string;
       logLevel?: "debug" | "error" | "fatal" | "info" | "warn";
       outputConfig?: string;
-      package?: PackageRef;
+      package?: string;
       plugins?: string[];
       port?: string;
     };
-    loki?: {
+    loki: {
       configFile?: string | null;
       configuration?: unknown;
       dataDir?: string;
       enable?: boolean;
       extraFlags?: string[];
       group?: string;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    lokinet?: {
+    lokinet: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         dns?: Record<string, unknown>;
         network?: Record<string, unknown>;
       };
       useLocally?: boolean;
     };
-    longview?: {
+    longview: {
       apacheStatusUrl?: string;
       apiKey?: string;
       apiKeyFile?: string | null;
@@ -33532,22 +33532,22 @@ declare module "winix" {
       mysqlUser?: string;
       nginxStatusUrl?: string;
     };
-    lorri?: {
+    lorri: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    lubelogger?: {
+    lubelogger: {
       dataDir?: string;
       enable?: boolean;
       environmentFile?: string | null;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, string>;
       user?: string;
     };
-    lvm?: {
+    lvm: {
       boot?: {
         thin?: Record<string, unknown>;
         vdo?: Record<string, unknown>;
@@ -33560,7 +33560,7 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    "lxd-image-server"?: {
+    "lxd-image-server": {
       enable?: boolean;
       group?: string;
       nginx?: {
@@ -33569,7 +33569,7 @@ declare module "winix" {
       };
       settings?: unknown;
     };
-    "mackerel-agent"?: {
+    "mackerel-agent": {
       apiKeyFile?: string;
       autoRetirement?: boolean;
       enable?: boolean;
@@ -33579,7 +33579,7 @@ declare module "winix" {
         host_status?: Record<string, unknown>;
       };
     };
-    maddy?: {
+    maddy: {
       config?: string | null;
       enable?: boolean;
       ensureAccounts?: string[];
@@ -33590,7 +33590,7 @@ declare module "winix" {
       hostname?: string;
       localDomains?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       primaryDomain?: string;
       secrets?: string[];
       tls?: {
@@ -33600,10 +33600,10 @@ declare module "winix" {
       };
       user?: string;
     };
-    "magic-wormhole-mailbox-server"?: {
+    "magic-wormhole-mailbox-server": {
       enable?: boolean;
     };
-    magnetico?: {
+    magnetico: {
       crawler?: {
         address?: string;
         extraOptions?: string[];
@@ -33620,7 +33620,7 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    mail?: {
+    mail: {
       sendmailSetuidWrapper?: {
         capabilities?: unknown;
         enable?: boolean;
@@ -33633,7 +33633,7 @@ declare module "winix" {
         source?: string;
       };
     };
-    mailcatcher?: {
+    mailcatcher: {
       enable?: boolean;
       http?: {
         ip?: string;
@@ -33645,7 +33645,7 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    mailhog?: {
+    mailhog: {
       apiPort?: unknown;
       enable?: boolean;
       extraArgs?: string[];
@@ -33654,7 +33654,7 @@ declare module "winix" {
       storage?: "maildir" | "memory";
       uiPort?: unknown;
     };
-    mailman?: {
+    mailman: {
       enable?: boolean;
       enablePostfix?: boolean;
       hyperkitty?: {
@@ -33684,12 +33684,12 @@ declare module "winix" {
       webSettings?: unknown;
       webUser?: string;
     };
-    mailpit?: {
+    mailpit: {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    mainsail?: {
+    mainsail: {
       enable?: boolean;
       hostName?: string;
       nginx?: {
@@ -33723,32 +33723,32 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    malcontent?: {
+    malcontent: {
       enable?: boolean;
     };
-    mame?: {
+    mame: {
       emuAddr?: string;
       enable?: boolean;
       hostAddr?: string;
       user?: string;
     };
-    manticore?: {
+    manticore: {
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
-    marytts?: {
+    marytts: {
       basePath?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
       userDictionaries?: string[];
       voices?: string[];
     };
-    mastodon?: {
+    mastodon: {
       activeRecordEncryptionDeterministicKeyFile?: string;
       activeRecordEncryptionKeyDerivationSaltFile?: string;
       activeRecordEncryptionPrimaryKeyFile?: string;
@@ -33781,7 +33781,7 @@ declare module "winix" {
         olderThanDays?: number;
         startAt?: string;
       };
-      package?: PackageRef;
+      package?: string;
       redis?: {
         createLocally?: boolean;
         enableUnixSocket?: boolean;
@@ -33813,7 +33813,7 @@ declare module "winix" {
       webProcesses?: number;
       webThreads?: number;
     };
-    matomo?: {
+    matomo: {
       enable?: boolean;
       hostname?: string;
       nginx?: {
@@ -33847,11 +33847,11 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       periodicArchiveProcessing?: boolean;
       webServerUser?: string | null;
     };
-    "matrix-alertmanager"?: {
+    "matrix-alertmanager": {
       enable?: boolean;
       homeserverUrl?: string;
       matrixRooms?: {
@@ -33859,22 +33859,22 @@ declare module "winix" {
       };
       matrixUser?: string;
       mention?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       secretFile?: unknown;
       tokenFile?: unknown;
     };
-    "matrix-appservice-discord"?: {
+    "matrix-appservice-discord": {
       enable?: boolean;
       environmentFile?: string | null;
       localpart?: string | null;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       serviceDependencies?: string[];
       settings?: unknown;
       url?: string;
     };
-    "matrix-appservice-irc"?: {
+    "matrix-appservice-irc": {
       enable?: boolean;
       localpart?: string;
       needBindingCap?: boolean;
@@ -33887,38 +33887,38 @@ declare module "winix" {
         ircService?: Record<string, unknown>;
       };
     };
-    "matrix-conduit"?: {
+    "matrix-conduit": {
       enable?: boolean;
       extraEnvironment?: Record<string, string>;
-      package?: PackageRef;
+      package?: string;
       secretFile?: string | null;
       settings?: {
         global?: Record<string, unknown>;
       };
     };
-    "matrix-continuwuity"?: {
+    "matrix-continuwuity": {
       admin?: {
         enable?: boolean;
       };
       enable?: boolean;
       extraEnvironment?: Record<string, string>;
       group?: unknown;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         global?: Record<string, unknown>;
       };
       user?: unknown;
     };
-    "matrix-hookshot"?: {
+    "matrix-hookshot": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       registrationFile?: string;
       serviceDependencies?: string[];
       settings?: {
         passFile?: string;
       };
     };
-    "matrix-synapse"?: {
+    "matrix-synapse": {
       configFile?: string;
       configureRedisLocally?: boolean;
       dataDir?: string;
@@ -33928,8 +33928,8 @@ declare module "winix" {
       extraConfigFiles?: string[];
       extras?: ("cache-memory" | "jwt" | "oidc" | "postgres" | "redis" | "saml2" | "sentry" | "systemd" | "url-preview")[];
       log?: Record<string, unknown>;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       serviceUnit?: string;
       settings?: {
         app_service_config_files?: string[];
@@ -33966,34 +33966,34 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    "matrix-tuwunel"?: {
+    "matrix-tuwunel": {
       enable?: boolean;
       extraEnvironment?: Record<string, string>;
       group?: unknown;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         global?: Record<string, unknown>;
       };
       stateDirectory?: unknown;
       user?: unknown;
     };
-    "matter-server"?: {
+    "matter-server": {
       enable?: boolean;
       extraArgs?: unknown;
       logLevel?: "critical" | "debug" | "error" | "info" | "warning";
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    matterbridge?: {
+    matterbridge: {
       configFile?: string;
       configPath?: string | null;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    mattermost?: {
+    mattermost: {
       configDir?: string;
       database?: {
         create?: boolean;
@@ -34016,13 +34016,13 @@ declare module "winix" {
       logDir?: string;
       matterircd?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
         parameters?: string[];
       };
       mutableConfig?: boolean;
-      package?: PackageRef;
+      package?: string;
       plugins?: unknown[];
-      pluginsBundle?: PackageRef | null;
+      pluginsBundle?: string | null;
       port?: unknown;
       preferNixConfig?: boolean;
       settings?: unknown;
@@ -34039,14 +34039,14 @@ declare module "winix" {
       };
       user?: string;
     };
-    maubot?: {
+    maubot: {
       configMutable?: boolean;
       dataDir?: string;
       enable?: boolean;
       extraConfigFile?: string;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
-      pythonPackages?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
+      pythonPackages?: string[];
       settings?: {
         admins?: Record<string, string>;
         api_features?: Record<string, boolean>;
@@ -34060,11 +34060,11 @@ declare module "winix" {
         server?: Record<string, unknown>;
       };
     };
-    "mautrix-discord"?: {
+    "mautrix-discord": {
       dataDir?: string;
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       registerToSynapse?: boolean;
       registrationServiceUnit?: string;
       serviceDependencies?: string[];
@@ -34076,53 +34076,53 @@ declare module "winix" {
         logging?: unknown;
       };
     };
-    "mautrix-meta"?: {
+    "mautrix-meta": {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    "mautrix-signal"?: {
+    "mautrix-signal": {
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       registerToSynapse?: boolean;
       serviceDependencies?: string[];
       settings?: unknown;
     };
-    "mautrix-telegram"?: {
+    "mautrix-telegram": {
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       registerToSynapse?: boolean;
       serviceDependencies?: string[];
       settings?: unknown;
     };
-    "mautrix-whatsapp"?: {
+    "mautrix-whatsapp": {
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       registerToSynapse?: boolean;
       serviceDependencies?: string[];
       settings?: unknown;
     };
-    mbpfan?: {
+    mbpfan: {
       aggressive?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         general?: Record<string, unknown>;
       };
       verbose?: boolean;
     };
-    mchprs?: {
+    mchprs: {
       dataDir?: string;
       declarativeSettings?: boolean;
       declarativeWhitelist?: boolean;
       enable?: boolean;
       maxRuntime?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         address?: string;
         auto_redpiler?: boolean;
@@ -34140,7 +34140,7 @@ declare module "winix" {
         list?: Record<string, unknown>;
       };
     };
-    mealie?: {
+    mealie: {
       credentialsFile?: string | null;
       database?: {
         createLocally?: boolean;
@@ -34148,32 +34148,32 @@ declare module "winix" {
       enable?: boolean;
       extraOptions?: string[];
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
     };
-    mediagoblin?: {
+    mediagoblin: {
       createDatabaseLocally?: boolean;
       domain?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       paste?: {
         port?: unknown;
         settings?: Record<string, unknown>;
       };
-      pluginPackages?: PackageRef[] | NixExpr;
+      pluginPackages?: string[];
       settings?: {
         mediagoblin?: Record<string, unknown>;
       };
     };
-    mediamtx?: {
+    mediamtx: {
       allowVideoAccess?: boolean;
       enable?: boolean;
       env?: Record<string, unknown>;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    mediatomb?: {
+    mediatomb: {
       customCfg?: boolean;
       dataDir?: string;
       dsmSupport?: boolean;
@@ -34184,7 +34184,7 @@ declare module "winix" {
         "*"?: Record<string, unknown>;
       };
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       pcDirectoryHide?: boolean;
       port?: unknown;
       ps3Support?: boolean;
@@ -34194,7 +34194,7 @@ declare module "winix" {
       user?: string;
       uuid?: string;
     };
-    mediawiki?: {
+    mediawiki: {
       database?: {
         createLocally?: boolean;
         host?: string | null;
@@ -34210,7 +34210,7 @@ declare module "winix" {
       enable?: boolean;
       extensions?: Record<string, string | null>;
       extraConfig?: string;
-      finalPackage?: PackageRef;
+      finalPackage?: string;
       httpd?: {
         virtualHost?: Record<string, unknown>;
       };
@@ -34218,26 +34218,26 @@ declare module "winix" {
       nginx?: {
         hostName?: string;
       };
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string;
       passwordSender?: string;
-      path?: PackageRef[] | NixExpr;
-      phpPackage?: PackageRef;
+      path?: string[];
+      phpPackage?: string;
       poolConfig?: Record<string, unknown>;
       skins?: Record<string, string>;
       uploadsDir?: string | null;
       url?: string;
       webserver?: "apache" | "nginx" | "none";
     };
-    meilisearch?: {
+    meilisearch: {
       enable?: boolean;
       listenAddress?: string;
       listenPort?: unknown;
       masterKeyFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    memcached?: {
+    memcached: {
       enable?: boolean;
       enableUnixSocket?: boolean;
       extraOptions?: string[];
@@ -34247,75 +34247,75 @@ declare module "winix" {
       port?: unknown;
       user?: string;
     };
-    "meme-bingo-web"?: {
+    "meme-bingo-web": {
       address?: string;
       baseUrl?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    memos?: {
+    memos: {
       dataDir?: string;
       enable?: boolean;
       environmentFile?: string;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       user?: string;
     };
-    merecat?: {
+    merecat: {
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
-    meshcentral?: {
+    meshcentral: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    meshtasticd?: {
+    meshtasticd: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: unknown;
       user?: string;
     };
-    metabase?: {
+    metabase: {
       enable?: boolean;
       listen?: {
         ip?: string;
         port?: unknown;
       };
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       ssl?: {
         enable?: boolean;
         keystore?: string | null;
         port?: unknown;
       };
     };
-    metricbeat?: {
+    metricbeat: {
       enable?: boolean;
       modules?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: {
         name?: string;
         tags?: string[];
       };
     };
-    microbin?: {
+    microbin: {
       dataDir?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string | null;
       settings?: Record<string, unknown>;
     };
-    microsocks?: {
+    microsocks: {
       authOnce?: boolean;
       authPasswordFile?: string | null;
       authUsername?: string | null;
@@ -34325,44 +34325,44 @@ declare module "winix" {
       group?: string;
       ip?: string;
       outgoingBindIp?: string | null;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    mighttpd2?: {
+    mighttpd2: {
       config?: string;
       cores?: number | null;
       enable?: boolean;
       routing?: string;
     };
-    mihomo?: {
+    mihomo: {
       configFile?: string;
       enable?: boolean;
       extraOpts?: string | null;
-      package?: PackageRef;
+      package?: string;
       processesInfo?: boolean;
       tunMode?: boolean;
       webui?: string | null;
     };
-    mimir?: {
+    mimir: {
       configFile?: string | null;
       configuration?: unknown;
       enable?: boolean;
       extraFlags?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    "minecraft-server"?: {
+    "minecraft-server": {
       dataDir?: string;
       declarative?: boolean;
       enable?: boolean;
       eula?: boolean;
       jvmOpts?: unknown;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       serverProperties?: Record<string, unknown>;
       whitelist?: Record<string, unknown>;
     };
-    "minetest-server"?: {
+    "minetest-server": {
       config?: Record<string, unknown>;
       configPath?: string | null;
       enable?: boolean;
@@ -34372,10 +34372,10 @@ declare module "winix" {
       port?: unknown | null;
       world?: string | null;
     };
-    minidlna?: {
+    minidlna: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         db_dir?: string;
         enable_subtitles?: "no" | "yes";
@@ -34390,7 +34390,7 @@ declare module "winix" {
         wide_links?: "no" | "yes";
       };
     };
-    miniflux?: {
+    miniflux: {
       adminCredentialsFile?: string | null;
       config?: {
         CREATE_ADMIN?: unknown;
@@ -34401,9 +34401,9 @@ declare module "winix" {
       };
       createDatabaseLocally?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    minio?: {
+    minio: {
       accessKey?: string;
       browser?: boolean;
       certificatesDir?: string;
@@ -34412,12 +34412,12 @@ declare module "winix" {
       dataDir?: unknown[];
       enable?: boolean;
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       region?: string;
       rootCredentialsFile?: string | null;
       secretKey?: string;
     };
-    miniupnpd?: {
+    miniupnpd: {
       appendConfig?: string;
       enable?: boolean;
       externalInterface?: string;
@@ -34425,7 +34425,7 @@ declare module "winix" {
       natpmp?: boolean;
       upnp?: boolean;
     };
-    mirakurun?: {
+    mirakurun: {
       allowSmartCardAccess?: boolean;
       channelSettings?: unknown | null;
       enable?: boolean;
@@ -34435,15 +34435,15 @@ declare module "winix" {
       tunerSettings?: unknown | null;
       unixSocket?: string | null;
     };
-    miredo?: {
+    miredo: {
       bindAddress?: string | null;
       bindPort?: string | null;
       enable?: boolean;
       interfaceName?: string;
-      package?: PackageRef;
+      package?: string;
       serverAddress?: string;
     };
-    misskey?: {
+    misskey: {
       database?: {
         createLocally?: boolean;
         passwordFile?: string | null;
@@ -34453,7 +34453,7 @@ declare module "winix" {
         createLocally?: boolean;
         keyFile?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       redis?: {
         createLocally?: boolean;
         passwordFile?: string | null;
@@ -34478,7 +34478,7 @@ declare module "winix" {
         url?: string;
       };
     };
-    mjolnir?: {
+    mjolnir: {
       accessTokenFile?: string | null;
       dataPath?: string;
       enable?: boolean;
@@ -34493,14 +34493,14 @@ declare module "winix" {
       protectedRooms?: string[];
       settings?: unknown;
     };
-    "mjpg-streamer"?: {
+    "mjpg-streamer": {
       enable?: boolean;
       group?: string;
       inputPlugin?: string;
       outputPlugin?: string;
       user?: string;
     };
-    mlmmj?: {
+    mlmmj: {
       enable?: boolean;
       group?: string;
       listDomain?: string;
@@ -34508,21 +34508,21 @@ declare module "winix" {
       maintInterval?: string;
       user?: string;
     };
-    mmsd?: {
+    mmsd: {
       enable?: boolean;
       extraArgs?: string[];
     };
-    mobilizon?: {
+    mobilizon: {
       enable?: boolean;
       nginx?: {
         enable?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: {
         ":mobilizon"?: Record<string, unknown>;
       };
     };
-    "molly-brown"?: {
+    "molly-brown": {
       certPath?: string;
       docBase?: string;
       enable?: boolean;
@@ -34531,7 +34531,7 @@ declare module "winix" {
       port?: unknown;
       settings?: unknown;
     };
-    mollysocket?: {
+    mollysocket: {
       enable?: boolean;
       environmentFile?: string | null;
       logLevel?: string;
@@ -34542,14 +34542,14 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    monado?: {
+    monado: {
       defaultRuntime?: boolean;
       enable?: boolean;
       forceDefaultRuntime?: boolean;
       highPriority?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    monero?: {
+    monero: {
       banlist?: string | null;
       dataDir?: string;
       enable?: boolean;
@@ -34578,16 +34578,16 @@ declare module "winix" {
         user?: string | null;
       };
     };
-    monetdb?: {
+    monetdb: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    mongodb?: {
+    mongodb: {
       bind_ip?: string;
       dbpath?: string;
       enable?: boolean;
@@ -34595,14 +34595,14 @@ declare module "winix" {
       extraConfig?: string;
       initialRootPasswordFile?: string | null;
       initialScript?: string | null;
-      mongoshPackage?: PackageRef;
-      package?: PackageRef;
+      mongoshPackage?: string;
+      package?: string;
       pidFile?: string;
       quiet?: boolean;
       replSetName?: string;
       user?: string;
     };
-    monica?: {
+    monica: {
       appKeyFile?: string;
       appURL?: string;
       config?: Record<string, unknown>;
@@ -34660,15 +34660,15 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      phpPackage?: PackageRef;
+      phpPackage?: string;
       poolConfig?: Record<string, unknown>;
       user?: string;
     };
-    monit?: {
+    monit: {
       config?: string;
       enable?: boolean;
     };
-    moodle?: {
+    moodle: {
       database?: {
         createLocally?: boolean;
         host?: string;
@@ -34682,7 +34682,7 @@ declare module "winix" {
       enable?: boolean;
       extraConfig?: string;
       initialPassword?: string;
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       virtualHost?: {
         acmeRoot?: string | null;
@@ -34711,7 +34711,7 @@ declare module "winix" {
         useACMEHost?: string | null;
       };
     };
-    moonraker?: {
+    moonraker: {
       address?: string;
       allowSystemControl?: boolean;
       analysis?: {
@@ -34721,13 +34721,13 @@ declare module "winix" {
       enable?: boolean;
       group?: string;
       klipperSocket?: string;
-      package?: PackageRef | null;
+      package?: string | null;
       port?: unknown;
       settings?: Record<string, unknown>;
       stateDir?: string;
       user?: string;
     };
-    moosefs?: {
+    moosefs: {
       cgiserver?: {
         enable?: boolean;
         openFirewall?: boolean;
@@ -34756,14 +34756,14 @@ declare module "winix" {
       };
       runAsUser?: boolean;
     };
-    mopidy?: {
+    mopidy: {
       dataDir?: string;
       enable?: boolean;
-      extensionPackages?: PackageRef[] | NixExpr;
+      extensionPackages?: string[];
       extraConfigFiles?: string[];
       settings?: Record<string, unknown>;
     };
-    mosquitto?: {
+    mosquitto: {
       bridges?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -34775,22 +34775,22 @@ declare module "winix" {
       };
       logDest?: unknown[];
       logType?: ("all" | "debug" | "error" | "information" | "none" | "notice" | "subscribe" | "unsubscribe" | "warning" | "websockets")[];
-      package?: PackageRef;
+      package?: string;
       persistence?: boolean;
       settings?: Record<string, unknown>;
     };
-    motioneye?: {
+    motioneye: {
       enable?: boolean;
       group?: string;
       packages?: {
-        ffmpeg?: PackageRef;
-        motion?: PackageRef;
-        motioneye?: PackageRef;
+        ffmpeg?: string;
+        motion?: string;
+        motioneye?: string;
       };
       settings?: Record<string, string>;
       user?: string;
     };
-    movim?: {
+    movim: {
       database?: {
         createLocally?: boolean;
         name?: unknown;
@@ -34844,9 +34844,9 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       phpCfg?: Record<string, unknown>;
-      phpPackage?: PackageRef;
+      phpPackage?: string;
       podConfig?: {
         chatonly?: boolean | null;
         description?: unknown | null;
@@ -34872,10 +34872,10 @@ declare module "winix" {
       user?: unknown;
       verbose?: boolean;
     };
-    mozillavpn?: {
+    mozillavpn: {
       enable?: boolean;
     };
-    mpd?: {
+    mpd: {
       credentials?: {
         "*"?: Record<string, unknown>;
       };
@@ -34894,7 +34894,7 @@ declare module "winix" {
       startWhenNeeded?: boolean;
       user?: string;
     };
-    mpdscribble?: {
+    mpdscribble: {
       enable?: boolean;
       endpoints?: {
         "<name>"?: Record<string, unknown>;
@@ -34906,11 +34906,11 @@ declare module "winix" {
       proxy?: string | null;
       verbose?: number;
     };
-    mptcpd?: {
+    mptcpd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    mqtt2influxdb?: {
+    mqtt2influxdb: {
       enable?: boolean;
       environmentFiles?: string[];
       influxdb?: {
@@ -34931,15 +34931,15 @@ declare module "winix" {
         port?: unknown;
         username?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       points?: {
         "*"?: Record<string, unknown>;
       };
     };
-    mstpd?: {
+    mstpd: {
       enable?: boolean;
     };
-    mtprotoproxy?: {
+    mtprotoproxy: {
       adTag?: string | null;
       enable?: boolean;
       extraConfig?: unknown;
@@ -34947,24 +34947,24 @@ declare module "winix" {
       secureOnly?: boolean;
       users?: Record<string, string>;
     };
-    "mtr-exporter"?: {
+    "mtr-exporter": {
       address?: string;
       enable?: boolean;
       extraFlags?: string[];
       jobs?: {
         "*"?: Record<string, unknown>;
       };
-      mtrPackage?: PackageRef;
-      package?: PackageRef;
+      mtrPackage?: string;
+      package?: string;
       port?: unknown;
     };
-    "mullvad-vpn"?: {
+    "mullvad-vpn": {
       enable?: boolean;
       enableEarlyBootBlocking?: boolean;
       enableExcludeWrapper?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    multipath?: {
+    multipath: {
       blacklist?: string | null;
       blacklist_exceptions?: string | null;
       defaults?: string | null;
@@ -34975,22 +34975,22 @@ declare module "winix" {
       extraConfig?: string | null;
       extraConfigFile?: string | null;
       overrides?: string | null;
-      package?: PackageRef;
+      package?: string;
       pathGroups?: {
         "*"?: Record<string, unknown>;
       };
     };
-    munge?: {
+    munge: {
       enable?: boolean;
       password?: string;
     };
-    "munin-cron"?: {
+    "munin-cron": {
       enable?: boolean;
       extraCSS?: string;
       extraGlobalConfig?: string;
       hosts?: string;
     };
-    "munin-node"?: {
+    "munin-node": {
       disabledPlugins?: string[];
       enable?: boolean;
       extraAutoPlugins?: string[];
@@ -34998,7 +34998,7 @@ declare module "winix" {
       extraPluginConfig?: string;
       extraPlugins?: Record<string, string>;
     };
-    murmur?: {
+    murmur: {
       allowHtml?: boolean;
       autobanAttempts?: number;
       autobanTime?: number;
@@ -35016,7 +35016,7 @@ declare module "winix" {
       logDays?: number;
       logToFile?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       password?: string;
       port?: unknown;
       registerHostname?: string;
@@ -35036,33 +35036,33 @@ declare module "winix" {
       users?: number;
       welcometext?: string;
     };
-    "music-assistant"?: {
+    "music-assistant": {
       enable?: boolean;
       extraOptions?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       providers?: ("airplay" | "airplay_receiver" | "alexa" | "apple_music" | "ard_audiothek" | "ariacast_receiver" | "audible" | "audiobookshelf" | "bandcamp" | "bbc_sounds" | "bluesound" | "builtin" | "chromecast" | "coverartarchive" | "dashie_kiosk" | "deezer" | "digitally_incorporated" | "dlna" | "emby" | "fanarttv" | "filesystem_local" | "filesystem_nfs" | "filesystem_smb" | "fully_kiosk" | "genius_lyrics" | "gpodder" | "hass" | "hass_players" | "heos" | "ibroadcast" | "internet_archive" | "itunes_podcasts" | "jellyfin" | "kion_music" | "lastfm_scrobble" | "listenbrainz_scrobble" | "lrclib" | "musicbrainz" | "musiccast" | "nicovideo" | "nugs" | "opensubsonic" | "orf_radiothek" | "pandora" | "party" | "phishin" | "plex" | "plex_connect" | "podcast_index" | "podcastfeed" | "qobuz" | "radiobrowser" | "radioparadise" | "roku_media_assistant" | "sendspin" | "siriusxm" | "snapcast" | "somafm" | "sonos" | "sonos_s1" | "soundcloud" | "spotify" | "spotify_connect" | "squeezelite" | "subsonic_scrobble" | "sync_group" | "test" | "theaudiodb" | "tidal" | "tunein" | "universal_group" | "universal_player" | "vban_receiver" | "yandex_music" | "yousee" | "ytmusic" | "zvuk_music")[];
     };
-    mycelium?: {
+    mycelium: {
       addHostedPublicNodes?: boolean;
       enable?: boolean;
       extraArgs?: string[];
       keyFile?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       peers?: string[];
     };
-    mympd?: {
+    mympd: {
       enable?: boolean;
       extraGroups?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         http_port?: unknown;
         ssl?: boolean;
       };
     };
-    mysql?: {
+    mysql: {
       configFile?: string;
       dataDir?: string;
       enable?: boolean;
@@ -35078,7 +35078,7 @@ declare module "winix" {
         localName?: string;
         name?: string;
         nodeAddresses?: string[];
-        package?: PackageRef;
+        package?: string;
         sstMethod?: "mariabackup" | "rsync";
       };
       group?: string;
@@ -35086,7 +35086,7 @@ declare module "winix" {
         "*"?: Record<string, unknown>;
       };
       initialScript?: string | null;
-      package?: PackageRef;
+      package?: string;
       replication?: {
         masterHost?: string;
         masterPassword?: string;
@@ -35099,7 +35099,7 @@ declare module "winix" {
       settings?: Record<string, unknown>;
       user?: string;
     };
-    mysqlBackup?: {
+    mysqlBackup: {
       calendar?: string;
       compressionAlg?: "gzip" | "xz" | "zstd";
       compressionLevel?: number | null;
@@ -35110,8 +35110,8 @@ declare module "winix" {
       singleTransaction?: unknown;
       user?: string;
     };
-    n8n?: {
-      customNodes?: PackageRef[] | NixExpr;
+    n8n: {
+      customNodes?: string[];
       enable?: boolean;
       environment?: {
         GENERIC_TIMEZONE?: string | null;
@@ -35124,22 +35124,22 @@ declare module "winix" {
         N8N_VERSION_NOTIFICATIONS_ENABLED?: unknown;
       };
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       taskRunners?: {
         enable?: boolean;
         environment?: Record<string, unknown>;
-        launcherPackage?: PackageRef;
+        launcherPackage?: string;
         runners?: Record<string, unknown>;
       };
     };
-    nagios?: {
-      cgiConfigFile?: PackageRef;
+    nagios: {
+      cgiConfigFile?: string;
       enable?: boolean;
       enableWebInterface?: boolean;
       extraConfig?: Record<string, string>;
-      mainConfigFile?: PackageRef | null;
+      mainConfigFile?: string | null;
       objectDefs?: string[];
-      plugins?: PackageRef[] | NixExpr;
+      plugins?: string[];
       validateConfig?: boolean;
       virtualHost?: {
         acmeRoot?: string | null;
@@ -35168,7 +35168,7 @@ declare module "winix" {
         useACMEHost?: string | null;
       };
     };
-    namecoind?: {
+    namecoind: {
       enable?: boolean;
       extraNodes?: string[];
       generate?: boolean;
@@ -35184,14 +35184,14 @@ declare module "winix" {
       trustedNodes?: string[];
       wallet?: string;
     };
-    "nar-serve"?: {
+    "nar-serve": {
       cacheURL?: string;
       domain?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    nats?: {
+    nats: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
@@ -35202,13 +35202,13 @@ declare module "winix" {
       user?: string;
       validateConfig?: boolean;
     };
-    navidrome?: {
+    navidrome: {
       enable?: boolean;
       environmentFile?: string | null;
-      finalPackage?: PackageRef;
+      finalPackage?: string;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       plugins?: unknown[];
       settings?: {
         Address?: string;
@@ -35218,7 +35218,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    nbd?: {
+    nbd: {
       server?: {
         enable?: boolean;
         exports?: Record<string, unknown>;
@@ -35227,7 +35227,7 @@ declare module "winix" {
         listenPort?: unknown;
       };
     };
-    ncdns?: {
+    ncdns: {
       address?: string;
       dnssec?: {
         enable?: boolean;
@@ -35242,7 +35242,7 @@ declare module "winix" {
       port?: unknown;
       settings?: unknown;
     };
-    ncps?: {
+    ncps: {
       analytics?: {
         reporting?: Record<string, unknown>;
       };
@@ -35271,7 +35271,7 @@ declare module "winix" {
         enable?: boolean;
         grpcURL?: string | null;
       };
-      package?: PackageRef;
+      package?: string;
       prometheus?: {
         enable?: boolean;
       };
@@ -35279,7 +35279,7 @@ declare module "winix" {
         addr?: string;
       };
     };
-    ndppd?: {
+    ndppd: {
       configFile?: string | null;
       enable?: boolean;
       interface?: string | null;
@@ -35289,23 +35289,23 @@ declare module "winix" {
       };
       routeTTL?: number;
     };
-    neard?: {
+    neard: {
       enable?: boolean;
       settings?: {
         General?: Record<string, unknown>;
       };
     };
-    nebula?: {
+    nebula: {
       networks?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    "nebula-lighthouse-service"?: {
+    "nebula-lighthouse-service": {
       enable?: boolean;
       settings?: unknown;
       user?: string;
     };
-    neo4j?: {
+    neo4j: {
       bolt?: {
         advertisedAddress?: string;
         enable?: boolean;
@@ -35335,7 +35335,7 @@ declare module "winix" {
         listenAddress?: string;
         sslPolicy?: string;
       };
-      package?: PackageRef;
+      package?: string;
       readOnly?: boolean;
       shell?: {
         enable?: boolean;
@@ -35345,18 +35345,18 @@ declare module "winix" {
       };
       workerCount?: number;
     };
-    netatalk?: {
+    netatalk: {
       enable?: boolean;
       extmap?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
     };
-    netbird?: {
+    netbird: {
       clients?: {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       server?: {
         coturn?: Record<string, unknown>;
         dashboard?: Record<string, unknown>;
@@ -35371,11 +35371,11 @@ declare module "winix" {
       };
       ui?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       useRoutingFeatures?: "both" | "client" | "none" | "server";
     };
-    netbox?: {
+    netbox: {
       apiTokenPeppersFile?: string | null;
       dataDir?: string;
       enable?: boolean;
@@ -35385,7 +35385,7 @@ declare module "winix" {
       keycloakClientSecret?: string | null;
       ldapConfigPath?: string;
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       plugins?: unknown;
       port?: unknown;
       secretKeyFile?: string;
@@ -35394,11 +35394,11 @@ declare module "winix" {
       };
       unixSocket?: string | null;
     };
-    netclient?: {
+    netclient: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    netdata?: {
+    netdata: {
       claimTokenFile?: string | null;
       config?: Record<string, unknown>;
       configDir?: Record<string, string>;
@@ -35406,10 +35406,10 @@ declare module "winix" {
       deadlineBeforeStopSec?: number;
       enable?: boolean;
       enableAnalyticsReporting?: boolean;
-      extraNdsudoPackages?: PackageRef[] | NixExpr;
+      extraNdsudoPackages?: string[];
       extraPluginPaths?: string[];
       group?: string;
-      package?: PackageRef;
+      package?: string;
       python?: {
         enable?: boolean;
         extraPackages?: unknown;
@@ -35417,7 +35417,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    netfoil?: {
+    netfoil: {
       config?: Record<string, string>;
       doHIPs?: string;
       doHUrl?: string;
@@ -35435,17 +35435,17 @@ declare module "winix" {
         pin?: Record<string, unknown>;
       };
     };
-    networkaudiod?: {
+    networkaudiod: {
       enable?: boolean;
     };
-    "networkd-dispatcher"?: {
+    "networkd-dispatcher": {
       enable?: boolean;
       extraArgs?: string[];
       rules?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    networking?: {
+    networking: {
       websockify?: {
         enable?: boolean;
         portMap?: Record<string, unknown>;
@@ -35453,14 +35453,14 @@ declare module "winix" {
         sslKey?: string;
       };
     };
-    newt?: {
+    newt: {
       blueprint?: unknown;
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    nextcloud?: {
+    nextcloud: {
       appstoreEnable?: boolean | null;
       autoUpdateApps?: {
         enable?: boolean;
@@ -35492,10 +35492,10 @@ declare module "winix" {
       datadir?: string;
       enable?: boolean;
       enableImagemagick?: boolean;
-      extraApps?: Record<string, PackageRef>;
+      extraApps?: Record<string, string>;
       extraAppsEnable?: boolean;
       fastcgiTimeout?: number;
-      finalPackage?: PackageRef;
+      finalPackage?: string;
       home?: string;
       hostName?: string;
       https?: boolean;
@@ -35518,14 +35518,14 @@ declare module "winix" {
         enable?: boolean;
         logLevel?: "debug" | "error" | "info" | "trace" | "warn";
         nextcloudUrl?: string;
-        package?: PackageRef;
+        package?: string;
         socketPath?: string;
       };
-      occ?: PackageRef;
-      package?: PackageRef;
+      occ?: string;
+      package?: string;
       phpExtraExtensions?: unknown;
       phpOptions?: Record<string, unknown>;
-      phpPackage?: PackageRef;
+      phpPackage?: string;
       poolConfig?: string | null;
       poolSettings?: Record<string, unknown>;
       secretFile?: string | null;
@@ -35557,7 +35557,7 @@ declare module "winix" {
       };
       webfinger?: boolean;
     };
-    "nextcloud-spreed-signaling"?: {
+    "nextcloud-spreed-signaling": {
       backends?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -35565,7 +35565,7 @@ declare module "winix" {
       enable?: boolean;
       group?: string;
       hostName?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         app?: Record<string, unknown>;
         backend?: Record<string, unknown>;
@@ -35583,39 +35583,39 @@ declare module "winix" {
       stateDir?: string;
       user?: string;
     };
-    "nextcloud-whiteboard-server"?: {
+    "nextcloud-whiteboard-server": {
       enable?: boolean;
       secrets?: string[];
       settings?: Record<string, string>;
     };
-    nextdns?: {
+    nextdns: {
       arguments?: string[];
       enable?: boolean;
     };
-    "nextjs-ollama-llm-ui"?: {
+    "nextjs-ollama-llm-ui": {
       enable?: boolean;
       hostname?: string;
       ollamaUrl?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    nexus?: {
+    nexus: {
       enable?: boolean;
       group?: string;
       home?: string;
-      jdkPackage?: PackageRef;
+      jdkPackage?: string;
       jvmOpts?: string;
       listenAddress?: string;
       listenPort?: unknown;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    "nezha-agent"?: {
+    "nezha-agent": {
       clientSecretFile?: string | null;
       debug?: boolean;
       enable?: boolean;
       genUuid?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         disable_command_execute?: boolean;
         disable_nat?: boolean;
@@ -35631,7 +35631,7 @@ declare module "winix" {
         uuid?: string | null;
       };
     };
-    nfs?: {
+    nfs: {
       extraConfig?: string;
       idmapd?: {
         settings?: Record<string, unknown>;
@@ -35649,7 +35649,7 @@ declare module "winix" {
       };
       settings?: Record<string, unknown>;
     };
-    nghttpx?: {
+    nghttpx: {
       "backend-address-family"?: "IPv4" | "IPv6" | "auto";
       backends?: {
         "*"?: Record<string, unknown>;
@@ -35669,7 +35669,7 @@ declare module "winix" {
       };
       workers?: number;
     };
-    nginx?: {
+    nginx: {
       additionalModules?: Record<string, unknown>[];
       appendConfig?: string;
       appendHttpConfig?: string;
@@ -35700,7 +35700,7 @@ declare module "winix" {
       logError?: string;
       mapHashBucketSize?: unknown | null;
       mapHashMaxSize?: unknown | null;
-      package?: PackageRef;
+      package?: string;
       prependConfig?: string;
       preStart?: string;
       proxyCachePath?: {
@@ -35729,7 +35729,7 @@ declare module "winix" {
       sso?: {
         configuration?: unknown;
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       statusPage?: boolean;
       streamConfig?: string;
@@ -35737,7 +35737,7 @@ declare module "winix" {
         enable?: boolean;
         expectedTailnet?: string | null;
         group?: string;
-        package?: PackageRef;
+        package?: string;
         socketPath?: string;
         user?: string;
         virtualHosts?: string[];
@@ -35754,12 +35754,12 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    ngircd?: {
+    ngircd: {
       config?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    nifi?: {
+    nifi: {
       enable?: boolean;
       enableHTTPS?: boolean;
       group?: string;
@@ -35769,18 +35769,18 @@ declare module "winix" {
       listenHost?: string;
       listenPort?: unknown;
       maxJavaHeapSize?: number | null;
-      package?: PackageRef;
+      package?: string;
       proxyHost?: string | null;
       proxyPort?: unknown | null;
       user?: string;
     };
-    nipap?: {
+    nipap: {
       authBackendSettings?: Record<string, unknown>;
       enable?: boolean;
       "nipap-www"?: {
         enable?: boolean;
         host?: string | null;
-        package?: PackageRef;
+        package?: string;
         port?: unknown | null;
         umask?: string;
         unixSocket?: string | null;
@@ -35790,7 +35790,7 @@ declare module "winix" {
       nipapd?: {
         database?: Record<string, unknown>;
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       settings?: {
         auth?: Record<string, unknown>;
@@ -35798,7 +35798,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    nitter?: {
+    nitter: {
       cache?: {
         listMinutes?: number;
         redisConnections?: number;
@@ -35817,7 +35817,7 @@ declare module "winix" {
       };
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       preferences?: {
         autoplayGifs?: boolean;
         bidiSupport?: boolean;
@@ -35850,36 +35850,36 @@ declare module "winix" {
       sessionsFile?: string;
       settings?: unknown;
     };
-    "nix-serve"?: {
+    "nix-serve": {
       bindAddress?: string;
       enable?: boolean;
       extraParams?: unknown;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       secretKeyFile?: string | null;
     };
-    "nix-store-gcs-proxy"?: {
+    "nix-store-gcs-proxy": {
       "<name>"?: {
         address?: string;
         bucketName?: string;
         enable?: boolean;
       };
     };
-    "nixops-dns"?: {
+    "nixops-dns": {
       dnsmasq?: boolean;
       domain?: string;
       enable?: boolean;
       user?: string;
     };
-    nixseparatedebuginfod2?: {
+    nixseparatedebuginfod2: {
       cacheExpirationDelay?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       substituters?: string[];
     };
-    nmtrust?: {
+    nmtrust: {
       enable?: boolean;
       evalFailurePolicy?: "offline" | "untrusted";
       excludedConnectionPatterns?: string[];
@@ -35893,7 +35893,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    nncp?: {
+    nncp: {
       caller?: {
         enable?: boolean;
         extraArgs?: string[];
@@ -35904,7 +35904,7 @@ declare module "winix" {
         socketActivation?: Record<string, unknown>;
       };
     };
-    "nntp-proxy"?: {
+    "nntp-proxy": {
       enable?: boolean;
       listenAddress?: string;
       port?: unknown;
@@ -35921,36 +35921,36 @@ declare module "winix" {
       };
       verbosity?: "debug" | "error" | "info" | "notice" | "warning";
     };
-    "node-red"?: {
+    "node-red": {
       configFile?: string;
       define?: unknown;
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       safe?: boolean;
       user?: string;
       userDir?: string;
       withNpmAndGcc?: boolean;
     };
-    nohang?: {
+    nohang: {
       configPath?: "basic" | "desktop";
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    nomad?: {
+    nomad: {
       credentials?: Record<string, string>;
       dropPrivileges?: boolean;
       enable?: boolean;
       enableDocker?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       extraSettingsPaths?: string[];
       extraSettingsPlugins?: unknown[];
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    nominatim?: {
+    nominatim: {
       database?: {
         apiUser?: string;
         dbname?: string;
@@ -35962,32 +35962,32 @@ declare module "winix" {
       };
       enable?: boolean;
       hostName?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, string>;
       ui?: {
         config?: string | null;
-        package?: PackageRef;
+        package?: string;
       };
     };
-    "nostr-rs-relay"?: {
+    "nostr-rs-relay": {
       dataDir?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: unknown;
     };
-    novacomd?: {
+    novacomd: {
       enable?: boolean;
     };
-    nscd?: {
+    nscd: {
       config?: string;
       enable?: boolean;
       enableNsncd?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    nsd?: {
+    nsd: {
       bind8Stats?: boolean;
       dnssecInterval?: string;
       enable?: boolean;
@@ -36042,17 +36042,17 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    "ntfy-sh"?: {
+    "ntfy-sh": {
       enable?: boolean;
       environmentFile?: string | null;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         "base-url"?: string;
       };
       user?: string;
     };
-    ntopng?: {
+    ntopng: {
       configText?: string;
       enable?: boolean;
       extraConfig?: string;
@@ -36063,7 +36063,7 @@ declare module "winix" {
         createInstance?: string | null;
       };
     };
-    ntp?: {
+    ntp: {
       enable?: boolean;
       extraConfig?: string;
       extraFlags?: string[];
@@ -36071,20 +36071,20 @@ declare module "winix" {
       restrictSource?: string[];
       servers?: string[];
     };
-    "ntpd-rs"?: {
+    "ntpd-rs": {
       enable?: boolean;
       metrics?: {
         enable?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       useNetworkingTimeServers?: boolean;
     };
-    nullidentdmod?: {
+    nullidentdmod: {
       enable?: boolean;
       userid?: string | null;
     };
-    nullmailer?: {
+    nullmailer: {
       config?: {
         adminaddr?: string | null;
         allmailfrom?: string | null;
@@ -36105,16 +36105,16 @@ declare module "winix" {
       setSendmail?: boolean;
       user?: string;
     };
-    "nvme-rs"?: {
+    "nvme-rs": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         check_interval_secs?: number;
         email?: Record<string, unknown>;
         thresholds?: Record<string, unknown>;
       };
     };
-    nylon?: {
+    nylon: {
       "<name>"?: {
         acceptInterface?: string;
         allowedIPRanges?: string[];
@@ -36128,20 +36128,20 @@ declare module "winix" {
         verbosity?: boolean;
       };
     };
-    nzbget?: {
+    nzbget: {
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       user?: string;
     };
-    nzbhydra2?: {
+    nzbhydra2: {
       dataDir?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "oauth2-proxy"?: {
+    "oauth2-proxy": {
       approvalPrompt?: "auto" | "force";
       azure?: {
         resource?: string;
@@ -36188,7 +36188,7 @@ declare module "winix" {
         virtualHosts?: Record<string, unknown>;
       };
       oidcIssuerUrl?: string | null;
-      package?: PackageRef;
+      package?: string;
       passAccessToken?: boolean;
       passBasicAuth?: boolean;
       passHostHeader?: boolean;
@@ -36213,27 +36213,27 @@ declare module "winix" {
       upstream?: unknown;
       validateURL?: string | null;
     };
-    ocis?: {
+    ocis: {
       address?: string;
       configDir?: string | null;
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFile?: string | null;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       stateDir?: string;
       url?: string;
       user?: string;
     };
-    ocserv?: {
+    ocserv: {
       config?: string;
       enable?: boolean;
     };
-    "ocsinventory-agent"?: {
+    "ocsinventory-agent": {
       enable?: boolean;
       interval?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         ca?: string;
         debug?: boolean;
@@ -36242,67 +36242,67 @@ declare module "winix" {
         tag?: string | null;
       };
     };
-    octoprint?: {
+    octoprint: {
       enable?: boolean;
       extraConfig?: unknown;
       group?: string;
       host?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       plugins?: unknown;
       port?: unknown;
       stateDir?: string;
       user?: string;
     };
-    odoo?: {
-      addons?: PackageRef[] | NixExpr;
+    odoo: {
+      addons?: string[];
       autoInit?: boolean;
       autoInitExtraFlags?: string[];
       domain?: string | null;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         options?: Record<string, unknown>;
       };
     };
-    offlineimap?: {
+    offlineimap: {
       enable?: boolean;
       install?: boolean;
       onCalendar?: string;
-      package?: PackageRef;
+      package?: string;
       path?: string[];
       timeoutStartSec?: string;
     };
-    ofono?: {
+    ofono: {
       enable?: boolean;
-      plugins?: PackageRef[] | NixExpr;
+      plugins?: string[];
     };
-    oidentd?: {
+    oidentd: {
       enable?: boolean;
     };
-    oink?: {
+    oink: {
       apiKeyFile?: string;
       domains?: Record<string, unknown>[];
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       secretApiKeyFile?: string;
       settings?: {
         interval?: number;
         ttl?: number;
       };
     };
-    olivetin?: {
+    olivetin: {
       enable?: boolean;
       extraConfigFiles?: string[];
       group?: string;
-      package?: PackageRef;
+      package?: string;
       path?: unknown[];
       settings?: {
         ListenAddressSingleHTTPFrontend?: string;
       };
       user?: string;
     };
-    ollama?: {
+    ollama: {
       enable?: boolean;
       environmentVariables?: Record<string, string>;
       group?: string | null;
@@ -36311,27 +36311,27 @@ declare module "winix" {
       loadModels?: string[];
       models?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       rocmOverrideGfx?: string | null;
       syncModels?: boolean;
       user?: string | null;
     };
-    ombi?: {
+    ombi: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    omnom?: {
+    omnom: {
       dataDir?: string;
       enable?: boolean;
       group?: unknown;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string | null;
       port?: unknown;
       settings?: {
@@ -36344,23 +36344,23 @@ declare module "winix" {
       };
       user?: unknown;
     };
-    oncall?: {
+    oncall: {
       database?: {
         createLocally?: boolean;
       };
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       secretFile?: unknown;
       settings?: {
         db?: Record<string, unknown>;
         oncall_host?: string;
       };
     };
-    onedrive?: {
+    onedrive: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    onlyoffice?: {
+    onlyoffice: {
       allowLocalConnections?: boolean;
       enable?: boolean;
       enableExampleServer?: boolean;
@@ -36368,7 +36368,7 @@ declare module "winix" {
       hostname?: string;
       jwtSecretFile?: string | null;
       loglevel?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       postgresHost?: string;
       postgresName?: string;
@@ -36377,28 +36377,28 @@ declare module "winix" {
       rabbitmqUrl?: string;
       securityNonceFile?: string;
       wopi?: boolean;
-      x2t?: PackageRef;
+      x2t?: string;
     };
-    "open-web-calendar"?: {
+    "open-web-calendar": {
       calendarSettings?: Record<string, unknown>;
       domain?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         ALLOWED_HOSTS?: string;
       };
     };
-    "open-webui"?: {
+    "open-webui": {
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFile?: string | null;
       host?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       stateDir?: string;
     };
-    openafsClient?: {
+    openafsClient: {
       afsdb?: boolean;
       cache?: {
         blocks?: number;
@@ -36418,13 +36418,13 @@ declare module "winix" {
       inumcalc?: unknown;
       mountPoint?: string;
       packages?: {
-        module?: PackageRef;
-        programs?: PackageRef;
+        module?: string;
+        programs?: string;
       };
       sparse?: boolean;
       startDisconnected?: boolean;
     };
-    openafsServer?: {
+    openafsServer: {
       advertisedAddresses?: string[];
       cellName?: string;
       cellServDB?: {
@@ -36432,7 +36432,7 @@ declare module "winix" {
       };
       dottedPrincipals?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       roles?: {
         backup?: Record<string, unknown>;
         database?: Record<string, unknown>;
@@ -36440,37 +36440,37 @@ declare module "winix" {
       };
       udpPacketSize?: number;
     };
-    openarena?: {
+    openarena: {
       enable?: boolean;
       extraFlags?: string[];
       openPorts?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    openbao?: {
+    openbao: {
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         listener?: Record<string, unknown>;
         ui?: boolean;
       };
     };
-    opencloud?: {
+    opencloud: {
       address?: string;
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFile?: string | null;
       group?: string;
-      idpWebPackage?: PackageRef;
-      package?: PackageRef;
+      idpWebPackage?: string;
+      package?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
       stateDir?: string;
       url?: string;
       user?: string;
-      webPackage?: PackageRef;
+      webPackage?: string;
     };
-    opendkim?: {
+    opendkim: {
       configFile?: string | null;
       domains?: string;
       enable?: boolean;
@@ -36481,22 +36481,22 @@ declare module "winix" {
       socket?: string;
       user?: string;
     };
-    openiscsi?: {
+    openiscsi: {
       discoverPortal?: string | null;
       enable?: boolean;
       enableAutoLoginOut?: boolean;
       extraConfig?: string;
       extraConfigFile?: string | null;
       name?: string;
-      package?: PackageRef;
+      package?: string;
     };
-    openldap?: {
+    openldap: {
       configDir?: string | null;
       declarativeContents?: Record<string, string>;
       enable?: boolean;
       group?: string;
       mutableConfig?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         attrs?: Record<string, unknown>;
         children?: Record<string, unknown>;
@@ -36505,20 +36505,20 @@ declare module "winix" {
       urlList?: string[];
       user?: string;
     };
-    openntpd?: {
+    openntpd: {
       enable?: boolean;
       extraConfig?: string;
       extraOptions?: unknown;
       servers?: string[];
     };
-    opensearch?: {
+    opensearch: {
       dataDir?: string;
       enable?: boolean;
       extraCmdLineOptions?: string[];
       extraJavaOptions?: string[];
       group?: string;
       logging?: string;
-      package?: PackageRef;
+      package?: string;
       restartIfChanged?: boolean;
       settings?: {
         "cluster.name"?: string;
@@ -36530,17 +36530,17 @@ declare module "winix" {
       };
       user?: string;
     };
-    opensmtpd?: {
+    opensmtpd: {
       enable?: boolean;
       extraServerArgs?: string[];
-      package?: PackageRef;
-      procPackages?: PackageRef[] | NixExpr;
+      package?: string;
+      procPackages?: string[];
       serverConfiguration?: string;
       setSendmail?: boolean;
     };
-    opensnitch?: {
+    opensnitch: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       rules?: Record<string, unknown>;
       settings?: {
         Audit?: Record<string, unknown>;
@@ -36555,7 +36555,7 @@ declare module "winix" {
         Stats?: Record<string, unknown>;
       };
     };
-    openssh?: {
+    openssh: {
       allowSFTP?: boolean;
       authorizedKeysCommand?: string;
       authorizedKeysCommandUser?: string;
@@ -36574,7 +36574,7 @@ declare module "winix" {
       };
       moduliFile?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       ports?: unknown[];
       settings?: {
         AcceptEnv?: string[] | null;
@@ -36602,21 +36602,21 @@ declare module "winix" {
       sftpServerExecutable?: string;
       startWhenNeeded?: boolean;
     };
-    "opentelemetry-collector"?: {
+    "opentelemetry-collector": {
       configFile?: string | null;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       validateConfigFile?: boolean;
     };
-    "openthread-border-router"?: {
+    "openthread-border-router": {
       backboneInterfaces?: string[];
       enable?: boolean;
       extraArgs?: string[];
       interfaceName?: string;
       logLevel?: "alert" | "crit" | "debug" | "emerg" | "err" | "info" | "notice" | "warning";
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       radio?: {
         baudRate?: unknown;
         device?: string | null;
@@ -36635,27 +36635,27 @@ declare module "winix" {
         listenPort?: unknown;
       };
     };
-    opentracker?: {
+    opentracker: {
       enable?: boolean;
       extraOptions?: unknown;
-      package?: PackageRef;
+      package?: string;
     };
-    opentsdb?: {
+    opentsdb: {
       config?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    openvpn?: {
-      package?: PackageRef;
+    openvpn: {
+      package?: string;
       restartAfterSleep?: boolean;
       servers?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    "openvscode-server"?: {
+    "openvscode-server": {
       connectionToken?: string | null;
       connectionTokenFile?: string | null;
       enable?: boolean;
@@ -36663,10 +36663,10 @@ declare module "winix" {
       extraArguments?: string[];
       extraEnvironment?: Record<string, string>;
       extraGroups?: string[];
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       group?: string;
       host?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       serverDataDir?: string | null;
       socketPath?: string | null;
@@ -36675,23 +36675,23 @@ declare module "winix" {
       userDataDir?: string | null;
       withoutConnectionToken?: boolean;
     };
-    openwebrx?: {
+    openwebrx: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    opkssh?: {
+    opkssh: {
       authorizations?: {
         "*"?: Record<string, unknown>;
       };
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       providers?: {
         "<name>"?: Record<string, unknown>;
       };
       user?: string;
     };
-    orangefs?: {
+    orangefs: {
       client?: {
         enable?: boolean;
         extraOptions?: string[];
@@ -36709,30 +36709,30 @@ declare module "winix" {
         servers?: Record<string, string>;
       };
     };
-    orca?: {
+    orca: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    orthanc?: {
+    orthanc: {
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFile?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       stateDir?: string;
     };
-    osquery?: {
+    osquery: {
       enable?: boolean;
       flags?: {
         database_path?: string;
         logger_path?: string;
         pidfile?: string;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    osrm?: {
+    osrm: {
       address?: string;
       algorithm?: "CH" | "CoreCH" | "MLD";
       dataFile?: string;
@@ -36741,7 +36741,7 @@ declare module "winix" {
       port?: unknown;
       threads?: number;
     };
-    ostinato?: {
+    ostinato: {
       enable?: boolean;
       port?: unknown;
       portList?: {
@@ -36753,7 +36753,7 @@ declare module "winix" {
         address?: string;
       };
     };
-    outline?: {
+    outline: {
       azureAuthentication?: {
         clientId?: string;
         clientSecretFile?: string;
@@ -36791,7 +36791,7 @@ declare module "winix" {
         userinfoUrl?: string;
         usernameClaim?: string;
       };
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       publicUrl?: string;
       rateLimiter?: {
@@ -36840,16 +36840,16 @@ declare module "winix" {
       user?: string;
       utilsSecretFile?: string;
     };
-    overseerr?: {
+    overseerr: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    owamp?: {
+    owamp: {
       enable?: boolean;
     };
-    owncast?: {
+    owncast: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
@@ -36859,37 +36859,37 @@ declare module "winix" {
       "rtmp-port"?: unknown;
       user?: string;
     };
-    oxidized?: {
+    oxidized: {
       configFile?: string | null;
       dataDir?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       routerDB?: string | null;
       user?: string;
     };
-    pacemaker?: {
+    pacemaker: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    packagekit?: {
+    packagekit: {
       enable?: boolean;
       settings?: Record<string, unknown>;
       vendorSettings?: Record<string, unknown>;
     };
-    pairdrop?: {
+    pairdrop: {
       enable?: boolean;
       environment?: Record<string, unknown>;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       rtcConfig?: unknown;
     };
-    paisa?: {
+    paisa: {
       enable?: boolean;
       host?: string;
       mutableSettings?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: {
         dataDir?: string;
@@ -36897,7 +36897,7 @@ declare module "winix" {
         journalFile?: string;
       };
     };
-    pangolin?: {
+    pangolin: {
       baseDomain?: string | null;
       dashboardDomain?: string;
       dataDir?: string;
@@ -36906,15 +36906,15 @@ declare module "winix" {
       environmentFile?: string | null;
       letsEncryptEmail?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    "pantalaimon-headless"?: {
+    "pantalaimon-headless": {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    pantheon?: {
+    pantheon: {
       apps?: {
         enable?: boolean;
       };
@@ -36925,7 +36925,7 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    paperless?: {
+    paperless: {
       address?: string;
       configureNginx?: boolean;
       configureTika?: boolean;
@@ -36944,32 +36944,32 @@ declare module "winix" {
         onCalendar?: string | null;
         settings?: Record<string, unknown>;
       };
-      manage?: PackageRef;
+      manage?: string;
       mediaDir?: string;
       openMPThreadingWorkaround?: boolean;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string | null;
       port?: unknown;
       settings?: Record<string, unknown>;
       user?: string;
     };
-    papra?: {
+    papra: {
       enable?: boolean;
       environment?: Record<string, unknown>;
       environmentFile?: string | null;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    paretosecurity?: {
+    paretosecurity: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       trayIcon?: boolean;
       users?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    parsedmarc?: {
+    parsedmarc: {
       enable?: boolean;
       provision?: {
         elasticsearch?: boolean;
@@ -36985,23 +36985,23 @@ declare module "winix" {
         smtp?: Record<string, unknown>;
       };
     };
-    "part-db"?: {
+    "part-db": {
       enable?: boolean;
       enableNginx?: boolean;
       enablePostgresql?: boolean;
-      package?: PackageRef;
-      phpPackage?: PackageRef;
+      package?: string;
+      phpPackage?: string;
       poolConfig?: Record<string, unknown>;
       settings?: {
         DATABASE_URL?: string;
       };
       virtualHost?: string;
     };
-    passSecretService?: {
+    passSecretService: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    patroni?: {
+    patroni: {
       dataDir?: string;
       enable?: boolean;
       environmentFiles?: Record<string, unknown | null>;
@@ -37011,7 +37011,7 @@ declare module "winix" {
       nodeIp?: string;
       otherNodesIps?: string[];
       postgresqlDataDir?: string;
-      postgresqlPackage?: PackageRef;
+      postgresqlPackage?: string;
       postgresqlPort?: unknown;
       restApiPort?: unknown;
       scope?: string;
@@ -37019,15 +37019,15 @@ declare module "winix" {
       softwareWatchdog?: boolean;
       user?: string;
     };
-    pcscd?: {
+    pcscd: {
       enable?: boolean;
       extendReaderNames?: string | null;
       extraArgs?: string[];
       ignoreReaderNames?: unknown[];
-      plugins?: PackageRef[] | NixExpr;
+      plugins?: string[];
       readerConfigs?: string[];
     };
-    pdfding?: {
+    pdfding: {
       allowedHosts?: string[];
       backup?: {
         enable?: boolean;
@@ -37056,12 +37056,12 @@ declare module "winix" {
       };
       hostName?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       secretKeyFile?: string;
       user?: string;
     };
-    "pdns-recursor"?: {
+    "pdns-recursor": {
       api?: {
         address?: string;
         allowFrom?: string[];
@@ -37082,29 +37082,29 @@ declare module "winix" {
       serveRFC1918?: boolean;
       settings?: unknown;
     };
-    pdnsd?: {
+    pdnsd: {
       cacheDir?: string;
       enable?: boolean;
       extraConfig?: string;
       globalConfig?: string;
       serverConfig?: string;
     };
-    pdudaemon?: {
+    pdudaemon: {
       bindAddress?: string;
       enable?: boolean;
       listener?: "http" | "tcp";
       logLevel?: "debug" | "error" | "info" | "warning";
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       pdus?: Record<string, unknown>;
       port?: unknown;
     };
-    peerflix?: {
+    peerflix: {
       downloadDir?: string;
       enable?: boolean;
       stateDir?: string;
     };
-    "peering-manager"?: {
+    "peering-manager": {
       enable?: boolean;
       enableLdap?: boolean;
       enableScheduledTasks?: boolean;
@@ -37120,7 +37120,7 @@ declare module "winix" {
         ALLOWED_HOSTS?: string[];
       };
     };
-    peertube?: {
+    peertube: {
       configureNginx?: boolean;
       database?: {
         createLocally?: boolean;
@@ -37137,7 +37137,7 @@ declare module "winix" {
       listenHttp?: unknown;
       listenWeb?: unknown;
       localDomain?: string;
-      package?: PackageRef;
+      package?: string;
       redis?: {
         createLocally?: boolean;
         enableUnixSocket?: boolean;
@@ -37158,36 +37158,36 @@ declare module "winix" {
       };
       user?: string;
     };
-    "peertube-runner"?: {
+    "peertube-runner": {
       enable?: boolean;
       enabledJobTypes?: unknown;
       group?: string;
       instancesToRegister?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       user?: string;
     };
-    perses?: {
+    perses: {
       enable?: boolean;
       extraOptions?: string[];
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
     };
-    "persistent-evdev"?: {
+    "persistent-evdev": {
       devices?: Record<string, string>;
       enable?: boolean;
     };
-    "pfix-srsd"?: {
+    "pfix-srsd": {
       configurePostfix?: boolean;
       domain?: string;
       enable?: boolean;
       secretsFile?: string;
     };
-    pgadmin?: {
+    pgadmin: {
       emailServer?: {
         address?: string;
         enable?: boolean;
@@ -37203,11 +37203,11 @@ declare module "winix" {
       initialPasswordFile?: string;
       minimumPasswordLength?: number;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
     };
-    pgbackrest?: {
+    pgbackrest: {
       commands?: {
         annotate?: Record<string, unknown>;
         "archive-get"?: Record<string, unknown>;
@@ -37239,13 +37239,13 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    pgbouncer?: {
+    pgbouncer: {
       enable?: boolean;
       group?: string;
       homeDir?: string;
       openFilesLimit?: number;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         databases?: Record<string, string>;
         peers?: Record<string, string>;
@@ -37254,17 +37254,17 @@ declare module "winix" {
       };
       user?: string;
     };
-    pghero?: {
+    pghero: {
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFiles?: string[];
       extraArgs?: string[];
       extraGroups?: string[];
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    pgmanage?: {
+    pgmanage: {
       allowCustomConnections?: boolean;
       connections?: Record<string, string>;
       enable?: boolean;
@@ -37272,7 +37272,7 @@ declare module "winix" {
       loginGroup?: string | null;
       loginTimeout?: number;
       logLevel?: "error" | "info" | "notice" | "warn";
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       sqlRoot?: string;
       superOnly?: boolean;
@@ -37281,39 +37281,39 @@ declare module "winix" {
         key?: string;
       };
     };
-    "pgpkeyserver-lite"?: {
+    "pgpkeyserver-lite": {
       enable?: boolean;
       hkpAddress?: string;
       hkpPort?: unknown;
       hostname?: string;
-      package?: PackageRef;
+      package?: string;
     };
-    pgscv?: {
+    pgscv: {
       enable?: boolean;
       logLevel?: "debug" | "error" | "info" | "warn";
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    photonvision?: {
+    photonvision: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    photoprism?: {
+    photoprism: {
       address?: string;
       databasePasswordFile?: unknown | null;
       enable?: boolean;
       group?: string;
       importPath?: string;
       originalsPath?: string;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: unknown | null;
       port?: unknown;
       settings?: Record<string, string>;
       storagePath?: string;
       user?: string;
     };
-    photoview?: {
+    photoview: {
       database?: {
         host?: string;
         name?: string;
@@ -37327,7 +37327,7 @@ declare module "winix" {
       group?: string;
       host?: string;
       mediaPath?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       secretsFile?: string | null;
       settings?: {
@@ -37339,23 +37339,23 @@ declare module "winix" {
       };
       user?: string;
     };
-    phpfpm?: {
+    phpfpm: {
       extraConfig?: string | null;
       phpOptions?: string;
-      phpPackage?: PackageRef;
+      phpPackage?: string;
       pools?: {
         "<name>"?: Record<string, unknown>;
       };
       settings?: Record<string, unknown>;
     };
-    phylactery?: {
+    phylactery: {
       enable?: boolean;
       host?: string;
       library?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    physlock?: {
+    physlock: {
       allowAnyUser?: boolean;
       disableSysRq?: boolean;
       enable?: boolean;
@@ -37367,7 +37367,7 @@ declare module "winix" {
       };
       muteKernelMessages?: boolean;
     };
-    picom?: {
+    picom: {
       activeOpacity?: unknown;
       backend?: "egl" | "glx" | "xr_glx_hybrid" | "xrender";
       enable?: boolean;
@@ -37378,7 +37378,7 @@ declare module "winix" {
       inactiveOpacity?: unknown;
       menuOpacity?: unknown;
       opacityRules?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       shadow?: boolean;
       shadowExclude?: string[];
@@ -37387,24 +37387,24 @@ declare module "winix" {
       vSync?: unknown;
       wintypes?: unknown;
     };
-    picosnitch?: {
+    picosnitch: {
       enable?: boolean;
     };
-    "pict-rs"?: {
+    "pict-rs": {
       address?: string;
       dataDir?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       repoPath?: string | null;
       storePath?: string | null;
     };
-    "pid-fan-controller"?: {
+    "pid-fan-controller": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    "pihole-ftl"?: {
+    "pihole-ftl": {
       enable?: boolean;
       group?: string;
       lists?: {
@@ -37415,8 +37415,8 @@ declare module "winix" {
       openFirewallDHCP?: boolean;
       openFirewallDNS?: boolean;
       openFirewallWebserver?: boolean;
-      package?: PackageRef;
-      piholePackage?: PackageRef;
+      package?: string;
+      piholePackage?: string;
       privacyLevel?: unknown;
       queryLogDeleter?: {
         age?: number;
@@ -37428,26 +37428,26 @@ declare module "winix" {
       useDnsmasqConfig?: boolean;
       user?: string;
     };
-    "pihole-web"?: {
+    "pihole-web": {
       enable?: boolean;
       hostName?: string;
-      package?: PackageRef;
+      package?: string;
       ports?: Record<string, unknown>[];
     };
-    pinchflat?: {
+    pinchflat: {
       enable?: boolean;
       extraConfig?: Record<string, unknown | null>;
       group?: string;
       logLevel?: "debug" | "error" | "info" | "warning";
       mediaDir?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       secretsFile?: string | null;
       selfhosted?: boolean;
       user?: string;
     };
-    pinnwand?: {
+    pinnwand: {
       enable?: boolean;
       port?: unknown;
       settings?: {
@@ -37457,7 +37457,7 @@ declare module "winix" {
         paste_size?: unknown;
       };
     };
-    pipewire?: {
+    pipewire: {
       alsa?: {
         enable?: boolean;
         support32Bit?: boolean;
@@ -37465,7 +37465,7 @@ declare module "winix" {
       audio?: {
         enable?: boolean;
       };
-      configPackages?: PackageRef[] | NixExpr;
+      configPackages?: string[];
       enable?: boolean;
       extraConfig?: {
         client?: Record<string, unknown>;
@@ -37473,12 +37473,12 @@ declare module "winix" {
         pipewire?: Record<string, unknown>;
         "pipewire-pulse"?: Record<string, unknown>;
       };
-      extraLadspaPackages?: PackageRef[] | NixExpr;
-      extraLv2Packages?: PackageRef[] | NixExpr;
+      extraLadspaPackages?: string[];
+      extraLv2Packages?: string[];
       jack?: {
         enable?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       pulse?: {
         enable?: boolean;
       };
@@ -37486,16 +37486,16 @@ declare module "winix" {
       socketActivation?: boolean;
       systemWide?: boolean;
       wireplumber?: {
-        configPackages?: PackageRef[] | NixExpr;
+        configPackages?: string[];
         enable?: boolean;
         extraConfig?: Record<string, Record<string, unknown>>;
-        extraLadspaPackages?: PackageRef[] | NixExpr;
-        extraLv2Packages?: PackageRef[] | NixExpr;
+        extraLadspaPackages?: string[];
+        extraLv2Packages?: string[];
         extraScripts?: Record<string, string>;
-        package?: PackageRef;
+        package?: string;
       };
     };
-    pixelfed?: {
+    pixelfed: {
       database?: {
         automaticMigrations?: boolean;
         createLocally?: boolean;
@@ -37538,8 +37538,8 @@ declare module "winix" {
         sslTrustedCertificate?: string | null;
         useACMEHost?: string | null;
       };
-      package?: PackageRef;
-      phpPackage?: PackageRef;
+      package?: string;
+      phpPackage?: string;
       poolConfig?: Record<string, unknown>;
       redis?: {
         createLocally?: boolean;
@@ -37550,7 +37550,7 @@ declare module "winix" {
       settings?: Record<string, unknown>;
       user?: string;
     };
-    pixiecore?: {
+    pixiecore: {
       apiServer?: string;
       cmdLine?: string;
       debug?: boolean;
@@ -37566,24 +37566,24 @@ declare module "winix" {
       quick?: "arch" | "centos" | "coreos" | "debian" | "fedora" | "ubuntu" | "xyz";
       statusPort?: unknown;
     };
-    "plantuml-server"?: {
+    "plantuml-server": {
       enable?: boolean;
-      graphvizPackage?: PackageRef;
+      graphvizPackage?: string;
       group?: string;
       home?: string;
       httpAuthorization?: string | null;
       listenHost?: string;
       listenPort?: unknown;
-      package?: PackageRef;
+      package?: string;
       packages?: {
-        jdk?: PackageRef;
-        jetty?: PackageRef;
+        jdk?: string;
+        jetty?: string;
       };
       plantumlLimitSize?: number;
       plantumlStats?: boolean;
       user?: string;
     };
-    plausible?: {
+    plausible: {
       database?: {
         clickhouse?: Record<string, unknown>;
         postgres?: Record<string, unknown>;
@@ -37593,7 +37593,7 @@ declare module "winix" {
         email?: string;
         smtp?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       server?: {
         baseUrl?: string;
         disableRegistration?: "invite_only";
@@ -37602,20 +37602,20 @@ declare module "winix" {
         secretKeybaseFile?: unknown;
       };
     };
-    playerctld?: {
+    playerctld: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    pleroma?: {
+    pleroma: {
       configs?: string[];
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       secretConfigFile?: string;
       stateDir?: string;
       user?: string;
     };
-    plex?: {
+    plex: {
       accelerationDevices?: string[];
       dataDir?: string;
       enable?: boolean;
@@ -37623,21 +37623,21 @@ declare module "winix" {
       extraScanners?: string[];
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    plikd?: {
+    plikd: {
       enable?: boolean;
       openFirewall?: boolean;
       settings?: unknown;
     };
-    "pocket-id"?: {
+    "pocket-id": {
       credentials?: Record<string, string>;
       dataDir?: string;
       enable?: boolean;
       environmentFile?: string;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         ANALYTICS_DISABLED?: boolean;
         APP_URL?: string;
@@ -37645,7 +37645,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    podgrab?: {
+    podgrab: {
       dataDirectory?: string;
       enable?: boolean;
       group?: string;
@@ -37653,32 +37653,32 @@ declare module "winix" {
       port?: unknown;
       user?: string;
     };
-    polaris?: {
+    polaris: {
       enable?: boolean;
       extraGroups?: string[];
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: unknown;
       user?: string;
     };
-    pomerium?: {
+    pomerium: {
       configFile?: string | null;
       enable?: boolean;
       secretsFile?: string | null;
       settings?: unknown;
       useACMEHost?: string | null;
     };
-    "porn-vault"?: {
+    "porn-vault": {
       autoStart?: boolean;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: unknown;
     };
-    portunus?: {
+    portunus: {
       dex?: {
         enable?: boolean;
         oidcClients?: Record<string, unknown>;
@@ -37689,23 +37689,23 @@ declare module "winix" {
       group?: string;
       ldap?: {
         group?: string;
-        package?: PackageRef;
+        package?: string;
         searchUserName?: string;
         suffix?: string;
         tls?: boolean;
         user?: string;
       };
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       seedPath?: string | null;
       seedSettings?: Record<string, Record<string, unknown>[]> | null;
       stateDir?: string;
       user?: string;
     };
-    porxie?: {
+    porxie: {
       enable?: boolean;
       environmentFiles?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         PORXIE_BLOB_ALLOWED_MIMETYPES?: string[] | null;
         PORXIE_BLOB_CACHE_HEADER?: string | null;
@@ -37730,7 +37730,7 @@ declare module "winix" {
         PORXIE_SERVER_ADMIN_PASSWORD?: string | null;
       };
     };
-    postfix?: {
+    postfix: {
       aliasFiles?: Record<string, string>;
       aliasMapType?: "hash" | "pcre" | "regexp";
       canonical?: string;
@@ -37750,7 +37750,7 @@ declare module "winix" {
       };
       localRecipients?: string[] | null;
       mapFiles?: Record<string, string>;
-      package?: PackageRef;
+      package?: string;
       postmasterAlias?: string;
       rootAlias?: string;
       setgidGroup?: string;
@@ -37766,16 +37766,16 @@ declare module "winix" {
       virtual?: string;
       virtualMapType?: "hash" | "pcre" | "regexp";
     };
-    "postfix-tlspol"?: {
+    "postfix-tlspol": {
       configurePostfix?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         dns?: Record<string, unknown>;
         server?: Record<string, unknown>;
       };
     };
-    "postgres-websockets"?: {
+    "postgres-websockets": {
       enable?: boolean;
       environment?: {
         PGWS_DB_URI?: Record<string, unknown>;
@@ -37784,7 +37784,7 @@ declare module "winix" {
       jwtSecretFile?: unknown | null;
       pgpassFile?: unknown | null;
     };
-    postgresql?: {
+    postgresql: {
       authentication?: string;
       checkConfig?: boolean;
       dataDir?: string;
@@ -37796,11 +37796,11 @@ declare module "winix" {
         "*"?: Record<string, unknown>;
       };
       extensions?: unknown;
-      finalPackage?: PackageRef;
+      finalPackage?: string;
       identMap?: string;
       initdbArgs?: string[];
       initialScript?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         log_line_prefix?: string;
         port?: unknown;
@@ -37810,7 +37810,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    postgresqlBackup?: {
+    postgresqlBackup: {
       backupAll?: boolean;
       compression?: "gzip" | "none" | "zstd";
       compressionLevel?: number;
@@ -37821,12 +37821,12 @@ declare module "winix" {
       pgdumpOptions?: unknown;
       startAt?: unknown;
     };
-    postgresqlWalReceiver?: {
+    postgresqlWalReceiver: {
       receivers?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    postgrest?: {
+    postgrest: {
       enable?: boolean;
       jwtSecretFile?: unknown | null;
       pgpassFile?: unknown | null;
@@ -37839,7 +37839,7 @@ declare module "winix" {
         "server-unix-socket"?: string | null;
       };
     };
-    postgrey?: {
+    postgrey: {
       autoWhitelist?: unknown | null;
       delay?: unknown;
       enable?: boolean;
@@ -37856,11 +37856,11 @@ declare module "winix" {
       whitelistClients?: string[];
       whitelistRecipients?: string[];
     };
-    postsrsd?: {
+    postsrsd: {
       configurePostfix?: boolean;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       secretsFile?: string;
       settings?: {
         "chroot-dir"?: string;
@@ -37873,34 +37873,34 @@ declare module "winix" {
       };
       user?: string;
     };
-    "power-profiles-daemon"?: {
+    "power-profiles-daemon": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    powerdns?: {
+    powerdns: {
       enable?: boolean;
       extraConfig?: string;
       secretFile?: string | null;
     };
-    "powerdns-admin"?: {
+    "powerdns-admin": {
       config?: string;
       enable?: boolean;
       extraArgs?: string[];
       saltFile?: string | null;
       secretKeyFile?: string | null;
     };
-    powerstation?: {
+    powerstation: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    pppd?: {
+    pppd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       peers?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    pptpd?: {
+    pptpd: {
       clientIpRange?: string;
       enable?: boolean;
       extraPppdOptions?: string;
@@ -37908,7 +37908,7 @@ declare module "winix" {
       maxClients?: number;
       serverIp?: string;
     };
-    prefect?: {
+    prefect: {
       baseUrl?: string | null;
       database?: "postgres" | "sqlite";
       databaseHost?: string;
@@ -37919,13 +37919,13 @@ declare module "winix" {
       dataDir?: string;
       enable?: boolean;
       host?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       workerPools?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    pretalx?: {
+    pretalx: {
       celery?: {
         enable?: boolean;
         extraArgs?: string[];
@@ -37935,7 +37935,7 @@ declare module "winix" {
       };
       enable?: boolean;
       environmentFiles?: string[];
-      finalPackage?: PackageRef;
+      finalPackage?: string;
       group?: string;
       gunicorn?: {
         extraArgs?: string[];
@@ -37944,8 +37944,8 @@ declare module "winix" {
         domain?: string;
         enable?: boolean;
       };
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       settings?: {
         celery?: Record<string, unknown>;
         database?: Record<string, unknown>;
@@ -37956,7 +37956,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    pretix?: {
+    pretix: {
       celery?: {
         extraArgs?: string[];
       };
@@ -37973,8 +37973,8 @@ declare module "winix" {
         domain?: string;
         enable?: boolean;
       };
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       settings?: {
         celery?: Record<string, unknown>;
         database?: Record<string, unknown>;
@@ -37986,11 +37986,11 @@ declare module "winix" {
       };
       user?: string;
     };
-    printing?: {
+    printing: {
       allowFrom?: string[];
       browsed?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       browsedConf?: string;
       browsing?: boolean;
@@ -38007,25 +38007,25 @@ declare module "winix" {
       listenAddresses?: string[];
       logLevel?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       snmpConf?: string;
       startWhenNeeded?: boolean;
       stateless?: boolean;
       tempDir?: string;
       webInterface?: boolean;
     };
-    privatebin?: {
+    privatebin: {
       dataDir?: string;
       enable?: boolean;
       enableNginx?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       settings?: Record<string, unknown>;
       user?: string;
       virtualHost?: string;
     };
-    privoxy?: {
+    privoxy: {
       certsLifetime?: unknown;
       enable?: boolean;
       enableTor?: boolean;
@@ -38039,7 +38039,7 @@ declare module "winix" {
       userActions?: string;
       userFilters?: string;
     };
-    prometheus?: {
+    prometheus: {
       alertmanager?: {
         checkConfig?: boolean;
         clusterPeers?: string[];
@@ -38052,14 +38052,14 @@ declare module "winix" {
         logFormat?: string | null;
         logLevel?: "debug" | "error" | "fatal" | "info" | "warn";
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
         webExternalUrl?: string | null;
       };
       "alertmanager-ntfy"?: {
         enable?: boolean;
         extraConfigFiles?: string[];
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
       };
       alertmanagerGotify?: {
@@ -38074,7 +38074,7 @@ declare module "winix" {
         messageAnnotation?: string;
         metrics?: Record<string, unknown>;
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
         priorityAnnotation?: string;
         timeout?: unknown;
@@ -38084,7 +38084,7 @@ declare module "winix" {
       alertmanagerIrcRelay?: {
         enable?: boolean;
         extraFlags?: string[];
-        package?: PackageRef;
+        package?: string;
         settings?: unknown;
       };
       alertmanagerNotificationQueueCapacity?: number;
@@ -38092,7 +38092,7 @@ declare module "winix" {
       alertmanagerWebhookLogger?: {
         enable?: boolean;
         extraFlags?: string[];
-        package?: PackageRef;
+        package?: string;
       };
       checkConfig?: unknown;
       configText?: string | null;
@@ -38206,13 +38206,13 @@ declare module "winix" {
         scrape_timeout?: string | null;
       };
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       pushgateway?: {
         enable?: boolean;
         extraFlags?: string[];
         log?: Record<string, unknown>;
-        package?: PackageRef;
+        package?: string;
         persistence?: Record<string, unknown>;
         persistMetrics?: boolean;
         stateDir?: string;
@@ -38244,7 +38244,7 @@ declare module "winix" {
         settings?: unknown;
       };
     };
-    prosody?: {
+    prosody: {
       admins?: string[];
       allowRegistration?: boolean;
       authentication?: "anonymous" | "cyrus" | "internal_hashed" | "internal_plain" | "ldap";
@@ -38312,7 +38312,7 @@ declare module "winix" {
       muc?: {
         "*"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       s2sInsecureDomains?: string[];
       s2sRequireEncryption?: boolean;
       s2sSecureAuth?: boolean;
@@ -38328,33 +38328,33 @@ declare module "winix" {
       };
       xmppComplianceSuite?: boolean;
     };
-    "prosody-filer"?: {
+    "prosody-filer": {
       enable?: boolean;
       settings?: unknown;
     };
-    "protonmail-bridge"?: {
+    "protonmail-bridge": {
       enable?: boolean;
       logLevel?: "debug" | "error" | "fatal" | "info" | "panic" | "warn" | null;
-      package?: PackageRef;
+      package?: string;
       path?: string[];
     };
-    prowlarr?: {
+    prowlarr: {
       dataDir?: string;
       enable?: boolean;
       environmentFiles?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         log?: Record<string, unknown>;
         server?: Record<string, unknown>;
         update?: Record<string, unknown>;
       };
     };
-    psd?: {
+    psd: {
       enable?: boolean;
       resyncTimer?: string;
     };
-    "public-inbox"?: {
+    "public-inbox": {
       enable?: boolean;
       http?: {
         args?: string[];
@@ -38384,8 +38384,8 @@ declare module "winix" {
         port?: unknown | null;
       };
       openFirewall?: boolean;
-      package?: PackageRef;
-      path?: PackageRef[] | NixExpr;
+      package?: string;
+      path?: string[];
       postfix?: {
         enable?: boolean;
       };
@@ -38397,15 +38397,15 @@ declare module "winix" {
       };
       spamAssassinRules?: string | null;
     };
-    pufferpanel?: {
+    pufferpanel: {
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFile?: string | null;
       extraGroups?: string[];
-      extraPackages?: PackageRef[] | NixExpr;
-      package?: PackageRef;
+      extraPackages?: string[];
+      package?: string;
     };
-    pulseaudio?: {
+    pulseaudio: {
       configFile?: string | null;
       daemon?: {
         config?: Record<string, unknown>;
@@ -38414,8 +38414,8 @@ declare module "winix" {
       enable?: boolean;
       extraClientConf?: string;
       extraConfig?: string;
-      extraModules?: PackageRef[] | NixExpr;
-      package?: PackageRef;
+      extraModules?: string[];
+      package?: string;
       support32Bit?: boolean;
       systemWide?: boolean;
       tcp?: {
@@ -38429,71 +38429,71 @@ declare module "winix" {
         publish?: Record<string, unknown>;
       };
     };
-    pykms?: {
+    pykms: {
       enable?: boolean;
       extraArgs?: string[];
       listenAddress?: string;
       logLevel?: "CRITICAL" | "DEBUG" | "ERROR" | "INFO" | "MININFO" | "WARNING";
       memoryLimit?: string;
       openFirewallPort?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    pyroscope?: {
+    pyroscope: {
       configFile?: string | null;
       enable?: boolean;
       extraFlags?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         server?: Record<string, unknown>;
       };
     };
-    qbittorrent?: {
+    qbittorrent: {
       enable?: boolean;
       extraArgs?: string[];
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       profileDir?: string;
       serverConfig?: Record<string, unknown>;
       torrentingPort?: unknown | null;
       user?: string;
       webuiPort?: unknown | null;
     };
-    qdrant?: {
+    qdrant: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
-      webUIPackage?: PackageRef;
+      webUIPackage?: string;
     };
-    qemuGuest?: {
+    qemuGuest: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "quake3-server"?: {
+    "quake3-server": {
       baseq3?: unknown;
       enable?: boolean;
       extraConfig?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    quassel?: {
+    quassel: {
       certificateFile?: string | null;
       dataDir?: string;
       enable?: boolean;
       interfaces?: string[];
-      package?: PackageRef;
+      package?: string;
       portNumber?: unknown;
       requireSSL?: boolean;
       user?: string | null;
     };
-    qui?: {
+    qui: {
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       secretFile?: string;
       settings?: {
         host?: string;
@@ -38501,7 +38501,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    quicktun?: {
+    quicktun: {
       "<name>"?: {
         localAddress?: string | null;
         localPort?: unknown;
@@ -38517,12 +38517,12 @@ declare module "winix" {
         upScript?: string | null;
       };
     };
-    quickwit?: {
+    quickwit: {
       dataDir?: string;
       enable?: boolean;
       extraFlags?: string[];
       group?: string;
-      package?: PackageRef;
+      package?: string;
       restartIfChanged?: boolean;
       settings?: {
         grpc_listen_port?: unknown;
@@ -38532,7 +38532,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    "r53-ddns"?: {
+    "r53-ddns": {
       domain?: string;
       enable?: boolean;
       environmentFile?: string;
@@ -38541,7 +38541,7 @@ declare module "winix" {
       ttl?: number;
       zoneID?: string;
     };
-    rabbitmq?: {
+    rabbitmq: {
       config?: string;
       configItems?: Record<string, string>;
       dataDir?: string;
@@ -38551,19 +38551,19 @@ declare module "winix" {
         enable?: boolean;
         port?: unknown;
       };
-      package?: PackageRef;
+      package?: string;
       pluginDirs?: string[];
       plugins?: string[];
       port?: unknown;
       unsafeCookie?: string;
     };
-    radarr?: {
+    radarr: {
       dataDir?: string;
       enable?: boolean;
       environmentFiles?: string[];
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         log?: Record<string, unknown>;
         server?: Record<string, unknown>;
@@ -38571,17 +38571,17 @@ declare module "winix" {
       };
       user?: string;
     };
-    radicale?: {
+    radicale: {
       config?: string;
       enable?: boolean;
       extraArgs?: string[];
       group?: string;
-      package?: PackageRef;
+      package?: string;
       rights?: Record<string, unknown>;
       settings?: Record<string, unknown>;
       user?: string;
     };
-    radicle?: {
+    radicle: {
       checkConfig?: boolean;
       ci?: {
         adapters?: Record<string, unknown>;
@@ -38595,7 +38595,7 @@ declare module "winix" {
         listenAddress?: string;
         listenPort?: unknown;
         nginx?: Record<string, unknown>;
-        package?: PackageRef;
+        package?: string;
       };
       node?: {
         extraArgs?: string[];
@@ -38603,30 +38603,30 @@ declare module "winix" {
         listenPort?: unknown;
         openFirewall?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       privateKey?: unknown | null;
       privateKeyPassphrase?: string | null;
       publicKey?: unknown;
       settings?: Record<string, unknown>;
     };
-    radvd?: {
+    radvd: {
       config?: string;
       debugLevel?: number;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    ratbagd?: {
+    ratbagd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    rathole?: {
+    rathole: {
       credentialsFile?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       role?: "client" | "server";
       settings?: unknown;
     };
-    rauc?: {
+    rauc: {
       bootloader?: "barebox" | "custom" | "efi" | "grub" | "noop" | "uboot";
       bundleFormats?: string[];
       client?: {
@@ -38638,20 +38638,20 @@ declare module "winix" {
       "mark-good"?: {
         enable?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       slots?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    rdnssd?: {
+    rdnssd: {
       enable?: boolean;
     };
-    reaction?: {
+    reaction: {
       checkConfig?: boolean;
       enable?: boolean;
       loglevel?: "DEBUG" | "ERROR" | "INFO" | "WARN" | null;
-      package?: PackageRef;
+      package?: string;
       runAsRoot?: boolean;
       settings?: {
         plugins?: Record<string, unknown>;
@@ -38659,13 +38659,13 @@ declare module "winix" {
       settingsFiles?: string[];
       stopForFirewall?: boolean;
     };
-    readarr?: {
+    readarr: {
       dataDir?: string;
       enable?: boolean;
       environmentFiles?: string[];
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         log?: Record<string, unknown>;
         server?: Record<string, unknown>;
@@ -38673,51 +38673,51 @@ declare module "winix" {
       };
       user?: string;
     };
-    readeck?: {
+    readeck: {
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    realm?: {
+    realm: {
       config?: Record<string, unknown>;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    realmd?: {
+    realmd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    rebuilderd?: {
+    rebuilderd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    recyclarr?: {
+    recyclarr: {
       command?: string;
       configuration?: unknown;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       schedule?: string;
       user?: string;
     };
-    redis?: {
-      package?: PackageRef;
+    redis: {
+      package?: string;
       servers?: {
         "<name>"?: Record<string, unknown>;
       };
       vmOverCommit?: boolean;
     };
-    redlib?: {
+    redlib: {
       address?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
     };
-    redmine?: {
+    redmine: {
       address?: string;
       components?: {
         breezy?: boolean;
@@ -38742,7 +38742,7 @@ declare module "winix" {
       enable?: boolean;
       extraEnv?: string;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       plugins?: Record<string, string>;
       port?: unknown;
       settings?: unknown;
@@ -38750,7 +38750,7 @@ declare module "winix" {
       themes?: Record<string, string>;
       user?: string;
     };
-    redshift?: {
+    redshift: {
       brightness?: {
         day?: string;
         night?: string;
@@ -38758,13 +38758,13 @@ declare module "winix" {
       enable?: boolean;
       executable?: string;
       extraOptions?: string[];
-      package?: PackageRef;
+      package?: string;
       temperature?: {
         day?: number;
         night?: number;
       };
     };
-    redsocks?: {
+    redsocks: {
       chroot?: string | null;
       enable?: boolean;
       log?: string;
@@ -38774,29 +38774,29 @@ declare module "winix" {
         "*"?: Record<string, unknown>;
       };
     };
-    remark42?: {
+    remark42: {
       dataDir?: string;
       enable?: boolean;
       environmentFile?: string | null;
       listenAddress?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       remarkUrl?: string;
       settings?: Record<string, string>;
       sites?: string[];
     };
-    renovate?: {
+    renovate: {
       credentials?: Record<string, string>;
       enable?: boolean;
       environment?: Record<string, unknown | null>;
-      package?: PackageRef;
-      runtimePackages?: PackageRef[] | NixExpr;
+      package?: string;
+      runtimePackages?: string[];
       schedule?: string | null;
       settings?: unknown;
       validateSettings?: boolean;
     };
-    reposilite?: {
+    reposilite: {
       database?: {
         dbname?: string;
         host?: string;
@@ -38811,8 +38811,8 @@ declare module "winix" {
       group?: string;
       keyPasswordFile?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       settings?: {
         basePath?: string;
         bypassExternalCache?: boolean;
@@ -38837,7 +38837,7 @@ declare module "winix" {
       user?: string;
       workingDirectory?: string;
     };
-    resilio?: {
+    resilio: {
       apiKey?: string;
       checkForUpdates?: boolean;
       deviceName?: string;
@@ -38851,13 +38851,13 @@ declare module "winix" {
       httpLogin?: string;
       httpPass?: string;
       listeningPort?: unknown;
-      package?: PackageRef;
+      package?: string;
       sharedFolders?: Record<string, unknown>[];
       storagePath?: string;
       uploadLimit?: unknown;
       useUpnp?: boolean;
     };
-    resolved?: {
+    resolved: {
       dnsDelegates?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -38866,7 +38866,7 @@ declare module "winix" {
         Resolve?: Record<string, unknown>;
       };
     };
-    restic?: {
+    restic: {
       backups?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -38877,19 +38877,19 @@ declare module "winix" {
         extraFlags?: string[];
         "htpasswd-file"?: string | null;
         listenAddress?: string;
-        package?: PackageRef;
+        package?: string;
         privateRepos?: boolean;
         prometheus?: boolean;
       };
     };
-    rethinkdb?: {
+    rethinkdb: {
       dbpath?: unknown;
       enable?: boolean;
       group?: unknown;
       pidpath?: unknown;
       user?: unknown;
     };
-    riemann?: {
+    riemann: {
       config?: string;
       configFile?: string;
       configFiles?: string[];
@@ -38897,35 +38897,35 @@ declare module "winix" {
       extraClasspathEntries?: string[];
       extraJavaOpts?: string[];
     };
-    "riemann-dash"?: {
+    "riemann-dash": {
       config?: string;
       dataDir?: string;
       enable?: boolean;
     };
-    "riemann-tools"?: {
+    "riemann-tools": {
       enableHealth?: boolean;
       extraArgs?: string[];
       riemannHost?: string;
     };
-    rimgo?: {
+    rimgo: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         ADDRESS?: string;
         PORT?: unknown;
       };
     };
-    ringboard?: {
+    ringboard: {
       wayland?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       x11?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
     };
-    rke2?: {
+    rke2: {
       agentToken?: string;
       agentTokenFile?: string | null;
       autoDeployCharts?: {
@@ -38947,7 +38947,7 @@ declare module "winix" {
         shutdownGracePeriod?: unknown;
         shutdownGracePeriodCriticalPods?: unknown;
       };
-      images?: PackageRef[] | NixExpr;
+      images?: string[];
       manifests?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -38956,55 +38956,55 @@ declare module "winix" {
       nodeLabel?: string[];
       nodeName?: string | null;
       nodeTaint?: string[];
-      package?: PackageRef;
+      package?: string;
       role?: "agent" | "server";
       selinux?: boolean;
       serverAddr?: string;
       token?: string;
       tokenFile?: string | null;
     };
-    rkvm?: {
+    rkvm: {
       client?: {
         enable?: boolean;
         settings?: Record<string, unknown>;
       };
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       server?: {
         enable?: boolean;
         settings?: Record<string, unknown>;
       };
     };
-    rmfakecloud?: {
+    rmfakecloud: {
       enable?: boolean;
       environmentFile?: string | null;
       extraSettings?: Record<string, string>;
       logLevel?: "debug" | "error" | "info" | "warn";
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       storageUrl?: string;
     };
-    "robustirc-bridge"?: {
+    "robustirc-bridge": {
       enable?: boolean;
       extraFlags?: string[];
     };
-    "roon-bridge"?: {
+    "roon-bridge": {
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
       user?: string;
     };
-    "roon-server"?: {
+    "roon-server": {
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    rosenpass?: {
+    rosenpass: {
       defaultDevice?: string | null;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         listen?: string[];
         peers?: Record<string, unknown>;
@@ -39013,7 +39013,7 @@ declare module "winix" {
         verbosity?: "Quiet" | "Verbose";
       };
     };
-    roundcube?: {
+    roundcube: {
       configureNginx?: boolean;
       database?: {
         dbname?: string;
@@ -39022,25 +39022,25 @@ declare module "winix" {
         passwordFile?: string;
         username?: string;
       };
-      dicts?: PackageRef[] | NixExpr;
+      dicts?: string[];
       enable?: boolean;
       extraConfig?: string;
       hostName?: string;
       maxAttachmentSize?: number;
-      package?: PackageRef;
+      package?: string;
       plugins?: string[];
     };
-    routedns?: {
+    routedns: {
       configFile?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    routinator?: {
+    routinator: {
       enable?: boolean;
       extraArgs?: string[];
       extraServerArgs?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         expire?: number | null;
         "http-listen"?: string[] | null;
@@ -39053,36 +39053,36 @@ declare module "winix" {
         "rtr-listen"?: string[] | null;
       };
     };
-    rpcbind?: {
+    rpcbind: {
       enable?: boolean;
     };
-    rqbit?: {
+    rqbit: {
       downloadDir?: string;
       enable?: boolean;
       group?: string;
       httpHost?: string;
       httpPort?: unknown;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       peerPort?: unknown;
       user?: string;
     };
-    rshim?: {
+    rshim: {
       backend?: "pcie" | "pcie_lf" | "usb" | null;
       config?: Record<string, unknown>;
       device?: string | null;
       enable?: boolean;
       index?: number | null;
       "log-level"?: number;
-      package?: PackageRef;
+      package?: string;
     };
-    rsnapshot?: {
+    rsnapshot: {
       cronIntervals?: Record<string, string>;
       enable?: boolean;
       enableManualRsnapshot?: boolean;
       extraConfig?: string;
     };
-    rspamd?: {
+    rspamd: {
       debug?: boolean;
       enable?: boolean;
       extraArgs?: string[];
@@ -39095,7 +39095,7 @@ declare module "winix" {
       overrides?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       postfix?: {
         config?: Record<string, unknown>;
         enable?: boolean;
@@ -39105,12 +39105,12 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    "rspamd-trainer"?: {
+    "rspamd-trainer": {
       enable?: boolean;
       secrets?: string[];
       settings?: Record<string, unknown>;
     };
-    "rss-bridge"?: {
+    "rss-bridge": {
       config?: {
         FileCache?: Record<string, unknown>;
         system?: Record<string, unknown>;
@@ -39118,13 +39118,13 @@ declare module "winix" {
       dataDir?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       pool?: string | null;
       user?: string;
       virtualHost?: string | null;
       webserver?: "caddy" | "nginx" | null;
     };
-    rss2email?: {
+    rss2email: {
       config?: Record<string, unknown>;
       enable?: boolean;
       feeds?: {
@@ -39133,10 +39133,10 @@ declare module "winix" {
       interval?: string;
       to?: string;
     };
-    rsshub?: {
+    rsshub: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       redis?: {
         createLocally?: boolean;
         enable?: boolean;
@@ -39150,22 +39150,22 @@ declare module "winix" {
         PORT?: unknown;
       };
     };
-    "rstudio-server"?: {
+    "rstudio-server": {
       enable?: boolean;
       listenAddr?: string;
-      package?: PackageRef;
+      package?: string;
       rserverExtraConfig?: string;
       rsessionExtraConfig?: string;
       serverWorkingDir?: string;
     };
-    rsync?: {
+    rsync: {
       enable?: boolean;
       jobs?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    rsyncd?: {
+    rsyncd: {
       enable?: boolean;
       port?: unknown;
       settings?: {
@@ -39174,13 +39174,13 @@ declare module "winix" {
       };
       socketActivated?: boolean;
     };
-    rsyslogd?: {
+    rsyslogd: {
       defaultConfig?: string;
       enable?: boolean;
       extraConfig?: string;
       extraParams?: string[];
     };
-    rtorrent?: {
+    rtorrent: {
       configText?: string;
       dataDir?: string;
       dataPermissions?: string;
@@ -39188,20 +39188,20 @@ declare module "winix" {
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       rpcSocket?: string;
       user?: string;
     };
-    rumno?: {
+    rumno: {
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    "rustdesk-server"?: {
+    "rustdesk-server": {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       relay?: {
         enable?: boolean;
         extraArgs?: string[];
@@ -39212,10 +39212,10 @@ declare module "winix" {
         relayHosts?: string[];
       };
     };
-    rustical?: {
+    rustical: {
       enable?: boolean;
       environmentFiles?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         data_store?: Record<string, unknown>;
         dav_push?: Record<string, unknown>;
@@ -39224,7 +39224,7 @@ declare module "winix" {
         nextcloud_login?: Record<string, unknown>;
       };
     };
-    rustus?: {
+    rustus: {
       cors?: string[];
       disable_health_access_logs?: boolean;
       enable?: boolean;
@@ -39251,7 +39251,7 @@ declare module "winix" {
       tus_extensions?: ("checksum" | "concatenation" | "creation" | "creation-defer-length" | "creation-with-upload" | "getting" | "termination")[];
       url?: string;
     };
-    rutorrent?: {
+    rutorrent: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
@@ -39265,13 +39265,13 @@ declare module "winix" {
       rpcSocket?: string;
       user?: string;
     };
-    sabnzbd?: {
+    sabnzbd: {
       allowConfigWrite?: boolean;
       configFile?: string | null;
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       secretFiles?: string[];
       settings?: {
         misc?: Record<string, unknown>;
@@ -39281,10 +39281,10 @@ declare module "winix" {
       stateDir?: string;
       user?: string;
     };
-    safeeyes?: {
+    safeeyes: {
       enable?: boolean;
     };
-    salt?: {
+    salt: {
       master?: {
         configuration?: unknown;
         enable?: boolean;
@@ -39294,7 +39294,7 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    samba?: {
+    samba: {
       enable?: boolean;
       nmbd?: {
         enable?: boolean;
@@ -39302,7 +39302,7 @@ declare module "winix" {
       };
       nsswins?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         global?: Record<string, unknown>;
       };
@@ -39319,7 +39319,7 @@ declare module "winix" {
         extraArgs?: string[];
       };
     };
-    "samba-wsdd"?: {
+    "samba-wsdd": {
       discovery?: boolean;
       domain?: string | null;
       enable?: boolean;
@@ -39331,30 +39331,30 @@ declare module "winix" {
       openFirewall?: boolean;
       workgroup?: string | null;
     };
-    saned?: {
+    saned: {
       enable?: boolean;
       extraConfig?: string;
     };
-    sanoid?: {
+    sanoid: {
       datasets?: {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
       extraArgs?: string[];
       interval?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       templates?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    saslauthd?: {
+    saslauthd: {
       config?: string;
       enable?: boolean;
       mechanism?: string;
-      package?: PackageRef;
+      package?: string;
     };
-    saunafs?: {
+    saunafs: {
       chunkserver?: {
         enable?: boolean;
         hdds?: string[];
@@ -39377,7 +39377,7 @@ declare module "winix" {
       };
       sfsUser?: string;
     };
-    scanservjs?: {
+    scanservjs: {
       enable?: boolean;
       extraActions?: string[];
       extraConfig?: string;
@@ -39389,7 +39389,7 @@ declare module "winix" {
       };
       stateDir?: string;
     };
-    schleuder?: {
+    schleuder: {
       enable?: boolean;
       enablePostfix?: boolean;
       extraSettingsFile?: string | null;
@@ -39399,10 +39399,10 @@ declare module "winix" {
         keyserver?: string;
       };
     };
-    scion?: {
+    scion: {
       bypassBootstrapWarning?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       "scion-control"?: {
         enable?: boolean;
         settings?: unknown;
@@ -39426,26 +39426,26 @@ declare module "winix" {
       };
       stateless?: boolean;
     };
-    scollector?: {
+    scollector: {
       bosunHost?: string;
       collectors?: Record<string, string[]>;
       enable?: boolean;
       extraConfig?: string;
       extraOpts?: string[];
       group?: string;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    screego?: {
+    screego: {
       enable?: boolean;
       environmentFile?: string | null;
       openFirewall?: boolean;
       settings?: Record<string, string>;
     };
-    scrutiny?: {
+    scrutiny: {
       collector?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
         schedule?: string;
         settings?: Record<string, unknown>;
       };
@@ -39454,22 +39454,22 @@ declare module "winix" {
         enable?: boolean;
       };
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         log?: Record<string, unknown>;
         web?: Record<string, unknown>;
       };
     };
-    scx?: {
+    scx: {
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
       scheduler?: "scx_beerland" | "scx_bpfland" | "scx_cake" | "scx_central" | "scx_chaos" | "scx_cosmos" | "scx_flash" | "scx_flatcg" | "scx_flow" | "scx_lavd" | "scx_layered" | "scx_mitosis" | "scx_nest" | "scx_p2dq" | "scx_pair" | "scx_pandemonium" | "scx_prev" | "scx_qmap" | "scx_rlfifo" | "scx_rustland" | "scx_rusty" | "scx_simple" | "scx_tickless" | "scx_userland";
     };
-    sdrplayApi?: {
+    sdrplayApi: {
       enable?: boolean;
     };
-    searx?: {
+    searx: {
       configureNginx?: boolean;
       configureUwsgi?: boolean;
       domain?: string;
@@ -39478,26 +39478,26 @@ declare module "winix" {
       faviconsSettings?: Record<string, unknown>;
       limiterSettings?: Record<string, unknown>;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       redisCreateLocally?: boolean;
       settings?: Record<string, unknown>;
       settingsFile?: string;
       uwsgiConfig?: unknown;
     };
-    seatd?: {
+    seatd: {
       enable?: boolean;
       group?: string;
       logLevel?: "debug" | "error" | "info" | "silent";
       user?: string;
     };
-    seerr?: {
+    seerr: {
       configDir?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    "self-deploy"?: {
+    "self-deploy": {
       branch?: string;
       enable?: boolean;
       nixArgs?: unknown;
@@ -39508,7 +39508,7 @@ declare module "winix" {
       startAt?: unknown;
       switchCommand?: "boot" | "dry-activate" | "switch" | "test";
     };
-    selfoss?: {
+    selfoss: {
       database?: {
         host?: string;
         name?: string;
@@ -39522,7 +39522,7 @@ declare module "winix" {
       pool?: string;
       user?: string;
     };
-    send?: {
+    send: {
       baseUrl?: string | null;
       dataDir?: string;
       enable?: boolean;
@@ -39530,7 +39530,7 @@ declare module "winix" {
       environmentFile?: string | null;
       host?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       redis?: {
         createLocally?: boolean;
@@ -39540,19 +39540,19 @@ declare module "winix" {
         port?: unknown;
       };
     };
-    serviio?: {
+    serviio: {
       dataDir?: string;
       enable?: boolean;
       openFirewall?: boolean;
     };
-    sftpgo?: {
+    sftpgo: {
       dataDir?: string;
       enable?: boolean;
       extraArgs?: string[];
       extraReadWriteDirs?: string[];
       group?: string;
       loadDataFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         ftpd?: Record<string, unknown>;
         httpd?: Record<string, unknown>;
@@ -39562,34 +39562,34 @@ declare module "winix" {
       };
       user?: string;
     };
-    shadowsocks?: {
+    shadowsocks: {
       enable?: boolean;
       encryptionMethod?: string;
       extraConfig?: unknown;
       fastOpen?: boolean;
       localAddress?: unknown;
       mode?: "tcp_and_udp" | "tcp_only" | "udp_only";
-      package?: PackageRef;
+      package?: string;
       password?: string | null;
       passwordFile?: string | null;
       plugin?: string | null;
       pluginOpts?: string;
       port?: unknown;
     };
-    "shairport-sync"?: {
+    "shairport-sync": {
       arguments?: string;
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       user?: string;
     };
-    sharkey?: {
+    sharkey: {
       enable?: boolean;
       environmentFiles?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         address?: string;
         fulltextSearch?: Record<string, unknown>;
@@ -39603,7 +39603,7 @@ declare module "winix" {
       setupPostgresql?: boolean;
       setupRedis?: boolean;
     };
-    shelfmark?: {
+    shelfmark: {
       enable?: boolean;
       environment?: {
         CONFIG_DIR?: string;
@@ -39612,18 +39612,18 @@ declare module "winix" {
         FLASK_PORT?: unknown;
       };
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "shellhub-agent"?: {
+    "shellhub-agent": {
       enable?: boolean;
       keepAliveInterval?: number;
-      package?: PackageRef;
+      package?: string;
       preferredHostname?: string;
       privateKey?: string;
       server?: string;
       tenantId?: string;
     };
-    "shibboleth-sp"?: {
+    "shibboleth-sp": {
       configFile?: string;
       enable?: boolean;
       fastcgi?: {
@@ -39632,54 +39632,54 @@ declare module "winix" {
         shibResponderPort?: unknown;
       };
     };
-    shiori?: {
+    shiori: {
       address?: string;
       databaseUrl?: string | null;
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       webRoot?: string;
     };
-    shoko?: {
+    shoko: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
-      webui?: PackageRef | null;
+      package?: string;
+      plugins?: string[];
+      webui?: string | null;
     };
-    shorewall?: {
+    shorewall: {
       configs?: Record<string, string>;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    shorewall6?: {
+    shorewall6: {
       configs?: Record<string, string>;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    sickbeard?: {
+    sickbeard: {
       configFile?: string;
       dataDir?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    sillytavern?: {
+    sillytavern: {
       configFile?: string;
       enable?: boolean;
       group?: string;
       listen?: boolean | null;
       listenAddressIPv4?: string | null;
       listenAddressIPv6?: string | null;
-      package?: PackageRef;
+      package?: string;
       port?: unknown | null;
       user?: string;
       whitelist?: boolean | null;
     };
-    silverbullet?: {
+    silverbullet: {
       enable?: boolean;
       envFile?: string | null;
       extraArgs?: string[];
@@ -39687,35 +39687,35 @@ declare module "winix" {
       listenAddress?: string;
       listenPort?: unknown;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       spaceDir?: string;
       user?: string;
     };
-    "sing-box"?: {
+    "sing-box": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    "sitespeed-io"?: {
+    "sitespeed-io": {
       dataDir?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       period?: string;
       runs?: {
         "*"?: Record<string, unknown>;
       };
       user?: string;
     };
-    sks?: {
+    sks: {
       dataDir?: string;
       enable?: boolean;
       extraDbConfig?: string;
       hkpAddress?: string[];
       hkpPort?: unknown;
-      package?: PackageRef;
+      package?: string;
       webroot?: string | null;
     };
-    skydns?: {
+    skydns: {
       address?: string;
       domain?: string;
       enable?: boolean;
@@ -39727,14 +39727,14 @@ declare module "winix" {
       };
       extraConfig?: Record<string, string>;
       nameservers?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    slimserver?: {
+    slimserver: {
       dataDir?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    slskd?: {
+    slskd: {
       domain?: string | null;
       enable?: boolean;
       environmentFile?: string;
@@ -39771,7 +39771,7 @@ declare module "winix" {
         useACMEHost?: string | null;
       };
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         directories?: Record<string, unknown>;
         filters?: Record<string, unknown>;
@@ -39786,7 +39786,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    slurm?: {
+    slurm: {
       client?: {
         enable?: boolean;
       };
@@ -39811,7 +39811,7 @@ declare module "winix" {
         PmixCliTmpDirBase?: string;
       };
       nodeName?: string[];
-      package?: PackageRef;
+      package?: string;
       partitionName?: string[];
       procTrackType?: string;
       rest?: {
@@ -39826,7 +39826,7 @@ declare module "winix" {
       stateSaveLocation?: string;
       user?: string;
     };
-    smartd?: {
+    smartd: {
       autodetect?: boolean;
       defaults?: {
         autodetected?: unknown;
@@ -39845,12 +39845,12 @@ declare module "winix" {
         x11?: Record<string, unknown>;
       };
     };
-    smartdns?: {
+    smartdns: {
       bindPort?: unknown;
       enable?: boolean;
       settings?: Record<string, unknown>;
     };
-    smokeping?: {
+    smokeping: {
       alertConfig?: string;
       cgiUrl?: string;
       config?: string | null;
@@ -39864,7 +39864,7 @@ declare module "winix" {
       mailHost?: string;
       owner?: string;
       ownerEmail?: string;
-      package?: PackageRef;
+      package?: string;
       presentationConfig?: string;
       presentationTemplate?: string;
       probeConfig?: string;
@@ -39874,7 +39874,7 @@ declare module "winix" {
       user?: string;
       webService?: boolean;
     };
-    snapper?: {
+    snapper: {
       cleanupInterval?: string;
       configs?: {
         "<name>"?: Record<string, unknown>;
@@ -39884,7 +39884,7 @@ declare module "winix" {
       snapshotInterval?: string;
       snapshotRootOnBoot?: boolean;
     };
-    snapraid?: {
+    snapraid: {
       contentFiles?: string[];
       dataDisks?: Record<string, string>;
       enable?: boolean;
@@ -39901,10 +39901,10 @@ declare module "winix" {
       };
       touchBeforeSync?: boolean;
     };
-    snapserver?: {
+    snapserver: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         http?: Record<string, unknown>;
         stream?: Record<string, unknown>;
@@ -39912,7 +39912,7 @@ declare module "winix" {
         "tcp-streaming"?: Record<string, unknown>;
       };
     };
-    "snipe-it"?: {
+    "snipe-it": {
       appKeyFile?: string;
       appURL?: string;
       config?: Record<string, unknown>;
@@ -39974,32 +39974,32 @@ declare module "winix" {
       poolConfig?: Record<string, unknown>;
       user?: string;
     };
-    sniproxy?: {
+    sniproxy: {
       config?: string;
       enable?: boolean;
       group?: string;
       user?: string;
     };
-    "snips-sh"?: {
+    "snips-sh": {
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         SNIPS_HTTP_INTERNAL?: string;
         SNIPS_SSH_INTERNAL?: string;
       };
       stateDir?: string;
     };
-    snmpd?: {
+    snmpd: {
       configFile?: string;
       configText?: string;
       enable?: boolean;
       listenAddress?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    "snowflake-proxy"?: {
+    "snowflake-proxy": {
       broker?: string | null;
       capacity?: number | null;
       enable?: boolean;
@@ -40007,15 +40007,15 @@ declare module "winix" {
       relay?: string | null;
       stun?: string | null;
     };
-    "soft-serve"?: {
+    "soft-serve": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    softether?: {
+    softether: {
       dataDir?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       vpnbridge?: {
         enable?: boolean;
       };
@@ -40028,7 +40028,7 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    sogo?: {
+    sogo: {
       configReplaces?: Record<string, string>;
       ealarmsCredFile?: string | null;
       enable?: boolean;
@@ -40037,7 +40037,7 @@ declare module "winix" {
       timezone?: string;
       vhostName?: string;
     };
-    soju?: {
+    soju: {
       acceptProxyIP?: string[];
       adminSocket?: {
         enable?: boolean;
@@ -40049,23 +40049,23 @@ declare module "winix" {
       hostName?: string;
       httpOrigins?: string[];
       listen?: string[];
-      package?: PackageRef;
+      package?: string;
       tlsCertificate?: string | null;
       tlsCertificateKey?: string | null;
     };
-    solanum?: {
+    solanum: {
       config?: string;
       enable?: boolean;
       motd?: string | null;
       openFilesLimit?: number;
     };
-    sonarr?: {
+    sonarr: {
       dataDir?: string;
       enable?: boolean;
       environmentFiles?: string[];
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         log?: Record<string, unknown>;
         server?: Record<string, unknown>;
@@ -40073,16 +40073,16 @@ declare module "winix" {
       };
       user?: string;
     };
-    "sonic-server"?: {
+    "sonic-server": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    spacecookie?: {
+    spacecookie: {
       address?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: {
         hostname?: string;
@@ -40090,13 +40090,13 @@ declare module "winix" {
         root?: string;
       };
     };
-    spamassassin?: {
+    spamassassin: {
       config?: string;
       debug?: boolean;
       enable?: boolean;
       initPreConf?: unknown;
     };
-    spark?: {
+    spark: {
       confDir?: string;
       logDir?: string;
       master?: {
@@ -40105,7 +40105,7 @@ declare module "winix" {
         extraEnvironment?: Record<string, string>;
         restartIfChanged?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       worker?: {
         enable?: boolean;
         extraEnvironment?: Record<string, string>;
@@ -40114,23 +40114,23 @@ declare module "winix" {
         workDir?: string;
       };
     };
-    speechd?: {
+    speechd: {
       clients?: Record<string, unknown>;
       config?: string | null;
       enable?: boolean;
       modules?: Record<string, unknown>;
-      package?: PackageRef;
+      package?: string;
     };
-    speedify?: {
+    speedify: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "speedtest-tracker"?: {
+    "speedtest-tracker": {
       dataDir?: string;
       enable?: boolean;
       enableNginx?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       settings?: {
         APP_KEY_FILE?: string;
@@ -40143,29 +40143,29 @@ declare module "winix" {
       user?: string;
       virtualHost?: string;
     };
-    "spice-autorandr"?: {
+    "spice-autorandr": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "spice-vdagentd"?: {
+    "spice-vdagentd": {
       enable?: boolean;
     };
-    "spice-webdavd"?: {
+    "spice-webdavd": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    spiped?: {
+    spiped: {
       config?: {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
     };
-    spire?: {
+    spire: {
       agent?: {
         configFile?: string;
         enable?: boolean;
         expandEnv?: boolean;
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
       };
       server?: {
@@ -40173,51 +40173,51 @@ declare module "winix" {
         enable?: boolean;
         expandEnv?: boolean;
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
       };
     };
-    spoolman?: {
+    spoolman: {
       enable?: boolean;
       environment?: unknown;
       listen?: string;
       openFirewall?: boolean;
       port?: unknown;
     };
-    spotifyd?: {
+    spotifyd: {
       config?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    squeezelite?: {
+    squeezelite: {
       enable?: boolean;
       extraArgs?: string;
       mutableName?: boolean;
       name?: string | null;
-      package?: PackageRef;
+      package?: string;
       pulseaudio?: {
         enable?: boolean;
         group?: string;
       };
     };
-    squid?: {
+    squid: {
       configText?: string | null;
       enable?: boolean;
       extraConfig?: string;
-      package?: PackageRef;
+      package?: string;
       proxyAddress?: string | null;
       proxyPort?: unknown;
       validateConfig?: boolean;
     };
-    "ssh-agent-switcher"?: {
+    "ssh-agent-switcher": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    sshd?: {
+    sshd: {
       enable?: boolean;
     };
-    sshguard?: {
+    sshguard: {
       attack_threshold?: number;
       blacklist_file?: string;
       blacklist_threshold?: number | null;
@@ -40227,14 +40227,14 @@ declare module "winix" {
       services?: string[];
       whitelist?: string[];
     };
-    sshwifty?: {
+    sshwifty: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       sharedKeyFile?: string | null;
       socks5PasswordFile?: string | null;
     };
-    sslh?: {
+    sslh: {
       enable?: boolean;
       listenAddresses?: unknown;
       method?: "ev" | "fork" | "select";
@@ -40247,10 +40247,10 @@ declare module "winix" {
         "verbose-connections"?: number;
       };
     };
-    "sslmate-agent"?: {
+    "sslmate-agent": {
       enable?: boolean;
     };
-    sssd?: {
+    sssd: {
       config?: string;
       enable?: boolean;
       environmentFile?: string | null;
@@ -40259,18 +40259,18 @@ declare module "winix" {
       sshAuthorizedKeysIntegration?: boolean;
       subIDsIntegration?: boolean;
     };
-    stalwart?: {
+    stalwart: {
       credentials?: Record<string, string>;
       dataDir?: string;
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       stateVersion?: string;
       user?: string;
     };
-    stargazer?: {
+    stargazer: {
       allowCgiUser?: boolean;
       certLifetime?: string;
       certOrg?: string;
@@ -40291,7 +40291,7 @@ declare module "winix" {
       store?: string;
       user?: string;
     };
-    stash?: {
+    stash: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
@@ -40300,10 +40300,10 @@ declare module "winix" {
       mutableScrapers?: boolean;
       mutableSettings?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string | null;
-      plugins?: PackageRef[] | NixExpr;
-      scrapers?: PackageRef[] | NixExpr;
+      plugins?: string[];
+      scrapers?: string[];
       sessionStoreKeyFile?: string;
       settings?: {
         blobs_path?: string;
@@ -40342,36 +40342,36 @@ declare module "winix" {
       user?: string;
       username?: unknown | null;
     };
-    "static-web-server"?: {
+    "static-web-server": {
       configuration?: unknown;
       enable?: boolean;
       listen?: string;
       root?: string;
     };
-    "step-ca"?: {
+    "step-ca": {
       address?: string;
       enable?: boolean;
       intermediatePasswordFile?: unknown | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, unknown>;
     };
-    "stirling-pdf"?: {
+    "stirling-pdf": {
       enable?: boolean;
       environment?: Record<string, unknown>;
       environmentFiles?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    stratis?: {
+    stratis: {
       enable?: boolean;
     };
-    strfry?: {
+    strfry: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    strichliste?: {
+    strichliste: {
       domain?: string;
       enable?: boolean;
       environment?: {
@@ -40387,8 +40387,8 @@ declare module "winix" {
         virtualHost?: Record<string, unknown>;
       };
       packages?: {
-        backend?: PackageRef;
-        frontend?: PackageRef;
+        backend?: string;
+        frontend?: string;
       };
       settings?: {
         account?: Record<string, unknown>;
@@ -40398,7 +40398,7 @@ declare module "winix" {
         user?: Record<string, unknown>;
       };
     };
-    strongswan?: {
+    strongswan: {
       ca?: Record<string, Record<string, string>>;
       connections?: Record<string, Record<string, string>>;
       enable?: boolean;
@@ -40407,10 +40407,10 @@ declare module "winix" {
       secrets?: string[];
       setup?: Record<string, string>;
     };
-    "strongswan-swanctl"?: {
+    "strongswan-swanctl": {
       enable?: boolean;
       includes?: string[];
-      package?: PackageRef;
+      package?: string;
       strongswan?: {
         extraConfig?: string;
       };
@@ -40421,12 +40421,12 @@ declare module "winix" {
         secrets?: Record<string, unknown>;
       };
     };
-    stubby?: {
+    stubby: {
       enable?: boolean;
       logLevel?: "alert" | "crit" | "debug" | "emerg" | "error" | "info" | "notice" | "warning" | null;
       settings?: Record<string, unknown>;
     };
-    stunnel?: {
+    stunnel: {
       clients?: Record<string, Record<string, unknown | null>>;
       enable?: boolean;
       enableInsecureSSLv3?: boolean;
@@ -40436,7 +40436,7 @@ declare module "winix" {
       servers?: Record<string, Record<string, unknown | null>>;
       user?: string | null;
     };
-    subsonic?: {
+    subsonic: {
       contextPath?: string;
       defaultMusicFolder?: string;
       defaultPlaylistFolder?: string;
@@ -40449,10 +40449,10 @@ declare module "winix" {
       port?: unknown;
       transcoders?: string[];
     };
-    sundtek?: {
+    sundtek: {
       enable?: boolean;
     };
-    sunshine?: {
+    sunshine: {
       applications?: {
         apps?: unknown[];
         env?: Record<string, string>;
@@ -40461,27 +40461,27 @@ declare module "winix" {
       capSysAdmin?: boolean;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         port?: unknown;
       };
     };
-    supergfxd?: {
+    supergfxd: {
       enable?: boolean;
       settings?: unknown | null;
     };
-    supybot?: {
+    supybot: {
       configFile?: string;
       enable?: boolean;
       extraPackages?: unknown;
       plugins?: Record<string, string>;
       stateDir?: string;
     };
-    suricata?: {
+    suricata: {
       disabledRules?: string[];
       enable?: boolean;
       enabledSources?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         "af-packet"?: Record<string, unknown>;
         "af-xdp"?: Record<string, unknown>;
@@ -40507,34 +40507,34 @@ declare module "winix" {
         vars?: Record<string, unknown>;
       };
     };
-    surrealdb?: {
+    surrealdb: {
       dbPath?: string;
       enable?: boolean;
       extraFlags?: string[];
       host?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    "suwayomi-server"?: {
+    "suwayomi-server": {
       dataDir?: string;
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         server?: Record<string, unknown>;
       };
       user?: string;
     };
-    svnserve?: {
+    svnserve: {
       enable?: boolean;
       svnBaseDir?: string;
     };
-    swapspace?: {
+    swapspace: {
       enable?: boolean;
       extraArgs?: string[];
       installWrapper?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         buffer_elasticity?: number;
         cache_elasticity?: number;
@@ -40547,11 +40547,11 @@ declare module "winix" {
         upper_freelimit?: number;
       };
     };
-    switcherooControl?: {
+    switcherooControl: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    sympa?: {
+    sympa: {
       database?: {
         createLocally?: boolean;
         host?: string | null;
@@ -40582,9 +40582,9 @@ declare module "winix" {
         server?: "nginx" | "none";
       };
     };
-    "synapse-auto-compressor"?: {
+    "synapse-auto-compressor": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       postgresUrl?: string;
       settings?: {
         chunk_size?: number;
@@ -40593,7 +40593,7 @@ declare module "winix" {
       };
       startAt?: unknown;
     };
-    syncoid?: {
+    syncoid: {
       commands?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -40603,12 +40603,12 @@ declare module "winix" {
       interval?: unknown;
       localSourceAllow?: string[];
       localTargetAllow?: string[];
-      package?: PackageRef;
+      package?: string;
       service?: unknown;
       sshKey?: unknown | null;
       user?: string;
     };
-    syncplay?: {
+    syncplay: {
       certDir?: string | null;
       chat?: boolean;
       enable?: boolean;
@@ -40622,7 +40622,7 @@ declare module "winix" {
       maxUsernameLength?: unknown;
       motd?: string | null;
       motdFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       passwordFile?: string | null;
       permanentRooms?: string[];
       permanentRoomsFile?: string | null;
@@ -40634,7 +40634,7 @@ declare module "winix" {
       statsDBFile?: string | null;
       useACMEHost?: string | null;
     };
-    syncthing?: {
+    syncthing: {
       all_proxy?: string | null;
       cert?: string | null;
       configDir?: string;
@@ -40649,7 +40649,7 @@ declare module "winix" {
       openDefaultPorts?: boolean;
       overrideDevices?: boolean;
       overrideFolders?: boolean;
-      package?: PackageRef;
+      package?: string;
       relay?: {
         enable?: boolean;
         extraOptions?: string[];
@@ -40670,7 +40670,7 @@ declare module "winix" {
       systemService?: boolean;
       user?: string;
     };
-    synergy?: {
+    synergy: {
       client?: {
         autoStart?: boolean;
         enable?: boolean;
@@ -40686,14 +40686,14 @@ declare module "winix" {
         tls?: Record<string, unknown>;
       };
     };
-    "syslog-ng"?: {
+    "syslog-ng": {
       configHeader?: string;
       enable?: boolean;
       extraConfig?: string;
       extraModulePaths?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    syslogd?: {
+    syslogd: {
       defaultConfig?: string;
       enable?: boolean;
       enableNetworkInput?: boolean;
@@ -40701,46 +40701,46 @@ declare module "winix" {
       extraParams?: string[];
       tty?: string;
     };
-    sysprof?: {
+    sysprof: {
       enable?: boolean;
     };
-    sysstat?: {
+    sysstat: {
       "collect-args"?: string;
       "collect-frequency"?: string;
       enable?: boolean;
     };
-    "system-config-printer"?: {
+    "system-config-printer": {
       enable?: boolean;
     };
-    "system76-scheduler"?: {
+    "system76-scheduler": {
       assignments?: {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
       exceptions?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         cfsProfiles?: Record<string, unknown>;
         processScheduler?: Record<string, unknown>;
       };
       useStockConfig?: boolean;
     };
-    "systembus-notify"?: {
+    "systembus-notify": {
       enable?: boolean;
     };
-    "systemd-lock-handler"?: {
+    "systemd-lock-handler": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    SystemdJournal2Gelf?: {
+    SystemdJournal2Gelf: {
       enable?: boolean;
       extraOptions?: unknown;
       graylogServer?: string;
-      package?: PackageRef;
+      package?: string;
     };
-    szurubooru?: {
+    szurubooru: {
       client?: {
-        package?: PackageRef;
+        package?: string;
       };
       database?: {
         host?: string;
@@ -40755,33 +40755,33 @@ declare module "winix" {
       openFirewall?: boolean;
       server?: {
         host?: string;
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
         settings?: Record<string, unknown>;
         threads?: number;
       };
       user?: string;
     };
-    tabby?: {
+    tabby: {
       acceleration?: "cpu" | "cuda" | "metal" | "rocm" | null;
       enable?: boolean;
       host?: string;
       model?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       usageCollection?: boolean;
     };
-    tabbyapi?: {
+    tabbyapi: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         logging?: Record<string, unknown>;
         model?: Record<string, unknown>;
         network?: Record<string, unknown>;
       };
     };
-    tahoe?: {
+    tahoe: {
       introducers?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -40789,7 +40789,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    tailscale?: {
+    tailscale: {
       authKeyFile?: string | null;
       authKeyParameters?: {
         baseURL?: string | null;
@@ -40801,7 +40801,7 @@ declare module "winix" {
         domain?: string;
         enable?: boolean;
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         port?: unknown;
         stunPort?: unknown;
         verifyClients?: boolean;
@@ -40814,7 +40814,7 @@ declare module "winix" {
       extraUpFlags?: string[];
       interfaceName?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       permitCertUid?: unknown | null;
       port?: unknown;
       serve?: {
@@ -40824,20 +40824,20 @@ declare module "winix" {
       };
       useRoutingFeatures?: "both" | "client" | "none" | "server";
     };
-    tailscaleAuth?: {
+    tailscaleAuth: {
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       socketPath?: string;
       user?: string;
     };
-    taler?: {
+    taler: {
       exchange?: {
         debug?: boolean;
         denominationConfig?: string;
         enable?: boolean;
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
       };
       includes?: string[];
@@ -40845,7 +40845,7 @@ declare module "winix" {
         debug?: boolean;
         enable?: boolean;
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         settings?: Record<string, unknown>;
       };
       runtimeDir?: string;
@@ -40853,7 +40853,7 @@ declare module "winix" {
         taler?: Record<string, unknown>;
       };
     };
-    "tandoor-recipes"?: {
+    "tandoor-recipes": {
       address?: string;
       database?: {
         createLocally?: boolean;
@@ -40861,29 +40861,29 @@ declare module "winix" {
       enable?: boolean;
       extraConfig?: unknown;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    tang?: {
+    tang: {
       enable?: boolean;
       ipAddressAllow?: string[];
       listenStream?: string[];
-      package?: PackageRef;
+      package?: string;
     };
-    target?: {
+    target: {
       config?: unknown;
       enable?: boolean;
     };
-    tarsnap?: {
+    tarsnap: {
       archives?: {
         "<name>"?: Record<string, unknown>;
       };
       enable?: boolean;
       keyfile?: string;
-      package?: PackageRef;
+      package?: string;
     };
-    "taskchampion-sync-server"?: {
+    "taskchampion-sync-server": {
       allowClientIds?: string[];
       dataDir?: string;
       dynamicUser?: boolean;
@@ -40891,7 +40891,7 @@ declare module "winix" {
       group?: string;
       host?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       snapshot?: {
         days?: unknown;
@@ -40899,7 +40899,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    taskserver?: {
+    taskserver: {
       allowedClientIDs?: unknown;
       ciphers?: unknown | null;
       config?: unknown;
@@ -40927,17 +40927,17 @@ declare module "winix" {
       trust?: "allow all" | "strict";
       user?: string;
     };
-    tautulli?: {
+    tautulli: {
       configFile?: string;
       dataDir?: string;
       enable?: boolean;
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       user?: string;
     };
-    tayga?: {
+    tayga: {
       dataDir?: string;
       enable?: boolean;
       ipv4?: {
@@ -40952,11 +40952,11 @@ declare module "winix" {
       };
       log?: string[];
       mappings?: Record<string, string>;
-      package?: PackageRef;
+      package?: string;
       tunDevice?: string;
       wkpfStrict?: boolean;
     };
-    tcsd?: {
+    tcsd: {
       conformanceCred?: string;
       enable?: boolean;
       endorsementCred?: string;
@@ -40967,14 +40967,14 @@ declare module "winix" {
       stateDir?: string;
       user?: string;
     };
-    tdarr?: {
+    tdarr: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
       nodes?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       server?: {
         auth?: Record<string, unknown>;
         cronPluginUpdate?: string;
@@ -40982,7 +40982,7 @@ declare module "winix" {
         environmentFile?: string | null;
         maxLogSizeMB?: unknown;
         openFirewall?: boolean;
-        package?: PackageRef;
+        package?: string;
         serverBindIP?: boolean;
         serverDualStack?: boolean;
         serverIP?: string;
@@ -40991,7 +40991,7 @@ declare module "winix" {
       };
       user?: string;
     };
-    teamspeak3?: {
+    teamspeak3: {
       dataDir?: string;
       defaultVoicePort?: unknown;
       enable?: boolean;
@@ -41006,25 +41006,25 @@ declare module "winix" {
       querySshPort?: unknown;
       voiceIP?: string | null;
     };
-    teamviewer?: {
+    teamviewer: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "technitium-dns-server"?: {
+    "technitium-dns-server": {
       enable?: boolean;
       firewallTCPPorts?: number[];
       firewallUDPPorts?: number[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "tee-supplicant"?: {
+    "tee-supplicant": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       pluginPath?: string;
       reeFsParentPath?: string;
       trustedApplications?: string[];
     };
-    teeworlds?: {
+    teeworlds: {
       enable?: boolean;
       environmentFile?: string | null;
       extraOptions?: string[];
@@ -41047,7 +41047,7 @@ declare module "winix" {
       motd?: string | null;
       name?: string;
       openPorts?: boolean;
-      package?: PackageRef;
+      package?: string;
       password?: string | null;
       port?: unknown;
       rconPassword?: string | null;
@@ -41065,16 +41065,16 @@ declare module "winix" {
         skillLevel?: "casual" | "competitive" | "normal";
       };
     };
-    telegraf?: {
+    telegraf: {
       enable?: boolean;
       environmentFiles?: string[];
       extraConfig?: unknown;
-      package?: PackageRef;
+      package?: string;
     };
-    telepathy?: {
+    telepathy: {
       enable?: boolean;
     };
-    teleport?: {
+    teleport: {
       diag?: {
         addr?: string;
         enable?: boolean;
@@ -41084,25 +41084,25 @@ declare module "winix" {
       insecure?: {
         enable?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    tempo?: {
+    tempo: {
       configFile?: string | null;
       enable?: boolean;
       extraFlags?: string[];
       settings?: unknown;
     };
-    temporal?: {
+    temporal: {
       dataDir?: string;
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       restartIfChanged?: boolean;
       settings?: Record<string, unknown>;
       user?: string;
     };
-    terraria?: {
+    terraria: {
       autoCreatedWorldSize?: "large" | "medium" | "small";
       banListPath?: string | null;
       dataDir?: string;
@@ -41111,20 +41111,20 @@ declare module "winix" {
       messageOfTheDay?: string | null;
       noUPnP?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       password?: string | null;
       port?: unknown;
       secure?: boolean;
       worldPath?: string | null;
     };
-    tetrd?: {
+    tetrd: {
       enable?: boolean;
     };
-    tftpd?: {
+    tftpd: {
       enable?: boolean;
       path?: string;
     };
-    thanos?: {
+    thanos: {
       compact?: {
         arguments?: string[];
         compact?: Record<string, unknown>;
@@ -41147,7 +41147,7 @@ declare module "winix" {
         stateDir?: string;
         tracing?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       query?: {
         arguments?: string[];
         enable?: boolean;
@@ -41256,22 +41256,22 @@ declare module "winix" {
         tracing?: Record<string, unknown>;
       };
     };
-    thelounge?: {
+    thelounge: {
       enable?: boolean;
       extraConfig?: unknown;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       port?: unknown;
       public?: boolean;
     };
-    thermald?: {
+    thermald: {
       configFile?: string | null;
       debug?: boolean;
       enable?: boolean;
       ignoreCpuidCheck?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    thinkfan?: {
+    thinkfan: {
       enable?: boolean;
       extraArgs?: string[];
       fans?: {
@@ -41284,54 +41284,54 @@ declare module "winix" {
       settings?: Record<string, unknown>;
       smartSupport?: boolean;
     };
-    throttled?: {
+    throttled: {
       enable?: boolean;
       extraConfig?: string;
     };
-    tiddlywiki?: {
+    tiddlywiki: {
       enable?: boolean;
       listenOptions?: unknown;
     };
-    tigerbeetle?: {
+    tigerbeetle: {
       addresses?: unknown[];
       cacheGridSize?: unknown;
       clusterId?: unknown;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       replicaCount?: unknown;
       replicaIndex?: unknown;
     };
-    tika?: {
+    tika: {
       configFile?: string | null;
       enable?: boolean;
       enableOcr?: boolean;
       listenAddress?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    timekpr?: {
+    timekpr: {
       adminUsers?: string[];
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    timesyncd?: {
+    timesyncd: {
       enable?: boolean;
       extraConfig?: string;
       fallbackServers?: string[] | null;
       servers?: string[] | null;
     };
-    tinc?: {
+    tinc: {
       networks?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    tinyauth?: {
+    tinyauth: {
       dataDir?: string;
       enable?: boolean;
       environmentFile?: string;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         ANALYTICS_ENABLED?: boolean;
         APPURL?: string;
@@ -41344,14 +41344,14 @@ declare module "winix" {
       };
       user?: string;
     };
-    tinydns?: {
+    tinydns: {
       data?: string;
       enable?: boolean;
       ip?: string;
     };
-    tinyproxy?: {
+    tinyproxy: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         Anonymous?: string[];
         Filter?: string | null;
@@ -41359,17 +41359,17 @@ declare module "winix" {
         Port?: unknown;
       };
     };
-    tlp?: {
+    tlp: {
       enable?: boolean;
       extraConfig?: string;
-      package?: PackageRef;
+      package?: string;
       pd?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       settings?: Record<string, unknown>;
     };
-    tlsrpt?: {
+    tlsrpt: {
       collectd?: {
         extraFlags?: string[];
         settings?: Record<string, unknown>;
@@ -41379,26 +41379,26 @@ declare module "winix" {
       fetcher?: {
         settings?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       reportd?: {
         extraFlags?: string[];
         settings?: Record<string, unknown>;
       };
     };
-    "tmate-ssh-server"?: {
+    "tmate-ssh-server": {
       advertisedPort?: unknown;
       enable?: boolean;
       host?: string;
       keysDir?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    todesk?: {
+    todesk: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    tomcat?: {
+    tomcat: {
       axis2?: {
         enable?: boolean;
         services?: string[];
@@ -41412,10 +41412,10 @@ declare module "winix" {
       extraGroups?: string[];
       group?: string;
       javaOpts?: unknown;
-      jdk?: PackageRef;
+      jdk?: string;
       logDirs?: string[];
       logPerVirtualHost?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       purifyOnStart?: boolean;
       serverXml?: string;
@@ -41426,7 +41426,7 @@ declare module "winix" {
       };
       webapps?: string[];
     };
-    tor?: {
+    tor: {
       client?: {
         dns?: Record<string, unknown>;
         enable?: boolean;
@@ -41439,9 +41439,9 @@ declare module "winix" {
       };
       enable?: boolean;
       enableGeoIP?: boolean;
-      obfs4Package?: PackageRef;
+      obfs4Package?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       relay?: {
         enable?: boolean;
         onionServices?: Record<string, unknown>;
@@ -41603,7 +41603,7 @@ declare module "winix" {
         server?: string;
       };
     };
-    torque?: {
+    torque: {
       mom?: {
         enable?: boolean;
         serverNode?: string;
@@ -41612,18 +41612,18 @@ declare module "winix" {
         enable?: boolean;
       };
     };
-    torrentstream?: {
+    torrentstream: {
       address?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    touchegg?: {
+    touchegg: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "tox-node"?: {
+    "tox-node": {
       enable?: boolean;
       keysFile?: string;
       lanDiscovery?: boolean;
@@ -41634,42 +41634,42 @@ declare module "winix" {
       threads?: number;
       udpAddress?: string;
     };
-    toxBootstrapd?: {
+    toxBootstrapd: {
       enable?: boolean;
       extraConfig?: string;
       keysFile?: string;
       port?: unknown;
     };
-    toxvpn?: {
+    toxvpn: {
       auto_add_peers?: string[];
       enable?: boolean;
       localip?: string;
       port?: unknown;
     };
-    "tp-auto-kbbl"?: {
+    "tp-auto-kbbl": {
       arguments?: string[];
       device?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    traccar?: {
+    traccar: {
       enable?: boolean;
       environmentFile?: string | null;
       settings?: unknown;
       settingsFile?: string | null;
     };
-    traefik?: {
+    traefik: {
       dataDir?: string;
       dynamicConfigFile?: string | null;
       dynamicConfigOptions?: unknown;
       enable?: boolean;
       environmentFiles?: string[];
       group?: string;
-      package?: PackageRef;
+      package?: string;
       staticConfigFile?: string | null;
       staticConfigOptions?: unknown;
     };
-    trafficserver?: {
+    trafficserver: {
       cache?: string;
       enable?: boolean;
       hosting?: string;
@@ -41688,14 +41688,14 @@ declare module "winix" {
       strategies?: unknown | null;
       volume?: unknown | null;
     };
-    "transfer-sh"?: {
+    "transfer-sh": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       provider?: "gdrive" | "local" | "s3" | "storj";
       secretFile?: string | null;
       settings?: Record<string, unknown>;
     };
-    transmission?: {
+    transmission: {
       credentialsFile?: string;
       downloadDirPermissions?: string | null;
       enable?: boolean;
@@ -41705,7 +41705,7 @@ declare module "winix" {
       openFirewall?: boolean;
       openPeerPorts?: boolean;
       openRPCPort?: boolean;
-      package?: PackageRef;
+      package?: string;
       performanceNetParameters?: boolean;
       settings?: {
         "download-dir"?: string;
@@ -41729,7 +41729,7 @@ declare module "winix" {
       user?: string;
       webHome?: string | null;
     };
-    "tremor-rs"?: {
+    "tremor-rs": {
       enable?: boolean;
       host?: string;
       loggerSettings?: unknown;
@@ -41737,14 +41737,14 @@ declare module "winix" {
       tremorLibDir?: string;
       troyFileList?: string[];
     };
-    trezord?: {
+    trezord: {
       emulator?: {
         enable?: boolean;
         port?: unknown;
       };
       enable?: boolean;
     };
-    trickster?: {
+    trickster: {
       configFile?: string | null;
       enable?: boolean;
       "instance-id"?: number | null;
@@ -41752,11 +41752,11 @@ declare module "winix" {
       "metrics-port"?: unknown;
       "origin-type"?: "influxdb" | "prometheus";
       "origin-url"?: string;
-      package?: PackageRef;
+      package?: string;
       "profiler-port"?: unknown | null;
       "proxy-port"?: unknown;
     };
-    triggerhappy?: {
+    triggerhappy: {
       bindings?: {
         "*"?: Record<string, unknown>;
       };
@@ -41764,7 +41764,7 @@ declare module "winix" {
       extraConfig?: string;
       user?: string;
     };
-    "trilium-server"?: {
+    "trilium-server": {
       dataDir?: string;
       enable?: boolean;
       environmentFile?: string | null;
@@ -41776,13 +41776,13 @@ declare module "winix" {
       };
       noAuthentication?: boolean;
       noBackup?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    tsidp?: {
+    tsidp: {
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         debugAllRequests?: boolean;
         debugTsnet?: boolean;
@@ -41795,13 +41795,13 @@ declare module "winix" {
         useLocalTailscaled?: boolean;
       };
     };
-    tsmBackup?: {
+    tsmBackup: {
       autoTime?: unknown | null;
       command?: unknown;
       enable?: boolean;
       servername?: unknown;
     };
-    "tt-rss"?: {
+    "tt-rss": {
       auth?: {
         autoCreate?: boolean;
         autoLogin?: boolean;
@@ -41831,8 +41831,8 @@ declare module "winix" {
       feedCryptKey?: string;
       forceArticlePurge?: number;
       logDestination?: "" | "sql" | "syslog";
-      phpPackage?: PackageRef;
-      pluginPackages?: PackageRef[] | NixExpr;
+      phpPackage?: string;
+      pluginPackages?: string[];
       plugins?: string[];
       pool?: string;
       pubSubHubbub?: {
@@ -41853,19 +41853,19 @@ declare module "winix" {
         index?: string[];
         server?: string;
       };
-      themePackages?: PackageRef[] | NixExpr;
+      themePackages?: string[];
       updateDaemon?: {
         commandFlags?: string;
       };
       user?: string;
       virtualHost?: string | null;
     };
-    tts?: {
+    tts: {
       servers?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    ttyd?: {
+    ttyd: {
       caFile?: string | null;
       certFile?: string | null;
       checkOrigin?: boolean;
@@ -41888,21 +41888,21 @@ declare module "winix" {
       username?: string | null;
       writeable?: boolean | null;
     };
-    tuliprox?: {
+    tuliprox: {
       apiProxySettings?: unknown;
       enable?: boolean;
       extraArgs?: string[];
       mappingSettings?: unknown;
-      package?: PackageRef;
+      package?: string;
       sourceSettings?: unknown;
       systemSettings?: unknown;
     };
-    tumbler?: {
+    tumbler: {
       enable?: boolean;
     };
-    tuned?: {
+    tuned: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       ppdSettings?: {
         battery?: Record<string, string>;
         main?: Record<string, unknown>;
@@ -41924,27 +41924,27 @@ declare module "winix" {
         update_interval?: number;
       };
     };
-    tuptime?: {
+    tuptime: {
       enable?: boolean;
       timer?: {
         enable?: boolean;
         period?: string;
       };
     };
-    "turborepo-remote-cache"?: {
+    "turborepo-remote-cache": {
       enable?: boolean;
       environment?: Record<string, unknown | null>;
       environmentFile?: string | null;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "turn-rs"?: {
+    "turn-rs": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       secretFile?: string | null;
       settings?: Record<string, unknown>;
     };
-    tusd?: {
+    tusd: {
       basePath?: string;
       behindProxy?: boolean;
       enable?: boolean;
@@ -41958,47 +41958,47 @@ declare module "winix" {
       port?: unknown;
       uploadDir?: string;
     };
-    twingate?: {
+    twingate: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    typesense?: {
+    typesense: {
       apiKeyFile?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         server?: Record<string, unknown>;
       };
     };
-    tzupdate?: {
+    tzupdate: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       timer?: {
         enable?: boolean;
         interval?: string;
       };
     };
-    u9fs?: {
+    u9fs: {
       enable?: boolean;
       extraArgs?: string;
       listenStreams?: string[];
       user?: string;
     };
-    udev?: {
+    udev: {
       enable?: boolean;
       extraHwdb?: string;
       extraRules?: string;
       packages?: string[];
       path?: string[];
     };
-    udisks2?: {
+    udisks2: {
       enable?: boolean;
       mountOnMedia?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, Record<string, unknown>>;
     };
-    "udp-over-tcp"?: {
-      package?: PackageRef;
+    "udp-over-tcp": {
+      package?: string;
       tcp2udp?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -42006,7 +42006,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    uhub?: {
+    uhub: {
       "<name>"?: {
         enable?: boolean;
         enableTLS?: boolean;
@@ -42014,15 +42014,15 @@ declare module "winix" {
         settings?: Record<string, unknown>;
       };
     };
-    ulogd?: {
+    ulogd: {
       enable?: boolean;
       logLevel?: unknown;
       settings?: Record<string, unknown>;
     };
-    umami?: {
+    umami: {
       createPostgresqlDatabase?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         APP_SECRET_FILE?: string | null;
         BASE_PATH?: string;
@@ -42036,11 +42036,11 @@ declare module "winix" {
         TRACKER_SCRIPT_NAME?: string[];
       };
     };
-    umurmur?: {
+    umurmur: {
       configFile?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         bindaddr?: string;
         bindaddr6?: string;
@@ -42057,35 +42057,35 @@ declare module "winix" {
         welcometext?: string | null;
       };
     };
-    unbound?: {
+    unbound: {
       checkconf?: boolean;
       enable?: boolean;
       enableRootTrustAnchor?: boolean;
       group?: string;
       localControlSocketPath?: string | null;
-      package?: PackageRef;
+      package?: string;
       resolveLocalQueries?: boolean;
       settings?: Record<string, unknown>;
       stateDir?: string;
       user?: string;
     };
-    unclutter?: {
+    unclutter: {
       enable?: boolean;
       excluded?: string[];
       extraOptions?: string[];
       keystroke?: boolean;
-      package?: PackageRef;
+      package?: string;
       threshold?: number;
       timeout?: number;
     };
-    "unclutter-xfixes"?: {
+    "unclutter-xfixes": {
       enable?: boolean;
       extraOptions?: string[];
-      package?: PackageRef;
+      package?: string;
       threshold?: number;
       timeout?: number;
     };
-    undervolt?: {
+    undervolt: {
       analogioOffset?: number | null;
       coreOffset?: number | null;
       enable?: boolean;
@@ -42098,7 +42098,7 @@ declare module "winix" {
         limit?: number | null;
         window?: unknown | null;
       };
-      package?: PackageRef;
+      package?: string;
       temp?: number | null;
       tempAc?: number | null;
       tempBat?: number | null;
@@ -42107,26 +42107,26 @@ declare module "winix" {
       useTimer?: boolean;
       verbose?: boolean;
     };
-    unifi?: {
+    unifi: {
       enable?: boolean;
       extraJvmOptions?: string[];
       initialJavaHeapSize?: number | null;
-      jrePackage?: PackageRef;
+      jrePackage?: string;
       maximumJavaHeapSize?: number | null;
-      mongodbPackage?: PackageRef;
+      mongodbPackage?: string;
       openFirewall?: boolean;
-      unifiPackage?: PackageRef;
+      unifiPackage?: string;
     };
-    unit?: {
+    unit: {
       config?: string;
       enable?: boolean;
       group?: string;
       logDir?: string;
-      package?: PackageRef;
+      package?: string;
       stateDir?: string;
       user?: string;
     };
-    unpoller?: {
+    unpoller: {
       enable?: boolean;
       influxdb?: {
         db?: string;
@@ -42162,14 +42162,14 @@ declare module "winix" {
         dynamic?: boolean;
       };
     };
-    upower?: {
+    upower: {
       allowRiskyCriticalPowerAction?: boolean;
       criticalPowerAction?: "Hibernate" | "HybridSleep" | "Ignore" | "PowerOff" | "Suspend";
       enable?: boolean;
       enableWattsUpPro?: boolean;
       ignoreLid?: boolean;
       noPollBatteries?: boolean;
-      package?: PackageRef;
+      package?: string;
       percentageAction?: unknown;
       percentageCritical?: unknown;
       percentageLow?: unknown;
@@ -42178,7 +42178,7 @@ declare module "winix" {
       timeLow?: unknown;
       usePercentageForPolicy?: boolean;
     };
-    uptermd?: {
+    uptermd: {
       enable?: boolean;
       extraFlags?: string[];
       hostKey?: string | null;
@@ -42186,23 +42186,23 @@ declare module "winix" {
       openFirewall?: boolean;
       port?: unknown;
     };
-    "uptime-kuma"?: {
+    "uptime-kuma": {
       appriseSupport?: boolean;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    uptimed?: {
+    uptimed: {
       enable?: boolean;
     };
-    urserver?: {
+    urserver: {
       enable?: boolean;
     };
-    urxvtd?: {
+    urxvtd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    usbguard?: {
+    usbguard: {
       dbus?: {
         enable?: boolean;
       };
@@ -42212,49 +42212,49 @@ declare module "winix" {
       insertedDevicePolicy?: "apply-policy" | "block" | "reject";
       IPCAllowedGroups?: string[];
       IPCAllowedUsers?: string[];
-      package?: PackageRef;
+      package?: string;
       presentControllerPolicy?: "allow" | "apply-policy" | "block" | "keep" | "reject";
       presentDevicePolicy?: "allow" | "apply-policy" | "block" | "keep" | "reject";
       restoreControllerDeviceState?: boolean;
       ruleFile?: string | null;
       rules?: string | null;
     };
-    usbmuxd?: {
+    usbmuxd: {
       enable?: boolean;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    usbrelayd?: {
+    usbrelayd: {
       broker?: string;
       clientName?: string;
       enable?: boolean;
     };
-    userborn?: {
+    userborn: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       passwordFilesLocation?: string;
       static?: boolean;
     };
-    userdbd?: {
+    userdbd: {
       enable?: boolean;
       enableSSHSupport?: boolean;
     };
-    ustreamer?: {
+    ustreamer: {
       autoStart?: boolean;
       device?: string;
       enable?: boolean;
       extraArgs?: string[];
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
     };
-    uvcvideo?: {
+    uvcvideo: {
       dynctrl?: {
         enable?: boolean;
         packages?: string[];
       };
     };
-    uwsgi?: {
+    uwsgi: {
       capabilities?: string[];
       enable?: boolean;
       group?: string;
@@ -42263,35 +42263,35 @@ declare module "winix" {
       runDir?: string;
       user?: string;
     };
-    v2ray?: {
+    v2ray: {
       config?: unknown | null;
       configFile?: string | null;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    v2raya?: {
-      cliPackage?: PackageRef;
+    v2raya: {
+      cliPackage?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "v4l2-relayd"?: {
+    "v4l2-relayd": {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    varnish?: {
+    varnish: {
       config?: string;
       enable?: boolean;
       enableConfigCheck?: boolean;
       extraCommandLine?: string;
-      extraModules?: PackageRef[] | NixExpr;
+      extraModules?: string[];
       http_address?: string | null;
       listen?: {
         "*"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    vault?: {
+    vault: {
       address?: string;
       dev?: boolean;
       devRootTokenID?: string | null;
@@ -42299,7 +42299,7 @@ declare module "winix" {
       extraConfig?: string;
       extraSettingsPaths?: string[];
       listenerExtraConfig?: string;
-      package?: PackageRef;
+      package?: string;
       storageBackend?: "azure" | "consul" | "dynamodb" | "etcd" | "file" | "gcs" | "inmem" | "mssql" | "mysql" | "postgresql" | "raft" | "s3" | "swift" | "zookeeper";
       storageConfig?: string | null;
       storagePath?: string | null;
@@ -42307,12 +42307,12 @@ declare module "winix" {
       tlsCertFile?: string | null;
       tlsKeyFile?: string | null;
     };
-    "vault-agent"?: {
+    "vault-agent": {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    vaultwarden?: {
+    vaultwarden: {
       backupDir?: string | null;
       config?: Record<string, unknown | null>;
       configureNginx?: boolean;
@@ -42321,34 +42321,34 @@ declare module "winix" {
       domain?: string | null;
       enable?: boolean;
       environmentFile?: unknown;
-      package?: PackageRef;
-      webVaultPackage?: PackageRef;
+      package?: string;
+      webVaultPackage?: string;
     };
-    vdirsyncer?: {
+    vdirsyncer: {
       enable?: boolean;
       jobs?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    vdr?: {
+    vdr: {
       enable?: boolean;
       enableLirc?: boolean;
       extraArguments?: string[];
       group?: string;
-      package?: PackageRef;
+      package?: string;
       user?: string;
       videoDir?: string;
     };
-    vector?: {
+    vector: {
       enable?: boolean;
       gracefulShutdownLimitSecs?: unknown;
       journaldAccess?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       validateConfig?: boolean;
     };
-    veilid?: {
+    veilid: {
       enable?: boolean;
       openFirewall?: boolean;
       settings?: {
@@ -42357,38 +42357,38 @@ declare module "winix" {
         logging?: Record<string, unknown>;
       };
     };
-    victorialogs?: {
+    victorialogs: {
       basicAuthPasswordFile?: string | null;
       basicAuthUsername?: string | null;
       enable?: boolean;
       extraOptions?: string[];
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       stateDir?: string;
     };
-    victoriametrics?: {
+    victoriametrics: {
       basicAuthPasswordFile?: string | null;
       basicAuthUsername?: string | null;
       checkConfig?: boolean;
       enable?: boolean;
       extraOptions?: string[];
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       prometheusConfig?: Record<string, unknown>;
       retentionPeriod?: string | null;
       stateDir?: string;
     };
-    victoriatraces?: {
+    victoriatraces: {
       basicAuthPasswordFile?: string | null;
       basicAuthUsername?: string | null;
       enable?: boolean;
       extraOptions?: string[];
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       retentionPeriod?: string;
       stateDir?: string;
     };
-    vikunja?: {
+    vikunja: {
       address?: string;
       database?: {
         database?: string;
@@ -42401,27 +42401,27 @@ declare module "winix" {
       environmentFiles?: string[];
       frontendHostname?: string;
       frontendScheme?: "http" | "https";
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: unknown;
     };
-    "vinyl-cache"?: {
+    "vinyl-cache": {
       config?: string;
       enable?: boolean;
       enableConfigCheck?: boolean;
       enableFileLogging?: boolean;
       extraCommandLine?: string;
-      extraModules?: PackageRef[] | NixExpr;
+      extraModules?: string[];
       listen?: {
         "*"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    vlagent?: {
+    vlagent: {
       enable?: boolean;
       extraArgs?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       remoteWrite?: {
         basicAuthPasswordFile?: string | null;
         basicAuthUsername?: string | null;
@@ -42429,12 +42429,12 @@ declare module "winix" {
         url?: string | null;
       };
     };
-    vmagent?: {
+    vmagent: {
       checkConfig?: boolean;
       enable?: boolean;
       extraArgs?: string[];
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       prometheusConfig?: Record<string, unknown>;
       remoteWrite?: {
         basicAuthPasswordFile?: string | null;
@@ -42442,17 +42442,17 @@ declare module "winix" {
         url?: string | null;
       };
     };
-    vmalert?: {
+    vmalert: {
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
     };
-    vnstat?: {
+    vnstat: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    vsftpd?: {
+    vsftpd: {
       allowWriteableChroot?: boolean;
       anonymousMkdirEnable?: boolean;
       anonymousUmask?: string;
@@ -42482,12 +42482,12 @@ declare module "winix" {
       virtualUseLocalPrivs?: boolean;
       writeEnable?: boolean;
     };
-    "vsmartcard-vpcd"?: {
+    "vsmartcard-vpcd": {
       enable?: boolean;
       hostname?: string;
       port?: unknown;
     };
-    vwifi?: {
+    vwifi: {
       client?: {
         enable?: boolean;
         extraArgs?: string[];
@@ -42500,7 +42500,7 @@ declare module "winix" {
         macPrefix?: unknown;
         numRadios?: number;
       };
-      package?: PackageRef;
+      package?: string;
       server?: {
         enable?: boolean;
         extraArgs?: string[];
@@ -42509,10 +42509,10 @@ declare module "winix" {
         vsock?: Record<string, unknown>;
       };
     };
-    waagent?: {
+    waagent: {
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
-      package?: PackageRef;
+      extraPackages?: string[];
+      package?: string;
       settings?: {
         AutoUpdate?: Record<string, unknown>;
         HttpProxy?: Record<string, unknown>;
@@ -42522,7 +42522,7 @@ declare module "winix" {
         ResourceDisk?: Record<string, unknown>;
       };
     };
-    wakapi?: {
+    wakapi: {
       database?: {
         createLocally?: boolean;
         dialect?: "cockroach" | "mssql" | "mysql" | "postgres" | "sqlite3" | null;
@@ -42531,14 +42531,14 @@ declare module "winix" {
       };
       enable?: boolean;
       environmentFiles?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       stateDir?: string;
     };
-    warpgate?: {
+    warpgate: {
       databaseUrlFile?: string | null;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         database_url?: string | null;
         external_host?: string | null;
@@ -42552,7 +42552,7 @@ declare module "winix" {
         sso_providers?: Record<string, unknown>;
       };
     };
-    wasabibackend?: {
+    wasabibackend: {
       customConfigFile?: string | null;
       dataDir?: string;
       enable?: boolean;
@@ -42571,9 +42571,9 @@ declare module "winix" {
       };
       user?: string;
     };
-    wastebin?: {
+    wastebin: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       secretFile?: string | null;
       settings?: {
         RUST_LOG?: string;
@@ -42587,9 +42587,9 @@ declare module "winix" {
       };
       stateDir?: string;
     };
-    watchdogd?: {
+    watchdogd: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         filenr?: Record<string, unknown>;
         interval?: unknown;
@@ -42599,16 +42599,16 @@ declare module "winix" {
         timeout?: unknown;
       };
     };
-    webdav?: {
+    webdav: {
       configFile?: string;
       enable?: boolean;
       environmentFile?: string | null;
       group?: string;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
       user?: string;
     };
-    "webdav-server-rs"?: {
+    "webdav-server-rs": {
       configFile?: string;
       debug?: boolean;
       enable?: boolean;
@@ -42616,7 +42616,7 @@ declare module "winix" {
       settings?: unknown;
       user?: string;
     };
-    webhook?: {
+    webhook: {
       enable?: boolean;
       enableTemplates?: boolean;
       environment?: Record<string, string>;
@@ -42628,19 +42628,19 @@ declare module "winix" {
       hooksTemplated?: Record<string, string>;
       ip?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       urlPrefix?: string;
       user?: string;
       verbose?: boolean;
     };
-    weblate?: {
+    weblate: {
       configurePostgresql?: boolean;
       djangoSecretKeyFile?: string;
       enable?: boolean;
       extraConfig?: string;
       localDomain?: string;
-      package?: PackageRef;
+      package?: string;
       smtp?: {
         enable?: boolean;
         from?: string;
@@ -42650,36 +42650,36 @@ declare module "winix" {
         user?: string | null;
       };
     };
-    websurfx?: {
+    websurfx: {
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         binding_ip?: string;
         port?: unknown;
       };
     };
-    weechat?: {
+    weechat: {
       binary?: string;
       enable?: boolean;
       headless?: boolean;
-      package?: PackageRef;
+      package?: string;
       root?: string;
       sessionName?: string;
     };
-    "wg-access-server"?: {
+    "wg-access-server": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       secretsFile?: string;
       settings?: {
         dns?: Record<string, unknown>;
         storage?: string;
       };
     };
-    "wg-netmanager"?: {
+    "wg-netmanager": {
       enable?: boolean;
     };
-    wgautomesh?: {
+    wgautomesh: {
       enable?: boolean;
       enableGossipEncryption?: boolean;
       enablePersistence?: boolean;
@@ -42694,13 +42694,13 @@ declare module "winix" {
         upnp_forward_external_port?: unknown | null;
       };
     };
-    whisparr?: {
+    whisparr: {
       dataDir?: string;
       enable?: boolean;
       environmentFiles?: string[];
       group?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         log?: Record<string, unknown>;
         server?: Record<string, unknown>;
@@ -42708,25 +42708,25 @@ declare module "winix" {
       };
       user?: string;
     };
-    whitebophir?: {
+    whitebophir: {
       enable?: boolean;
       listenAddress?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    whoami?: {
+    whoami: {
       enable?: boolean;
       extraArgs?: string[];
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    "whoogle-search"?: {
+    "whoogle-search": {
       enable?: boolean;
       extraEnv?: Record<string, string>;
       listenAddress?: string;
       port?: unknown;
     };
-    "wiki-js"?: {
+    "wiki-js": {
       enable?: boolean;
       environmentFile?: string | null;
       settings?: {
@@ -42738,7 +42738,7 @@ declare module "winix" {
       };
       stateDirectoryName?: string;
     };
-    windmill?: {
+    windmill: {
       baseUrl?: string;
       database?: {
         createLocally?: boolean;
@@ -42750,10 +42750,10 @@ declare module "winix" {
       enable?: boolean;
       logLevel?: "debug" | "error" | "info" | "trace" | "warn";
       lspPort?: unknown;
-      package?: PackageRef;
+      package?: string;
       serverPort?: unknown;
     };
-    wivrn?: {
+    wivrn: {
       autoStart?: boolean;
       config?: {
         enable?: boolean;
@@ -42764,43 +42764,43 @@ declare module "winix" {
       highPriority?: boolean;
       monadoEnvironment?: unknown;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       steam?: {
         enable?: boolean;
         importOXRRuntimes?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
     };
-    wlock?: {
+    wlock: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    "woodpecker-agents"?: {
+    "woodpecker-agents": {
       agents?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    "woodpecker-server"?: {
+    "woodpecker-server": {
       enable?: boolean;
       environment?: Record<string, string>;
       environmentFile?: unknown;
-      package?: PackageRef;
+      package?: string;
     };
-    wordpress?: {
+    wordpress: {
       sites?: {
         "<name>"?: Record<string, unknown>;
       };
       webserver?: "caddy" | "httpd" | "nginx";
     };
-    "workout-tracker"?: {
+    "workout-tracker": {
       address?: string;
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, string>;
     };
-    writefreely?: {
+    writefreely: {
       acme?: {
         enable?: boolean;
       };
@@ -42829,7 +42829,7 @@ declare module "winix" {
         enable?: boolean;
         forceSSL?: boolean;
       };
-      package?: PackageRef;
+      package?: string;
       settings?: {
         app?: Record<string, unknown>;
         server?: Record<string, unknown>;
@@ -42837,7 +42837,7 @@ declare module "winix" {
       stateDir?: string;
       user?: string;
     };
-    wstunnel?: {
+    wstunnel: {
       clients?: {
         "<name>"?: Record<string, unknown>;
       };
@@ -42846,23 +42846,23 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    wyoming?: {
+    wyoming: {
       "faster-whisper"?: {
-        package?: PackageRef;
+        package?: string;
         servers?: Record<string, unknown>;
       };
       openwakeword?: {
         customModelsDirectories?: string[];
         enable?: boolean;
         extraArgs?: string[];
-        package?: PackageRef;
+        package?: string;
         refractorySeconds?: unknown;
         threshold?: unknown;
         triggerLevel?: unknown;
         uri?: unknown;
       };
       piper?: {
-        package?: PackageRef;
+        package?: string;
         servers?: Record<string, unknown>;
       };
       satellite?: {
@@ -42872,7 +42872,7 @@ declare module "winix" {
         group?: string;
         microphone?: Record<string, unknown>;
         name?: string;
-        package?: PackageRef;
+        package?: string;
         sound?: Record<string, unknown>;
         sounds?: Record<string, unknown>;
         uri?: string;
@@ -42880,16 +42880,16 @@ declare module "winix" {
         vad?: Record<string, unknown>;
       };
     };
-    x2goserver?: {
+    x2goserver: {
       enable?: boolean;
       nxagentDefaultOptions?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
       superenicer?: {
         enable?: boolean;
       };
     };
-    xandikos?: {
+    xandikos: {
       address?: string;
       enable?: boolean;
       extraOptions?: string[];
@@ -42897,45 +42897,45 @@ declare module "winix" {
         enable?: boolean;
         hostName?: string;
       };
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       routePrefix?: string;
     };
-    xbanish?: {
+    xbanish: {
       arguments?: string;
       enable?: boolean;
     };
-    "xe-guest-utilities"?: {
+    "xe-guest-utilities": {
       enable?: boolean;
     };
-    xfs?: {
+    xfs: {
       enable?: boolean;
     };
-    xinetd?: {
+    xinetd: {
       enable?: boolean;
       extraDefaults?: string;
       services?: {
         "*"?: Record<string, unknown>;
       };
     };
-    xl2tpd?: {
+    xl2tpd: {
       clientIpRange?: string;
       enable?: boolean;
       extraPppdOptions?: string;
       extraXl2tpOptions?: string;
       serverIp?: string;
     };
-    xmrig?: {
+    xmrig: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    xonotic?: {
+    xonotic: {
       appendConfig?: string | null;
       dataDir?: string;
       enable?: boolean;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       prependConfig?: string | null;
       settings?: {
         hostname?: unknown;
@@ -42947,32 +42947,32 @@ declare module "winix" {
         sv_termsofservice_url?: unknown;
       };
     };
-    xray?: {
+    xray: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown> | null;
       settingsFile?: string | null;
     };
-    xrdp?: {
+    xrdp: {
       audio?: {
         enable?: boolean;
-        package?: PackageRef;
+        package?: string;
       };
       defaultWindowManager?: string;
       enable?: boolean;
       extraConfDirCommands?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       sslCert?: string;
       sslKey?: string;
     };
-    xscreensaver?: {
+    xscreensaver: {
       enable?: boolean;
       hooks?: Record<string, string>;
-      package?: PackageRef;
+      package?: string;
     };
-    xserver?: {
+    xserver: {
       autoRepeatDelay?: number | null;
       autoRepeatInterval?: number | null;
       autorun?: boolean;
@@ -43019,7 +43019,7 @@ declare module "winix" {
       enableCtrlAltBackspace?: boolean;
       enableTCP?: boolean;
       enableTearFree?: boolean;
-      excludePackages?: PackageRef[] | NixExpr;
+      excludePackages?: string[];
       exportConfiguration?: boolean;
       extraConfig?: string;
       extraDisplaySettings?: string;
@@ -43142,7 +43142,7 @@ declare module "winix" {
         "*"?: Record<string, unknown>;
       };
     };
-    "yandex-disk"?: {
+    "yandex-disk": {
       directory?: string;
       enable?: boolean;
       excludes?: unknown;
@@ -43150,22 +43150,22 @@ declare module "winix" {
       user?: string | null;
       username?: string;
     };
-    yarr?: {
+    yarr: {
       address?: string;
       authFilePath?: string | null;
       baseUrl?: string | null;
       enable?: boolean;
       environmentFile?: string | null;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    yggdrasil?: {
+    yggdrasil: {
       denyDhcpcdInterfaces?: string[];
       enable?: boolean;
       extraArgs?: string[];
       group?: string | null;
       openMulticastPort?: boolean;
-      package?: PackageRef;
+      package?: string;
       persistentKeys?: boolean;
       settings?: {
         AllowedPublicKeys?: string[];
@@ -43174,18 +43174,18 @@ declare module "winix" {
         PrivateKeyPath?: string | null;
       };
     };
-    "yggdrasil-jumper"?: {
+    "yggdrasil-jumper": {
       appendListenAddresses?: boolean;
       detectWireguard?: boolean;
       enable?: boolean;
       extraArgs?: string[];
       extraConfig?: string;
       logLevel?: "debug" | "error" | "info" | "off" | "trace" | "warn";
-      package?: PackageRef;
+      package?: string;
       retrieveListenAddresses?: boolean;
       settings?: unknown;
     };
-    ympd?: {
+    ympd: {
       enable?: boolean;
       mpd?: {
         host?: string;
@@ -43193,12 +43193,12 @@ declare module "winix" {
       };
       webPort?: unknown;
     };
-    your_spotify?: {
-      clientPackage?: PackageRef;
+    your_spotify: {
+      clientPackage?: string;
       enable?: boolean;
       enableLocalDB?: boolean;
       nginxVirtualHost?: string | null;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         API_ENDPOINT?: string;
         CLIENT_ENDPOINT?: string;
@@ -43208,7 +43208,7 @@ declare module "winix" {
       };
       spotifySecretFile?: string;
     };
-    youtrack?: {
+    youtrack: {
       address?: string;
       autoUpgrade?: boolean;
       enable?: boolean;
@@ -43217,36 +43217,36 @@ declare module "winix" {
         "listen-port"?: unknown;
       };
       generalParameters?: string[];
-      package?: PackageRef;
+      package?: string;
       statePath?: string;
       virtualHost?: string | null;
     };
-    "ytdl-sub"?: {
+    "ytdl-sub": {
       group?: string;
       instances?: {
         "<name>"?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       user?: string;
     };
-    "yubikey-agent"?: {
+    "yubikey-agent": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
     };
-    zabbixAgent?: {
+    zabbixAgent: {
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       listen?: {
         ip?: string;
         port?: unknown;
       };
-      modules?: Record<string, PackageRef>;
+      modules?: Record<string, string>;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       server?: string;
       settings?: Record<string, unknown>;
     };
-    zabbixProxy?: {
+    zabbixProxy: {
       database?: {
         createLocally?: boolean;
         host?: string;
@@ -43258,18 +43258,18 @@ declare module "winix" {
         user?: string;
       };
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       listen?: {
         ip?: string;
         port?: unknown;
       };
-      modules?: Record<string, PackageRef>;
+      modules?: Record<string, string>;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       server?: string;
       settings?: Record<string, unknown>;
     };
-    zabbixServer?: {
+    zabbixServer: {
       database?: {
         createLocally?: boolean;
         host?: string;
@@ -43281,17 +43281,17 @@ declare module "winix" {
         user?: string;
       };
       enable?: boolean;
-      extraPackages?: PackageRef[] | NixExpr;
+      extraPackages?: string[];
       listen?: {
         ip?: string;
         port?: unknown;
       };
-      modules?: Record<string, PackageRef>;
+      modules?: Record<string, string>;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    zabbixWeb?: {
+    zabbixWeb: {
       database?: {
         host?: string;
         name?: string;
@@ -43311,14 +43311,14 @@ declare module "winix" {
       nginx?: {
         virtualHost?: Record<string, unknown>;
       };
-      package?: PackageRef;
+      package?: string;
       poolConfig?: Record<string, unknown>;
       server?: {
         address?: string;
         port?: unknown;
       };
     };
-    zammad?: {
+    zammad: {
       database?: {
         createLocally?: boolean;
         host?: string;
@@ -43336,7 +43336,7 @@ declare module "winix" {
         configure?: boolean;
         domain?: string;
       };
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       redis?: {
         createLocally?: boolean;
@@ -43348,33 +43348,33 @@ declare module "winix" {
       user?: string;
       websocketPort?: unknown;
     };
-    zapret?: {
+    zapret: {
       blacklist?: string[];
       configureFirewall?: boolean;
       enable?: boolean;
       httpMode?: "first" | "full";
       httpSupport?: boolean;
-      package?: PackageRef;
+      package?: string;
       params?: string[];
       qnum?: number;
       udpPorts?: string[];
       udpSupport?: boolean;
       whitelist?: string[];
     };
-    zeitgeist?: {
+    zeitgeist: {
       enable?: boolean;
     };
-    zenohd?: {
-      backends?: PackageRef[] | NixExpr;
+    zenohd: {
+      backends?: string[];
       enable?: boolean;
       env?: Record<string, string>;
       extraOptions?: string[];
       home?: string;
-      package?: PackageRef;
-      plugins?: PackageRef[] | NixExpr;
+      package?: string;
+      plugins?: string[];
       settings?: Record<string, unknown>;
     };
-    zerobin?: {
+    zerobin: {
       dataDir?: string;
       enable?: boolean;
       extraConfig?: string;
@@ -43383,28 +43383,28 @@ declare module "winix" {
       listenPort?: unknown;
       user?: string;
     };
-    zeronet?: {
+    zeronet: {
       enable?: boolean;
       fileserverPort?: unknown;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       settings?: Record<string, Record<string, unknown>>;
       tor?: boolean;
       torAlways?: boolean;
     };
-    zeronsd?: {
+    zeronsd: {
       servedNetworks?: {
         "<name>"?: Record<string, unknown>;
       };
     };
-    zerotierone?: {
+    zerotierone: {
       enable?: boolean;
       joinNetworks?: string[];
       localConf?: unknown;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
     };
-    zeyple?: {
+    zeyple: {
       enable?: boolean;
       group?: string;
       keys?: string[];
@@ -43412,14 +43412,14 @@ declare module "winix" {
       settings?: Record<string, unknown>;
       user?: string;
     };
-    zfs?: {
+    zfs: {
       autoReplication?: {
         enable?: boolean;
         followDelete?: boolean;
         host?: string;
         identityFilePath?: string;
         localFilesystem?: string;
-        package?: PackageRef;
+        package?: string;
         recursive?: boolean;
         remoteFilesystem?: string;
         username?: string;
@@ -43450,32 +43450,32 @@ declare module "winix" {
         settings?: Record<string, unknown>;
       };
     };
-    zigbee2mqtt?: {
+    zigbee2mqtt: {
       dataDir?: string;
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: unknown;
     };
-    zipline?: {
+    zipline: {
       database?: {
         createLocally?: boolean;
       };
       enable?: boolean;
       environmentFiles?: string[];
-      package?: PackageRef;
+      package?: string;
       settings?: {
         CORE_HOSTNAME?: string;
         CORE_PORT?: unknown;
       };
     };
-    zitadel?: {
+    zitadel: {
       enable?: boolean;
       extraSettingsPaths?: string[];
       extraStepsPaths?: string[];
       group?: string;
       masterKeyFile?: string;
       openFirewall?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: {
         Port?: unknown;
         TLS?: Record<string, unknown>;
@@ -43484,7 +43484,7 @@ declare module "winix" {
       tlsMode?: "disabled" | "enabled" | "external";
       user?: string;
     };
-    znapzend?: {
+    znapzend: {
       autoCreation?: boolean;
       enable?: boolean;
       features?: {
@@ -43505,7 +43505,7 @@ declare module "winix" {
         "<name>"?: Record<string, unknown>;
       };
     };
-    znc?: {
+    znc: {
       config?: Record<string, unknown>;
       configFile?: string;
       confOptions?: {
@@ -43524,13 +43524,13 @@ declare module "winix" {
       enable?: boolean;
       extraFlags?: string[];
       group?: string;
-      modulePackages?: PackageRef[] | NixExpr;
+      modulePackages?: string[];
       mutable?: boolean;
       openFirewall?: boolean;
       useLegacyConfig?: boolean;
       user?: string;
     };
-    zoneminder?: {
+    zoneminder: {
       cameras?: number;
       database?: {
         createLocally?: boolean;
@@ -43547,34 +43547,34 @@ declare module "winix" {
       storageDir?: string | null;
       webserver?: "nginx" | "none";
     };
-    zookeeper?: {
+    zookeeper: {
       dataDir?: string;
       enable?: boolean;
       extraCmdLineOptions?: string[];
       extraConf?: string;
       id?: number;
-      jre?: PackageRef;
+      jre?: string;
       logging?: string;
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       preferIPv4?: boolean;
       purgeInterval?: number;
       servers?: string;
     };
-    "zram-generator"?: {
+    "zram-generator": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    zrepl?: {
+    zrepl: {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       settings?: Record<string, unknown>;
     };
-    "zwave-js"?: {
+    "zwave-js": {
       enable?: boolean;
       extraFlags?: string[];
-      package?: PackageRef;
+      package?: string;
       port?: unknown;
       secretsConfigFile?: string;
       serialPort?: string;
@@ -43582,9 +43582,9 @@ declare module "winix" {
         storage?: Record<string, unknown>;
       };
     };
-    "zwave-js-ui"?: {
+    "zwave-js-ui": {
       enable?: boolean;
-      package?: PackageRef;
+      package?: string;
       serialPort?: string;
       settings?: Record<string, unknown>;
     };

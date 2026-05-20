@@ -62,10 +62,11 @@ node_modules/
 const TSCONFIG = `{
   "compilerOptions": {
     "strict": true,
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "target": "esnext",
-    "noEmit": true
+    "noEmit": true,
+    "skipLibCheck": true
   },
   "include": [
     "**/*.ts",

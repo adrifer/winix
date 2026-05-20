@@ -14,16 +14,18 @@ export interface HomeProgramOptions {}
 export interface HomeServiceOptions {}
 
 export interface HomeHelper {
-  program<K extends keyof HomeProgramOptions>(
+  program<K extends string>(
     name: K,
-    opts?: Omit<HomeProgramOptions[K], "enable">
+    opts?: K extends keyof HomeProgramOptions
+      ? Omit<HomeProgramOptions[K], "enable">
+      : Record<string, unknown>
   ): Fragment;
-  program(name: string, opts?: Record<string, unknown>): Fragment;
-  service<K extends keyof HomeServiceOptions>(
+  service<K extends string>(
     name: K,
-    opts?: Omit<HomeServiceOptions[K], "enable">
+    opts?: K extends keyof HomeServiceOptions
+      ? Omit<HomeServiceOptions[K], "enable">
+      : Record<string, unknown>
   ): Fragment;
-  service(name: string, opts?: Record<string, unknown>): Fragment;
   env(vars: Record<string, string>): Fragment;
   path(paths: string[]): Fragment;
   path(...paths: string[]): Fragment;
