@@ -491,6 +491,24 @@ describe("curated helpers", () => {
     expect((evaluated.nixos as any).wsl.defaultUser).toEqual(nix.lib.mkDefault("adrifer"));
   });
 
+  it("account() configures darwin primaryUser, environment.shells, and programs", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("macbook-pro", platforms.darwin(), [
+          account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05" }),
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    expect((evaluated.darwin as any).system.primaryUser).toBe("adrifer");
+    expect((evaluated.darwin as any).environment.shells).toEqual([nix.pkg("zsh")]);
+    expect((evaluated.darwin as any).programs.zsh.enable).toBe(true);
+    expect((evaluated.darwin as any).users.users.adrifer.home).toBe("/Users/adrifer");
+    expect((evaluated.darwin as any).users.users.adrifer.shell).toEqual(nix.pkg("zsh"));
+  });
+
   it("intent helpers map common system patterns", () => {
     expect(nixosHelpers.service("openssh", { settings: { PermitRootLogin: "no" } })).toEqual({
       nixos: { services: { openssh: { enable: true, settings: { PermitRootLogin: "no" } } } },
