@@ -487,6 +487,7 @@ describe("curated helpers", () => {
     const [evaluated] = evaluate(ws);
     expect((evaluated.homeManager as any).home.username).toBe("adrifer");
     expect((evaluated.nixos as any).users.users.adrifer.extraGroups).toContain("wheel");
+    expect((evaluated.nixos as any).programs.zsh.enable).toBe(true);
     expect((evaluated.nixos as any).wsl.defaultUser).toEqual(nix.lib.mkDefault("adrifer"));
   });
 
