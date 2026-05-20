@@ -1,5 +1,5 @@
 import type { Fragment } from "../core/types.ts";
-import type { PackageRef } from "../types/index.ts";
+import type { DarwinOptions, PackageRef } from "../types/index.ts";
 
 /**
  * Map of nix-darwin program names to their option types.
@@ -30,7 +30,7 @@ export interface DarwinHelper {
   ): Fragment;
   packages(packages: PackageRef[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
-  raw(config: string | Record<string, unknown>): Fragment;
+  raw(config: string | DarwinOptions): Fragment;
 }
 
 export const darwin: DarwinHelper = {

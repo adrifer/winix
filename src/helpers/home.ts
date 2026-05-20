@@ -1,5 +1,5 @@
 import type { Fragment, NixExpr } from "../core/types.ts";
-import type { PackageRef, XdgFile } from "../types/index.ts";
+import type { HomeOptions, PackageRef, XdgFile } from "../types/index.ts";
 
 /**
  * Map of Home Manager program names to their option types.
@@ -33,7 +33,7 @@ export interface HomeHelper {
   packages(...packages: PackageRef[]): Fragment;
   configFile(name: string, opts: XdgFile): Fragment;
   configFiles(files: Record<string, XdgFile>): Fragment;
-  raw(config: string | Record<string, unknown>): Fragment;
+  raw(config: string | HomeOptions): Fragment;
   activation(name: string, opts: ActivationOpts): Fragment;
 }
 

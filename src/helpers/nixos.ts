@@ -1,5 +1,5 @@
 import type { Fragment } from "../core/types.ts";
-import type { FirewallOptions, PackageRef, SystemdOptions } from "../types/index.ts";
+import type { FirewallOptions, NixosOptions, PackageRef, SystemdOptions } from "../types/index.ts";
 
 export type SysctlSettings = Record<string, number | string | boolean>;
 
@@ -37,7 +37,7 @@ export interface NixosHelper {
   sysctl(settings: SysctlSettings): Fragment;
   firewall(opts: FirewallOptions): Fragment;
   systemd(opts: SystemdOptions): Fragment;
-  raw(config: string | Record<string, unknown>): Fragment;
+  raw(config: string | NixosOptions): Fragment;
 }
 
 export const nixos: NixosHelper = {
