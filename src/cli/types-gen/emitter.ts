@@ -150,15 +150,20 @@ function emitInlineObject(node: TypeNode, indent: number): string {
 
 /**
  * Replace type aliases that require imports with their inline equivalents.
- * PackageRef = string | NixExpr → string (good enough for autocomplete)
- * NixExpr → string
+ * Inside declare module "winix" {}, NixExpr is in scope (it's exported by winix).
+ * PackageRef = string | NixExpr → string | NixExpr
+ * Arrays accept NixExpr too (nix.withPkgs() returns NixExpr for a list value).
  */
 function inlineType(type: string): string {
-  return type
-    .replace(/PackageRef\[\] \| NixExpr/g, "string[]")
-    .replace(/PackageRef\[\]/g, "string[]")
-    .replace(/PackageRef/g, "string")
-    .replace(/NixExpr/g, "string");
+  let result = type
+    .replace(/PackageRef\[\] \| NixExpr/g, "(string | NixExpr)[] | NixExpr")
+    .replace(/PackageRef\[\]/g, "(string | NixExpr)[] | NixExpr")
+    .replace(/PackageRef/g, "string | NixExpr");
+  // For plain arrays (e.g. string[], number[]), also allow NixExpr
+  if (/\[\]$/.test(result) && !result.includes("NixExpr")) {
+    result = `${result} | NixExpr`;
+  }
+  return result;
 }
 
 function emitRootNode(node: TypeNode, indent: number): string {
