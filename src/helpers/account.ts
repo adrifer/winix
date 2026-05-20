@@ -82,6 +82,12 @@ function accountFragment(username: string, opts: AccountOpts): Fragment {
             },
           },
         },
+        ...(shell && {
+          environment: { shells: [shell] },
+          programs: {
+            ...(nixosShellProgram && { [nixosShellProgram]: { enable: true } }),
+          },
+        }),
         ...(usesHomebrew && { "nix-homebrew": { user: username } }),
       },
     }),
