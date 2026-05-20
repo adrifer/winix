@@ -1,5 +1,4 @@
 import type { PackageRef, Script } from "./common.ts";
-import type { CommonPrograms } from "./programs.ts";
 import type { NixExpr } from "../core/types.ts";
 
 export interface NixSettings extends Record<string, unknown> {
@@ -123,7 +122,7 @@ export interface NixosOptions extends Record<string, unknown> {
   services?: ServicesOptions;
   systemd?: SystemdOptions;
   environment?: EnvironmentOptions;
-  programs?: CommonPrograms & Record<string, unknown>;
+  programs?: Record<string, unknown>;
   wsl?: WslOptions;
   system?: {
     stateVersion?: string;

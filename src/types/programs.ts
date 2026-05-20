@@ -67,14 +67,4 @@ export interface NeovimOptions extends Record<string, unknown> {
   vimAlias?: boolean;
 }
 
-export interface CommonPrograms extends Record<string, unknown> {
-  zsh?: ZshOptions;
-  git?: GitOptions;
-  starship?: StarshipOptions;
-  fzf?: FzfOptions;
-  zoxide?: ZoxideOptions;
-  tmux?: TmuxOptions;
-  neovim?: NeovimOptions;
-}
-
 export type ProgramSettings = Attrs;

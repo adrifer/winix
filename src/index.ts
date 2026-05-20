@@ -17,7 +17,6 @@ export type {
   HomebrewOptions,
   HomeConfig,
   HomeOptions,
-  HomePrograms,
   NeovimOptions,
   NetworkingOptions,
   NixConfig,

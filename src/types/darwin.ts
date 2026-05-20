@@ -1,5 +1,4 @@
 import type { PackageRef } from "./common.ts";
-import type { CommonPrograms } from "./programs.ts";
 import type { NixOptions, NixpkgsOptions } from "./nixos.ts";
 
 export interface DarwinSystem extends Record<string, unknown> {
@@ -45,7 +44,7 @@ export interface DarwinOptions extends Record<string, unknown> {
   users?: {
     users?: Record<string, { home?: string; shell?: PackageRef } & Record<string, unknown>>;
   } & Record<string, unknown>;
-  programs?: CommonPrograms & Record<string, unknown>;
+  programs?: Record<string, unknown>;
   nix?: NixOptions;
   nixpkgs?: NixpkgsOptions;
   "home-manager"?: Record<string, unknown>;

@@ -1,6 +1,5 @@
 import type { Attrs, PackageRef, Script } from "./common.ts";
 import type { NixExpr } from "../core/types.ts";
-import type { CommonPrograms } from "./programs.ts";
 
 export interface HomeActivation extends Record<string, unknown> {}
 
@@ -26,12 +25,10 @@ export interface XdgOptions extends Record<string, unknown> {
   dataFile?: Record<string, XdgFile> | NixExpr;
 }
 
-export interface HomePrograms extends CommonPrograms {}
-
 export interface HomeOptions extends Record<string, unknown> {
   username?: string;
   home?: HomeConfig;
-  programs?: HomePrograms;
+  programs?: Record<string, unknown>;
   services?: Attrs;
   xdg?: XdgOptions;
   packages?: PackageRef[];
