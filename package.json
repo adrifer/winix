@@ -4,11 +4,11 @@
   "description": "TypeScript-first system configuration",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./index.d.ts"
     },
     "./types": {
       "import": "./dist/types/index.js",
