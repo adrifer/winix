@@ -1,3 +1,4 @@
+import { normalizeArgs } from "./utils.ts";
 import type { Fragment, NixExpr } from "../core/types.ts";
 import type { HomeOptions, PackageRef, XdgFile } from "../types/index.ts";
 
@@ -96,6 +97,3 @@ export const home: HomeHelper = {
   },
 };
 
-function normalizeArgs<T>(args: T[] | [T[]]): T[] {
-  return Array.isArray(args[0]) ? (args[0] as T[]) : (args as T[]);
-}

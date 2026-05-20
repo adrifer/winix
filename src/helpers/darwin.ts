@@ -1,3 +1,4 @@
+import { normalizeArgs } from "./utils.ts";
 import type { Fragment } from "../core/types.ts";
 import type { DarwinOptions, PackageRef } from "../types/index.ts";
 
@@ -53,6 +54,3 @@ export const darwin: DarwinHelper = {
     typeof config === "string" ? { darwin: { __raw: [config] } } : { darwin: config },
 };
 
-function normalizeArgs<T>(args: T[] | [T[]]): T[] {
-  return Array.isArray(args[0]) ? (args[0] as T[]) : (args as T[]);
-}

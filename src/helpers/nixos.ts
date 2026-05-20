@@ -1,3 +1,4 @@
+import { normalizeArgs } from "./utils.ts";
 import type { Fragment } from "../core/types.ts";
 import type { FirewallOptions, NixosOptions, PackageRef, SystemdOptions } from "../types/index.ts";
 
@@ -75,6 +76,3 @@ export const nixos: NixosHelper = {
     typeof config === "string" ? { nixos: { __raw: [config] } } : { nixos: config },
 };
 
-function normalizeArgs<T>(args: T[] | [T[]]): T[] {
-  return Array.isArray(args[0]) ? (args[0] as T[]) : (args as T[]);
-}
