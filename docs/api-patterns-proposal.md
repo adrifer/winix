@@ -90,6 +90,8 @@ system.defaults.finder = {
 
 ### Proposed API
 
+Single flat helper. No sub-helpers (`.defaults.dock()`, etc.) because there's no special logic (no implicit `enable: true` or platform conditionals). Types provide autocomplete for all sections.
+
 ```ts
 darwin.defaults(config: {
   NSGlobalDomain?: { ... };
@@ -101,13 +103,12 @@ darwin.defaults(config: {
   screensaver?: { ... };
   [key: string]: unknown;
 }): Fragment
+```
 
-darwin.keyboard(config: {
-  enableKeyMapping?: boolean;
-  remapCapsLockToControl?: boolean;
-  remapCapsLockToEscape?: boolean;
-  [key: string]: unknown;
-}): Fragment
+Keyboard goes through the main `darwin()` callable since it's just `system.keyboard`:
+
+```ts
+darwin({ system: { keyboard: { ... } } })
 ```
 
 ### Winix Translation
@@ -139,10 +140,7 @@ darwin.defaults({
   },
 });
 
-darwin.keyboard({
-  enableKeyMapping: true,
-  remapCapsLockToControl: true,
-});
+darwin({ system: { keyboard: { enableKeyMapping: true, remapCapsLockToControl: true } } });
 ```
 
 ---
@@ -150,6 +148,8 @@ darwin.keyboard({
 ## 2. Nix Daemon Settings
 
 Configuring the Nix daemon itself: experimental features, substituters, trusted users, garbage collection, registry.
+
+The `nix` section exists in both NixOS and darwin with ~90% overlap. The differences are minor: darwin uses `interval` for gc scheduling vs NixOS `dates`, and NixOS has Linux-specific options (daemonCPUSchedPolicy, sshServe, firewall). The shared parts (settings, registry, buildMachines) are identical.
 
 ### Nix Examples
 
@@ -210,31 +210,38 @@ nix = {
 
 ### Proposed API
 
+Platform-specific helpers: `nixos.nix()` and `darwin.nix()`. No sub-helpers (gc, settings, etc.) because none have special logic — they're all pure config passthrough. The bundled types provide autocomplete.
+
+The existing `nix` namespace stays as-is (expression builders: `nix.pkg()`, `nix.str`, `nix.expr()`, etc.). The current `nix.gc()` helper is removed in favor of `nixos.nix({ gc: { ... } })` / `darwin.nix({ gc: { ... } })`.
+
 ```ts
-nix.daemon(config: {
+nixos.nix(config: {
   enable?: boolean;
   package?: PackageRef;
-  settings?: {
-    experimentalFeatures?: string[];
-    trustedUsers?: string[];
-    substituters?: string[];
-    trustedPublicKeys?: string[];
-    autoOptimiseStore?: boolean;
-    buildersUseSubstitutes?: boolean;
-    keepDerivations?: boolean;
-    keepOutputs?: boolean;
-    [key: string]: unknown;
-  };
-  gc?: { automatic?: boolean; interval?: string; options?: string };
+  settings?: { ... };  // typed from generated options
+  gc?: { automatic?: boolean; dates?: string; options?: string; ... };
+  optimise?: { automatic?: boolean; dates?: string };
+  registry?: Record<string, unknown>;
+  nixPath?: string[];
   distributedBuilds?: boolean;
-  buildMachines?: Array<{
-    hostName: string;
-    sshUser?: string;
-    system: string;
-    maxJobs?: number;
-    supportedFeatures?: string[];
-  }>;
+  buildMachines?: Array<{ ... }>;
   extraOptions?: string;
+  channel?: { enable?: boolean };
+  [key: string]: unknown;
+}): Fragment
+
+darwin.nix(config: {
+  enable?: boolean;
+  package?: PackageRef;
+  settings?: { ... };  // typed from generated options
+  gc?: { automatic?: boolean; interval?: { Weekday?: number; Hour?: number; Minute?: number }; options?: string; ... };
+  optimise?: { automatic?: boolean; interval?: { ... } };
+  registry?: Record<string, unknown>;
+  nixPath?: string[];
+  distributedBuilds?: boolean;
+  buildMachines?: Array<{ ... }>;
+  extraOptions?: string;
+  channel?: { enable?: boolean };
   [key: string]: unknown;
 }): Fragment
 ```
@@ -242,7 +249,8 @@ nix.daemon(config: {
 ### Winix Translation
 
 ```ts
-nix.daemon({
+// NixOS
+nixos.nix({
   settings: {
     autoOptimiseStore: true,
     buildersUseSubstitutes: true,
@@ -251,10 +259,20 @@ nix.daemon({
     substituters: ["https://nix-community.cachix.org", "https://cache.nixos.org"],
     trustedPublicKeys: ["cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="],
   },
-  gc: { automatic: true, interval: "weekly", options: "--delete-older-than 7d" },
+  gc: { automatic: true, dates: "weekly", options: "--delete-older-than 7d" },
 });
 
-nix.daemon({
+// darwin
+darwin.nix({
+  settings: {
+    experimentalFeatures: ["nix-command", "flakes"],
+    trustedUsers: ["@admin"],
+  },
+  gc: { automatic: true, interval: { Weekday: 0, Hour: 3, Minute: 0 } },
+});
+
+// Distributed builds (same on both)
+nixos.nix({
   distributedBuilds: true,
   buildMachines: [{
     hostName: "homeserver1",
@@ -1209,7 +1227,7 @@ darwin.launchAgent("emacs", {
 | Pattern | Usage Frequency | Current Status | Complexity | Priority |
 |---------|----------------|----------------|------------|----------|
 | System Defaults (darwin) | ⭐⭐⭐⭐⭐ | ❌ Missing | Low | **P1** |
-| Nix Daemon Settings | ⭐⭐⭐⭐⭐ | Partial (nix.gc exists) | Medium | **P1** |
+| Nix Settings (`nixos.nix()` / `darwin.nix()`) | ⭐⭐⭐⭐⭐ | Partial (`nix.gc` exists, to be removed) | Medium | **P1** |
 | Boot Configuration | ⭐⭐⭐⭐ | Partial (sysctl exists) | Low | **P1** |
 | Users & Groups | ⭐⭐⭐⭐ | Partial (account exists) | Medium | **P2** |
 | Fonts | ⭐⭐⭐⭐ | ❌ Missing | Low | **P2** |
@@ -1223,6 +1241,14 @@ darwin.launchAgent("emacs", {
 | Locale & Timezone | ⭐⭐⭐ | ❌ Missing | Low | **P3** |
 | Launchd (darwin) | ⭐⭐ | ❌ Missing | Low | **P3** |
 | Session Variables & Path | ⭐⭐⭐⭐ | ✅ Done | — | — |
+
+### Design Decisions
+
+- **`nix` namespace** stays as expression builders (`nix.pkg()`, `nix.str`, `nix.expr()`, etc.)
+- **`nix.gc()` removed** — replaced by `nixos.nix({ gc: { ... } })` / `darwin.nix({ gc: { ... } })`
+- **`darwin.defaults()`** — single flat helper, no sub-helpers (`.defaults.dock()`, etc.) because there's no implicit logic, just typed passthrough
+- **`nixos.nix()` / `darwin.nix()`** — platform-specific, no sub-helpers (gc, settings all go as config keys). Different platforms have different gc scheduling (dates vs interval)
+- **No cross-platform magic** — helpers are explicit per-platform. Users who want shared config put it in a feature with both calls.
 
 ### Notes
 
