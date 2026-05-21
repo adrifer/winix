@@ -575,22 +575,21 @@ xdg.configFile."git/allowed_signers".text = ''
 
 ### Proposed API
 
-```ts
-home.files(files: Record<string, string | { source: string } | { text: string }>): Fragment
+`home.configFile()` / `home.configFiles()` already exist for XDG config files. Add `home.files()` for arbitrary home paths:
 
-// Shorthand for XDG config files (already exists as home.configFile/configFiles)
+```ts
+// New: arbitrary home-relative file management
+home.files(files: Record<string, { source?: string; text?: string; recursive?: boolean }>): Fragment
+
+// Already exists: XDG config files (~/.config/...)
 home.configFile(name: string, opts: { source?: string; text?: string; recursive?: boolean }): Fragment
 home.configFiles(files: Record<string, { source?: string; text?: string }>): Fragment
-
-// New: general home.file for arbitrary paths
-home.file(path: string, opts: { source?: string; text?: string }): Fragment
-home.homeFiles(files: Record<string, string | { source: string } | { text: string }>): Fragment
 ```
 
 ### Winix Translation
 
 ```ts
-home.homeFiles({
+home.files({
   ".config/ghostty/config": { source: "config/ghostty/config" },
   ".config/helix": { source: "config/helix" },
   ".config/kitty": { source: "config/kitty" },
