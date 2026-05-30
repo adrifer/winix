@@ -374,7 +374,11 @@ nixos.sysctl({
 
 ## 4. Users & Groups
 
-User accounts with shell, groups, SSH keys, and home directories.
+System users, groups, SSH keys, shells, per-user packages, WSL defaults, and optional Home Manager user configuration.
+
+NixOS encodes this across `users.users`, `users.groups`, and often `home-manager.users`, but in Winix these belong to the existing account domain because they all describe local accounts. The current `account(name, config)` helper should become an `account` namespace with explicit `account.user()` and `account.group()` helpers.
+
+These helpers should follow the same pattern as `feature()`: define a reusable factory once, then call it inside hosts/profiles with `adrifer()`, `mediaGroup()`, etc. This keeps top-level user configuration consistent across Winix: exported helpers are always factories, and host/profile entries always call those factories to instantiate fragments.
 
 ### Nix Examples
 
@@ -413,57 +417,122 @@ users.users.robert = {
 
 ### Proposed API
 
-Currently `account()` handles basic user setup. This proposes extending it or adding a `nixos.user()` / `darwin.user()` helper:
+Extend the existing account helper rather than adding `nixos.user()` / `nixos.group()` or `darwin.user()` / `darwin.group()` helpers.
 
 ```ts
-nixos.user(name: string, config: {
-  isNormalUser?: boolean;
-  shell?: PackageRef;
-  extraGroups?: string[];
-  home?: string;
-  description?: string;
-  openssh?: {
-    authorizedKeys?: {
-      keys?: string[];
-      keyFiles?: string[];
-    };
-  };
-  [key: string]: unknown;
-}): Fragment
+type AccountUserRef = {
+  readonly kind: "account.user";
+  readonly name: string;
+};
 
-darwin.user(name: string, config: {
-  home?: string;
-  shell?: PackageRef;
+type AccountGroupMember = AccountUserRef | string;
+
+interface AccountUserFactory<T extends unknown[] = []> {
+  (...args: T): LazyFragment;
+  readonly id: string;
+  readonly name: string;
+  readonly kind: "account.user";
+  readonly isActive: boolean;
+}
+
+interface AccountGroupFactory<T extends unknown[] = []> {
+  (...args: T): LazyFragment;
+  readonly id: string;
+  readonly name: string;
+  readonly kind: "account.group";
+  readonly isActive: boolean;
+}
+
+account.user(name: string, factory: () => {
+  // Winix conveniences
+  admin?: boolean;          // Adds wheel/admin groups for the active platform.
+  stateVersion?: string;    // Sets the matching Home Manager state version.
+  wslDefault?: boolean;     // Marks this user as the default WSL user on NixOS-WSL.
+
+  // NixOS/darwin users.users.<name>
   description?: string;
+  isNormalUser?: boolean;
+  isSystemUser?: boolean;
+  uid?: number;
+  group?: string;
+  extraGroups?: string[];
+  shell?: PackageRef | string;
+  packages?: PackageRef[];
+  home?: string;
   openssh?: {
-    authorizedKeys?: {
-      keys?: string[];
-      keyFiles?: string[];
-    };
+    authorizedKeys?: string[];
+    authorizedKeyFiles?: string[];
   };
+  hashedPasswordFile?: string;
+
+  // Optional Home Manager config for home-manager.users.<name>
+  homeManager?: Fragment;
+
   [key: string]: unknown;
-}): Fragment
+}): AccountUserFactory
+
+account.group(name: string, factory?: () => {
+  gid?: number;
+  members?: AccountGroupMember[];
+  [key: string]: unknown;
+}): AccountGroupFactory
 ```
+
+`account.user()` defines a reusable account factory. Calling the returned factory maps to `users.users.<name>`. If `homeManager` or `stateVersion` is provided, it also emits `home-manager.users.<name>`. The factory itself is also an `AccountUserRef`, so it can be passed to `account.group()` without duplicating the username.
+
+`account.group()` defines a reusable group factory. Calling the returned factory maps to `users.groups.<name>`.
+
+Group members should accept both user references and raw strings. References avoid duplicating local account names; strings are still needed for users created by other modules or packages.
 
 ### Winix Translation
 
 ```ts
-nixos.user("mihai", {
+export const adrifer = account.user("adrifer", () => ({
+  admin: true,
+  shell: "zsh",
+  stateVersion: "25.05",
+  wslDefault: true,
+}));
+
+export const mediaGroup = account.group("media", () => ({
+  gid: 1000,
+  members: [adrifer, "jellyfin"],
+}));
+
+host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
+  wsl(),
+  adrifer(),
+  mediaGroup(),
+]);
+
+export const mihai = account.user("mihai", () => ({
   isNormalUser: true,
   shell: nix.pkg("zsh"),
   extraGroups: ["input", "libvirtd", "networkmanager", "plugdev", "video", "wheel"],
-});
+}));
 
-darwin.user("robert", {
+export const robert = account.user("robert", () => ({
   description: "Robert",
   home: "/Users/robert",
   openssh: {
-    authorizedKeys: {
-      keys: ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFkVAe4..."],
+    authorizedKeys: ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFkVAe4..."],
+  },
+  homeManager: {
+    programs: {
+      git: {
+        enable: true,
+        userName: "Robert",
+      },
     },
   },
-});
+}));
 ```
+
+### Rationale
+
+No separate `nixos.users()` / `nixos.groups()` helpers are needed because accounts are already a first-class Winix concept. The NixOS split between `users.users`, `users.groups`, and `home-manager.users` is an implementation detail.
+
+Moving from `account(name, config)` to `account.user(name, factory)` makes the account namespace extensible before implementation adds groups and per-user Home Manager wiring. Returning factories also keeps account helpers aligned with `feature()` and `profile()`: define once, call in the host/profile where the fragment should be active.
 
 ---
 
