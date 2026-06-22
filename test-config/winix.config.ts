@@ -55,7 +55,7 @@ export default workspace({
   hosts: [
     host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
       wsl(),
-      account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }),
+      account.user("adrifer", () => ({ admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }))(),
       workSysctl(),
       nixos.packages("socat", "bubblewrap"),
       developer(),

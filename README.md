@@ -40,7 +40,12 @@ export default workspace({
   inputs,
   hosts: [
     host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
-      account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }),
+      account.user("adrifer", () => ({
+        admin: true,
+        shell: "zsh",
+        stateVersion: "25.05",
+        wslDefault: true,
+      }))(),
       wsl(),
       nixos.packages("socat", "bubblewrap"),
       neovim(),

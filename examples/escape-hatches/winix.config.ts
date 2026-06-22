@@ -21,7 +21,7 @@ export default workspace({
 
   hosts: [
     host("wsl-work", platforms.nixos(), [
-      account("adrifer", { admin: true, stateVersion: "25.05" }),
+      account.user("adrifer", () => ({ admin: true, stateVersion: "25.05" }))(),
 
       // Level 2: rawModule — legacy .nix file not yet migrated
       rawModule("./legacy/vscode-path.nix"),

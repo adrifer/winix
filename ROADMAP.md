@@ -31,7 +31,7 @@
 
 ### Helpers (2026-05-18)
 - [x] `rawModule()` / `rawModule.homeManager()` / `rawModule.darwin()` — incremental migration
-- [x] Curated: `account()`, `nixos.*`, `darwin.*`, `home.*`
+- [x] Curated: `account.user()`, `account.group()`, `nixos.*`, `darwin.*`, `home.*`
 - [x] Namespace helpers: `home.program()`, `home.service()`, `home.env()`, `home.path()`, `nixos.service()`
 - [x] `nix.expr()` — inline Nix expressions
 - [x] `nixos.raw()` / `home.raw()` / `darwin.raw()` — verbatim Nix blocks
@@ -67,8 +67,8 @@ currently force users into raw() blocks.
 - [x] **Unified `nix.*` namespace** — `nix.expr`, `nix.pkg`, `nix.str`, `nix.script`, `nix.concat`, `nix.withPkgs`, `nix.lib.*`, `nix.optionalAttrs`, `nix.optionalString`
 - [x] **Recursive profiles** — `profile()` composes fragments/profiles without spread boilerplate
 - [x] **Built-in platform presets** — `platforms.nixos()` and `platforms.darwin()` cover common NixOS/nix-darwin bases
-- [x] **Unified accounts** — `account()` configures Home Manager, NixOS/Darwin users, shells, admin groups, and WSL defaults
-- [x] **Intent helpers** — `nixos.*`, `darwin.*`, `home.*`, and `nix.gc()` reduce nested Nix-shaped objects
+- [x] **Unified accounts** — `account.user()` configures Home Manager, NixOS/Darwin users, shells, admin groups, and WSL defaults; `account.group()` configures local groups
+- [x] **Intent helpers** — `nixos.*`, `darwin.*`, and `home.*` reduce nested Nix-shaped objects
 - [x] **Activation helper** — `home.activation("name", { after: [...], script: "..." })` for `lib.hm.dag.entryAfter` pattern
 - [x] **Improve error messages** — when a fragment fails, show which helper to use or how to fix it
 - [x] **Audit existing config** — go through dotfiles/winix raw() blocks, find more patterns to abstract
@@ -149,4 +149,4 @@ PowerShell) using the same fragment/helper model.
 | Static types + dynamic generation | Ship hand-written types for instant DX; generate full types from channel for complete coverage. | 2026-05-18 |
 | LLM-first design | Fragments, helpers, and docs should be optimized for AI agents to discover and use correctly. | 2026-05-18 |
 | Unified Nix expression namespace | Public raw expression helpers live under `nix.*` to reduce import sprawl and make escape hatches discoverable. | 2026-05-19 |
-| Presets over boilerplate | Common systems should start from `platforms.*`, `account()`, and intent helpers; low-level fragments remain available for advanced cases. | 2026-05-19 |
+| Presets over boilerplate | Common systems should start from `platforms.*`, `account.user()`, and intent helpers; low-level fragments remain available for advanced cases. | 2026-05-19 |

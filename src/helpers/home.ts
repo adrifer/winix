@@ -1,7 +1,7 @@
 import { normalizeArgs } from "./utils.ts";
 import type { ProgramOptions, ServiceOptions } from "./options.ts";
 import type { Fragment, NixExpr } from "../core/types.ts";
-import type { HomeOptions, PackageRef, XdgFile } from "../types/index.ts";
+import type { HomeFile, HomeOptions, PackageRef } from "../types/index.ts";
 
 /**
  * Map of Home Manager program names to their option types.
@@ -17,6 +17,8 @@ export interface HomeServiceOptions {}
 
 export interface HomeHelper {
   (config: HomeOptions): Fragment;
+  imports(imports: string[]): Fragment;
+  imports(...imports: string[]): Fragment;
   program<const K extends string>(
     name: K,
     opts?: ProgramOptions<HomeProgramOptions, K>
@@ -30,8 +32,10 @@ export interface HomeHelper {
   path(...paths: string[]): Fragment;
   packages(packages: PackageRef[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
-  configFile(name: string, opts: XdgFile): Fragment;
-  configFiles(files: Record<string, XdgFile>): Fragment;
+  files(files: Record<string, HomeFile>): Fragment;
+  configFile(name: string, opts: HomeFile): Fragment;
+  configFiles(files: Record<string, HomeFile>): Fragment;
+  symlink(path: string, opts?: Omit<HomeFile, "source" | "text">): HomeFile;
   raw(config: string): Fragment;
   activation(name: string, opts: ActivationOpts): Fragment;
 }
@@ -54,6 +58,9 @@ export const home: HomeHelper = Object.assign(
     ): Fragment => ({
       homeManager: { programs: { [name]: { enable: true, ...opts } } },
     }),
+    imports: (...args: string[] | [string[]]): Fragment => ({
+      homeManager: { imports: normalizeArgs(args) },
+    }),
     service: <T extends ProgramOpts = ProgramOpts>(
       name: string,
       opts: T = {} as T
@@ -69,11 +76,21 @@ export const home: HomeHelper = Object.assign(
     packages: (...args: PackageRef[] | [PackageRef[]]): Fragment => ({
       homeManager: { home: { packages: normalizeArgs(args) } },
     }),
-    configFile: (name: string, opts: XdgFile): Fragment => ({
+    files: (files: Record<string, HomeFile>): Fragment => ({
+      homeManager: { home: { file: files } },
+    }),
+    configFile: (name: string, opts: HomeFile): Fragment => ({
       homeManager: { xdg: { configFile: { [name]: opts } } },
     }),
-    configFiles: (files: Record<string, XdgFile>): Fragment => ({
+    configFiles: (files: Record<string, HomeFile>): Fragment => ({
       homeManager: { xdg: { configFile: files } },
+    }),
+    symlink: (path: string, opts: Omit<HomeFile, "source" | "text"> = {}): HomeFile => ({
+      ...opts,
+      source: {
+        __winixNixExpr: true,
+        expr: `config.lib.file.mkOutOfStoreSymlink ${homePathToNixString(path)}`,
+      },
     }),
     raw: (config: string): Fragment => ({ homeManager: { __raw: [config] } }),
     activation: (name: string, opts: ActivationOpts): Fragment => {
@@ -94,3 +111,14 @@ export const home: HomeHelper = Object.assign(
     },
   }
 );
+
+function homePathToNixString(path: string): string {
+  if (path.startsWith("~/")) {
+    return `"${escapeNixString(`\${config.home.homeDirectory}/${path.slice(2)}`)}"`;
+  }
+  return JSON.stringify(path);
+}
+
+function escapeNixString(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}

@@ -442,10 +442,10 @@ describe("Nix backend", () => {
     }));
     const darwinWs = workspace({
       inputs: { nixpkgs: "nixos-unstable", nixDarwin: "github:nix-darwin/nix-darwin" },
-      hosts: [host("macbook-pro", darwin(), [darwinHelpers.raw("system.defaults.dock.autohide = true;")])],
+      hosts: [host("macbook-pro", darwin(), [darwinHelpers.raw("system.activationScripts.example.text = \"echo hello\";")])],
     });
     const darwinHostNix = generateNix(darwinWs, evaluate(darwinWs)).hosts["macbook-pro.nix"];
-    expect(darwinHostNix).toContain("system.defaults.dock.autohide = true;");
+    expect(darwinHostNix).toContain("system.activationScripts.example.text = \"echo hello\";");
   });
 
   it("maps known camelCase option paths to kebab-case Nix paths", () => {

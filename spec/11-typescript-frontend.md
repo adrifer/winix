@@ -38,7 +38,7 @@ A host is simply a name plus a flat list of fragments:
 
 ```ts
 host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
-  account("adrifer", { admin: true, shell: "zsh", wslDefault: true }),
+  account.user("adrifer", () => ({ admin: true, shell: "zsh", wslDefault: true }))(),
   wsl(),
   workSysctl(),
   nixos.packages("socat", "bubblewrap"),
@@ -53,7 +53,7 @@ Prefer flat fragment composition:
 
 ```ts
 host("wsl-work", nixos(), [
-  account("adrifer", { admin: true, shell: "zsh" }),
+  account.user("adrifer", () => ({ admin: true, shell: "zsh" }))(),
   wsl({ defaultUser: "adrifer" }),
   nixos.sysctl({ "fs.inotify.max_user_watches": 1048576 }),
   nixLd({ libraries: ["icu", "zlib", "openssl"] }),
@@ -247,17 +247,17 @@ boilerplate:
 
 ```ts
 host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
-  account("adrifer", {
+  account.user("adrifer", () => ({
     admin: true,
     shell: "zsh",
     stateVersion: "25.05",
     wslDefault: true,
-  }),
+  }))(),
   wsl(),
 ]);
 
 host("macbook-pro", platforms.darwin({ stateVersion: 6, homebrew: true }), [
-  account("adrifer", { shell: "zsh", stateVersion: "25.05" }),
+  account.user("adrifer", () => ({ shell: "zsh", stateVersion: "25.05" }))(),
   homebrew(),
 ]);
 ```
@@ -267,7 +267,7 @@ set the host platform, auto-fill `networking.hostName` from `host()`, and wire
 Home Manager by default. The low-level `platform()` helper remains available for
 custom platforms.
 
-`account()` is context-aware. It writes Home Manager `home.*` settings, configures
+`account.user()` is context-aware. It writes Home Manager `home.*` settings, configures
 NixOS or nix-darwin users for the active platform, can add admin groups, sets shells
 with `nix.pkg()`, and can set `wsl.defaultUser` when the `wsl` feature is active.
 
@@ -298,15 +298,15 @@ Common nested Nix patterns should use intent helpers:
 
 ```ts
 nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
-nixos.systemd({ services: { backup: { script: nix.script`echo backup` } } })
-nixos.systemd({ timers: { backup: { wantedBy: ["timers.target"] } } })
-nixos.firewall({ allowedTCPPorts: [80, 443] })
+nixos.systemd.service("backup", { script: nix.script`echo backup` })
+nixos.systemd.timer("backup", { wantedBy: ["timers.target"] })
+nixos.networking({ firewall: { allowedTCPPorts: [80, 443] } })
 home.env({ EDITOR: "nvim" })
 home.path("~/.local/bin")
 home.packages("ripgrep", "fd")
 home.configFile("nvim/init.lua", { text: "vim.o.number = true" })
 home.program("starship")
-nix.gc({ olderThan: "14d" })
+nixos.nix({ gc: { automatic: true, dates: "weekly", options: "--delete-older-than 14d" } })
 ```
 
 ### Sharing fragments across hosts
@@ -314,7 +314,8 @@ nix.gc({ olderThan: "14d" })
 Common fragment lists are shared via plain array spreads (no helper needed):
 
 ```ts
-const base = [account("adrifer"), developer()];
+const adrifer = account.user("adrifer", () => ({ shell: "zsh" }));
+const base = [adrifer(), developer()];
 
 host("wsl-work", nixos(), [...base, wsl(), workSysctl()]);
 host("wsl-personal", nixos(), [...base, wsl()]);
@@ -396,9 +397,7 @@ export const inputs = defineInputs({
 import { inputs } from "../inputs";
 
 export function wsl(): Fragment {
-  return {
-    nixos: { imports: [inputs.nixosWsl] },  // typed, autocomplete, refactor-safe
-  };
+  return nixos.imports(inputs.nixosWsl);  // typed, autocomplete, refactor-safe
 }
 ```
 

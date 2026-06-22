@@ -460,7 +460,7 @@ const KNOWN_OPTION_PATHS: Record<string, string> = {
 };
 
 const KEBAB_NAME_PREFIXES: Record<NixScope, string[]> = {
-  nixos: ["programs", "services", "nix.settings"],
+  nixos: ["programs", "services", "nix.settings", "virtualisation"],
   home: ["programs", "services"],
   darwin: ["programs", "services", "nix.settings", "homebrew"],
 };

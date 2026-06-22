@@ -45,6 +45,7 @@ These existing helpers should change as part of this API proposal:
 |---|---|---|---|
 | `nix.gc()` | **Remove** | `nixos.nix({ gc })` / `darwin.nix({ gc })` | GC is platform config, not an expression-builder concern. |
 | `nixos.firewall()` | **Remove** | `nixos.networking({ firewall })` | Firewall is pure passthrough for `networking.firewall`; a root helper is unnecessary. |
+| `account(name, opts)` | **Remove** | `account.user(name, factory)` | Account users should be reusable factories like features/profiles; no compatibility alias is needed before a stable release. |
 | `home.configFile()` / `home.configFiles()` file shape | **Keep, widen accepted options** | Shared `HomeFile` used by `home.files()`, `home.configFile()`, and `home.configFiles()` | Same Home Manager file options should be accepted consistently. |
 | `nixos.systemd(opts)` | **Keep, extend as callable namespace** | Keep `nixos.systemd(config)` and add `nixos.systemd.service()`, `.timer()`, `.userService()`, `.tmpfiles()` | Systemd unit collections are keyed and benefit from focused helpers. |
 
@@ -153,7 +154,7 @@ darwin.defaults({
   },
   dock: {
     autohide: false,
-    showRecents: false,
+    "show-recents": false,
     orientation: "bottom",
     tilesize: 48,
   },
@@ -558,9 +559,9 @@ export const robert = account.user("robert", () => ({
 
 ### Rationale
 
-No separate `nixos.users()` / `nixos.groups()` helpers are needed because accounts are already a first-class Winix concept. The NixOS split between `users.users`, `users.groups`, and `home-manager.users` is an implementation detail.
+`account.user()` / `account.group()` are the preferred ergonomic APIs for managed users and groups. `nixos.users()` remains available as a parent namespace passthrough for system-level cases that are not account concepts, such as configuring `users.users.root.shell`.
 
-Moving from `account(name, config)` to `account.user(name, factory)` makes the account namespace extensible before implementation adds groups and per-user Home Manager wiring. Returning factories also keeps account helpers aligned with `feature()` and `profile()`: define once, call in the host/profile where the fragment should be active.
+Moving from `account(name, config)` to `account.user(name, factory)` makes the account namespace extensible for groups and per-user Home Manager wiring. Returning factories also keeps account helpers aligned with `feature()` and `profile()`: define once, call in the host/profile where the fragment should be active. The old callable `account(name, opts)` is removed.
 
 ---
 
@@ -1374,20 +1375,20 @@ darwin.launchd.agent("emacs", {
 
 | Pattern | Usage Frequency | Current Status | Complexity | Priority |
 |---------|----------------|----------------|------------|----------|
-| System Defaults (darwin) | ⭐⭐⭐⭐⭐ | ❌ Missing | Low | **P1** |
-| Nix Settings (`nixos.nix()` / `darwin.nix()`) | ⭐⭐⭐⭐⭐ | Partial (`nix.gc` exists, to be removed) | Medium | **P1** |
-| Boot Configuration | ⭐⭐⭐⭐ | Partial (sysctl exists) | Low | **P1** |
-| Users & Groups | ⭐⭐⭐⭐ | Partial (account exists) | Medium | **P2** |
-| Fonts | ⭐⭐⭐⭐ | ❌ Missing | Low | **P2** |
-| Home Files & XDG | ⭐⭐⭐⭐ | Partial (configFile exists) | Low | **P2** |
-| Containers & Virtualisation | ⭐⭐⭐ | ❌ Missing | Medium | **P2** |
-| Systemd Services & Timers | ⭐⭐⭐⭐ | Partial (systemd exists) | Medium | **P2** |
-| Security & PAM | ⭐⭐⭐ | ❌ Missing | Low | **P2** |
-| Networking | ⭐⭐⭐⭐ | Partial (`nixos.firewall()` exists, to be removed) | Low | **P3** |
-| Environment & etc | ⭐⭐⭐⭐ | Partial (packages exists) | Low | **P3** |
-| Homebrew (darwin) | ⭐⭐⭐⭐ | ❌ Missing | Low | **P1** |
-| I18n & Timezone | ⭐⭐⭐ | ❌ Missing | Low | **P3** |
-| Launchd (darwin) | ⭐⭐ | ❌ Missing | Low | **P3** |
+| System Defaults (darwin) | ⭐⭐⭐⭐⭐ | ✅ Done | Low | **P1** |
+| Nix Settings (`nixos.nix()` / `darwin.nix()`) | ⭐⭐⭐⭐⭐ | ✅ Done | Medium | **P1** |
+| Boot Configuration | ⭐⭐⭐⭐ | ✅ Done | Low | **P1** |
+| Users & Groups | ⭐⭐⭐⭐ | ✅ Done | Medium | **P2** |
+| Fonts | ⭐⭐⭐⭐ | ✅ Done | Low | **P2** |
+| Home Files & XDG | ⭐⭐⭐⭐ | ✅ Done | Low | **P2** |
+| Containers & Virtualisation | ⭐⭐⭐ | ✅ Done | Medium | **P2** |
+| Systemd Services & Timers | ⭐⭐⭐⭐ | ✅ Done | Medium | **P2** |
+| Security & PAM | ⭐⭐⭐ | ✅ Done | Low | **P2** |
+| Networking | ⭐⭐⭐⭐ | ✅ Done | Low | **P3** |
+| Environment & etc | ⭐⭐⭐⭐ | ✅ Done | Low | **P3** |
+| Homebrew (darwin) | ⭐⭐⭐⭐ | ✅ Done | Low | **P1** |
+| I18n & Timezone | ⭐⭐⭐ | ✅ Done | Low | **P3** |
+| Launchd (darwin) | ⭐⭐ | ✅ Done | Low | **P3** |
 | Session Variables & Path | ⭐⭐⭐⭐ | ✅ Done | — | — |
 
 ### Design Decisions

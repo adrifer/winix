@@ -133,7 +133,9 @@ The merged result of all fragments for a host, split into system + Home Manager:
 | `nixos.packages: ["git"]` | `environment.systemPackages = with pkgs; [ git ];` |
 | `nixos.programs.nixLd.enable` | `programs.nix-ld.enable = true;` |
 | `nixos.boot.kernel.sysctl: {...}` | `boot.kernel.sysctl = { ... };` |
-| `nixos.imports: [inputs.nixosWsl]` | `imports = [ inputs.nixos-wsl.nixosModules.wsl ];` |
+| `nixos.imports("inputs.nixos-wsl.nixosModules.wsl")` | `imports = [ inputs.nixos-wsl.nixosModules.wsl ];` |
+| `home.imports("inputs.hunk.homeManagerModules.default")` | `imports = [ inputs.hunk.homeManagerModules.default ];` inside the Home Manager user module |
+| `darwin.imports("inputs.nix-homebrew.darwinModules.nix-homebrew")` | `imports = [ inputs.nix-homebrew.darwinModules.nix-homebrew ];` |
 | `home.home.packages: ["wslu"]` | `home.packages = with pkgs; [ wslu ];` |
 | `home.programs.git.enable` | `programs.git.enable = true;` (inside HM module) |
 | `home.home.sessionVariables: { K: "V" }` | `home.sessionVariables.K = "V";` |
@@ -184,18 +186,20 @@ The frontend DX helpers are normal fragments before backend generation:
 |---|---|
 | `platforms.nixos({ stateVersion })` | NixOS base with flakes, nixpkgs, host platform, hostname, and Home Manager wiring |
 | `platforms.darwin({ stateVersion, homebrew })` | nix-darwin base with flakes, nixpkgs, hostname, Home Manager, and optional nix-homebrew module |
-| `account("adrifer", opts)` | `home.home.*`, `users.users.*` or `darwin.users.users.*`, shell, admin groups, optional WSL default user |
+| `account.user("adrifer", () => opts)()` | `home.home.*`, `users.users.*` or `darwin.users.users.*`, shell, admin groups, optional WSL default user |
+| `account.group("media", () => opts)()` | `users.groups.media.*` |
 | `profile("dev", [...])` | Resolves recursively to child fragments; no backend-specific output |
 | `nixos.service("openssh", opts)` | `nixos.services.openssh = { enable = true; ... }` |
-| `nixos.systemd({ services })` | `nixos.systemd.services.* = ...` |
-| `nixos.systemd({ timers })` | `nixos.systemd.timers.* = ...` |
-| `nixos.firewall({ allowedTCPPorts: [80, 443] })` | `networking.firewall.allowedTCPPorts = [ 80 443 ];` |
+| `nixos.systemd.service(name, opts)` | `systemd.services.<name>.* = ...` |
+| `nixos.systemd.timer(name, opts)` | `systemd.timers.<name>.* = ...` |
+| `nixos.networking({ firewall: { allowedTCPPorts: [80, 443] } })` | `networking.firewall.allowedTCPPorts = [ 80 443 ];` |
 | `home.env(vars)` | `home.sessionVariables.*` inside the Home Manager module |
 | `home.path(paths)` | `home.sessionPath` inside the Home Manager module |
 | `home.configFile(name, opts)` | `xdg.configFile.name = opts` inside the Home Manager module |
 | `home.program("starship", opts)` | `programs.starship = { enable = true; ... }` inside the Home Manager module |
 | `home.service("syncthing", opts)` | `services.syncthing = { enable = true; ... }` inside the Home Manager module |
-| `nix.gc({ olderThan })` | `nix.gc` settings for NixOS |
+| `nixos.nix({ gc })` | `nix.gc` settings for NixOS |
+| `darwin.nix({ gc })` | `nix.gc` settings for nix-darwin |
 
 ## Nix expression namespace
 
