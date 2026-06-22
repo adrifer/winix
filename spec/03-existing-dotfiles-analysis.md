@@ -40,7 +40,7 @@ Winix must represent:
 - platform conditionals using `pkgs.stdenv`
 - activation DAGs
 - system activation scripts
-- `nix.gc` defaults and host overrides
+- platform-specific `nixos.nix({ gc })` / `darwin.nix({ gc })` settings and host overrides
 - package availability differences by platform
 - raw Nix module escape hatches
 
@@ -82,4 +82,3 @@ Winix should support incremental adoption:
 2. Generate equivalent Nix modules for new Winix resources.
 3. Preserve raw Nix until typed abstractions exist.
 4. Provide traceability from current dotfiles scenario to Winix concept.
-

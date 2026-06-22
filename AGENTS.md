@@ -51,6 +51,16 @@ Everything is a `Fragment | Fragment[]`. No inheritance, no classes. Just functi
 - **Fragment keys match Nix option names.** Use `"experimental-features"` not `experimentalFeatures`. The backend does NOT auto-convert camelCase to kebab-case for option keys.
 - **Input names** use camelCase in TS (`nixosWsl`), auto-converted to kebab-case for Nix (`nixos-wsl`).
 
+## API Shape Rules
+
+Use these rules when adding or reviewing Winix SDK helpers:
+
+1. **Mirror the parent Nix namespace by default.** If a Nix option is pure config passthrough under `networking.*`, `boot.*`, `security.*`, etc., prefer one parent helper with an object: `nixos.networking({ firewall, nat })`, `nixos.boot({ loader, initrd })`, `nixos.security({ pam, sudo })`.
+2. **Avoid root-level aliases for nested options.** Do not add helpers like `nixos.firewall()`, `nixos.networkmanager()`, or `nixos.nat()` unless the helper represents a major Winix concept rather than a shortcut to a nested Nix path.
+3. **Use named helpers for keyed collections or awkward workflows.** Options like systemd units, launchd agents, Home Manager files, and OCI containers are keyed by name and verbose as raw objects, so helpers are justified.
+4. **Put keyed helpers under the owning namespace when possible.** Prefer `nixos.systemd.service()`, `darwin.launchd.agent()`, and `nixos.virtualisation.ociContainer()` over unrelated root helpers.
+5. **Keep justified ergonomic exceptions explicit.** Helpers like `nixos.sysctl()` are acceptable when the concept is commonly discussed independently from its Nix path (`boot.kernel.sysctl`), but document them as exceptions.
+
 ## How to Add a Feature
 
 1. If it's a new SDK helper or type: edit `src/core/types.ts` + `src/sdk/index.ts`.

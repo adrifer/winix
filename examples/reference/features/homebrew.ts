@@ -5,10 +5,12 @@ import { darwin, feature } from "winix";
  * @category platform
  */
 export const homebrew = feature("homebrew", () =>
-  darwin({
-    "nix-homebrew": {
-      user: "adrifer",
-    },
-    homebrew: { enable: true },
-  })
+  [
+    darwin({
+      "nix-homebrew": {
+        user: "adrifer",
+      },
+    }),
+    darwin.homebrew({ enable: true }),
+  ]
 );

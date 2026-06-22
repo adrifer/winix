@@ -37,7 +37,7 @@ export default workspace({
   },
   hosts: [
     host("my-host", platforms.nixos({ stateVersion: "25.05" }), [
-      account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05" }),
+      account.user("adrifer", () => ({ admin: true, shell: "zsh", stateVersion: "25.05" }))(),
       nixos.packages("git", "curl"),
     ]),
   ],

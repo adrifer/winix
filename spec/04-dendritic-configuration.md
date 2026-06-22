@@ -32,7 +32,7 @@ export default workspace({
     platform("windows", windowsBase()),
 
     profile("developer", [features.git(), features.node(), features.editor()]),
-    account("adrifer", { shell: "zsh" }),
+    account.user("adrifer", () => ({ shell: "zsh" }))(),
 
     host("wsl-work", {
       extends: ["nixos", "developer", "adrifer"],

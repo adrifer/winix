@@ -9,8 +9,8 @@ interface WslOpts {
  * @category platform
  */
 export const wsl = feature("wsl", (opts?: WslOpts) => [
+  nixos.imports("nixos-wsl"),
   nixos({
-    imports: ["nixos-wsl"],
     wsl: {
       enable: true,
       defaultUser: opts?.defaultUser,

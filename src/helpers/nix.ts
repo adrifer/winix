@@ -14,7 +14,6 @@ export interface NixNamespace {
   withPkgs(packages: string[]): NixExpr;
   optionalAttrs(condition: NixCondition, attrs: Record<string, unknown>): NixExpr;
   optionalString(condition: NixCondition, value: NixStringPart): NixExpr;
-  gc(opts?: NixGcHelperOpts): Fragment;
   isDarwin: NixExpr;
   isLinux: NixExpr;
   lib: {
@@ -36,13 +35,6 @@ export interface ScriptHelper {
   (body: string): NixExpr;
   (strings: TemplateStringsArray, ...values: NixStringPart[]): NixExpr;
   raw(strings: TemplateStringsArray, ...values: NixStringPart[]): NixExpr;
-}
-
-export interface NixGcHelperOpts {
-  automatic?: boolean;
-  dates?: string;
-  olderThan?: string;
-  options?: string;
 }
 
 const expr = (value: string): NixExpr => ({ __winixNixExpr: true, expr: value });
@@ -111,17 +103,6 @@ export const nix: NixNamespace = {
   withPkgs: (packages: string[]): NixExpr => expr(`with pkgs; [ ${packages.join(" ")} ]`),
   optionalAttrs,
   optionalString,
-  gc: (opts: NixGcHelperOpts = {}): Fragment => ({
-    nixos: {
-      nix: {
-        gc: {
-          automatic: opts.automatic ?? true,
-          dates: opts.dates ?? "weekly",
-          options: opts.options ?? `--delete-older-than ${opts.olderThan ?? "7d"}`,
-        },
-      },
-    },
-  }),
   isDarwin: expr("pkgs.stdenv.isDarwin"),
   isLinux: expr("pkgs.stdenv.isLinux"),
   lib: {

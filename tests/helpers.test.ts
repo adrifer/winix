@@ -41,11 +41,32 @@ describe("curated helpers", () => {
     expect(home({ programs: { git: { enable: true } } })).toEqual({
       homeManager: { programs: { git: { enable: true } } },
     });
+    expect(nixosHelpers.imports("nixos-wsl")).toEqual({
+      nixos: { imports: ["nixos-wsl"] },
+    });
+    expect(home.imports("inputs.hunk.homeManagerModules.default")).toEqual({
+      homeManager: { imports: ["inputs.hunk.homeManagerModules.default"] },
+    });
+    expect(darwinHelpers.imports("inputs.nix-homebrew.darwinModules.nix-homebrew")).toEqual({
+      darwin: { imports: ["inputs.nix-homebrew.darwinModules.nix-homebrew"] },
+    });
     expect(nixosHelpers.packages("ripgrep", "fd")).toEqual({
       nixos: { packages: ["ripgrep", "fd"] },
     });
     expect(darwinHelpers.packages(["jq"])).toEqual({
       darwin: { packages: ["jq"] },
+    });
+    expect(darwinHelpers.homebrew({ enable: true, casks: ["visual-studio-code"] })).toEqual({
+      darwin: { homebrew: { enable: true, casks: ["visual-studio-code"] } },
+    });
+    expect(darwinHelpers.launchd.agent("emacs", { serviceConfig: { ProgramArguments: ["emacs", "--fg-daemon"] } })).toEqual({
+      darwin: { launchd: { user: { agents: { emacs: { serviceConfig: { ProgramArguments: ["emacs", "--fg-daemon"] } } } } } },
+    });
+    expect(darwinHelpers.launchd.daemon("cleanup", { serviceConfig: { ProgramArguments: ["cleanup"] } })).toEqual({
+      darwin: { launchd: { daemons: { cleanup: { serviceConfig: { ProgramArguments: ["cleanup"] } } } } },
+    });
+    expect(darwinHelpers.defaults({ dock: { autohide: true } })).toEqual({
+      darwin: { system: { defaults: { dock: { autohide: true } } } },
     });
     expect(home.packages(["wslu"])).toEqual({
       homeManager: { home: { packages: ["wslu"] } },
@@ -72,7 +93,7 @@ describe("curated helpers", () => {
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", nixos(), [
-          account("adrifer", { shell: nix.pkg("zsh"), stateVersion: "24.05" }),
+          account.user("adrifer", () => ({ shell: nix.pkg("zsh"), stateVersion: "24.05" }))(),
           { nixos: { environment: { shells: [nix.pkg("zsh")] } } },
         ]),
       ],
@@ -355,7 +376,7 @@ describe("curated helpers", () => {
       hosts: [
         host("wsl-work", nixos(), [
           overlay.stable("nixpkgs-stable"),
-          account("adrifer", { shell: nix.pkg("zsh"), stateVersion: "24.05" }),
+          account.user("adrifer", () => ({ shell: nix.pkg("zsh"), stateVersion: "24.05" }))(),
           { nixos: { wsl: { defaultUser: nix.lib.mkDefault("adrifer") } } },
         ]),
       ],
@@ -395,6 +416,27 @@ describe("curated helpers", () => {
   });
 
   it("nixos.sysctl() maps kernel settings to NixOS boot.kernel.sysctl", () => {
+    expect(nixosHelpers.boot({ kernelModules: ["tcp_bbr"] })).toEqual({
+      nixos: { boot: { kernelModules: ["tcp_bbr"] } },
+    });
+    expect(nixosHelpers.networking({ hostName: "demo", firewall: { allowedTCPPorts: [80, 443] } })).toEqual({
+      nixos: { networking: { hostName: "demo", firewall: { allowedTCPPorts: [80, 443] } } },
+    });
+    expect(nixosHelpers.environment({ systemPackages: ["vim"], variables: { EDITOR: "vim" } })).toEqual({
+      nixos: { environment: { systemPackages: ["vim"], variables: { EDITOR: "vim" } } },
+    });
+    expect(nixosHelpers.users({ users: { root: { shell: nix.pkg("bash") } } })).toEqual({
+      nixos: { users: { users: { root: { shell: nix.pkg("bash") } } } },
+    });
+    expect(nixosHelpers.system({ stateVersion: "25.05" })).toEqual({
+      nixos: { system: { stateVersion: "25.05" } },
+    });
+    expect(nixosHelpers.i18n({ defaultLocale: "en_US.UTF-8" })).toEqual({
+      nixos: { i18n: { defaultLocale: "en_US.UTF-8" } },
+    });
+    expect(nixosHelpers.time({ timeZone: "America/Los_Angeles" })).toEqual({
+      nixos: { time: { timeZone: "America/Los_Angeles" } },
+    });
     expect(
       nixosHelpers.sysctl({
         "fs.inotify.max_user_watches": 1048576,
@@ -482,14 +524,22 @@ describe("curated helpers", () => {
     expect((evaluated.nixos as any).homeManager.useGlobalPkgs).toBe(true);
   });
 
-  it("account() configures Home Manager, NixOS users, and WSL default user", () => {
+  it("account.user() configures Home Manager, NixOS users, and WSL default user", () => {
     const wsl = profile("wsl", []);
+    const adrifer = account.user("adrifer", () => ({
+      admin: true,
+      shell: "zsh",
+      stateVersion: "25.05",
+      wslDefault: true,
+    }));
+    const media = account.group("media", () => ({ members: [adrifer, "jellyfin"] }));
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", platforms.nixos(), [
           wsl(),
-          account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }),
+          adrifer(),
+          media(),
         ]),
       ],
     });
@@ -497,18 +547,20 @@ describe("curated helpers", () => {
     const [evaluated] = evaluate(ws);
     expect((evaluated.homeManager as any).home.username).toBe("adrifer");
     expect((evaluated.nixos as any).users.users.adrifer.extraGroups).toContain("wheel");
+    expect((evaluated.nixos as any).users.groups.media.members).toEqual(["adrifer", "jellyfin"]);
     expect((evaluated.nixos as any).programs.zsh.enable).toBe(true);
     expect((evaluated.nixos as any).wsl.defaultUser).toEqual(nix.lib.mkDefault("adrifer"));
   });
 
-  it("account() configures darwin primaryUser, environment.shells, and programs", () => {
+  it("account.user() configures darwin primaryUser, environment.shells, and programs", () => {
+    const adrifer = account.user("adrifer", () => ({
+      admin: true,
+      shell: "zsh",
+      stateVersion: "25.05",
+    }));
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
-      hosts: [
-        host("macbook-pro", platforms.darwin(), [
-          account("adrifer", { admin: true, shell: "zsh", stateVersion: "25.05" }),
-        ]),
-      ],
+      hosts: [host("macbook-pro", platforms.darwin(), [adrifer()])],
     });
 
     const [evaluated] = evaluate(ws);
@@ -532,8 +584,17 @@ describe("curated helpers", () => {
     expect(nixosHelpers.systemd({ timers: { demo: { wantedBy: ["timers.target"] } } })).toEqual({
       nixos: { systemd: { timers: { demo: { wantedBy: ["timers.target"] } } } },
     });
-    expect(nixosHelpers.firewall({ allowedTCPPorts: [80, 443] })).toEqual({
-      nixos: { networking: { firewall: { allowedTCPPorts: [80, 443] } } },
+    expect(nixosHelpers.systemd.service("demo", { description: "Demo" })).toEqual({
+      nixos: { systemd: { services: { demo: { description: "Demo" } } } },
+    });
+    expect(nixosHelpers.systemd.timer("demo", { wantedBy: ["timers.target"] })).toEqual({
+      nixos: { systemd: { timers: { demo: { wantedBy: ["timers.target"] } } } },
+    });
+    expect(nixosHelpers.systemd.userService("demo", { description: "User Demo" })).toEqual({
+      nixos: { systemd: { user: { services: { demo: { description: "User Demo" } } } } },
+    });
+    expect(nixosHelpers.systemd.tmpfiles(["d /srv/demo 0755 root root -"])).toEqual({
+      nixos: { systemd: { tmpfiles: { rules: ["d /srv/demo 0755 root root -"] } } },
     });
     expect(home.env({ EDITOR: "nvim" })).toEqual({
       homeManager: { home: { sessionVariables: { EDITOR: "nvim" } } },
@@ -544,14 +605,50 @@ describe("curated helpers", () => {
     expect(home.configFile("nvim/init.lua", { text: "vim.o.number = true" })).toEqual({
       homeManager: { xdg: { configFile: { "nvim/init.lua": { text: "vim.o.number = true" } } } },
     });
+    expect(home.files({ ".zshenv": { text: "source ~/.zshrc" } })).toEqual({
+      homeManager: { home: { file: { ".zshenv": { text: "source ~/.zshrc" } } } },
+    });
+    expect(home.symlink("~/dotfiles/nvim/.config/nvim", { recursive: true })).toEqual({
+      recursive: true,
+      source: {
+        __winixNixExpr: true,
+        expr: 'config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/nvim/.config/nvim"',
+      },
+    });
     expect(home.program("fzf", { enableZshIntegration: true })).toEqual({
       homeManager: { programs: { fzf: { enable: true, enableZshIntegration: true } } },
     });
     expect(home.service("syncthing", { enable: false })).toEqual({
       homeManager: { services: { syncthing: { enable: false } } },
     });
-    expect(nix.gc({ olderThan: "14d" })).toEqual({
+    expect(nixosHelpers.nix({ gc: { automatic: true, dates: "weekly", options: "--delete-older-than 14d" } })).toEqual({
       nixos: { nix: { gc: { automatic: true, dates: "weekly", options: "--delete-older-than 14d" } } },
+    });
+    expect(nixosHelpers.fonts({ packages: ["noto-fonts"], enableDefaultPackages: false })).toEqual({
+      nixos: { fonts: { packages: ["noto-fonts"], enableDefaultPackages: false } },
+    });
+    expect(nixosHelpers.security({ rtkit: { enable: true } })).toEqual({
+      nixos: { security: { rtkit: { enable: true } } },
+    });
+    expect(nixosHelpers.virtualisation({ podman: { enable: true } })).toEqual({
+      nixos: { virtualisation: { podman: { enable: true } } },
+    });
+    expect(nixosHelpers.virtualisation.ociContainer("demo", { image: "docker.io/library/nginx" })).toEqual({
+      nixos: {
+        virtualisation: {
+          ociContainers: {
+            containers: {
+              demo: { image: "docker.io/library/nginx" },
+            },
+          },
+        },
+      },
+    });
+    expect(darwinHelpers.nix({ gc: { automatic: true, interval: { Weekday: 0, Hour: 3, Minute: 0 } } })).toEqual({
+      darwin: { nix: { gc: { automatic: true, interval: { Weekday: 0, Hour: 3, Minute: 0 } } } },
+    });
+    expect(darwinHelpers.security({ pam: { services: { sudo_local: { touchIdAuth: true } } } })).toEqual({
+      darwin: { security: { pam: { services: { sudo_local: { touchIdAuth: true } } } } },
     });
   });
 
@@ -620,7 +717,7 @@ describe("curated helpers", () => {
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", nixos(), [
-          account("adrifer", { shell: "zsh", stateVersion: "24.05" }),
+          account.user("adrifer", () => ({ shell: "zsh", stateVersion: "24.05" }))(),
           nixosHelpers.packages("ripgrep"),
           home.packages("wslu"),
           home.program("git", {
@@ -677,6 +774,56 @@ describe("curated helpers", () => {
     const [evaluated] = evaluate(ws);
     const hostNix = generateNix(ws, [evaluated]).hosts["macbook-pro.nix"];
     expect(hostNix).toContain("environment.systemPackages = with pkgs; [ mas ];");
+  });
+
+  it("nixos.virtualisation.ociContainer() emits oci-containers", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          nixosHelpers.virtualisation({ ociContainers: { backend: "podman" } }),
+          nixosHelpers.virtualisation.ociContainer("demo", { image: "docker.io/library/nginx" }),
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain('virtualisation.oci-containers.backend = "podman";');
+    expect(hostNix).toContain('virtualisation.oci-containers.containers.demo.image = "docker.io/library/nginx";');
+  });
+
+  it("nixos.systemd named helpers emit unit collections", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          nixosHelpers.systemd.service("demo", { serviceConfig: { Type: "oneshot" }, script: "echo demo" }),
+          nixosHelpers.systemd.timer("demo", { wantedBy: ["timers.target"] }),
+          nixosHelpers.systemd.userService("user-demo", { description: "User Demo" }),
+          nixosHelpers.systemd.tmpfiles(["d /srv/demo 0755 root root -"]),
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain('systemd.services.demo.serviceConfig.Type = "oneshot";');
+    expect(hostNix).toContain('systemd.services.demo.script = "echo demo";');
+    expect(hostNix).toContain('systemd.timers.demo.wantedBy = [ "timers.target" ];');
+    expect(hostNix).toContain('systemd.user.services.user-demo.description = "User Demo";');
+    expect(hostNix).toContain('systemd.tmpfiles.rules = [ "d /srv/demo 0755 root root -" ];');
+  });
+
+  it("darwin.defaults() emits system defaults", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("macbook-pro", darwin(), [darwinHelpers.defaults({ dock: { autohide: true } })])],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["macbook-pro.nix"];
+    expect(hostNix).toContain("system.defaults.dock.autohide = true;");
   });
 
   it("plain darwin fragments compose with darwin hosts", () => {

@@ -24,19 +24,35 @@ itself is callable for typed option objects; methods cover common patterns, and
 
 ```ts
 nixos({ networking: { hostName: "wsl" } })
+nixos.imports("inputs.nixos-wsl.nixosModules.default")
 nixos.program("nix-ld", { libraries: nix.withPkgs(["icu", "zlib"]) })
 nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
 nixos.packages("ripgrep", "fd", "jq")
+nixos.nix({ gc: { automatic: true, dates: "weekly" } })
+nixos.boot({ kernelModules: ["tcp_bbr"] })
+nixos.networking({ firewall: { allowedTCPPorts: [80, 443] } })
+nixos.environment({ systemPackages: ["vim"], variables: { EDITOR: "vim" } })
+nixos.users({ users: { root: { shell: nix.pkg("bash") } } })
+nixos.system({ stateVersion: "25.05" })
+nixos.i18n({ defaultLocale: "en_US.UTF-8" })
+nixos.time({ timeZone: "America/Los_Angeles" })
+nixos.fonts({ packages: ["noto-fonts"] })
+nixos.security({ rtkit: { enable: true } })
+nixos.virtualisation.ociContainer("demo", { image: "docker.io/library/nginx" })
 nixos.sysctl({ "fs.inotify.max_user_watches": 1048576 })
-nixos.firewall({ allowedTCPPorts: [80, 443] })
-nixos.systemd({ services: { backup: { script: nix.script`echo backup` } } })
+nixos.systemd.service("backup", { script: nix.script`echo backup` })
 nixos.raw("environment.variables.FOO = \"bar\";")
 
 darwin({ homebrew: { enable: true } })
+darwin.imports("inputs.nix-homebrew.darwinModules.nix-homebrew")
 darwin.program("zsh")
 darwin.service("some-agent")
 darwin.packages("mas")
-darwin.raw("system.defaults.dock.autohide = true;")
+darwin.nix({ gc: { automatic: true, interval: { Weekday: 0, Hour: 3, Minute: 0 } } })
+darwin.homebrew({ enable: true, casks: ["visual-studio-code"] })
+darwin.launchd.agent("emacs", { serviceConfig: { ProgramArguments: ["emacs", "--fg-daemon"] } })
+darwin.defaults({ dock: { autohide: true } })
+darwin.raw("system.activationScripts.example.text = \"echo hello\";")
 ```
 
 Program and service helpers add `enable: true` by default. Explicit `enable` in
@@ -48,34 +64,56 @@ Type contract:
 interface NixosHelper {
   (config: NixosOptions): Fragment;
   raw(config: string): Fragment;
+  imports(...imports: string[]): Fragment;
   program<const K extends string>(name: K, opts?: ProgramOptions<NixosProgramOptions, K>): Fragment;
   service<const K extends string>(name: K, opts?: ServiceOptions<NixosServiceOptions, K>): Fragment;
   packages(...packages: PackageRef[]): Fragment;
+  nix(config: NixOptions): Fragment;
+  boot(config: BootOptions): Fragment;
+  networking(config: NetworkingOptions): Fragment;
+  environment(config: EnvironmentOptions): Fragment;
+  users(config: UsersOptions): Fragment;
+  system(config: NixosSystemOptions): Fragment;
+  i18n(config: I18nOptions): Fragment;
+  time(config: TimeOptions): Fragment;
+  fonts(config: FontsOptions): Fragment;
+  security(config: NixosSecurityOptions): Fragment;
+  virtualisation: VirtualisationHelper;
   sysctl(settings: SysctlSettings): Fragment;
-  firewall(opts: FirewallOptions): Fragment;
   systemd(opts: SystemdOptions): Fragment;
 }
 
 interface DarwinHelper {
   (config: DarwinOptions): Fragment;
   raw(config: string): Fragment;
+  imports(...imports: string[]): Fragment;
   program<const K extends string>(name: K, opts?: ProgramOptions<DarwinProgramOptions, K>): Fragment;
   service<const K extends string>(name: K, opts?: ServiceOptions<DarwinServiceOptions, K>): Fragment;
   packages(...packages: PackageRef[]): Fragment;
+  nix(config: NixOptions): Fragment;
+  homebrew(config: HomebrewOptions): Fragment;
+  launchd: LaunchdHelper;
+  defaults(config: DarwinDefaults): Fragment;
 }
 ```
 
-### `account(username: string, opts?: AccountOpts): LazyFragment`
+### `account.user()` / `account.group()`
 
-Declares Home Manager user settings and platform-specific system user settings.
+Declares reusable Home Manager user settings, platform-specific system user settings, and local groups.
 
 ```ts
-account("adrifer", {
+const adrifer = account.user("adrifer", () => ({
   admin: true,
   shell: "zsh",
   stateVersion: "25.05",
   wslDefault: true,
-})
+}));
+
+const media = account.group("media", () => ({
+  members: [adrifer, "jellyfin"],
+}));
+
+host("wsl-work", platforms.nixos(), [adrifer(), media()])
 ```
 
 Options:
@@ -88,10 +126,14 @@ interface AccountOpts {
   stateVersion?: string;
   sessionVariables?: Record<string, string>;
   groups?: string[];
+  extraGroups?: string[];
   uid?: number;
   wslDefault?: boolean;
 }
 ```
+
+`account.user()` and `account.group()` return factories like `feature()` and `profile()`.
+The old `account(name, opts)` callable is removed.
 
 ### `home()` / `home.program(name, opts?): Fragment`
 
@@ -135,18 +177,20 @@ home.env({ EDITOR: "nvim", BROWSER: "wslview" })
 home.path("$HOME/.local/bin", "$HOME/go/bin")
 ```
 
-### `home.packages()` / `home.configFile()` / `home.raw()` / `home.activation()`
+### `home.imports()` / `home.packages()` / `home.files()` / `home.configFile()` / `home.raw()` / `home.activation()`
 
-Home Manager package and XDG config-file helpers.
+Home Manager module import, package, arbitrary home-file, XDG config-file, and activation helpers.
 
 ```ts
+home.imports("inputs.hunk.homeManagerModules.default")
 home.packages("neovim", "ripgrep")
+home.files({ ".zshenv": home.symlink("~/dotfiles/zsh/.zshenv") })
 home.configFile("nvim/init.lua", { text: "vim.o.number = true" })
 home.raw("programs.zsh.initExtra = ''echo raw'';")
 home.activation("ensureNpmrc", { script: "mkdir -p \"$HOME/.config/npm\"" })
 ```
 
-`nix.gc({ olderThan: "14d" })` remains available for NixOS garbage collection.
+Garbage collection is platform config: use `nixos.nix({ gc })` or `darwin.nix({ gc })`.
 
 Type contract:
 
@@ -154,13 +198,16 @@ Type contract:
 interface HomeHelper {
   (config: HomeOptions): Fragment;
   raw(config: string): Fragment;
+  imports(...imports: string[]): Fragment;
   program<const K extends string>(name: K, opts?: ProgramOptions<HomeProgramOptions, K>): Fragment;
   service<const K extends string>(name: K, opts?: ServiceOptions<HomeServiceOptions, K>): Fragment;
   env(vars: Record<string, string>): Fragment;
   path(...paths: string[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
-  configFile(name: string, opts: XdgFile): Fragment;
-  configFiles(files: Record<string, XdgFile>): Fragment;
+  files(files: Record<string, HomeFile>): Fragment;
+  configFile(name: string, opts: HomeFile): Fragment;
+  configFiles(files: Record<string, HomeFile>): Fragment;
+  symlink(path: string, opts?: Omit<HomeFile, "source" | "text">): HomeFile;
   activation(name: string, opts: ActivationOpts): Fragment;
 }
 ```
@@ -179,7 +226,7 @@ These older helpers are intentionally not part of the public API:
 - `user()`
 - `shell()`
 
-Use `nixos.*`, `darwin.*`, `home.program()`, `home.service()`, `account()`,
+Use `nixos.*`, `darwin.*`, `home.program()`, `home.service()`, `account.user()`,
 `home.env()`, `home.path()`, or plain fragments instead.
 
 ## File Structure
