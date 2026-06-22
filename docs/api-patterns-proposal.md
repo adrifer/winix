@@ -644,16 +644,29 @@ xdg.configFile."git/allowed_signers".text = ''
 
 ### Proposed API
 
-`home.configFile()` / `home.configFiles()` already exist for XDG config files. Add `home.files()` for arbitrary home paths:
+`home.configFile()` / `home.configFiles()` already exist for XDG config files. Add `home.files()` for arbitrary home paths, and use the same file-entry shape across both APIs:
 
 ```ts
+type HomeFile = {
+  source?: string | NixExpr;
+  text?: string;
+  recursive?: boolean;
+  executable?: boolean;
+  force?: boolean;
+};
+
 // New: arbitrary home-relative file management
-home.files(files: Record<string, { source?: string; text?: string; recursive?: boolean }>): Fragment
+home.files(files: Record<string, HomeFile>): Fragment
 
 // Already exists: XDG config files (~/.config/...)
-home.configFile(name: string, opts: { source?: string; text?: string; recursive?: boolean }): Fragment
-home.configFiles(files: Record<string, { source?: string; text?: string }>): Fragment
+home.configFile(name: string, opts: HomeFile): Fragment
+home.configFiles(files: Record<string, HomeFile>): Fragment
+
+// Convenience for live, out-of-store symlinks
+home.symlink(path: string, opts?: Omit<HomeFile, "source" | "text">): HomeFile
 ```
+
+`source` already produces Home Manager-managed symlinks. `home.symlink()` is for the common dotfiles workflow where the target should point at a live checkout outside the Nix store via `config.lib.file.mkOutOfStoreSymlink`.
 
 ### Winix Translation
 
@@ -670,6 +683,16 @@ home.files({
 
 home.configFile("git/allowed_signers", {
   text: 'mihai@fufexan.net namespaces="git" ssh-ed25519 AAAA...',
+});
+
+home.configFiles({
+  nvim: home.symlink("~/dotfiles/nvim/.config/nvim", { recursive: true }),
+  yazi: home.symlink("~/dotfiles/yazi/.config/yazi", { recursive: true }),
+});
+
+home.files({
+  ".zshenv": home.symlink("~/dotfiles/zsh/.zshenv"),
+  ".npmrc": home.symlink("~/dotfiles/npm/.npmrc"),
 });
 ```
 
