@@ -6,6 +6,9 @@ This document catalogs common NixOS, Home Manager, and nix-darwin configuration 
 
 ## Table of Contents
 
+- [API Shape Rules](#api-shape-rules)
+- [Current API Migrations](#current-api-migrations)
+
 1. [System Defaults (darwin)](#1-system-defaults-darwin)
 2. [Nix Daemon Settings](#2-nix-daemon-settings)
 3. [Boot Configuration](#3-boot-configuration)
@@ -21,6 +24,29 @@ This document catalogs common NixOS, Home Manager, and nix-darwin configuration 
 13. [Homebrew (darwin)](#13-homebrew-darwin)
 14. [Locale & Timezone](#14-locale--timezone)
 15. [Launchd (darwin)](#15-launchd-darwin)
+
+---
+
+## API Shape Rules
+
+Use these rules when adding or reviewing Winix helpers:
+
+1. **Mirror the parent Nix namespace by default.** If a Nix option is pure config passthrough under `networking.*`, `boot.*`, `security.*`, etc., prefer one parent helper with an object: `nixos.networking({ firewall, nat })`, `nixos.boot({ loader, initrd })`, `nixos.security({ pam, sudo })`.
+2. **Avoid root-level aliases for nested options.** Do not add `nixos.firewall()`, `nixos.networkmanager()`, `nixos.nat()`, etc. unless the helper represents a major Winix concept rather than a shortcut to a nested Nix path.
+3. **Use named helpers for keyed collections or awkward workflows.** Options like systemd units, launchd agents, Home Manager files, and OCI containers are keyed by name and verbose as raw objects, so helpers are justified.
+4. **Put keyed helpers under the owning namespace when possible.** Prefer `nixos.systemd.service()`, `darwin.launchd.agent()`, and `nixos.virtualisation.ociContainer()` over unrelated root helpers.
+5. **Keep justified ergonomic exceptions explicit.** Helpers like `nixos.sysctl()` are acceptable when the concept is commonly discussed independently from its Nix path (`boot.kernel.sysctl`), but they should be documented as exceptions.
+
+## Current API Migrations
+
+These existing helpers should move toward the API shape rules above:
+
+| Current helper | Canonical replacement | Reason |
+|---|---|---|
+| `nix.gc()` | `nixos.nix({ gc })` / `darwin.nix({ gc })` | GC is platform config, not an expression-builder concern. |
+| `nixos.firewall()` | `nixos.networking({ firewall })` | Firewall is pure passthrough for `networking.firewall`; a root helper is unnecessary. |
+| `home.configFile()` / `home.configFiles()` file shape | Shared `HomeFile` used by `home.files()`, `home.configFile()`, and `home.configFiles()` | Same Home Manager file options should be accepted consistently. |
+| `nixos.systemd(opts)` | Keep as parent passthrough; add `nixos.systemd.service()`, `.timer()`, `.userService()`, `.tmpfiles()` | Systemd unit collections are keyed and benefit from focused helpers. |
 
 ---
 
@@ -343,7 +369,7 @@ nixos.boot(config: {
 }): Fragment
 ```
 
-Note: `nixos.sysctl()` already exists for kernel.sysctl settings.
+Note: `nixos.sysctl()` already exists for `boot.kernel.sysctl`. This is an intentional ergonomic exception because sysctl is commonly discussed as its own concept.
 
 ### Winix Translation
 
@@ -781,7 +807,7 @@ virtualisation.oci-containers.containers.vrising = {
 ### Proposed API
 
 ```ts
-nixos.container(name: string, config: {
+type OciContainerOptions = {
   image: string;
   autoStart?: boolean;
   ports?: string[];
@@ -789,16 +815,24 @@ nixos.container(name: string, config: {
   environment?: Record<string, string>;
   extraOptions?: string[];
   [key: string]: unknown;
-}): Fragment
+};
 
 nixos.virtualisation(config: {
   podman?: { enable?: boolean; [key: string]: unknown };
   docker?: { enable?: boolean; [key: string]: unknown };
-  ociContainers?: { backend?: "podman" | "docker" };
+  ociContainers?: {
+    backend?: "podman" | "docker";
+    containers?: Record<string, OciContainerOptions>;
+  };
   libvirtd?: { enable?: boolean };
   [key: string]: unknown;
 }): Fragment
+
+// Convenience for the keyed OCI container collection
+nixos.virtualisation.ociContainer(name: string, config: OciContainerOptions): Fragment
 ```
+
+`oci-containers.containers` is a keyed collection, so a focused helper is useful, but it stays under the owning `virtualisation` namespace instead of becoming a root-level `nixos.container()` alias.
 
 ### Winix Translation
 
@@ -808,7 +842,7 @@ nixos.virtualisation({
   ociContainers: { backend: "podman" },
 });
 
-nixos.container("vrising", {
+nixos.virtualisation.ociContainer("vrising", {
   image: "docker.io/trueosiris/vrising",
   autoStart: true,
   ports: ["9876:9876/udp", "9877:9877/udp"],
@@ -876,6 +910,8 @@ systemd.services.podman-vrising = {
 ### Proposed API
 
 ```ts
+nixos.systemd(config: SystemdOptions): Fragment
+
 nixos.systemd.service(name: string, config: {
   description?: string;
   wantedBy?: string[];
@@ -911,6 +947,8 @@ nixos.systemd.timer(name: string, config: {
 
 nixos.systemd.tmpfiles(rules: string[]): Fragment
 ```
+
+The parent `nixos.systemd()` helper remains available for raw systemd passthrough. The named helpers are justified because services, timers, user services, and tmpfiles are keyed collections or list-oriented workflows.
 
 ### Winix Translation
 
@@ -1017,7 +1055,7 @@ darwin.security({
 
 ## 11. Networking
 
-Hostname, DHCP, firewall, DNS. Note: `nixos.firewall()` already exists.
+Hostname, DHCP, firewall, DNS.
 
 ### Nix Examples
 
@@ -1039,7 +1077,7 @@ networking.firewall = {
 
 ### Proposed API
 
-Extend the existing `nixos.firewall()` and add a general networking helper:
+Add a general networking helper. Firewall stays inside this parent helper because it is pure passthrough for `networking.firewall`.
 
 ```ts
 nixos.networking(config: {
@@ -1048,7 +1086,7 @@ nixos.networking(config: {
   useDHCP?: boolean;
   interfaces?: Record<string, { useDHCP?: boolean; ipv4?: unknown }>;
   nameservers?: string[];
-  firewall?: FirewallOptions;  // same as nixos.firewall()
+  firewall?: FirewallOptions;
   wireless?: { enable?: boolean; [key: string]: unknown };
   networkmanager?: { enable?: boolean };
   [key: string]: unknown;
@@ -1062,12 +1100,10 @@ nixos.networking({
   hostName: "homeserver1",
   hostId: "027fb931",
   useDHCP: true,
-});
-
-// Or keep using the dedicated helper for firewall:
-nixos.firewall({
-  enable: true,
-  allowedTCPPorts: [22, 80, 443],
+  firewall: {
+    enable: true,
+    allowedTCPPorts: [22, 80, 443],
+  },
 });
 ```
 
@@ -1280,7 +1316,13 @@ launchd.user.agents.emacs = {
 ### Proposed API
 
 ```ts
-darwin.launchAgent(name: string, config: {
+darwin.launchd(config: {
+  user?: { agents?: Record<string, LaunchdAgentOptions> };
+  daemons?: Record<string, LaunchdAgentOptions>;
+  [key: string]: unknown;
+}): Fragment
+
+type LaunchdAgentOptions = {
   path?: string[];
   serviceConfig: {
     KeepAlive?: boolean;
@@ -1292,15 +1334,20 @@ darwin.launchAgent(name: string, config: {
     EnvironmentVariables?: Record<string, string>;
     [key: string]: unknown;
   };
-}): Fragment
+};
 
-darwin.launchDaemon(name: string, config: { ... }): Fragment  // system-level
+// Convenience for keyed launchd collections
+darwin.launchd.agent(name: string, config: LaunchdAgentOptions): Fragment
+
+darwin.launchd.daemon(name: string, config: LaunchdAgentOptions): Fragment  // system-level
 ```
+
+Launchd agents/daemons are keyed collections, so named helpers are useful, but they stay under the owning `launchd` namespace instead of root-level `darwin.launchAgent()` / `darwin.launchDaemon()` helpers.
 
 ### Winix Translation
 
 ```ts
-darwin.launchAgent("emacs", {
+darwin.launchd.agent("emacs", {
   path: [nix.expr("config.environment.systemPath")],
   serviceConfig: {
     KeepAlive: true,
@@ -1326,7 +1373,7 @@ darwin.launchAgent("emacs", {
 | Containers & Virtualisation | ⭐⭐⭐ | ❌ Missing | Medium | **P2** |
 | Systemd Services & Timers | ⭐⭐⭐⭐ | Partial (systemd exists) | Medium | **P2** |
 | Security & PAM | ⭐⭐⭐ | ❌ Missing | Low | **P2** |
-| Networking | ⭐⭐⭐⭐ | Partial (firewall exists) | Low | **P3** |
+| Networking | ⭐⭐⭐⭐ | Partial (`nixos.firewall()` to migrate) | Low | **P3** |
 | Environment & etc | ⭐⭐⭐⭐ | Partial (packages exists) | Low | **P3** |
 | Homebrew (darwin) | ⭐⭐⭐⭐ | ❌ Missing | Low | **P1** |
 | Locale & Timezone | ⭐⭐⭐ | ❌ Missing | Low | **P3** |
@@ -1339,6 +1386,9 @@ darwin.launchAgent("emacs", {
 - **`nix.gc()` removed** — replaced by `nixos.nix({ gc: { ... } })` / `darwin.nix({ gc: { ... } })`
 - **`darwin.defaults()`** — single flat helper, no sub-helpers (`.defaults.dock()`, etc.) because there's no implicit logic, just typed passthrough
 - **`nixos.nix()` / `darwin.nix()`** — platform-specific, no sub-helpers (gc, settings all go as config keys). Different platforms have different gc scheduling (dates vs interval)
+- **Nested pure config stays under its parent namespace** — e.g. `nixos.networking({ firewall })`, not `nixos.firewall()`
+- **Keyed collections may get named helpers** — but under their owning namespace, e.g. `nixos.systemd.service()`, `nixos.virtualisation.ociContainer()`, `darwin.launchd.agent()`
+- **Root-level shortcut helpers require explicit justification** — `nixos.sysctl()` is kept as a documented ergonomic exception for `boot.kernel.sysctl`
 - **No cross-platform magic** — helpers are explicit per-platform. Users who want shared config put it in a feature with both calls.
 
 ### Notes
@@ -1346,5 +1396,5 @@ darwin.launchAgent("emacs", {
 - **P1**: Essential for any real-world config. Most users need these immediately.
 - **P2**: Common patterns that improve DX significantly over `nixos()` / `home()` / `darwin()` raw calls.
 - **P3**: Nice-to-have helpers. Users can always use `nixos({ ... })` for these.
-- All proposed helpers are **additive** — they produce fragments just like existing helpers. The `nixos()` / `home()` / `darwin()` callable remains the escape hatch for anything without a dedicated helper.
+- Most proposed helpers are **additive** — the exceptions are listed in [Current API Migrations](#current-api-migrations). All helpers produce fragments, and the `nixos()` / `home()` / `darwin()` callable remains the escape hatch for anything without a dedicated helper.
 - Naming follows existing conventions: `namespace.verb()` or `namespace.noun()`.
