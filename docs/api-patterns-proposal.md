@@ -22,7 +22,7 @@ This document catalogs common NixOS, Home Manager, and nix-darwin configuration 
 11. [Networking](#11-networking)
 12. [Environment (system packages & etc files)](#12-environment-system-packages--etc-files)
 13. [Homebrew (darwin)](#13-homebrew-darwin)
-14. [Locale & Timezone](#14-locale--timezone)
+14. [I18n & Timezone](#14-i18n--timezone)
 15. [Launchd (darwin)](#15-launchd-darwin)
 
 ---
@@ -39,14 +39,16 @@ Use these rules when adding or reviewing Winix helpers:
 
 ## Current API Migrations
 
-These existing helpers should move toward the API shape rules above:
+These existing helpers should change as part of this API proposal:
 
-| Current helper | Canonical replacement | Reason |
-|---|---|---|
-| `nix.gc()` | `nixos.nix({ gc })` / `darwin.nix({ gc })` | GC is platform config, not an expression-builder concern. |
-| `nixos.firewall()` | `nixos.networking({ firewall })` | Firewall is pure passthrough for `networking.firewall`; a root helper is unnecessary. |
-| `home.configFile()` / `home.configFiles()` file shape | Shared `HomeFile` used by `home.files()`, `home.configFile()`, and `home.configFiles()` | Same Home Manager file options should be accepted consistently. |
-| `nixos.systemd(opts)` | Keep as parent passthrough; add `nixos.systemd.service()`, `.timer()`, `.userService()`, `.tmpfiles()` | Systemd unit collections are keyed and benefit from focused helpers. |
+| Current helper | Decision | Final API | Reason |
+|---|---|---|---|
+| `nix.gc()` | **Remove** | `nixos.nix({ gc })` / `darwin.nix({ gc })` | GC is platform config, not an expression-builder concern. |
+| `nixos.firewall()` | **Remove** | `nixos.networking({ firewall })` | Firewall is pure passthrough for `networking.firewall`; a root helper is unnecessary. |
+| `home.configFile()` / `home.configFiles()` file shape | **Keep, widen accepted options** | Shared `HomeFile` used by `home.files()`, `home.configFile()`, and `home.configFiles()` | Same Home Manager file options should be accepted consistently. |
+| `nixos.systemd(opts)` | **Keep, extend as callable namespace** | Keep `nixos.systemd(config)` and add `nixos.systemd.service()`, `.timer()`, `.userService()`, `.tmpfiles()` | Systemd unit collections are keyed and benefit from focused helpers. |
+
+No other existing helpers are intentionally removed by this proposal. Existing helpers such as `nixos.sysctl()`, `home.env()`, `home.path()`, `nixos.packages()`, `darwin.packages()`, and `home.packages()` remain valid unless a future proposal explicitly lists them here.
 
 ---
 
@@ -1249,9 +1251,9 @@ darwin.homebrew({
 
 ---
 
-## 14. Locale & Timezone
+## 14. I18n & Timezone
 
-Internationalisation settings and timezone.
+Internationalisation settings and timezone. These are separate Nix namespaces, so they use separate Winix helpers.
 
 ### Nix Examples
 
@@ -1272,19 +1274,27 @@ time.timeZone = "Europe/Bucharest";
 ### Proposed API
 
 ```ts
-nixos.locale(config: {
+nixos.i18n(config: {
   defaultLocale?: string;
   supportedLocales?: string[];
+  [key: string]: unknown;
+}): Fragment
+
+nixos.time(config: {
   timeZone?: string;
+  [key: string]: unknown;
 }): Fragment
 ```
 
 ### Winix Translation
 
 ```ts
-nixos.locale({
+nixos.i18n({
   defaultLocale: "en_US.UTF-8",
   supportedLocales: ["en_US.UTF-8/UTF-8", "ja_JP.UTF-8/UTF-8"],
+});
+
+nixos.time({
   timeZone: "America/Los_Angeles",
 });
 ```
@@ -1373,10 +1383,10 @@ darwin.launchd.agent("emacs", {
 | Containers & Virtualisation | ⭐⭐⭐ | ❌ Missing | Medium | **P2** |
 | Systemd Services & Timers | ⭐⭐⭐⭐ | Partial (systemd exists) | Medium | **P2** |
 | Security & PAM | ⭐⭐⭐ | ❌ Missing | Low | **P2** |
-| Networking | ⭐⭐⭐⭐ | Partial (`nixos.firewall()` to migrate) | Low | **P3** |
+| Networking | ⭐⭐⭐⭐ | Partial (`nixos.firewall()` exists, to be removed) | Low | **P3** |
 | Environment & etc | ⭐⭐⭐⭐ | Partial (packages exists) | Low | **P3** |
 | Homebrew (darwin) | ⭐⭐⭐⭐ | ❌ Missing | Low | **P1** |
-| Locale & Timezone | ⭐⭐⭐ | ❌ Missing | Low | **P3** |
+| I18n & Timezone | ⭐⭐⭐ | ❌ Missing | Low | **P3** |
 | Launchd (darwin) | ⭐⭐ | ❌ Missing | Low | **P3** |
 | Session Variables & Path | ⭐⭐⭐⭐ | ✅ Done | — | — |
 
@@ -1384,6 +1394,7 @@ darwin.launchd.agent("emacs", {
 
 - **`nix` namespace** stays as expression builders (`nix.pkg()`, `nix.str`, `nix.expr()`, etc.)
 - **`nix.gc()` removed** — replaced by `nixos.nix({ gc: { ... } })` / `darwin.nix({ gc: { ... } })`
+- **`nixos.firewall()` removed** — replaced by `nixos.networking({ firewall: { ... } })`
 - **`darwin.defaults()`** — single flat helper, no sub-helpers (`.defaults.dock()`, etc.) because there's no implicit logic, just typed passthrough
 - **`nixos.nix()` / `darwin.nix()`** — platform-specific, no sub-helpers (gc, settings all go as config keys). Different platforms have different gc scheduling (dates vs interval)
 - **Nested pure config stays under its parent namespace** — e.g. `nixos.networking({ firewall })`, not `nixos.firewall()`
