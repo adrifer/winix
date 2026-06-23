@@ -11,8 +11,8 @@ Winix setup is structured.
   - `wsl`: NixOS-WSL + Home Manager
   - `macbook-pro`: nix-darwin + Home Manager + Homebrew
 - **3 profiles:** `home-base` (shared across platforms), `linux`, `macos`
-- **~13 features:** dotfiles, fzf, git, homebrew, javascript, macos, neovim,
-  packages, playwright, starship, user-tony, wsl, zsh, zoxide
+- **14 features:** dotfiles, fzf, git, homebrew, javascript, macos, neovim,
+  packages, playwright, starship, user-tony, wsl, zoxide, zsh
 
 ## Shape worth noticing
 

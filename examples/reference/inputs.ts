@@ -3,9 +3,11 @@ import { defineInputs, input } from "@adrifer/winix";
 /**
  * Flake inputs for the reference configuration.
  *
- * Mirrors a real production setup with both unstable and stable nixpkgs
- * (stable is used via overlay for packages that break too often on
- * unstable, like Slack or 1Password), nix-darwin for macOS, and
+ * Mirrors a real production setup with both unstable and stable nixpkgs.
+ * Stable is used via overlay for the occasional package that the
+ * unstable channel doesn't have a build for yet (in this example,
+ * `wslu`; in a real setup, also things like Slack or 1Password during
+ * windows where unstable is broken). Plus nix-darwin for macOS and
  * NixOS-WSL for the WSL host.
  */
 export const inputs = defineInputs({
