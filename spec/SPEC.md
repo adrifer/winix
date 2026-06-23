@@ -552,7 +552,7 @@ The compiler warns (not errors) on escape hatch use, to encourage migration:
   Consider extracting to a typed fragment when stable.
 
 ⚠ winix.config.ts:8 — rawModule("./legacy/vscode-path.nix")
-  2 raw modules remain. Run `winix migrate` for conversion suggestions.
+  2 raw modules remain. Consider extracting typed fragments.
 ```
 
 ### Design principles
@@ -587,8 +587,8 @@ Typecheck the workspace and validate fragments without side effects.
 
 ```bash
 winix check
-winix check --json     # machine-readable diagnostics
-winix check --strict   # scalar conflicts are errors, not warnings
+winix check --strict          # scalar conflicts become errors, not warnings
+winix check --escape-report   # also report escape-hatch usage (raw, rawModule)
 ```
 
 #### `winix apply`
@@ -599,6 +599,7 @@ Generate backend output files into `.winix/out/` (gitignored by default).
 winix apply                   # generate all hosts
 winix apply --host wsl-work   # generate a single host
 winix apply --dry             # print what would be generated, no writes
+winix apply --diff            # show diff against the current .winix/out/
 ```
 
 Output structure:
@@ -642,7 +643,21 @@ Introspection for debugging and agent consumption.
 
 ```bash
 winix inspect host wsl-work          # what composes this host
-winix inspect host wsl-work --json   # machine-readable
+```
+
+The `--json` machine-readable variant is on the Agent DX roadmap; see
+[§ 12](#12-agent-dx).
+
+#### `winix update`
+
+Refresh `flake.lock` by running `nix flake update` against the generated
+output, then copy the new lockfile back to the project root so it can be
+committed.
+
+```bash
+winix update                     # update all inputs
+winix update nixpkgs home-manager  # update only the listed inputs
+winix update --dry               # show what nix would do, change nothing
 ```
 
 ### Output directory
@@ -675,7 +690,7 @@ confusing backend errors.
 - Stable resource IDs (derived from import path + export name; renames are
   intentional breaking changes).
 - Source provenance for every generated resource (emitted as comments in the
-  generated Nix; can be disabled with `winix apply --no-comments`).
+  generated Nix so agents can attribute any line to its source fragment).
 - Excellent error messages with suggested fixes.
 - Explicit unsupported-capability diagnostics.
 - No system mutation during TypeScript evaluation.
@@ -729,6 +744,10 @@ Agents can rely on a consistent layout:
   that imports cleanly (e.g. `fragments/`, `hosts/`, `features/`).
 
 ### Machine-readable commands
+
+Machine-readable JSON output is a target for the Agent DX layer but not yet
+implemented (`--json` flags on `check` and `inspect` are planned). When they
+land, the contract will be:
 
 ```bash
 winix check --json

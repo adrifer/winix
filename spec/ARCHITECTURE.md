@@ -63,7 +63,7 @@ src/
     ├── run.ts                # subcommand dispatcher
     ├── activation.ts         # nixos-rebuild / darwin-rebuild invocation
     ├── analysis.ts           # diagnostic formatting
-    ├── types-gen/            # `winix types generate` support
+    ├── types-gen/            # internal support for type generation scripts
     └── commands/
         ├── init.ts
         ├── check.ts
@@ -176,7 +176,8 @@ Located in `src/backends/nix/`. Responsible for:
 2. Emitting one module per host under `hosts/`.
 3. Emitting shared modules under `modules/` when fragments are reused.
 4. Writing `flake.lock` (preserved across runs when present).
-5. Embedding provenance comments unless `apply --no-comments`.
+5. Embedding provenance comments so generated lines can be attributed back
+   to their source fragment.
 
 ### Generated `flake.nix` shape
 
@@ -280,7 +281,7 @@ All commands share the same loader:
 | `apply` | Yes | yes (`.winix/out/**`) | No |
 | `switch` | Yes | yes (`.winix/out/**`) | **Yes** (nixos-rebuild / darwin-rebuild) |
 | `inspect` | Yes | No | No |
-| `update` | No | yes (`package.json`) | No |
+| `update` | Yes | yes (`flake.lock`) | runs `nix flake update` as a subprocess |
 
 ### `winix switch` activation
 
