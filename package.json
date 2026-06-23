@@ -56,6 +56,8 @@
     "lint": "eslint src/",
     "check": "tsc --noEmit",
     "prepack": "npm run build",
+    "release:stable": "node scripts/release.mjs stable",
+    "release:preview": "node scripts/release.mjs preview",
     "generate:types": "npx tsx scripts/generate-types.ts",
     "generate:types:nixos": "npx tsx scripts/generate-types.ts nixos",
     "generate:types:hm": "npx tsx scripts/generate-types.ts home-manager",

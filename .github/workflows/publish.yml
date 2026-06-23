@@ -1,0 +1,93 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve release metadata
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+
+          if [[ "$version" == *-preview.* ]]; then
+            npm_tag="preview"
+            prerelease="true"
+            npm version "$version" --no-git-tag-version --allow-same-version
+          else
+            npm_tag="latest"
+            prerelease="false"
+            package_version="$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
+
+            if [[ "$package_version" != "$version" ]]; then
+              echo "Tag $tag does not match package.json version $package_version" >&2
+              exit 1
+            fi
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "npm_tag=$npm_tag" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+      - name: Typecheck
+        run: npm run check
+
+      - name: Test
+        run: npm test -- --run
+
+      - name: Build
+        run: npm run build
+
+      - name: Pack
+        run: npm pack --dry-run
+
+      - name: Publish to npm
+        run: npm publish --access public --provenance --tag "${{ steps.release.outputs.npm_tag }}"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "GitHub release $GITHUB_REF_NAME already exists."
+            exit 0
+          fi
+
+          if [[ "${{ steps.release.outputs.prerelease }}" == "true" ]]; then
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --prerelease
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+          fi
