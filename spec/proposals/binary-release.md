@@ -86,15 +86,28 @@ interface BinaryReleasePlatform {
   /** Optional: name of the extracted binary, if it differs from `binary`.
    *  Defaults to `binary`. */
   binary?: string;
+  /** Optional: vendor-specific platform tag substituted into `urlTemplate`'s
+   *  `{platform}` (e.g. `"linux_amd64"`, `"apple_universal"`). */
+  platform?: string;
 }
 
 interface BinaryReleaseMeta {
   description: string;
   homepage?: string;
-  /** SPDX-style license id; renders as `pkgs.lib.licenses.<id>`. */
-  license?: string;
+  /** SPDX-style license id; renders as `pkgs.lib.licenses.<id>`. Pass a
+   *  `NixExpr` for special cases. */
+  license?: string | NixExpr;
   /** Defaults to `binary`. */
   mainProgram?: string;
+}
+
+interface BinaryReleaseCompletions {
+  /** Command that prints the bash completion script when run. */
+  bash?: string;
+  /** Command that prints the fish completion script when run. */
+  fish?: string;
+  /** Command that prints the zsh completion script when run. */
+  zsh?: string;
 }
 
 interface BinaryReleaseOpts {
@@ -104,12 +117,28 @@ interface BinaryReleaseOpts {
   version: string;
   /** Final binary name placed in `$out/bin/<binary>`. */
   binary: string;
-  /** URL with `{version}` and `{file}` placeholders. */
+  /** URL with `{version}`, `{file}` and optional `{platform}` placeholders.
+   *  Must contain at least one of `{file}` or `{platform}`. */
   urlTemplate: string;
   /** One entry per supported `(os, arch)`. At least one required. */
   platforms: Partial<Record<Arch, BinaryReleasePlatform>>;
   /** Extra install lines appended after the main `install -Dm755`. */
   extraInstall?: string;
+  /** Opt-in: add `autoPatchelfHook` to `nativeBuildInputs` on Linux for
+   *  ELF binaries that link against shared libraries. */
+  linuxPatchelf?: boolean;
+  /** Extra `buildInputs` to expose on Linux only (typically shared libs
+   *  needed by `autoPatchelfHook`, e.g. `["stdenv.cc.cc"]`). Strings are
+   *  resolved under `pkgs.`; `NixExpr` values are emitted as-is. */
+  linuxBuildInputs?: (string | NixExpr)[];
+  /** Default `true`: emits `dontStrip = pkgs.stdenv.hostPlatform.isDarwin;`
+   *  to avoid breaking signed Darwin binaries. Set `false` to opt out. */
+  dontStripDarwin?: boolean;
+  /** Shell completion script generation. Each entry is the command (or
+   *  absolute path) that prints the completion script for that shell.
+   *  Adds `installShellFiles` to `nativeBuildInputs` and runs
+   *  `installShellCompletion` in `postInstall` (guarded by `canExecute`). */
+  completions?: BinaryReleaseCompletions;
   meta: BinaryReleaseMeta;
 }
 
@@ -175,6 +204,78 @@ This is the exact shape that hand-written examples like `azd` use today, so
 adoption is a 1:1 replacement and there is no risk of behavior drift on
 migration.
 
+## Extended capabilities
+
+Three real-world patterns surfaced from a survey of similar nixpkgs
+recipes (`ngrok`, `1password-cli`, `direnv`, `aws-vault`, `kubelogin`,
+`devbox`, javy) are folded into this proposal as opt-in fields, all
+additive and retro-compatible:
+
+### 1. `{platform}` placeholder for vendor URLs
+
+Some vendors do not encode the full filename in the URL; they encode the
+`(os, arch)` tag separately (e.g. `op_linux_amd64_v2.34.1.zip` where
+`linux_amd64` is the platform tag and the version repeats). Adding an
+optional `platform` per entry and `{platform}` in `urlTemplate` covers
+these without dropping to `nix.expr`. Either `{file}` or `{platform}`
+must be present.
+
+### 2. `linuxPatchelf` + `linuxBuildInputs` (autoPatchelfHook)
+
+Linux ELF binaries that link against shared libraries need `patchelf` to
+be usable on NixOS. The canonical fix is `autoPatchelfHook` plus the
+relevant shared libraries as `buildInputs`. Both are guarded by
+`lib.optionals stdenv.hostPlatform.isLinux` so darwin remains untouched.
+`linuxBuildInputs` accepts plain strings (resolved under `pkgs.`) or raw
+`NixExpr` for unusual cases.
+
+### 3. `dontStripDarwin` (default `true`)
+
+Darwin code signatures live inside the binary; stripping invalidates the
+signature and makes the binary refuse to run. Most binary releases for
+darwin need `dontStrip = pkgs.stdenv.hostPlatform.isDarwin;`. Default
+on; opt out with `dontStripDarwin: false`.
+
+### 4. `completions` map
+
+CLIs typically ship a `<cmd> completion <shell>` entry point. Passing a
+`completions` map adds `installShellFiles` to `nativeBuildInputs` and
+emits a `postInstall` guarded by `canExecute` (so cross-compilation
+doesn't try to run the foreign binary). Supports `bash`, `fish`, `zsh`;
+any subset is fine.
+
+### Combined example (1Password CLI)
+
+```ts
+nix.binaryRelease({
+  name: "1password-cli",
+  version: "2.34.1",
+  binary: "op",
+  urlTemplate:
+    "https://cache.agilebits.com/dist/1P/op2/pkg/v{version}/op_{platform}_v{version}.zip",
+  platforms: {
+    "x86_64-linux":  { platform: "linux_amd64", file: "op_linux_amd64_v2.34.1.zip", hash: "sha256-..." },
+    "aarch64-linux": { platform: "linux_arm64", file: "op_linux_arm64_v2.34.1.zip", hash: "sha256-..." },
+  },
+  linuxPatchelf: true,
+  linuxBuildInputs: ["stdenv.cc.cc"],
+  completions: {
+    bash: "$out/bin/op completion bash",
+    fish: "$out/bin/op completion fish",
+    zsh:  "$out/bin/op completion zsh",
+  },
+  meta: {
+    description: "1Password command-line tool",
+    homepage: "https://developer.1password.com/docs/cli/",
+    license: nix.expr("pkgs.lib.licenses.unfree"),
+  },
+});
+```
+
+The generated Nix mirrors the `nixpkgs/_1password-cli` recipe closely.
+See `examples/proposed/1password-cli/after.ts` in this PR for the
+complete file.
+
 ## What this helper does NOT do
 
 - **Single archive layout.** `unpackPhase` assumes the binary is at the
@@ -183,11 +284,19 @@ migration.
 - **Platform-specific install steps.** If `darwin` needs a different
   `installPhase` than `linux`, drop to `nix.expr`. `extraInstall` is appended
   unconditionally to all platforms.
-- **Patching, wrapping, or `autoPatchelfHook`.** Pure copy-and-go only.
-- **Universal binaries.** Each `(os, arch)` is a separate entry. A future
-  iteration could add a `universal` shorthand.
+- **Patching or wrapping beyond `autoPatchelfHook`.** Pure copy-and-go plus
+  optional `autoPatchelfHook` is the entire surface.
+- **Universal binaries.** Each `(os, arch)` is a separate entry. For
+  vendors that ship an apple_universal binary (1password darwin), repeat
+  the same `platform`/`file`/`hash` in both darwin entries.
 - **Checksums.** The user supplies SRI hashes. Validating them at TypeScript
   evaluation time is out of scope.
+- **Vendored Go/Rust source builds.** This helper is for prebuilt
+  binaries only. `buildGoModule`-style packages (e.g. `direnv`, `devbox`,
+  `aws-vault`, `kubelogin`) belong in a separate proposal
+  (`nix.buildGoModule`).
+- **Multi-archive darwin formats** (`.pkg` with xar+cpio). Drop to
+  `nix.expr`.
 
 If any of these limitations bite, escape to `nix.expr`. The Winix design
 goal is "small typed helpers + good escape hatch", not "every shape".
@@ -244,4 +353,12 @@ URL template).
 - `nix.fetchFromGitHub` / `nix.fetchzip` typed fetcher helpers.
 - `nix.platform.select` + `nix.when` small typed conditionals (these would
   be useful on their own but are not needed for `binaryRelease`).
-- `nix.fromGitHubRelease` shorthand layered on top of `binaryRelease`.
+- `nix.fromGitHubRelease` shorthand layered on top of `binaryRelease`
+  (auto-fills `urlTemplate` from `{owner, repo, tag}`).
+- **`nix.buildGoModule(...)`** — many CLIs the user installs are Go projects
+  built from source with `buildGoModule` (e.g. `direnv`, `devbox`,
+  `aws-vault`, `kubelogin`). Different shape (compiles vs. fetches) so
+  doesn't fit here, but worth a dedicated proposal.
+- **External versions JSON** (`importJSON ./versions.json` pattern). Useful
+  for auto-update bots but adds maintenance surface. Re-evaluate once we
+  have an auto-updater in Winix itself.

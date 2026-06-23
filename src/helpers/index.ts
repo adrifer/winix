@@ -13,6 +13,7 @@ export type { DarwinPlatformOpts, NixosPlatformOpts, PlatformsHelper } from "./p
 export { nix } from "./nix.ts";
 export type {
   BinaryReleaseArch,
+  BinaryReleaseCompletions,
   BinaryReleaseMeta,
   BinaryReleaseOpts,
   BinaryReleasePlatform,
