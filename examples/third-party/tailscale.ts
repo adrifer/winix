@@ -6,7 +6,7 @@
  *   import { tailscale } from "winix-fragment-tailscale";
  *   host("server", [ nixos(), tailscale({ exitNode: true }) ]);
  */
-import { nixos, type Fragment } from "@adrifer/winix";
+import { nixos, type FragmentEntry } from "@adrifer/winix";
 
 interface TailscaleOpts {
   /** Act as an exit node for the tailnet */
@@ -22,22 +22,19 @@ interface TailscaleOpts {
  * @example tailscale({ exitNode: true })
  * @category networking
  */
-export function tailscale(opts?: TailscaleOpts): Fragment {
-  return nixos({
-    services: {
-      tailscale: {
-        enable: true,
-        extraUpFlags: [
-          ...(opts?.exitNode ? ["--advertise-exit-node"] : []),
-          ...(opts?.acceptRoutes ? ["--accept-routes"] : []),
-        ],
-        authKeyFile: opts?.authKey,
-      },
-    },
-    networking: {
+export function tailscale(opts?: TailscaleOpts): FragmentEntry {
+  return [
+    nixos.service("tailscale", {
+      extraUpFlags: [
+        ...(opts?.exitNode ? ["--advertise-exit-node"] : []),
+        ...(opts?.acceptRoutes ? ["--accept-routes"] : []),
+      ],
+      authKeyFile: opts?.authKey,
+    }),
+    nixos.networking({
       firewall: {
         trustedInterfaces: ["tailscale0"],
       },
-    },
-  });
+    }),
+  ];
 }

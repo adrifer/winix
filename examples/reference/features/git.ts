@@ -1,5 +1,5 @@
 import { feature, home } from "@adrifer/winix";
-import { wsl } from "../features/wsl";
+import { wsl } from "./wsl";
 
 /**
  * @description Git with difftool, user info, conditional project email, and WSL credential helper
@@ -7,9 +7,11 @@ import { wsl } from "../features/wsl";
  */
 export const git = feature("git", () =>
   home.program("git", {
-    userName: "Tony Stack",
-    userEmail: "tony@stack.example",
-    extraConfig: {
+    settings: {
+      user: {
+        name: "Tony Stack",
+        email: "tony@stack.example",
+      },
       diff: { tool: "nvimdiff" },
       difftool: { prompt: false },
       credential: {
