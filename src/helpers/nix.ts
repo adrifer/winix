@@ -16,6 +16,49 @@ export interface NixNamespace {
   optionalString(condition: NixCondition, value: NixStringPart): NixExpr;
   isDarwin: NixExpr;
   isLinux: NixExpr;
+  /**
+   * Build a `stdenvNoCC.mkDerivation` for a prebuilt single-binary CLI
+   * release (the `azd`, `gh`, `kubectl`, `1password` family).
+   *
+   * Picks the right `(file, hash)` per `pkgs.stdenv.hostPlatform.system`,
+   * substitutes `{version}`, `{file}`, and (optionally) `{platform}` into
+   * `urlTemplate`, fetches with `pkgs.fetchurl`, unpacks tarballs/zips,
+   * and `install -Dm755`s the binary into `$out/bin/<binary>`.
+   *
+   * Optional extensions:
+   * - `completions` — emits `installShellCompletion` for `bash`/`fish`/`zsh`.
+   * - `linuxPatchelf` — enables `autoPatchelfHook` on Linux only.
+   * - `linuxBuildInputs` — extra runtime libs the auto-patchelf hook needs.
+   * - `dontStripDarwin` — keep the binary's Mach-O signature intact (default `true`).
+   *
+   * `meta.license` accepts a nixpkgs `pkgs.lib.licenses` attribute name
+   * (e.g. `"mit"`, `"asl20"`, `"unfree"`) or a `NixExpr`. SPDX-style ids
+   * like `"MIT"` or `"Apache-2.0"` are rejected at TS-eval time.
+   *
+   * @example
+   * ```ts
+   * nix.binaryRelease({
+   *   name: "azure-dev-cli",
+   *   version: "1.25.5",
+   *   binary: "azd",
+   *   urlTemplate:
+   *     "https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_{version}/{file}",
+   *   platforms: {
+   *     "x86_64-linux":  { file: "azd-linux-amd64.tar.gz",  hash: "sha256-..." },
+   *     "aarch64-linux": { file: "azd-linux-arm64.tar.gz",  hash: "sha256-..." },
+   *     "x86_64-darwin": { file: "azd-darwin-amd64.zip",    hash: "sha256-..." },
+   *     "aarch64-darwin":{ file: "azd-darwin-arm64.zip",    hash: "sha256-..." },
+   *   },
+   *   meta: {
+   *     description: "Azure Developer CLI",
+   *     homepage: "https://github.com/Azure/azure-dev",
+   *     license: "mit",
+   *   },
+   * });
+   * ```
+   *
+   * @see {@link BinaryReleaseOpts} for the full options interface
+   */
   binaryRelease(opts: BinaryReleaseOpts): NixExpr;
   lib: {
     mkDefault(value: NixValue): NixExpr;
@@ -49,7 +92,10 @@ export interface BinaryReleasePlatform {
 export interface BinaryReleaseMeta {
   description: string;
   homepage?: string;
-  /** SPDX-style license id (e.g. `"mit"`, `"asl20"`) or a raw `NixExpr`. */
+  /** nixpkgs `lib.licenses` attribute name (e.g. `"mit"`, `"asl20"`,
+   *  `"unfree"`). **Not** an SPDX identifier: `"MIT"` and `"Apache-2.0"`
+   *  will be rejected. Pass a `NixExpr` (e.g. `nix.expr("pkgs.lib.licenses.unfree")`)
+   *  for licenses that aren't a simple attribute lookup. */
   license?: string | NixExpr;
   /** Defaults to the outer `binary`. */
   mainProgram?: string;
@@ -200,6 +246,9 @@ const KNOWN_BINARY_RELEASE_ARCHES: BinaryReleaseArch[] = [
 ];
 
 function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
+  if (!opts || typeof opts !== "object") {
+    throw new Error("nix.binaryRelease: `opts` is required");
+  }
   if (!opts.name) throw new Error("nix.binaryRelease: `name` is required");
   if (!opts.version) throw new Error("nix.binaryRelease: `version` is required");
   if (!opts.binary) throw new Error("nix.binaryRelease: `binary` is required");
@@ -212,6 +261,22 @@ function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
   if (!opts.meta || !opts.meta.description) {
     throw new Error("nix.binaryRelease: `meta.description` is required");
   }
+  if (opts.platforms === undefined || opts.platforms === null) {
+    throw new Error("nix.binaryRelease: `platforms` is required");
+  }
+  if (!isPlainObject(opts.platforms)) {
+    throw new Error("nix.binaryRelease: `platforms` must be an object");
+  }
+  if (
+    opts.meta.license !== undefined &&
+    typeof opts.meta.license === "string" &&
+    !isNixAttrName(opts.meta.license)
+  ) {
+    throw new Error(
+      `nix.binaryRelease: \`meta.license\` string "${opts.meta.license}" is not a valid nixpkgs attribute name. ` +
+        `Use a \`pkgs.lib.licenses\` attr name like "mit" or "asl20", or pass \`nix.expr("...")\` for custom expressions.`
+    );
+  }
 
   const entries = Object.entries(opts.platforms) as Array<
     [BinaryReleaseArch, BinaryReleasePlatform | undefined]
@@ -222,9 +287,15 @@ function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
   if (filtered.length === 0) {
     throw new Error("nix.binaryRelease: at least one platform is required");
   }
-  for (const [arch] of filtered) {
+  for (const [arch, platform] of filtered) {
     if (!KNOWN_BINARY_RELEASE_ARCHES.includes(arch)) {
       throw new Error(`nix.binaryRelease: unknown platform key "${arch}"`);
+    }
+    if (!platform.file) {
+      throw new Error(`nix.binaryRelease: platforms.${arch}.file is required`);
+    }
+    if (!platform.hash) {
+      throw new Error(`nix.binaryRelease: platforms.${arch}.hash is required`);
     }
   }
 
@@ -293,9 +364,10 @@ function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
   if (opts.completions && Object.values(opts.completions).some(Boolean)) {
     nativeInputs.push("[ pkgs.installShellFiles ]");
   }
-  nativeInputs.push(
-    "pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.unzip ]"
-  );
+  // `unzip` is needed for `.zip` archives on every platform, not just
+  // darwin (e.g. a Linux release that ships a single .zip). Adding it
+  // unconditionally is cheap and avoids a runtime failure in `unpackPhase`.
+  nativeInputs.push("[ pkgs.unzip ]");
 
   const nativeBuildInputsExpr =
     nativeInputs.length === 1
@@ -336,6 +408,7 @@ in pkgs.stdenvNoCC.mkDerivation {
       *.zip)    unzip -q "$src" -d source ;;
       *.tar.gz) tar -xzf "$src" -C source ;;
       *.tgz)    tar -xzf "$src" -C source ;;
+      *) echo "nix.binaryRelease: unsupported archive extension for $src" >&2; exit 1 ;;
     esac
     sourceRoot=source
     runHook postUnpack
@@ -522,6 +595,16 @@ function isNixExpr(value: unknown): value is NixExpr {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// A valid `pkgs.lib.licenses.<id>` attribute name. nixpkgs convention
+// is lowercase-first (e.g. `mit`, `asl20`, `gpl3Only`, `unfree`). This
+// deliberately rejects SPDX-style ids like `MIT` or `Apache-2.0` so the
+// helper surfaces the error at TS-eval time with a clear message rather
+// than producing invalid Nix or a confusing attribute lookup error.
+const NIX_LICENSE_ATTR_NAME = /^[a-z][A-Za-z0-9_]*$/;
+function isNixAttrName(value: string): boolean {
+  return NIX_LICENSE_ATTR_NAME.test(value);
 }
 
 const NIX_KEYWORDS = new Set([

@@ -887,7 +887,7 @@ describe("nix.binaryRelease", () => {
       `url  = "https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_\${version}/\${source.file}";`
     );
     expect(result.expr).toContain(
-      `nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.unzip ];`
+      `nativeBuildInputs = [ pkgs.unzip ];`
     );
     expect(result.expr).toContain(
       `install -Dm755 "\${source.binary}" "$out/bin/azd"`
@@ -1139,6 +1139,138 @@ describe("nix.binaryRelease", () => {
         meta: { description: "x" },
       })
     ).toThrow(/must define `platform`/);
+  });
+
+  it("throws if platforms is undefined or null", () => {
+    expect(() =>
+      // @ts-expect-error testing runtime validation
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{file}",
+        meta: { description: "x" },
+      })
+    ).toThrow(/`platforms` is required/);
+
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{file}",
+        // @ts-expect-error testing runtime validation
+        platforms: null,
+        meta: { description: "x" },
+      })
+    ).toThrow(/`platforms` is required/);
+  });
+
+  it("throws if platforms is an array or other non-plain object", () => {
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{file}",
+        // @ts-expect-error testing runtime validation
+        platforms: [],
+        meta: { description: "x" },
+      })
+    ).toThrow(/`platforms` must be an object/);
+  });
+
+  it("throws if a platform entry is missing file or hash", () => {
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{version}/{file}",
+        platforms: {
+          // @ts-expect-error testing runtime validation
+          "x86_64-linux": { hash: "sha256-x" },
+        },
+        meta: { description: "x" },
+      })
+    ).toThrow(/platforms\.x86_64-linux\.file is required/);
+
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{version}/{file}",
+        platforms: {
+          // @ts-expect-error testing runtime validation
+          "x86_64-linux": { file: "tool.tar.gz" },
+        },
+        meta: { description: "x" },
+      })
+    ).toThrow(/platforms\.x86_64-linux\.hash is required/);
+  });
+
+  it("throws if meta.license string is not a valid nixpkgs attribute name", () => {
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{version}/{file}",
+        platforms: {
+          "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-x" },
+        },
+        meta: { description: "x", license: "Apache-2.0" },
+      })
+    ).toThrow(/not a valid nixpkgs attribute name/);
+
+    // SPDX-style upper-case also rejected
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{version}/{file}",
+        platforms: {
+          "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-x" },
+        },
+        meta: { description: "x", license: "MIT" },
+      })
+    ).toThrow(/not a valid nixpkgs attribute name/);
+
+    // But NixExpr escape hatch always accepted
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{version}/{file}",
+        platforms: {
+          "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-x" },
+        },
+        meta: {
+          description: "x",
+          license: nix.expr("pkgs.lib.licenses.unfree // { spdxId = \"Apache-2.0\"; }"),
+        },
+      })
+    ).not.toThrow();
+  });
+
+  it("unpackPhase has a default branch that fails loudly", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1",
+      binary: "tool",
+      urlTemplate: "https://e.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-x" },
+      },
+      meta: { description: "x" },
+    });
+
+    expect(result.expr).toContain(
+      `*) echo "nix.binaryRelease: unsupported archive extension for $src" >&2; exit 1 ;;`
+    );
   });
 
   it("throws on missing required fields", () => {

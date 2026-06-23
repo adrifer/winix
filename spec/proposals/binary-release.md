@@ -1,8 +1,9 @@
 # Proposal: `nix.binaryRelease()` helper
 
-> **Status:** `draft`
-> **Owner:** unassigned
-> **Target:** Winix v0.2
+> **Status:** `implemented` (shipped in `@adrifer/winix@0.1.2-preview.3`; extended in `0.1.2-preview.4`)
+> **Owner:** @adrifer
+> **Target:** Winix v0.2 — ✅ landed
+> **PRs:** [#31](https://github.com/adrifer/winix/pull/31), [#32](https://github.com/adrifer/winix/pull/32)
 
 ## Motivation
 
@@ -94,8 +95,10 @@ interface BinaryReleasePlatform {
 interface BinaryReleaseMeta {
   description: string;
   homepage?: string;
-  /** SPDX-style license id; renders as `pkgs.lib.licenses.<id>`. Pass a
-   *  `NixExpr` for special cases. */
+  /** nixpkgs `lib.licenses` attribute name (e.g. `"mit"`, `"asl20"`,
+   *  `"unfree"`). **Not** an SPDX identifier: `"MIT"` and `"Apache-2.0"`
+   *  are rejected at TS-eval time. Pass `nix.expr(...)` for licenses
+   *  that aren't a simple `pkgs.lib.licenses.<id>` lookup. */
   license?: string | NixExpr;
   /** Defaults to `binary`. */
   mainProgram?: string;
@@ -341,9 +344,13 @@ URL template).
   Current bias: `binaryRelease` reads correctly at the call site
   (`nix.binaryRelease({...})`) and leaves room for sibling helpers
   (`nix.fromGitHubRelease`, `nix.fromNpm`).
-- **Escape hatch for `meta.license`.** Today `license` is a string mapped to
-  `pkgs.lib.licenses.<id>`. Should we also accept a `NixExpr` for users
-  on weird licenses? Bias: yes, accept both.
+- ~~**Escape hatch for `meta.license`.**~~ **Resolved.** `license`
+  accepts `string | NixExpr`. String form is validated as a nixpkgs
+  `lib.licenses` attribute name (lowercase-first identifier) and
+  rejected otherwise with a message pointing the caller to
+  `nix.expr(...)`. SPDX-style ids like `MIT` or `Apache-2.0` are
+  rejected by design so misuse surfaces at TS-eval time, not as an
+  invalid Nix attribute lookup at build time.
 - **Default `extraInstall`.** Several CLIs ship a `LICENSE` and/or `NOTICE`
   next to the binary. Auto-install them if present? Bias: no; explicit
   `extraInstall` keeps the helper deterministic.
