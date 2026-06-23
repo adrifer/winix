@@ -1,0 +1,55 @@
+# Configuration for GitHub auto-generated release notes.
+# Triggered when the publish workflow runs `gh release create --generate-notes`.
+# Docs: https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
+
+changelog:
+  exclude:
+    # Skip release-bump commits opened via the release script.
+    labels:
+      - skip-changelog
+    authors:
+      - dependabot
+      - github-actions
+
+  categories:
+    - title: ✨ New Features
+      labels:
+        - feature
+        - enhancement
+        - "type: feature"
+      # Conventional Commit prefixes are matched by PR title via the labeler
+      # action, or by hand. The label-based match above is the primary signal.
+
+    - title: 🐛 Bug Fixes
+      labels:
+        - bug
+        - fix
+        - "type: bug"
+
+    - title: 📚 Documentation
+      labels:
+        - documentation
+        - docs
+
+    - title: 🧹 Refactoring & Internal
+      labels:
+        - refactor
+        - chore
+        - internal
+
+    - title: 🏗️ Build, CI & Tooling
+      labels:
+        - ci
+        - build
+        - tooling
+        - dependencies
+
+    - title: 🧪 Tests
+      labels:
+        - tests
+        - test
+
+    # Catch-all for anything that didn't match a category above.
+    - title: 🧰 Other Changes
+      labels:
+        - "*"
