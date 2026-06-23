@@ -1,4 +1,4 @@
-import { feature, home, platforms } from "winix";
+import { feature, home, platforms } from "@adrifer/winix";
 
 /**
  * @description Zsh with vi-mode, autosuggestions, syntax highlighting, and platform aliases

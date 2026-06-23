@@ -6,7 +6,7 @@
  *   import { tailscale } from "winix-fragment-tailscale";
  *   host("server", [ nixos(), tailscale({ exitNode: true }) ]);
  */
-import { nixos, type Fragment } from "winix";
+import { nixos, type Fragment } from "@adrifer/winix";
 
 interface TailscaleOpts {
   /** Act as an exit node for the tailnet */

@@ -1,40 +1,52 @@
 # Winix
 
-TypeScript-first system configuration for NixOS, nix-darwin, and Home Manager.
+**TypeScript-first system configuration for NixOS, nix-darwin, and Home Manager.**
 
-Write your system config in TypeScript. Get type safety, autocomplete, and composable fragments. Winix generates valid Nix that `nixos-rebuild` consumes directly.
-
-## Status
-
-**Early prototype.** The core pipeline works end-to-end: TypeScript config → evaluator → Nix code generation → `nixos-rebuild test` ✅
-
-## Quick Example
+Winix lets you write system configuration as typed, composable TypeScript fragments and generates a normal Nix flake that `nixos-rebuild`, `darwin-rebuild`, and Home Manager can consume.
 
 ```ts
 // winix.config.ts
-import { account, feature, home, host, input, defineInputs, nixos, platforms, workspace } from "winix";
+import {
+  account,
+  defineInputs,
+  feature,
+  home,
+  host,
+  input,
+  nixos,
+  platforms,
+  workspace,
+} from "@adrifer/winix";
 
 const inputs = defineInputs({
   nixpkgs: "nixos-unstable",
-  nixosWsl: input("github:nix-community/NixOS-WSL", {
+  homeManager: input("github:nix-community/home-manager", {
     follows: { nixpkgs: "nixpkgs" },
   }),
-  homeManager: input("github:nix-community/home-manager", {
+  nixosWsl: input("github:nix-community/NixOS-WSL", {
     follows: { nixpkgs: "nixpkgs" },
   }),
 });
 
-const wsl = feature("wsl", () => ({
-  nixos: {
-    imports: ["nixos-wsl"],
-    wsl: { enable: true },
-  },
-}));
-
-const neovim = feature("neovim", () => [
-  home.packages("neovim"),
-  home.env({ EDITOR: "nvim" }),
+const wsl = feature("wsl", () => [
+  nixos.imports("nixos-wsl"),
+  nixos({ wsl: { enable: true } }),
+  nixos.program("nix-ld"),
 ]);
+
+const shell = feature("shell", () =>
+  home.program("zsh", {
+    shellAliases: {
+      g: "lazygit",
+      ...(platforms.nixos.isActive && {
+        i: "sudo nixos-rebuild switch --flake path:$PWD/.winix/out",
+      }),
+      ...(platforms.darwin.isActive && {
+        i: "sudo darwin-rebuild switch --flake path:$PWD/.winix/out",
+      }),
+    },
+  })
+);
 
 export default workspace({
   inputs,
@@ -47,137 +59,232 @@ export default workspace({
         wslDefault: true,
       }))(),
       wsl(),
-      nixos.packages("socat", "bubblewrap"),
-      neovim(),
+      shell(),
+      home.packages("neovim", "ripgrep", "fd"),
     ]),
   ],
 });
 ```
 
-## How It Works
+## Why Winix?
 
+- **Use TypeScript as the authoring language.** Compose functions, arrays, objects, conditionals, and package-specific helpers without inventing another DSL.
+- **Keep Nix as the output.** Winix writes `.winix/out/flake.nix` and host modules; the final build still runs through Nix.
+- **One model for NixOS, nix-darwin, and Home Manager.** Share features across Linux, macOS, WSL, servers, and profiles.
+- **Typed helpers for common config.** Use `nixos.networking()`, `home.program()`, `darwin.homebrew()`, `account.user()`, and more.
+- **Escape hatches when needed.** Drop to `nix.expr()`, `nixos.raw()`, or `rawModule()` without leaving the system.
+
+> Winix is early software. The core pipeline works end-to-end, but the public API is still evolving.
+
+## Install
+
+```bash
+npm install @adrifer/winix
 ```
-winix.config.ts          →  Evaluator (two-pass)  →  .winix/out/
-  platform("linux", ...)        collect IDs              flake.nix
-  feature("wsl", ...)           resolve with context     hosts/wsl-work.nix
-  host("wsl-work", nixos(), [...])  deep merge
+
+Winix expects Node.js with native TypeScript stripping support for `winix.config.ts` files. Node 22+ is recommended.
+
+To create a new project:
+
+```bash
+npx @adrifer/winix init
+npm install
 ```
 
-1. **Fragments** are the building blocks. Everything is a fragment: platforms, features, tools, roles.
-2. **Helpers** create fragments: `platforms.nixos()` / `platforms.darwin()` for common bases, `feature(id, factory)` for features, and `profile(id, entries)` for reusable bundles.
-3. **`.isActive`** lets fragments conditionally include config based on what other fragments are in the host.
-4. **Lazy evaluation** means fragments are resolved after the evaluator knows what's active, so conditionals work naturally.
-5. **Nix backend** generates valid `flake.nix` + host modules that `nixos-rebuild` consumes directly.
+## CLI
 
-## Try It
+```bash
+winix check                  # validate winix.config.ts
+winix apply                  # generate .winix/out/
+winix apply --dry            # print generated Nix without writing files
+winix apply --diff           # show changes against current .winix/out/
+winix switch --host my-host  # generate and run nixos-rebuild/darwin-rebuild
+winix update                 # update generated flake.lock and copy it back
+winix inspect                # inspect host composition and fragments
+```
+
+Generated output lives under:
+
+```text
+.winix/out/
+  flake.nix
+  hosts/
+    <host>.nix
+```
+
+You can also run the generated flake manually:
+
+```bash
+sudo nixos-rebuild switch --flake path:$(pwd)/.winix/out#my-host
+sudo darwin-rebuild switch --flake path:$(pwd)/.winix/out#macbook
+```
+
+## Core concepts
+
+### Workspaces and hosts
+
+A workspace declares inputs and hosts. Each host has exactly one platform and a list of fragments.
+
+```ts
+export default workspace({
+  inputs: {
+    nixpkgs: "nixos-unstable",
+    homeManager: input("github:nix-community/home-manager", {
+      follows: { nixpkgs: "nixpkgs" },
+    }),
+  },
+  hosts: [
+    host("server", platforms.nixos({ stateVersion: "25.05" }), [
+      serverProfile(),
+    ]),
+    host("macbook", platforms.darwin({ stateVersion: 6, homebrew: true }), [
+      macProfile(),
+    ]),
+  ],
+});
+```
+
+### Features and profiles
+
+Features are reusable lazy fragments. Profiles are reusable bundles.
+
+```ts
+const git = feature("git", () =>
+  home.program("git", {
+    userName: "Adrian Fernandez",
+    userEmail: "me@example.com",
+  })
+);
+
+const developer = profile("developer", [
+  git(),
+  home.packages("neovim", "lazygit", "ripgrep"),
+]);
+```
+
+Fragments can return one fragment or an array of fragments:
+
+```ts
+const neovim = feature("neovim", () => [
+  home.packages("neovim"),
+  home.env({ EDITOR: "nvim" }),
+]);
+```
+
+### Platform-aware configuration
+
+Fragments can ask whether another platform or feature is active.
+
+```ts
+const shell = feature("shell", () =>
+  home.program("zsh", {
+    shellAliases: {
+      ...(platforms.nixos.isActive && { rebuild: "sudo nixos-rebuild switch" }),
+      ...(platforms.darwin.isActive && { rebuild: "sudo darwin-rebuild switch" }),
+    },
+  })
+);
+```
+
+### Account helpers
+
+`account.user()` wires together platform users and Home Manager users.
+
+```ts
+const adrifer = account.user("adrifer", () => ({
+  admin: true,
+  shell: "zsh",
+  stateVersion: "25.05",
+  wslDefault: true,
+}));
+
+host("wsl", platforms.nixos({ stateVersion: "25.05" }), [
+  adrifer(),
+]);
+```
+
+### Curated helpers
+
+Winix includes helpers for common Nix namespaces:
+
+```ts
+nixos.imports("nixos-wsl")
+nixos.networking({ hostName: "server", firewall: { allowedTCPPorts: [22, 443] } })
+nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
+nixos.systemd.service("backup", { script: "echo backup" })
+nixos.users({ users: { root: { shell: nix.pkg("bash") } } })
+nixos.system({ stateVersion: "25.05" })
+
+home.program("zsh", { enableCompletion: true })
+home.configFiles({ nvim: home.symlink("~/dotfiles/nvim/.config/nvim") })
+home.activation("ensureNpmrc", { script: "mkdir -p \"$HOME/.config/npm\"" })
+
+darwin.defaults({ dock: { autohide: true } })
+darwin.homebrew({ enable: true, casks: ["visual-studio-code"] })
+darwin.launchd.agent("emacs", {
+  serviceConfig: { ProgramArguments: ["emacs", "--fg-daemon"] },
+})
+```
+
+Plain object fragments are still supported for options that do not have helpers yet.
+
+### Nix escape hatches
+
+Use `nix.*` when a value needs to be a Nix expression:
+
+```ts
+nix.pkg("zsh")
+nix.bin("git", "git")
+nix.str`${nix.pkg("neovim")}/bin/nvim`
+nix.script`
+  echo "hello from activation"
+`
+nix.lib.mkForce(["https://cache.nixos.org/"])
+```
+
+For bigger migrations, import existing Nix modules:
+
+```ts
+rawModule("./legacy/system.nix")
+rawModule.homeManager("./legacy/home.nix")
+rawModule.darwin("./legacy/darwin.nix")
+```
+
+## Generated Nix
+
+Winix evaluates fragments in two passes:
+
+1. Collect active fragment IDs so `.isActive` works.
+2. Resolve lazy fragments and deep-merge the results.
+3. Generate a flake and one host module per host.
+
+Objects merge recursively, arrays append, and scalar values use last-wins semantics.
+
+## Type generation
+
+Winix ships bundled option augmentations and can generate/update local option types:
+
+```bash
+winix types generate
+winix types generate nixos
+winix types generate home-manager
+winix types generate darwin
+```
+
+## Project status
+
+Winix is currently best suited for personal configurations and experimentation. The core workflow is functional, but expect API refinements before a stable `1.0`.
+
+## Development
 
 ```bash
 git clone https://github.com/adrifer/winix.git
 cd winix
 npm install
-
-# Run tests
-npx vitest run
-
-# Generate Nix output (dry run)
-cd test-config
-node --experimental-transform-types ../src/cli/index.ts apply --dry
-
-# Generate Nix output (write files)
-node --experimental-transform-types ../src/cli/index.ts apply
-
-# Apply to system
-sudo nixos-rebuild test --flake path:$(pwd)/.winix/out#wsl-work
+npm run check
+npm test -- --run
+npm run build
 ```
-
-## Key Concepts
-
-### Fragments
-
-Everything is a function that returns configuration data:
-
-```ts
-const starship = feature("starship", () => home.program("starship"));
-```
-
-### Composite Fragments
-
-A fragment can compose other fragments:
-
-```ts
-const developer = feature("developer", () => [
-  home.program("git"),
-  neovim(),
-  starship(),
-  shell(),
-]);
-```
-
-### Platform Conditionals
-
-Use `.isActive` with native TypeScript — no custom DSL:
-
-```ts
-const shell = feature("shell", () => ({
-  homeManager: {
-    programs: {
-      zsh: {
-        aliases: {
-          g: "lazygit",
-          ...(platforms.nixos.isActive && {
-            i: "sudo nixos-rebuild switch --flake /etc/nixos",
-          }),
-          ...(platforms.darwin.isActive && {
-            i: "sudo darwin-rebuild switch --flake ~/dotfiles",
-          }),
-        },
-      },
-    },
-  },
-}));
-```
-
-### Nix Escape Hatches
-
-Use the unified `nix.*` namespace when a value needs to be a Nix expression:
-
-```ts
-nix.pkg("zsh")
-nix.str`${nix.pkg("neovim")}/bin/nvim`
-nix.script`echo hello`
-nix.lib.mkDefault("adrifer")
-```
-
-### Third-Party Fragments
-
-No plugin system needed. Just export a function:
-
-```ts
-// npm: winix-fragment-tailscale
-export const tailscale = feature("tailscale", (opts?) => ({
-  nixos: { services: { tailscale: { enable: true, ...opts } } },
-}));
-```
-
-## Project Structure
-
-```
-src/
-  core/types.ts          # Fragment, LazyFragment, WorkspaceDef, etc.
-  sdk/index.ts           # platform(), feature(), host(), workspace()
-  evaluator/index.ts     # Two-pass evaluation + deep merge
-  backends/nix/index.ts  # Generates flake.nix + host modules
-  cli/                   # winix apply, winix check
-spec/                    # Design specifications
-examples/
-  reference/             # Real-world config example
-  escape-hatches/        # Escape hatch patterns
-  third-party/           # Third-party fragment example
-```
-
-## Roadmap
-
-See [ROADMAP.md](ROADMAP.md) for the full task list and design decisions.
 
 ## License
 

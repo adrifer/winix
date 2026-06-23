@@ -17,7 +17,7 @@ Escape hatches allow Winix to represent backend-specific behavior before a typed
 For quick hacks or things that don't fit any typed fragment:
 
 ```ts
-import { home, nixos } from "winix";
+import { home, nixos } from "@adrifer/winix";
 
 host("wsl-work", nixos(), [
   wsl(),
@@ -60,7 +60,7 @@ darwin({ homebrew: { enable: true } })
 For migration: reference an existing Nix module file without rewriting it:
 
 ```ts
-import { rawModule } from "winix";
+import { rawModule } from "@adrifer/winix";
 
 host("wsl-work", nixos(), [
   rawModule("./legacy/vscode-path.nix"),
@@ -86,7 +86,7 @@ The path is workspace-relative. The compiler includes the file as-is in the gene
 For when 90% of a fragment is typed but one value needs a Nix expression:
 
 ```ts
-import { nix } from "winix";
+import { nix } from "@adrifer/winix";
 
 export function wsl(opts?: WslOpts): Fragment {
   return {

@@ -1,4 +1,4 @@
-import { account } from "winix";
+import { account } from "@adrifer/winix";
 
 /**
  * @description User account configuration

@@ -25,7 +25,7 @@ async function writeIfAllowed(path: string, content: string, force: boolean): Pr
   await writeFile(path, content);
 }
 
-const CONFIG = `import { account, host, nixos, platforms, workspace } from "winix";
+const CONFIG = `import { account, host, nixos, platforms, workspace } from "@adrifer/winix";
 
 export default workspace({
   inputs: {
@@ -48,12 +48,12 @@ const PACKAGE_JSON = `{
   "type": "module",
   "private": true,
   "dependencies": {
-    "winix": "^0.1.0"
+    "@adrifer/winix": "^0.1.0"
   },
   "scripts": {
     "check": "winix check",
     "apply": "winix apply",
-    "switch": "winix switch",
+    "switch": "winix switch"
   }
 }
 `;
@@ -73,7 +73,7 @@ const TSCONFIG = `{
   },
   "include": [
     "**/*.ts",
-    "node_modules/winix/types/bundled/*.d.ts"
+    "node_modules/@adrifer/winix/types/bundled/*.d.ts"
   ]
 }
 `;

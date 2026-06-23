@@ -2,9 +2,9 @@
  * Example: escape hatches in practice.
  * Shows all three levels in a standalone config.
  */
-import { workspace, host, rawModule, nix } from "winix";
-import { defineInputs, input } from "winix";
-import { account, feature, nixos, platforms, type Fragment } from "winix";
+import { workspace, host, rawModule, nix } from "@adrifer/winix";
+import { defineInputs, input } from "@adrifer/winix";
+import { account, feature, nixos, platforms, type Fragment } from "@adrifer/winix";
 
 const inputs = defineInputs({
   nixpkgs: "nixos-unstable",

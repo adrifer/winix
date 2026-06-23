@@ -1,4 +1,4 @@
-// Public API: what users import from "winix"
+// Public API: what users import from "@adrifer/winix"
 
 export type { Fragment, FragmentFactory, PlatformFactory, ProfileFactory, LazyFragment, PlatformLazyFragment, FragmentEntry, FragmentResult, NixExpr, RawModuleRef, ImportRef, InputDef, InputWithOptions, WorkspaceDef, HostDef, EvalContext } from "./core/types.ts";
 export type {

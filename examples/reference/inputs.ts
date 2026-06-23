@@ -1,4 +1,4 @@
-import { defineInputs, input } from "winix";
+import { defineInputs, input } from "@adrifer/winix";
 
 export const inputs = defineInputs({
   nixpkgs: "nixos-unstable",

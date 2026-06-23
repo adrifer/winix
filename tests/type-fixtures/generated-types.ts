@@ -1,4 +1,4 @@
-import type { Fragment } from "winix";
+import type { Fragment } from "@adrifer/winix";
 
 const generated: Fragment = {
   nixos: {

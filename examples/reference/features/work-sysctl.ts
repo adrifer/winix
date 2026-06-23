@@ -1,4 +1,4 @@
-import { feature, nixos } from "winix";
+import { feature, nixos } from "@adrifer/winix";
 
 /**
  * @description Kernel sysctl tuning for development workloads

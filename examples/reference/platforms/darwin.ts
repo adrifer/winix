@@ -1,4 +1,4 @@
-import { platform } from "winix";
+import { platform } from "@adrifer/winix";
 
 /**
  * @description macOS/nix-darwin base platform (aarch64-darwin)

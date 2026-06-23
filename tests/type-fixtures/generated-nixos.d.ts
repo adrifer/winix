@@ -1,4 +1,4 @@
-import type { PackageRef } from "winix/types";
+import type { PackageRef } from "@adrifer/winix/types";
 
 export interface NixosGenerated extends Record<string, unknown> {
   services?: NixosGeneratedServices;

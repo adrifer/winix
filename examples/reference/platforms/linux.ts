@@ -1,4 +1,4 @@
-import { platform } from "winix";
+import { platform } from "@adrifer/winix";
 
 /**
  * @description NixOS base platform (x86_64-linux)

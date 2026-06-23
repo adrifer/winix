@@ -1,4 +1,4 @@
-import { workspace, host, nixos, platforms, profile } from "winix";
+import { workspace, host, nixos, platforms, profile } from "@adrifer/winix";
 import { inputs } from "./inputs";
 import { adrifer } from "./users/adrifer";
 import { developer } from "./roles/developer";

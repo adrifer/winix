@@ -73,7 +73,7 @@ describe("winix init", () => {
     try {
       await init(dir, { force: false });
       expect(existsSync(join(dir, "winix.config.ts"))).toBe(true);
-      expect(await readFile(join(dir, "package.json"), "utf-8")).toContain('"winix"');
+      expect(await readFile(join(dir, "package.json"), "utf-8")).toContain('"@adrifer/winix"');
 
       await expect(init(dir, { force: false })).rejects.toThrow("already exists");
       await writeFile(join(dir, "winix.config.ts"), "custom");

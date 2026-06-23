@@ -1,4 +1,4 @@
-import { darwin, feature } from "winix";
+import { darwin, feature } from "@adrifer/winix";
 
 /**
  * @description Homebrew package manager for macOS via nix-homebrew

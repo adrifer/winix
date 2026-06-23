@@ -1,4 +1,4 @@
-import { account, home, nix, nixos, darwin, type Fragment } from "winix";
+import { account, home, nix, nixos, darwin, type Fragment } from "@adrifer/winix";
 
 // --- NixOS program helper with typed opts ---
 // When NixosProgramOptions is populated (by generated types), these should autocomplete

@@ -1,7 +1,28 @@
 {
-  "name": "winix",
+  "name": "@adrifer/winix",
   "version": "0.1.0",
-  "description": "TypeScript-first system configuration",
+  "description": "TypeScript-first system configuration for NixOS, nix-darwin, and Home Manager",
+  "license": "MIT",
+  "author": "Adrian Fernandez",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrifer/winix.git"
+  },
+  "bugs": {
+    "url": "https://github.com/adrifer/winix/issues"
+  },
+  "homepage": "https://github.com/adrifer/winix#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "nix",
+    "nixos",
+    "nix-darwin",
+    "home-manager",
+    "typescript",
+    "configuration"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./index.d.ts",
@@ -19,16 +40,17 @@
     }
   },
   "bin": {
-    "winix": "./dist/cli/index.js"
+    "winix": "dist/cli/index.js"
   },
   "files": [
     "dist",
     "types",
     "index.d.ts",
+    "LICENSE",
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node scripts/fix-dts-imports.mjs",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && node scripts/fix-dts-imports.mjs",
     "dev": "tsc --watch",
     "test": "vitest",
     "lint": "eslint src/",

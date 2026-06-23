@@ -1,5 +1,5 @@
-import { account, darwin, home, nix, nixos, type Fragment, type ZshOptions } from "winix";
-import type { GitOptions } from "winix/types";
+import { account, darwin, home, nix, nixos, type Fragment, type ZshOptions } from "@adrifer/winix";
+import type { GitOptions } from "@adrifer/winix/types";
 
 home.program("zsh", {
   enable: true,

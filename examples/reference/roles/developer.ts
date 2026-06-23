@@ -1,4 +1,4 @@
-import { nixos, profile } from "winix";
+import { nixos, profile } from "@adrifer/winix";
 import { git } from "../features/git";
 import { neovim } from "../features/neovim";
 import { zsh } from "../features/zsh";

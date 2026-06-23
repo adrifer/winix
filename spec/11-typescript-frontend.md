@@ -70,7 +70,7 @@ Avoid mutation-heavy builders and hidden global state.
 A fragment function returns a `Fragment` object describing its contribution:
 
 ```ts
-import { type Fragment } from "winix";
+import { type Fragment } from "@adrifer/winix";
 
 export function kernelTuning(values: Record<string, number | string>): Fragment {
   return {
@@ -377,7 +377,7 @@ Inputs (flake dependencies) are declared in a dedicated leaf file to avoid circu
 
 ```ts
 // inputs.ts (leaf node — imports nothing from the project)
-import { defineInputs, input } from "winix";
+import { defineInputs, input } from "@adrifer/winix";
 
 export const inputs = defineInputs({
   nixpkgs: "nixos-unstable",
@@ -405,7 +405,7 @@ The workspace config imports both:
 
 ```ts
 // winix.config.ts
-import { workspace, host } from "winix";
+import { workspace, host } from "@adrifer/winix";
 import { inputs } from "./inputs";
 import { wsl } from "./fragments/wsl";
 
@@ -428,7 +428,7 @@ Creating a third-party fragment requires no plugin system, hooks, or registratio
 
 ```ts
 // npm: winix-fragment-tailscale
-import { type Fragment } from "winix";
+import { type Fragment } from "@adrifer/winix";
 
 export function tailscale(opts?: { exitNode?: boolean }): Fragment {
   return {
@@ -601,7 +601,7 @@ The compiler validates all fragment output against the actual NixOS/HM module sy
 Dotfile linking is expressed as a fragment:
 
 ```ts
-import { dotfiles } from "winix";
+import { dotfiles } from "@adrifer/winix";
 
 host("wsl-work", nixos(), [
   dotfiles({
@@ -614,7 +614,7 @@ host("wsl-work", nixos(), [
 Or as individual link fragments for conditional use:
 
 ```ts
-import { dotfileLink } from "winix";
+import { dotfileLink } from "@adrifer/winix";
 
 export function nvimConfig(): Fragment {
   return dotfileLink({

@@ -7,8 +7,8 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "paths": {
-      "winix": ["../../src/index.ts"],
-      "winix/types": ["../../src/types/index.ts"]
+      "@adrifer/winix": ["../../src/index.ts"],
+      "@adrifer/winix/types": ["../../src/types/index.ts"]
     }
   },
   "include": ["static-types.ts", "generated-types.ts", "generated-augmentation.d.ts"]
