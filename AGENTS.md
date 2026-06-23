@@ -79,12 +79,10 @@ cd test-config && node --experimental-transform-types ../src/cli/index.ts apply 
 
 ## Spec
 
-Design specs live in `spec/`. Key ones:
-- `spec/11-typescript-frontend.md` — Fragment pattern, helpers, inputs, conditionals, types
-- `spec/06-evaluation-semantics.md` — Merge rules, conflict detection
-- `spec/13-cli.md` — CLI commands
-- `spec/15-nix-backend.md` — Nix code generation
-- `spec/17-escape-hatches.md` — raw(), rawModule(), escape()
+Design lives in `spec/`:
+- `spec/SPEC.md` — Single source of truth for what Winix is and does (product, model, evaluation, API, CLI, escape hatches, security, agent DX).
+- `spec/ARCHITECTURE.md` — Internals: evaluator passes, fragment graph, Nix code generation, file layout under `src/`.
+- `spec/proposals/` — Forward-looking designs (e.g. Windows backend) that are not yet implemented.
 
 ## Current State
 
