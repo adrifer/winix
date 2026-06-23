@@ -10,7 +10,7 @@ import {
   findDuplicateHosts,
 } from "../src/cli/analysis.js";
 import { activationCommand } from "../src/cli/activation.js";
-import { init } from "../src/cli/commands/init.js";
+import { init, resolveWinixVersionRange } from "../src/cli/commands/init.js";
 import { selectHost } from "../src/cli/commands/switch.js";
 import { host, nix, nixos as nixosHelpers, platform, workspace } from "../src/index.js";
 
@@ -73,12 +73,32 @@ describe("winix init", () => {
     try {
       await init(dir, { force: false });
       expect(existsSync(join(dir, "winix.config.ts"))).toBe(true);
-      expect(await readFile(join(dir, "package.json"), "utf-8")).toContain('"@adrifer/winix"');
+
+      const packageJson = await readFile(join(dir, "package.json"), "utf-8");
+      expect(packageJson).toContain('"@adrifer/winix"');
+      expect(packageJson).toContain('"check": "winix check"');
+      expect(packageJson).toContain('"apply": "winix apply"');
+      expect(packageJson).toContain('"switch": "winix switch"');
 
       await expect(init(dir, { force: false })).rejects.toThrow("already exists");
       await writeFile(join(dir, "winix.config.ts"), "custom");
       await init(dir, { force: true });
       expect(await readFile(join(dir, "winix.config.ts"), "utf-8")).not.toBe("custom");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("pins @adrifer/winix to the current package version in the generated package.json", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-init-version-"));
+    try {
+      await init(dir, { force: false });
+      const packageJson = JSON.parse(
+        await readFile(join(dir, "package.json"), "utf-8")
+      ) as { dependencies?: Record<string, string> };
+      const expected = await resolveWinixVersionRange();
+      expect(expected).toMatch(/^\^\d+\.\d+\.\d+/);
+      expect(packageJson.dependencies?.["@adrifer/winix"]).toBe(expected);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

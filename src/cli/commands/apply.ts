@@ -6,7 +6,7 @@ import { existsSync } from "node:fs";
 import { loadWorkspace } from "../loader.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { generateNix, type NixOutput, type RawModuleCopy } from "../../backends/nix/index.ts";
-import { activationCommand, platformForEvaluatedHost } from "../activation.ts";
+import { platformForEvaluatedHost } from "../activation.ts";
 
 interface ApplyOptions {
   host?: string;
@@ -103,24 +103,18 @@ function resultFor(
 }
 
 function printNextSteps(
-  cwd: string,
-  outDir: string,
+  _cwd: string,
+  _outDir: string,
   evaluated: ReturnType<typeof evaluate>
 ): void {
-  const relativeOutDir = relative(cwd, outDir) || ".winix/out";
-  const flakeBase = `path:$(pwd)/${relativeOutDir}`;
-  const commands = evaluated.map((host) =>
-    activationCommand(platformForEvaluatedHost(host), `${flakeBase}#${host.name}`, false).join(" ")
-  );
-
-  if (commands.length === 1) {
-    console.log(`\nNext: ${commands[0]}`);
+  if (evaluated.length === 1) {
+    console.log(`\nNext: winix switch`);
     return;
   }
 
   console.log("\nNext:");
-  for (const command of commands) {
-    console.log(`  ${command}`);
+  for (const host of evaluated) {
+    console.log(`  winix switch --host ${host.name}`);
   }
 }
 
