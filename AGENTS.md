@@ -83,7 +83,6 @@ Design lives in `spec/`:
 - `spec/SPEC.md` — Single source of truth for what Winix is and does (product, model, evaluation, API, CLI, escape hatches, security, agent DX).
 - `spec/ARCHITECTURE.md` — Internals: evaluator passes, fragment graph, Nix code generation, file layout under `src/`.
 - `spec/proposals/` — Forward-looking designs (e.g. Windows backend) that are not yet implemented.
-- `spec/legacy/` — Earlier numbered specs kept for historical context; superseded by `SPEC.md`.
 
 ## Current State
 
