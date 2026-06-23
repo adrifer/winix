@@ -92,7 +92,7 @@ A host is just a name, a platform, and a flat list of fragments:
 
 ```ts
 host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
-  account.user("adrifer", () => ({ admin: true, shell: "zsh" }))(),
+  account.user("tonystark", () => ({ admin: true, shell: "zsh" }))(),
   wsl(),
   workSysctl(),
   nixos.packages("socat", "bubblewrap"),
@@ -152,8 +152,8 @@ branches and leaves instead of being organized only by host.
 Plain TS array spreads. No helper needed.
 
 ```ts
-const adrifer = account.user("adrifer", () => ({ shell: "zsh" }));
-const base = [adrifer(), developer()];
+const tony = account.user("tonystark", () => ({ shell: "zsh" }));
+const base = [tony(), developer()];
 
 host("wsl-work", platforms.nixos(), [...base, wsl(), workSysctl()]);
 host("wsl-personal", platforms.nixos(), [...base, wsl()]);
@@ -263,7 +263,7 @@ export default workspace({
   inputs,
   hosts: [
     host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
-      wsl({ defaultUser: "adrifer" }),
+      wsl({ defaultUser: "tonystark" }),
     ]),
   ],
 });
@@ -411,7 +411,7 @@ in `opts` always wins.
 
 ```ts
 home({ programs: { git: { enable: true } } })
-home.program("git", { userName: "Adri", userEmail: "adri@example.com" })
+home.program("git", { userName: "Tony Stark", userEmail: "tony@starkindustries.com" })
 home.program("fzf", { enableZshIntegration: true })
 home.service("syncthing", { tray: true })
 home.env({ EDITOR: "nvim", BROWSER: "wslview" })
@@ -436,7 +436,7 @@ Notes:
 ### `account.user()` / `account.group()`
 
 ```ts
-const adrifer = account.user("adrifer", () => ({
+const tony = account.user("tonystark", () => ({
   admin: true,
   shell: "zsh",
   stateVersion: "25.05",
@@ -444,10 +444,10 @@ const adrifer = account.user("adrifer", () => ({
 }));
 
 const media = account.group("media", () => ({
-  members: [adrifer, "jellyfin"],
+  members: [tony, "jellyfin"],
 }));
 
-host("wsl-work", platforms.nixos(), [adrifer(), media()]);
+host("wsl-work", platforms.nixos(), [tony(), media()]);
 ```
 
 Options:

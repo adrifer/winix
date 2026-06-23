@@ -222,7 +222,7 @@ Located in `src/backends/nix/`. Responsible for:
 
   # Source: features/git.ts (export "git")
   programs.git.enable = true;
-  programs.git.userName = "Adrian Fernandez Garcia";
+  programs.git.userName = "Tony Stark";
 
   # Source: features/zsh.ts (export "zsh")
   programs.zsh.enable = true;
