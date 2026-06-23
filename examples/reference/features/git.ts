@@ -1,33 +1,32 @@
 import { feature, home } from "@adrifer/winix";
-import { wsl } from "./wsl";
 
 /**
- * @description Git with difftool, user info, conditional project email, and WSL credential helper
- * @category tool
+ * @description Git with user info, nvimdiff difftool, and per-tree includes
+ * @category vcs
  */
 export const git = feature("git", () =>
   home.program("git", {
     settings: {
       user: {
-        name: "Tony Stack",
-        email: "tony@stack.example",
+        name: "Tony Stark",
+        email: "tony@stark.industries",
       },
-      diff: { tool: "nvimdiff" },
-      difftool: { prompt: false },
-      credential: {
-        "https://github.com": { useHttpPath: true },
-        helper: wsl.isActive
-          ? "git-credential-manager-windows"
-          : undefined,
+      diff: {
+        tool: "nvimdiff",
+      },
+      difftool: {
+        prompt: false,
       },
     },
     includes: [
+      // Show how per-worktree identity overrides work without leaking a
+      // real second identity into the example.
       {
-        condition: "gitdir:~/projects/lab/",
+        condition: "gitdir:~/projects/oss/",
         contents: {
           user: {
-            name: "Tony Stack",
-            email: "tony@lab.example",
+            name: "Tony Stark",
+            email: "tony@oss.example",
           },
         },
       },

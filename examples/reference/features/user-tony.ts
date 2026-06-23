@@ -1,8 +1,9 @@
 import { account } from "@adrifer/winix";
 
 /**
- * @description User account configuration
- * @category user
+ * Primary user account. Context-aware: adjusts home directory,
+ * system user config, and WSL default user based on the active
+ * platform (NixOS vs nix-darwin).
  */
 export const tony = account.user("tony", () => ({
   admin: true,
