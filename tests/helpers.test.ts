@@ -841,3 +841,187 @@ describe("curated helpers", () => {
     expect(hostNix).toContain("homebrew.enable = true;");
   });
 });
+
+describe("nix.binaryRelease", () => {
+  it("emits a stdenvNoCC.mkDerivation with per-platform sources", () => {
+    const result = nix.binaryRelease({
+      name: "azure-dev-cli",
+      version: "1.25.5",
+      binary: "azd",
+      urlTemplate:
+        "https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_{version}/{file}",
+      platforms: {
+        "x86_64-linux": {
+          file: "azd-linux-amd64.tar.gz",
+          hash: "sha256-aaaa",
+          binary: "azd-linux-amd64",
+        },
+        "aarch64-darwin": {
+          file: "azd-darwin-arm64.zip",
+          hash: "sha256-bbbb",
+          binary: "azd-darwin-arm64",
+        },
+      },
+      meta: {
+        description: "Azure Developer CLI",
+        homepage: "https://github.com/Azure/azure-dev",
+        license: "mit",
+      },
+    });
+
+    expect(result.__winixNixExpr).toBe(true);
+    expect(result.expr).toContain("pkgs.stdenvNoCC.mkDerivation");
+    expect(result.expr).toContain(`pname = "azure-dev-cli";`);
+    expect(result.expr).toContain(`version = "1.25.5";`);
+    expect(result.expr).toContain(
+      `x86_64-linux = { file = "azd-linux-amd64.tar.gz"; hash = "sha256-aaaa"; binary = "azd-linux-amd64"; };`
+    );
+    expect(result.expr).toContain(
+      `aarch64-darwin = { file = "azd-darwin-arm64.zip"; hash = "sha256-bbbb"; binary = "azd-darwin-arm64"; };`
+    );
+    expect(result.expr).toContain(
+      `source = sources.\${pkgs.stdenv.hostPlatform.system};`
+    );
+    expect(result.expr).toContain(
+      `url  = "https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_\${version}/\${source.file}";`
+    );
+    expect(result.expr).toContain(
+      `nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.unzip ];`
+    );
+    expect(result.expr).toContain(
+      `install -Dm755 "\${source.binary}" "$out/bin/azd"`
+    );
+    expect(result.expr).toContain(`license     = pkgs.lib.licenses.mit;`);
+    expect(result.expr).toContain(`mainProgram = "azd";`);
+    expect(result.expr).toContain(`platforms   = builtins.attrNames sources;`);
+  });
+
+  it("defaults per-platform binary to the outer binary name", () => {
+    const result = nix.binaryRelease({
+      name: "gh",
+      version: "2.50.0",
+      binary: "gh",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "gh.tar.gz", hash: "sha256-xxxx" },
+      },
+      meta: { description: "GitHub CLI" },
+    });
+
+    expect(result.expr).toContain(
+      `x86_64-linux = { file = "gh.tar.gz"; hash = "sha256-xxxx"; binary = "gh"; };`
+    );
+    expect(result.expr).toContain(`install -Dm755 "\${source.binary}" "$out/bin/gh"`);
+  });
+
+  it("appends extraInstall lines inside the install phase", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1.0.0",
+      binary: "tool",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+      },
+      extraInstall: `install -Dm644 LICENSE "$out/share/doc/$pname/LICENSE"\ninstall -Dm644 README.md "$out/share/doc/$pname/README.md"`,
+      meta: { description: "Demo tool" },
+    });
+
+    expect(result.expr).toContain(
+      `install -Dm755 "\${source.binary}" "$out/bin/tool"\n    install -Dm644 LICENSE "$out/share/doc/$pname/LICENSE"\n    install -Dm644 README.md "$out/share/doc/$pname/README.md"\n    runHook postInstall`
+    );
+  });
+
+  it("accepts a NixExpr as meta.license", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1.0.0",
+      binary: "tool",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+      },
+      meta: {
+        description: "Demo tool",
+        license: nix.expr("pkgs.lib.licenses.unfree"),
+      },
+    });
+
+    expect(result.expr).toContain(`license     = pkgs.lib.licenses.unfree;`);
+  });
+
+  it("omits homepage and license when not provided", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1.0.0",
+      binary: "tool",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+      },
+      meta: { description: "Demo tool" },
+    });
+
+    expect(result.expr).not.toContain("homepage");
+    expect(result.expr).not.toContain("license");
+    expect(result.expr).toContain(`description = "Demo tool";`);
+  });
+
+  it("uses meta.mainProgram override when provided", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1.0.0",
+      binary: "tool",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+      },
+      meta: { description: "Demo tool", mainProgram: "tool-main" },
+    });
+
+    expect(result.expr).toContain(`mainProgram = "tool-main";`);
+  });
+
+  it("throws if no platforms are provided", () => {
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1.0.0",
+        binary: "tool",
+        urlTemplate: "https://example.com/{version}/{file}",
+        platforms: {},
+        meta: { description: "x" },
+      })
+    ).toThrow(/at least one platform/);
+  });
+
+  it("throws if urlTemplate is missing {file}", () => {
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1.0.0",
+        binary: "tool",
+        urlTemplate: "https://example.com/{version}/download",
+        platforms: {
+          "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+        },
+        meta: { description: "x" },
+      })
+    ).toThrow(/must contain `\{file\}`/);
+  });
+
+  it("throws on missing required fields", () => {
+    expect(() =>
+      // @ts-expect-error testing runtime validation
+      nix.binaryRelease({
+        version: "1.0.0",
+        binary: "tool",
+        urlTemplate: "https://example.com/{file}",
+        platforms: {
+          "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+        },
+        meta: { description: "x" },
+      })
+    ).toThrow(/`name` is required/);
+  });
+});

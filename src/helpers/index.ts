@@ -11,7 +11,15 @@ export type {
 export { platforms } from "./platforms.ts";
 export type { DarwinPlatformOpts, NixosPlatformOpts, PlatformsHelper } from "./platforms.ts";
 export { nix } from "./nix.ts";
-export type { NixNamespace, PkgHelper, ScriptHelper } from "./nix.ts";
+export type {
+  BinaryReleaseArch,
+  BinaryReleaseMeta,
+  BinaryReleaseOpts,
+  BinaryReleasePlatform,
+  NixNamespace,
+  PkgHelper,
+  ScriptHelper,
+} from "./nix.ts";
 export { overlay } from "./overlay.ts";
 export type { OverlayHelper } from "./overlay.ts";
 export { home } from "./home.ts";
