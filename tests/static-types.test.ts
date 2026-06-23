@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { describe, it } from "vitest";
+import { existsSync } from "node:fs";
+import { describe, it, beforeAll } from "vitest";
 
 describe("static option types", () => {
   it("type-checks package and subpath type imports", () => {
@@ -8,4 +9,25 @@ describe("static option types", () => {
       stdio: "pipe",
     });
   }, 15_000);
+
+  describe("examples", () => {
+    beforeAll(() => {
+      // The examples tsconfig resolves `@adrifer/winix` to ./dist; build it
+      // if it's not there yet so this test stands on its own.
+      if (!existsSync("dist/index.d.ts")) {
+        execFileSync("npm", ["run", "build"], { cwd: process.cwd(), stdio: "pipe" });
+      }
+    }, 60_000);
+
+    it("type-checks all examples against the built package", () => {
+      execFileSync(
+        "node",
+        ["node_modules/typescript/bin/tsc", "--noEmit", "-p", "tests/type-fixtures/examples-tsconfig.json"],
+        {
+          cwd: process.cwd(),
+          stdio: "pipe",
+        }
+      );
+    }, 30_000);
+  });
 });
