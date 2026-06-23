@@ -33,7 +33,7 @@ Each proposal must declare a status at the top of the file:
 
 | File | Status | Summary |
 |---|---|---|
-| [`binary-release.md`](./binary-release.md) | draft | `nix.binaryRelease()` helper for prebuilt single-binary CLIs |
+| [`binary-release.md`](./binary-release.md) | implemented | `nix.binaryRelease()` helper for prebuilt single-binary CLIs |
 | [`windows-backend.md`](./windows-backend.md) | draft | Native Windows targets (Winget, DSC, registry, scheduled tasks) |
 
 ## When to write a proposal

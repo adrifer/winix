@@ -541,7 +541,7 @@ export function wsl(opts?: WslOpts): Fragment {
 
 `nix.expr()` marks a value as a Nix literal. The compiler emits it verbatim
 without quoting. Narrower helpers (`nix.pkg()`, `nix.str()`, `nix.script()`,
-`nix.lib.*`) are preferred when they fit.
+`nix.lib.*`, `nix.binaryRelease()`) are preferred when they fit.
 
 ### Diagnostics
 

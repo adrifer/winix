@@ -267,6 +267,42 @@ nix.script`
 nix.lib.mkForce(["https://cache.nixos.org/"])
 ```
 
+For prebuilt single-binary CLI releases (the `azd`, `gh`, `kubectl`,
+`1password` family), use `nix.binaryRelease()` instead of hand-rolling
+the `stdenvNoCC.mkDerivation` boilerplate:
+
+```ts
+home.packages(
+  nix.binaryRelease({
+    name: "azure-dev-cli",
+    version: "1.25.5",
+    binary: "azd",
+    urlTemplate:
+      "https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_{version}/{file}",
+    platforms: {
+      "x86_64-linux":  { file: "azd-linux-amd64.tar.gz",  hash: "sha256-..." },
+      "aarch64-linux": { file: "azd-linux-arm64.tar.gz",  hash: "sha256-..." },
+      "x86_64-darwin": { file: "azd-darwin-amd64.zip",    hash: "sha256-..." },
+      "aarch64-darwin":{ file: "azd-darwin-arm64.zip",    hash: "sha256-..." },
+    },
+    meta: {
+      description: "Azure Developer CLI",
+      homepage: "https://github.com/Azure/azure-dev",
+      license: "mit",
+    },
+  }),
+);
+```
+
+Supports per-platform `{platform}` URL placeholders (for vendors whose
+URLs aren't just `${file}`), shell completions via `installShellFiles`,
+optional `autoPatchelfHook` on Linux, and a validated `meta.license`
+(rejects SPDX-style ids like `MIT`/`Apache-2.0` at TS-eval time so misuse
+surfaces immediately, not at Nix build time). Pass `nix.expr(...)` for
+licenses that aren't a simple `pkgs.lib.licenses.<id>` lookup. See
+[`spec/proposals/binary-release.md`](spec/proposals/binary-release.md)
+for the full reference.
+
 For bigger migrations, import existing Nix modules:
 
 ```ts

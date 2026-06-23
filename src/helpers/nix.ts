@@ -16,6 +16,49 @@ export interface NixNamespace {
   optionalString(condition: NixCondition, value: NixStringPart): NixExpr;
   isDarwin: NixExpr;
   isLinux: NixExpr;
+  /**
+   * Build a `stdenvNoCC.mkDerivation` for a prebuilt single-binary CLI
+   * release (the `azd`, `gh`, `kubectl`, `1password` family).
+   *
+   * Picks the right `(file, hash)` per `pkgs.stdenv.hostPlatform.system`,
+   * substitutes `{version}`, `{file}`, and (optionally) `{platform}` into
+   * `urlTemplate`, fetches with `pkgs.fetchurl`, unpacks tarballs/zips,
+   * and `install -Dm755`s the binary into `$out/bin/<binary>`.
+   *
+   * Optional extensions:
+   * - `completions` — emits `installShellCompletion` for `bash`/`fish`/`zsh`.
+   * - `linuxPatchelf` — enables `autoPatchelfHook` on Linux only.
+   * - `linuxBuildInputs` — extra runtime libs the auto-patchelf hook needs.
+   * - `dontStripDarwin` — keep the binary's Mach-O signature intact (default `true`).
+   *
+   * `meta.license` accepts a nixpkgs `pkgs.lib.licenses` attribute name
+   * (e.g. `"mit"`, `"asl20"`, `"unfree"`) or a `NixExpr`. SPDX-style ids
+   * like `"MIT"` or `"Apache-2.0"` are rejected at TS-eval time.
+   *
+   * @example
+   * ```ts
+   * nix.binaryRelease({
+   *   name: "azure-dev-cli",
+   *   version: "1.25.5",
+   *   binary: "azd",
+   *   urlTemplate:
+   *     "https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_{version}/{file}",
+   *   platforms: {
+   *     "x86_64-linux":  { file: "azd-linux-amd64.tar.gz",  hash: "sha256-..." },
+   *     "aarch64-linux": { file: "azd-linux-arm64.tar.gz",  hash: "sha256-..." },
+   *     "x86_64-darwin": { file: "azd-darwin-amd64.zip",    hash: "sha256-..." },
+   *     "aarch64-darwin":{ file: "azd-darwin-arm64.zip",    hash: "sha256-..." },
+   *   },
+   *   meta: {
+   *     description: "Azure Developer CLI",
+   *     homepage: "https://github.com/Azure/azure-dev",
+   *     license: "mit",
+   *   },
+   * });
+   * ```
+   *
+   * @see {@link BinaryReleaseOpts} for the full options interface
+   */
   binaryRelease(opts: BinaryReleaseOpts): NixExpr;
   lib: {
     mkDefault(value: NixValue): NixExpr;

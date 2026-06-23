@@ -1,8 +1,9 @@
 # Proposal: `nix.binaryRelease()` helper
 
-> **Status:** `draft`
-> **Owner:** unassigned
-> **Target:** Winix v0.2
+> **Status:** `implemented` (shipped in `@adrifer/winix@0.1.2-preview.3`; extended in `0.1.2-preview.4`)
+> **Owner:** @adrifer
+> **Target:** Winix v0.2 — ✅ landed
+> **PRs:** [#31](https://github.com/adrifer/winix/pull/31), [#32](https://github.com/adrifer/winix/pull/32)
 
 ## Motivation
 

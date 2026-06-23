@@ -64,7 +64,7 @@
 Goal: Make configs more readable and reduce boilerplate. Focus on the patterns that
 currently force users into raw() blocks.
 
-- [x] **Unified `nix.*` namespace** — `nix.expr`, `nix.pkg`, `nix.str`, `nix.script`, `nix.concat`, `nix.withPkgs`, `nix.lib.*`, `nix.optionalAttrs`, `nix.optionalString`
+- [x] **Unified `nix.*` namespace** — `nix.expr`, `nix.pkg`, `nix.str`, `nix.script`, `nix.concat`, `nix.withPkgs`, `nix.lib.*`, `nix.optionalAttrs`, `nix.optionalString`, `nix.binaryRelease`
 - [x] **Recursive profiles** — `profile()` composes fragments/profiles without spread boilerplate
 - [x] **Built-in platform presets** — `platforms.nixos()` and `platforms.darwin()` cover common NixOS/nix-darwin bases
 - [x] **Unified accounts** — `account.user()` configures Home Manager, NixOS/Darwin users, shells, admin groups, and WSL defaults; `account.group()` configures local groups
@@ -74,6 +74,7 @@ currently force users into raw() blocks.
 - [x] **Audit existing config** — go through dotfiles/winix raw() blocks, find more patterns to abstract
 - [x] **Real config migration** — `/home/adrifer/dotfiles/winix` uses the new profiles, platforms, account, `nix.*`, and intent helpers
 - [x] **Clear Home Manager scope** — fragments use `homeManager` instead of ambiguous top-level `home`
+- [x] **`nix.binaryRelease()`** — typed helper for prebuilt single-binary CLI releases (multi-arch, `installShellFiles`, `autoPatchelfHook`, validated `meta.license`); see [`spec/proposals/binary-release.md`](./spec/proposals/binary-release.md)
 
 ### Priority 2 — LLM-friendly: Make AI agents excellent at writing Winix configs
 
