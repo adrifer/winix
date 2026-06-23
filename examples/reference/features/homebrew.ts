@@ -8,7 +8,7 @@ export const homebrew = feature("homebrew", () =>
   [
     darwin({
       "nix-homebrew": {
-        user: "adrifer",
+        user: "tony",
       },
     }),
     darwin.homebrew({ enable: true }),

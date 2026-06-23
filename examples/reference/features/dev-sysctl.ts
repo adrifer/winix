@@ -4,7 +4,7 @@ import { feature, nixos } from "@adrifer/winix";
  * @description Kernel sysctl tuning for development workloads
  * @category system
  */
-export const workSysctl = feature("work-sysctl", () =>
+export const devSysctl = feature("dev-sysctl", () =>
   nixos.sysctl({
     "net.ipv4.ip_unprivileged_port_start": 443,
     "fs.inotify.max_user_watches": 1048576,

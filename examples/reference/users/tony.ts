@@ -4,7 +4,7 @@ import { account } from "@adrifer/winix";
  * @description User account configuration
  * @category user
  */
-export const adrifer = account.user("adrifer", () => ({
+export const tony = account.user("tony", () => ({
   admin: true,
   shell: "zsh",
   stateVersion: "25.05",

@@ -29,8 +29,8 @@ export const zsh = feature("zsh", () =>
         gc: "sudo nix-collect-garbage -d",
       }),
       ...(platforms.darwin.isActive && {
-        i: "sudo darwin-rebuild switch --flake ~/dotfiles/nixos#macbook-pro",
-        u: "nix flake update --flake ~/dotfiles/nixos && sudo darwin-rebuild switch --flake ~/dotfiles/nixos#macbook-pro",
+        i: "cd ~/config/winix && npx @adrifer/winix switch --host workstation",
+        u: "cd ~/config/winix && npx @adrifer/winix update && npx @adrifer/winix switch --host workstation",
         gc: "nix-collect-garbage -d",
       }),
     },

@@ -20,8 +20,8 @@ export default workspace({
   inputs,
 
   hosts: [
-    host("wsl-work", platforms.nixos(), [
-      account.user("adrifer", () => ({ admin: true, stateVersion: "25.05" }))(),
+    host("wsl", platforms.nixos(), [
+      account.user("tony", () => ({ admin: true, stateVersion: "25.05" }))(),
 
       // Level 2: rawModule — legacy .nix file not yet migrated
       rawModule("./legacy/vscode-path.nix"),
