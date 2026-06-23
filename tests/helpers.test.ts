@@ -1152,6 +1152,32 @@ describe("nix.binaryRelease", () => {
         meta: { description: "x" },
       })
     ).toThrow(/`platforms` is required/);
+
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{file}",
+        // @ts-expect-error testing runtime validation
+        platforms: null,
+        meta: { description: "x" },
+      })
+    ).toThrow(/`platforms` is required/);
+  });
+
+  it("throws if platforms is an array or other non-plain object", () => {
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{file}",
+        // @ts-expect-error testing runtime validation
+        platforms: [],
+        meta: { description: "x" },
+      })
+    ).toThrow(/`platforms` must be an object/);
   });
 
   it("throws if a platform entry is missing file or hash", () => {

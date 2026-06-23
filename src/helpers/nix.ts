@@ -221,7 +221,7 @@ function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
   if (opts.platforms === undefined || opts.platforms === null) {
     throw new Error("nix.binaryRelease: `platforms` is required");
   }
-  if (typeof opts.platforms !== "object") {
+  if (!isPlainObject(opts.platforms)) {
     throw new Error("nix.binaryRelease: `platforms` must be an object");
   }
   if (
