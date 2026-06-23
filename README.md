@@ -1,5 +1,11 @@
 # Winix
 
+[![npm](https://img.shields.io/npm/v/%40adrifer%2Fwinix?label=npm&logo=npm)](https://www.npmjs.com/package/@adrifer/winix)
+[![npm preview](https://img.shields.io/npm/v/%40adrifer%2Fwinix/preview?label=preview&logo=npm&color=orange)](https://www.npmjs.com/package/@adrifer/winix?activeTab=versions)
+[![CI](https://github.com/adrifer/winix/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/adrifer/winix/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![TypeScript](https://img.shields.io/badge/types-TypeScript-blue?logo=typescript&logoColor=white)](./types)
+
 **TypeScript-first system configuration for NixOS, nix-darwin, and Home Manager.**
 
 Winix lets you write system configuration as typed, composable TypeScript fragments and generates a normal Nix flake that `nixos-rebuild`, `darwin-rebuild`, and Home Manager can consume.
