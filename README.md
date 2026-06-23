@@ -39,10 +39,10 @@ const shell = feature("shell", () =>
     shellAliases: {
       g: "lazygit",
       ...(platforms.nixos.isActive && {
-        i: "sudo nixos-rebuild switch --flake path:$PWD/.winix/out",
+        i: "cd ~/dotfiles/winix && npx @adrifer/winix switch",
       }),
       ...(platforms.darwin.isActive && {
-        i: "sudo darwin-rebuild switch --flake path:$PWD/.winix/out",
+        i: "cd ~/dotfiles/winix && npx @adrifer/winix switch --host macbook",
       }),
     },
   })
@@ -76,31 +76,56 @@ export default workspace({
 
 > Winix is early software. The core pipeline works end-to-end, but the public API is still evolving.
 
-## Install
+## Install and create a config
+
+```bash
+mkdir my-winix-config
+cd my-winix-config
+npx @adrifer/winix@latest init
+npm install
+```
+
+Winix expects Node.js with native TypeScript stripping support for `winix.config.ts` files. Node 22+ is recommended.
+
+If you prefer to set up files yourself instead of using `init`, add the package to your own `package.json`:
 
 ```bash
 npm install @adrifer/winix
 ```
 
-Winix expects Node.js with native TypeScript stripping support for `winix.config.ts` files. Node 22+ is recommended.
+The `init` command creates a starter `winix.config.ts`, `tsconfig.json`, `.gitignore`, and package scripts. After `npm install`, the `winix` binary comes from your local `node_modules`, so commands are reproducible through `package-lock.json`.
 
-To create a new project:
+You can also install it globally, but local project installs are recommended:
 
 ```bash
-npx @adrifer/winix init
-npm install
+npm install -g @adrifer/winix
 ```
 
 ## CLI
 
+From a Winix project:
+
 ```bash
-winix check                  # validate winix.config.ts
-winix apply                  # generate .winix/out/
-winix apply --dry            # print generated Nix without writing files
-winix apply --diff           # show changes against current .winix/out/
-winix switch --host my-host  # generate and run nixos-rebuild/darwin-rebuild
-winix update                 # update generated flake.lock and copy it back
-winix inspect                # inspect host composition and fragments
+npx @adrifer/winix check                  # validate winix.config.ts
+npx @adrifer/winix apply                  # generate .winix/out/
+npx @adrifer/winix apply --dry            # print generated Nix without writing files
+npx @adrifer/winix apply --diff           # show changes against current .winix/out/
+npx @adrifer/winix switch --host my-host  # generate and run nixos-rebuild/darwin-rebuild
+npx @adrifer/winix update                 # update generated flake.lock and copy it back
+npx @adrifer/winix inspect                # inspect host composition and fragments
+```
+
+If you add scripts to your `package.json`, you can use shorter commands:
+
+```json
+{
+  "scripts": {
+    "check": "winix check",
+    "apply": "winix apply",
+    "dry": "winix apply --dry",
+    "switch": "winix switch"
+  }
+}
 ```
 
 Generated output lives under:
@@ -276,6 +301,8 @@ winix types generate darwin
 Winix is currently best suited for personal configurations and experimentation. The core workflow is functional, but expect API refinements before a stable `1.0`.
 
 ## Development
+
+Only clone this repository if you want to work on Winix itself. For normal configuration usage, install `@adrifer/winix` from npm as shown above.
 
 ```bash
 git clone https://github.com/adrifer/winix.git
