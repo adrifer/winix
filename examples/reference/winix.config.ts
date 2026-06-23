@@ -1,9 +1,8 @@
 /**
  * Reference Winix configuration.
  *
- * This is an anonymized, simplified version of a real production setup
- * (https://github.com/adrifer/dotfiles/tree/main/winix). It covers the
- * two most common shapes:
+ * An anonymized, simplified version of a real-world setup. It covers
+ * the two most common shapes:
  *
  *   - A WSL NixOS host with Home Manager.
  *   - A macOS host with nix-darwin + Home Manager + Homebrew.

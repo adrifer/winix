@@ -72,7 +72,7 @@ currently force users into raw() blocks.
 - [x] **Activation helper** — `home.activation("name", { after: [...], script: "..." })` for `lib.hm.dag.entryAfter` pattern
 - [x] **Improve error messages** — when a fragment fails, show which helper to use or how to fix it
 - [x] **Audit existing config** — go through dotfiles/winix raw() blocks, find more patterns to abstract
-- [x] **Real config migration** — `/home/adrifer/dotfiles/winix` uses the new profiles, platforms, account, `nix.*`, and intent helpers
+- [x] **Real config migration** — a real-world dotfiles repo uses the new profiles, platforms, account, `nix.*`, and intent helpers
 - [x] **Clear Home Manager scope** — fragments use `homeManager` instead of ambiguous top-level `home`
 - [x] **`nix.binaryRelease()`** — typed helper for prebuilt single-binary CLI releases (multi-arch, `installShellFiles`, `autoPatchelfHook`, validated `meta.license`); see [`spec/proposals/binary-release.md`](./spec/proposals/binary-release.md)
 

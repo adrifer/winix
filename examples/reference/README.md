@@ -1,7 +1,6 @@
 # Reference example
 
-An **anonymized, simplified port** of the maintainer's real production
-config (https://github.com/adrifer/dotfiles/tree/main/winix). This is
+An **anonymized, simplified port of a real-world Winix setup**. This is
 the example you should read first if you want a feel for how a non-toy
 Winix setup is structured.
 
@@ -44,8 +43,6 @@ The real config has a few more things that aren't useful to visitors:
   there's demand.
 - **`dotnet`, `git-credential-manager`** features. Same reason: too
   workplace-flavored.
-
-If you want to see those, jump to the real dotfiles linked above.
 
 ## Trying it locally
 

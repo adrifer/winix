@@ -3,7 +3,7 @@ import { defineInputs, input } from "@adrifer/winix";
 /**
  * Flake inputs for the reference configuration.
  *
- * Mirrors a real production setup with both unstable and stable nixpkgs.
+ * Mirrors a real-world setup with both unstable and stable nixpkgs.
  * Stable is used via overlay for the occasional package that the
  * unstable channel doesn't have a build for yet (in this example,
  * `wslu`; in a real setup, also things like Slack or 1Password during
