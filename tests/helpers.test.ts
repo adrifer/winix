@@ -841,3 +841,318 @@ describe("curated helpers", () => {
     expect(hostNix).toContain("homebrew.enable = true;");
   });
 });
+
+
+describe("nix.binaryRelease", () => {
+  it("emits a stdenvNoCC.mkDerivation with per-platform sources", () => {
+    const result = nix.binaryRelease({
+      name: "azure-dev-cli",
+      version: "1.25.5",
+      binary: "azd",
+      urlTemplate:
+        "https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_{version}/{file}",
+      platforms: {
+        "x86_64-linux": {
+          file: "azd-linux-amd64.tar.gz",
+          hash: "sha256-aaaa",
+          binary: "azd-linux-amd64",
+        },
+        "aarch64-darwin": {
+          file: "azd-darwin-arm64.zip",
+          hash: "sha256-bbbb",
+          binary: "azd-darwin-arm64",
+        },
+      },
+      meta: {
+        description: "Azure Developer CLI",
+        homepage: "https://github.com/Azure/azure-dev",
+        license: "mit",
+      },
+    });
+
+    expect(result.__winixNixExpr).toBe(true);
+    expect(result.expr).toContain("pkgs.stdenvNoCC.mkDerivation");
+    expect(result.expr).toContain(`pname = "azure-dev-cli";`);
+    expect(result.expr).toContain(`version = "1.25.5";`);
+    expect(result.expr).toContain(
+      `x86_64-linux = { file = "azd-linux-amd64.tar.gz"; hash = "sha256-aaaa"; binary = "azd-linux-amd64"; };`
+    );
+    expect(result.expr).toContain(
+      `aarch64-darwin = { file = "azd-darwin-arm64.zip"; hash = "sha256-bbbb"; binary = "azd-darwin-arm64"; };`
+    );
+    expect(result.expr).toContain(
+      `source = sources.\${pkgs.stdenv.hostPlatform.system};`
+    );
+    expect(result.expr).toContain(
+      `url  = "https://github.com/Azure/azure-dev/releases/download/azure-dev-cli_\${version}/\${source.file}";`
+    );
+    expect(result.expr).toContain(
+      `nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.unzip ];`
+    );
+    expect(result.expr).toContain(
+      `install -Dm755 "\${source.binary}" "$out/bin/azd"`
+    );
+    expect(result.expr).toContain(`license     = pkgs.lib.licenses.mit;`);
+    expect(result.expr).toContain(`mainProgram = "azd";`);
+    expect(result.expr).toContain(`platforms   = builtins.attrNames sources;`);
+  });
+
+  it("emits `dontStrip = isDarwin` by default and omits it on opt-out", () => {
+    const base = {
+      name: "x",
+      version: "1",
+      binary: "x",
+      urlTemplate: "https://e.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "x.tar.gz", hash: "sha256-x" },
+      },
+      meta: { description: "x" },
+    } as const;
+
+    expect(nix.binaryRelease(base).expr).toContain(
+      `dontStrip = pkgs.stdenv.hostPlatform.isDarwin;`
+    );
+    expect(nix.binaryRelease({ ...base, dontStripDarwin: false }).expr).not.toContain(
+      `dontStrip`
+    );
+  });
+
+  it("defaults per-platform binary to the outer binary name", () => {
+    const result = nix.binaryRelease({
+      name: "gh",
+      version: "2.50.0",
+      binary: "gh",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "gh.tar.gz", hash: "sha256-xxxx" },
+      },
+      meta: { description: "GitHub CLI" },
+    });
+
+    expect(result.expr).toContain(
+      `x86_64-linux = { file = "gh.tar.gz"; hash = "sha256-xxxx"; binary = "gh"; };`
+    );
+    expect(result.expr).toContain(`install -Dm755 "\${source.binary}" "$out/bin/gh"`);
+  });
+
+  it("appends extraInstall lines inside the install phase", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1.0.0",
+      binary: "tool",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+      },
+      extraInstall: `install -Dm644 LICENSE "$out/share/doc/$pname/LICENSE"\ninstall -Dm644 README.md "$out/share/doc/$pname/README.md"`,
+      meta: { description: "Demo tool" },
+    });
+
+    expect(result.expr).toContain(
+      `install -Dm755 "\${source.binary}" "$out/bin/tool"\n    install -Dm644 LICENSE "$out/share/doc/$pname/LICENSE"\n    install -Dm644 README.md "$out/share/doc/$pname/README.md"\n    runHook postInstall`
+    );
+  });
+
+  it("accepts a NixExpr as meta.license", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1.0.0",
+      binary: "tool",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+      },
+      meta: {
+        description: "Demo tool",
+        license: nix.expr("pkgs.lib.licenses.unfree"),
+      },
+    });
+
+    expect(result.expr).toContain(`license     = pkgs.lib.licenses.unfree;`);
+  });
+
+  it("omits homepage and license when not provided", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1.0.0",
+      binary: "tool",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+      },
+      meta: { description: "Demo tool" },
+    });
+
+    expect(result.expr).not.toContain("homepage");
+    expect(result.expr).not.toContain("license");
+    expect(result.expr).toContain(`description = "Demo tool";`);
+  });
+
+  it("uses meta.mainProgram override when provided", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1.0.0",
+      binary: "tool",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+      },
+      meta: { description: "Demo tool", mainProgram: "tool-main" },
+    });
+
+    expect(result.expr).toContain(`mainProgram = "tool-main";`);
+  });
+
+  it("supports {platform} placeholder for vendor-specific URL layouts", () => {
+    const result = nix.binaryRelease({
+      name: "1password-cli",
+      version: "2.34.1",
+      binary: "op",
+      urlTemplate:
+        "https://cache.agilebits.com/dist/1P/op2/pkg/v{version}/op_{platform}_v{version}.zip",
+      platforms: {
+        "x86_64-linux": {
+          platform: "linux_amd64",
+          file: "op_linux_amd64_v2.34.1.zip",
+          hash: "sha256-aaaa",
+        },
+      },
+      meta: { description: "1Password command-line tool" },
+    });
+
+    expect(result.expr).toContain(
+      `x86_64-linux = { file = "op_linux_amd64_v2.34.1.zip"; hash = "sha256-aaaa"; binary = "op"; platform = "linux_amd64"; };`
+    );
+    expect(result.expr).toContain(
+      `url  = "https://cache.agilebits.com/dist/1P/op2/pkg/v\${version}/op_\${source.platform}_v\${version}.zip";`
+    );
+  });
+
+  it("opt-in autoPatchelfHook adds the hook on Linux only", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1",
+      binary: "tool",
+      urlTemplate: "https://e.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-x" },
+      },
+      linuxPatchelf: true,
+      linuxBuildInputs: ["stdenv.cc.cc", "openssl"],
+      meta: { description: "x" },
+    });
+
+    expect(result.expr).toContain(
+      `pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.autoPatchelfHook ]`
+    );
+    expect(result.expr).toContain(
+      `buildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.stdenv.cc.cc pkgs.openssl ];`
+    );
+  });
+
+  it("completions installs shell files via installShellFiles", () => {
+    const result = nix.binaryRelease({
+      name: "op",
+      version: "2.34.1",
+      binary: "op",
+      urlTemplate: "https://e.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "op.tar.gz", hash: "sha256-x" },
+      },
+      completions: {
+        bash: "$out/bin/op completion bash",
+        fish: "$out/bin/op completion fish",
+        zsh: "$out/bin/op completion zsh",
+      },
+      meta: { description: "x" },
+    });
+
+    expect(result.expr).toContain(`[ pkgs.installShellFiles ]`);
+    expect(result.expr).toContain(
+      `postInstall = pkgs.lib.optionalString (pkgs.stdenv.buildPlatform.canExecute pkgs.stdenv.hostPlatform)`
+    );
+    expect(result.expr).toContain(`$out/bin/op completion bash > completion.bash`);
+    expect(result.expr).toContain(`$out/bin/op completion fish > completion.fish`);
+    expect(result.expr).toContain(`$out/bin/op completion zsh > completion.zsh`);
+    expect(result.expr).toContain(
+      `installShellCompletion completion.bash completion.fish completion.zsh`
+    );
+  });
+
+  it("completions accepts partial shell set", () => {
+    const result = nix.binaryRelease({
+      name: "x",
+      version: "1",
+      binary: "x",
+      urlTemplate: "https://e.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": { file: "x.tar.gz", hash: "sha256-x" },
+      },
+      completions: { zsh: "$out/bin/x completion zsh" },
+      meta: { description: "x" },
+    });
+
+    expect(result.expr).toContain(`$out/bin/x completion zsh > completion.zsh`);
+    expect(result.expr).toContain(`installShellCompletion completion.zsh`);
+    expect(result.expr).not.toContain(`completion.bash`);
+    expect(result.expr).not.toContain(`completion.fish`);
+  });
+
+  it("throws if no platforms are provided", () => {
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1.0.0",
+        binary: "tool",
+        urlTemplate: "https://example.com/{version}/{file}",
+        platforms: {},
+        meta: { description: "x" },
+      })
+    ).toThrow(/at least one platform/);
+  });
+
+  it("throws if urlTemplate has neither {file} nor {platform}", () => {
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1.0.0",
+        binary: "tool",
+        urlTemplate: "https://example.com/{version}/download",
+        platforms: {
+          "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+        },
+        meta: { description: "x" },
+      })
+    ).toThrow(/must contain `\{file\}` or `\{platform\}`/);
+  });
+
+  it("throws if {platform} is used but a platform entry is missing it", () => {
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{platform}/{file}",
+        platforms: {
+          "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-x" },
+        },
+        meta: { description: "x" },
+      })
+    ).toThrow(/must define `platform`/);
+  });
+
+  it("throws on missing required fields", () => {
+    expect(() =>
+      // @ts-expect-error testing runtime validation
+      nix.binaryRelease({
+        version: "1.0.0",
+        binary: "tool",
+        urlTemplate: "https://example.com/{file}",
+        platforms: {
+          "x86_64-linux": { file: "tool.tar.gz", hash: "sha256-xxxx" },
+        },
+        meta: { description: "x" },
+      })
+    ).toThrow(/`name` is required/);
+  });
+});
