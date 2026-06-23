@@ -82,6 +82,12 @@ export default workspace({
 
 > Winix is early software. The core pipeline works end-to-end, but the public API is still evolving.
 
+### Why the name?
+
+It started as a half-joke about wrapping Nix for **Win**dows (early prototypes targeted WSL first). The name stuck because **Win + Nix** also reads as "winning at Nix", which felt apt for a project that's trying to make the Nix ecosystem a bit less painful to onboard into.
+
+For what it's worth: Winix today works just as well on macOS and native NixOS as it does on WSL. The Windows-flavored origin survives in the name only.
+
 ## Install and create a config
 
 ```bash
