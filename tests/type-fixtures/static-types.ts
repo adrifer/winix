@@ -15,7 +15,7 @@ nixos({
   wsl: { enable: true },
   futureOption: { stillAllowed: true },
 });
-nixos.imports("nixos-wsl");
+nixos.imports("inputs.nixos-wsl.nixosModules.wsl");
 nixos.nix({ settings: { experimentalFeatures: ["nix-command", "flakes"] } });
 nixos.boot({ kernelModules: ["tcp_bbr"] });
 nixos.networking({ hostName: "demo", firewall: { allowedTCPPorts: [80, 443] } });

@@ -9,7 +9,7 @@ nixos.program("openssh");
 
 // With options (typed when generated types are available)
 nixos.program("zsh", { enableCompletion: true });
-nixos.imports("nixos-wsl");
+nixos.imports("inputs.nixos-wsl.nixosModules.wsl");
 nixos.nix({ gc: { automatic: true, dates: "weekly" } });
 nixos.nix({ settings: { substituters: nix.lib.mkForce(["https://cache.nixos.org/"]) } });
 nixos.boot({ kernelModules: ["tcp_bbr"], supportedFilesystems: ["btrfs"] });

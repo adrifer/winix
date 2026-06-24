@@ -373,7 +373,7 @@ cover common patterns; `.raw()` is reserved for raw Nix strings.
 
 ```ts
 nixos({ networking: { hostName: "wsl" } })
-nixos.imports("inputs.nixos-wsl.nixosModules.default")
+nixos.imports("inputs.nixos-wsl.nixosModules.wsl")
 nixos.program("nix-ld", { libraries: nix.withPkgs(["icu", "zlib"]) })
 nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
 nixos.packages("ripgrep", "fd", "jq")

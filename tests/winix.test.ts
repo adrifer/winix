@@ -291,12 +291,15 @@ describe("Nix backend", () => {
     expect(hostNix).not.toContain("home.programs.git.enable");
   });
 
-  it("renders rawModule imports and preserves mapped imports", () => {
+  it("renders rawModule imports and preserves explicit imports", () => {
     const ws = workspace({
-      inputs: { nixpkgs: "nixos-unstable" },
+      inputs: {
+        nixpkgs: "nixos-unstable",
+        homeManager: "github:nix-community/home-manager",
+      },
       hosts: [
         host("wsl-work", nixos(), [
-          { nixos: { imports: ["home-manager"] } },
+          { nixos: { imports: ["inputs.home-manager.nixosModules.home-manager"] } },
           rawModule("./legacy/foo.nix"),
           rawModule("./legacy/foo.nix"),
         ]),
@@ -516,6 +519,22 @@ describe("Nix backend", () => {
     const output = generateNix(ws, evaluate(ws));
     expect(output.warnings).toContain(
       "darwin host detected but workspace inputs do not include nix-darwin"
+    );
+  });
+
+  it("warns when home-manager imports are generated without a home-manager input", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          { nixos: { imports: ["inputs.home-manager.nixosModules.home-manager"] } },
+        ]),
+      ],
+    });
+
+    const output = generateNix(ws, evaluate(ws));
+    expect(output.warnings).toContain(
+      "home-manager module import detected but workspace inputs do not include home-manager"
     );
   });
 });
