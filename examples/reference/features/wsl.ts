@@ -21,7 +21,7 @@ export const wsl = feature("wsl", () => [
   // the shape close to what you'd write in Nix while still letting the
   // surrounding code stay typed.
   nixos({
-    imports: ["nixos-wsl"],
+    imports: ["inputs.nixos-wsl.nixosModules.wsl"],
     wsl: {
       enable: true,
       wslConf: {

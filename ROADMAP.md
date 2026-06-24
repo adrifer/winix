@@ -23,7 +23,7 @@
 - [x] Deep merge (arrays append, objects merge, scalars last-wins)
 - [x] Composite fragment resolution (nested `Fragment[]` with lazy children)
 - [x] Nix backend — generates `flake.nix` + host modules
-- [x] Imports mapped to real module paths (home-manager, nixos-wsl)
+- [x] Explicit flake module imports
 - [x] Dotted path output (no inline attr sets)
 - [x] Quoted keys for non-identifier path segments
 - [x] `with pkgs;` for systemPackages

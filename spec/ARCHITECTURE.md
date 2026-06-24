@@ -216,7 +216,7 @@ Located in `src/backends/nix/`. Responsible for:
 { config, pkgs, lib, inputs, ... }:
 {
   imports = [
-    inputs.nixos-wsl.nixosModules.default
+    inputs.nixos-wsl.nixosModules.wsl
     # ...
   ];
 

@@ -105,13 +105,6 @@ function formatInput(name: string, def: InputDef): string {
   return lines.join("\n");
 }
 
-// Known input name → NixOS module path mapping
-const MODULE_MAP: Record<string, string> = {
-  "home-manager": "inputs.home-manager.nixosModules.home-manager",
-  "nixos-wsl": "inputs.nixos-wsl.nixosModules.wsl",
-  "nix-darwin": "inputs.nix-darwin.darwinModules.default",
-};
-
 type NixScope = "nixos" | "home" | "darwin";
 
 function generateHostModule(host: EvaluatedHost): string {
@@ -280,7 +273,7 @@ function formatImport(imp: ImportRef): string {
   }
 
   if (typeof imp === "string") {
-    return MODULE_MAP[imp] ?? imp;
+    return imp;
   }
 
   throw new Error("imports entries must be strings or rawModule() references");
@@ -486,7 +479,19 @@ function validateWorkspaceInputs(
       "darwin host detected but workspace inputs do not include nix-darwin"
     );
   }
+  if (hosts.some(hasHomeManagerImport) && !hasInput(workspace, "home-manager")) {
+    warnings.push(
+      "home-manager module import detected but workspace inputs do not include home-manager"
+    );
+  }
   return warnings;
+}
+
+function hasHomeManagerImport(host: EvaluatedHost): boolean {
+  return [
+    ...getImports(host.nixos),
+    ...getImports(host.darwin),
+  ].some((imp) => typeof imp === "string" && imp.startsWith("inputs.home-manager."));
 }
 
 function hasInput(workspace: WorkspaceDef, nixName: string): boolean {
