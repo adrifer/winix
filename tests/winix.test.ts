@@ -291,12 +291,12 @@ describe("Nix backend", () => {
     expect(hostNix).not.toContain("home.programs.git.enable");
   });
 
-  it("renders rawModule imports and preserves mapped imports", () => {
+  it("renders rawModule imports and preserves explicit imports", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
       hosts: [
         host("wsl-work", nixos(), [
-          { nixos: { imports: ["home-manager"] } },
+          { nixos: { imports: ["inputs.home-manager.nixosModules.home-manager"] } },
           rawModule("./legacy/foo.nix"),
           rawModule("./legacy/foo.nix"),
         ]),

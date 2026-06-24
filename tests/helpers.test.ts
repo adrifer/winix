@@ -41,8 +41,8 @@ describe("curated helpers", () => {
     expect(home({ programs: { git: { enable: true } } })).toEqual({
       homeManager: { programs: { git: { enable: true } } },
     });
-    expect(nixosHelpers.imports("nixos-wsl")).toEqual({
-      nixos: { imports: ["nixos-wsl"] },
+    expect(nixosHelpers.imports("inputs.nixos-wsl.nixosModules.wsl")).toEqual({
+      nixos: { imports: ["inputs.nixos-wsl.nixosModules.wsl"] },
     });
     expect(home.imports("inputs.hunk.homeManagerModules.default")).toEqual({
       homeManager: { imports: ["inputs.hunk.homeManagerModules.default"] },

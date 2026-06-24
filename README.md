@@ -35,7 +35,7 @@ const inputs = defineInputs({
 });
 
 const wsl = feature("wsl", () => [
-  nixos.imports("nixos-wsl"),
+  nixos.imports("inputs.nixos-wsl.nixosModules.wsl"),
   nixos({ wsl: { enable: true } }),
   nixos.program("nix-ld"),
 ]);
@@ -245,7 +245,7 @@ host("wsl", platforms.nixos({ stateVersion: "25.05" }), [
 Winix includes helpers for common Nix namespaces:
 
 ```ts
-nixos.imports("nixos-wsl")
+nixos.imports("inputs.nixos-wsl.nixosModules.wsl")
 nixos.networking({ hostName: "server", firewall: { allowedTCPPorts: [22, 443] } })
 nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
 nixos.systemd.service("backup", { script: "echo backup" })

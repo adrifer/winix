@@ -31,7 +31,7 @@ export const platforms: PlatformsHelper = {
 
     return {
       nixos: {
-        ...(useHomeManager && { imports: ["home-manager"] }),
+        ...(useHomeManager && { imports: ["inputs.home-manager.nixosModules.home-manager"] }),
         nixpkgs: {
           hostPlatform: opts.system ?? "x86_64-linux",
           config: { allowUnfree: opts.allowUnfree ?? true },

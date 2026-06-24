@@ -8,7 +8,7 @@ Winix setup is structured.
 
 - **2 hosts:**
   - `wsl`: NixOS-WSL + Home Manager
-  - `macbook-pro`: nix-darwin + Home Manager + Homebrew
+  - `workstation`: nix-darwin + Home Manager + Homebrew
 - **3 profiles:** `home-base` (shared across platforms), `linux`, `macos`
 - **14 features:** dotfiles, fzf, git, homebrew, javascript, macos, neovim,
   packages, playwright, starship, user-tony, wsl, zoxide, zsh

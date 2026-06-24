@@ -105,13 +105,6 @@ function formatInput(name: string, def: InputDef): string {
   return lines.join("\n");
 }
 
-// Known input name → NixOS module path mapping
-const MODULE_MAP: Record<string, string> = {
-  "home-manager": "inputs.home-manager.nixosModules.home-manager",
-  "nixos-wsl": "inputs.nixos-wsl.nixosModules.wsl",
-  "nix-darwin": "inputs.nix-darwin.darwinModules.default",
-};
-
 type NixScope = "nixos" | "home" | "darwin";
 
 function generateHostModule(host: EvaluatedHost): string {
@@ -280,7 +273,7 @@ function formatImport(imp: ImportRef): string {
   }
 
   if (typeof imp === "string") {
-    return MODULE_MAP[imp] ?? imp;
+    return imp;
   }
 
   throw new Error("imports entries must be strings or rawModule() references");
