@@ -479,7 +479,19 @@ function validateWorkspaceInputs(
       "darwin host detected but workspace inputs do not include nix-darwin"
     );
   }
+  if (hosts.some(hasHomeManagerImport) && !hasInput(workspace, "home-manager")) {
+    warnings.push(
+      "home-manager module import detected but workspace inputs do not include home-manager"
+    );
+  }
   return warnings;
+}
+
+function hasHomeManagerImport(host: EvaluatedHost): boolean {
+  return [
+    ...getImports(host.nixos),
+    ...getImports(host.darwin),
+  ].some((imp) => typeof imp === "string" && imp.startsWith("inputs.home-manager."));
 }
 
 function hasInput(workspace: WorkspaceDef, nixName: string): boolean {
