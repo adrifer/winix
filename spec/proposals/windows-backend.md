@@ -288,6 +288,13 @@ The first usable Windows backend should cover:
 
 ## Future work
 
+Research into Microsoft's official dev-box configs
+(`spec/research/windows-scenarios.md`) surfaced the concrete patterns real
+setups use. The highest-value ones (`dependsOn`/`name` ordering,
+`windows.setting()`, `windows.requireOsVersion()`, `windows.env()`/`path()`)
+have been promoted into the "Proposed authoring API" section above with
+status and priority. What remains below is genuinely later-stage.
+
 Once the MVP is real and patterns of use surface, the following can be
 layered on top:
 
@@ -436,6 +443,125 @@ windows.dsc({
 
 `windows.dsc()` is what `windows.package()`, `windows.env()`, etc. desugar
 into. Users only reach for it when a helper does not exist yet.
+
+### Resource ordering: `dependsOn` and `name`
+
+**Status: proposed (high priority, next structural addition).**
+
+Microsoft's own dev-box configs (see `spec/research/windows-scenarios.md`)
+are **dependency graphs, not flat lists**. The Rust workload, for example,
+installs rustup, installs the VS Build Tools, adds the VCTools workload
+(which must run *after* Build Tools), then runs `rustup default stable`
+(which must run *after* both). DSC v3 expresses this with `name` +
+`dependsOn` on each resource. Without ordering, Winix can only express
+trivial flat setups, so this is the single highest-leverage addition after
+the lockfile.
+
+Every resource-producing helper (`package`, `raw`, `dsc`, and future typed
+helpers) accepts two optional structural fields:
+
+```ts
+windows.package({ id: "Rustlang.Rustup", name: "rustup", elevated: true });
+
+windows.raw({
+  name: "default-toolchain",
+  dependsOn: ["rustup"],
+  apply: `rustup default stable`,
+});
+```
+
+- **`name`** — a stable, user-chosen identifier for the emitted resource. When
+  omitted, the emitter keeps generating deterministic names as today
+  (`run-command-<index>`, package id, etc.). A `name` is required to be the
+  *target* of a `dependsOn`.
+- **`dependsOn`** — a list of resource `name`s that must apply before this one.
+  Emitted verbatim as the DSC v3 `dependsOn` array. Winix validates at
+  generation time that every referenced name exists and that there are no
+  cycles, failing with a clear error pointing at the offending edge.
+
+The DX question to settle before implementing: do we want **explicit string
+names + `dependsOn`** (mirrors DSC v3 1:1, simple, but stringly-typed), or a
+**handle-based API** where a helper returns a reference object you pass to
+`dependsOn` (type-safe, no typo-able strings, but more machinery)? The latter
+is more idiomatic TypeScript and catches dangling references at compile time.
+This is a deliberate design decision, not an implementation detail; resolve
+it before coding.
+
+### `windows.setting(...)` — Windows / OS settings
+
+**Status: proposed (high priority).**
+
+Maps to the native `Microsoft.Windows.Settings/WindowsSettings` DSC resource.
+The most common dev-box use is **enabling Developer Mode** in a single line:
+
+```ts
+windows.setting({ DeveloperMode: true });
+```
+
+This is one of the highest-value, best-demoing helpers: one line of
+TypeScript flips an OS setting that normally requires digging through
+Settings or running elevated PowerShell. Other settings exposed by the
+resource (e.g. long-path support) ride the same helper.
+
+**Prerequisite the emitter must handle:** the `Microsoft.Windows.Settings`
+DSC module must be present before the resource can apply. Microsoft's configs
+ensure this by emitting a `RunCommandOnSet` that installs the module, then
+`dependsOn`-ing it. Winix should do the same automatically (emit the
+ensure-module step + wire the dependency) so the user just writes
+`windows.setting(...)` and it works. This makes `setting` depend on the
+`dependsOn` machinery above.
+
+### `windows.requireOsVersion(...)` — minimum OS guardrail
+
+**Status: proposed.**
+
+Maps to `Microsoft.Windows.Developer/OsVersion`. Asserts a minimum Windows
+build before anything else applies, failing fast on an unsupported host:
+
+```ts
+windows.requireOsVersion("10.0.17763"); // Windows 10 1809+
+```
+
+A natural fit as an early `dependsOn` target (everything depends on the OS
+check) or simply emitted first. Clean native resource, low risk.
+
+### `windows.env(...)` / `windows.path(...)` — environment and PATH
+
+**Status: proposed (sugar over `raw`, deliberately).**
+
+These are **important conveniences** even though they are not backed by a
+clean declarative DSC resource. There is no first-class
+`Environment`/`Path` resource in the DSC v3 set Winix targets; Microsoft's
+own configs manipulate the environment via `RunCommandOnSet` +
+`[Environment]::SetEnvironmentVariable(...)`. Winix therefore implements
+these as **typed sugar that codegens the appropriate PowerShell** under a
+`RunCommandOnSet`, not as idempotent DSC.
+
+```ts
+// Set a user (default) or machine environment variable
+windows.env({ GOPATH: "$env:USERPROFILE\\go" });
+windows.env({ name: "FOO", value: "bar", scope: "machine" });
+
+// Append a directory to PATH (idempotent: checks before appending)
+windows.path("$env:USERPROFILE\\.local\\bin");
+windows.path({ value: "C:\\tools\\bin", scope: "machine" });
+```
+
+Design commitments to keep the sugar honest:
+
+- The generated PowerShell for `windows.path(...)` **must be idempotent**: read
+  the current PATH, append only if the entry is absent, so re-applies don't
+  duplicate entries. (This is the one place the sugar earns real value over
+  raw.)
+- `scope` defaults to `user` (no elevation needed); `machine` implies
+  `elevated`.
+- The JSDoc must state plainly that these desugar to `RunCommandOnSet` and are
+  best-effort/script-based, not declarative DSC, so users aren't surprised by
+  the capability tier.
+
+The whole point of Winix is to endulzar the rough edges, so shipping these as
+first-class helpers is right even when the underlying primitive is a script.
+Being explicit about what they compile to is how we stay honest.
 
 ### `windows.programs.<name>(...)` — install + configure in one call
 
