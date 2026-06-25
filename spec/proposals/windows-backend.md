@@ -43,6 +43,74 @@ fragments compose, types check, and the emitter writes a valid DSC v3
 `winget configure`. No reimplementation of idempotency, elevation, or
 install logic.
 
+## DSC v3 resource ecosystem
+
+DSC v3 ships a broad catalogue of built-in resources out of the box, and
+any executable that reads and writes JSON can act as a resource. Winix on
+Windows is not limited to packages: anything DSC can manage, Winix can
+emit. Helpers in this proposal cover the most common needs as a typed
+surface, and `windows.dsc(...)` provides a typed escape hatch for the
+rest of the catalogue without losing reproducibility.
+
+The table below sketches the landscape so reviewers can see what the
+Windows backend's authoring surface eventually grows to cover. Tier
+labels are scoping commitments, not implementation status:
+
+- **[MVP helper]** — typed helper shipped with the first usable version of
+  the Windows backend
+- **[Future helper]** — same catalogue surface, but typed helper deferred
+  to a follow-up release; usable today via `windows.dsc(...)`
+- **[Escape hatch only]** — no plans for a dedicated helper; expected to be
+  rare enough that `windows.dsc(...)` is the right ergonomics
+
+### Built-in DSC v3 resources (Microsoft)
+
+| Resource type | Capability | Winix coverage |
+|---|---|---|
+| `Microsoft.WinGet/Package` | Install/remove winget packages | ✅ [MVP helper] `windows.package(...)` |
+| `Microsoft.Windows/Registry` | Read/write/delete registry keys and values | 🛠️ [Future helper] `windows.registry(...)` |
+| `Microsoft.Windows/Service` | Start/stop/configure Windows services | 🛠️ [Future helper] `windows.service(...)` |
+| `Microsoft.Windows/FirewallRuleList` | Manage Windows Firewall rules | 🛠️ [Future helper] `windows.firewall(...)` |
+| `Microsoft.Windows/OptionalFeatureList` | Enable/disable Windows optional features (WSL, Hyper-V, .NET) | 🛠️ [Future helper] `windows.optionalFeature(...)` |
+| `Microsoft.Windows/FeatureOnDemandList` | Install/remove Features on Demand (RSAT, language packs) | ⬛ [Escape hatch only] via `windows.dsc(...)` |
+| `Microsoft.Windows/WindowsPowerShell` | Adapter for the entire PSDSC v1/v2 module catalogue (IIS, AD, SQL Server, BitLocker, certificates, Hyper-V, etc.) | ⬛ [Escape hatch only] via `windows.dsc(...)` |
+| `Microsoft.OpenSSH.SSHD/sshd_config` | Manage `sshd_config` declaratively | 🛠️ [Future helper] `windows.ssh(...)` |
+| `Microsoft.OpenSSH.SSHD/Subsystem` and `SubsystemList` | Configure SSH subsystem entries (e.g. SFTP) | ⬛ [Escape hatch only] via `windows.dsc(...)` |
+| `Microsoft.OpenSSH.SSHD/Windows` | Windows-specific SSH settings (default shell) | ⬛ [Escape hatch only] via `windows.dsc(...)` |
+| `Microsoft.DSC.Transitional/RunCommandOnSet` | Run an arbitrary command on apply (`test` + `set`) | ✅ [MVP helper] `windows.raw({ test, apply })` |
+| `Microsoft.Dsc/Include` | Compose a configuration from external DSC documents | ⬛ Used internally by the Winix codegen; not a user-facing helper |
+| `Microsoft.Dsc/Assertion` | Validate preconditions before applying | ⬛ [Escape hatch only] via `windows.dsc(...)` |
+| `Microsoft.Dsc/Group` | Group resources for ordered or conditional application | ⬛ Used internally by the Winix codegen; not a user-facing helper |
+
+The `Microsoft.Windows/WindowsPowerShell` adapter row is worth calling out
+separately: it unlocks **every existing PSDSC v1/v2 module** (a decade of
+third-party and Microsoft-authored resources for IIS, Active Directory,
+SQL Server, certificates, BitLocker, Hyper-V, and so on). Winix does not
+plan to add typed helpers for any of these in MVP, but a Winix user can
+reach all of them today via `windows.dsc(...)` with a typed shape against
+the adapter's schema.
+
+### Resources from any language
+
+DSC v3 treats a resource as "any executable that reads JSON on stdin and
+writes JSON on stdout, with a manifest describing its schema". Resources
+can be written in PowerShell, Python, Bash, Go, Rust, C#, or anything
+else. This is out of scope for this proposal, but it matters as a future
+direction: Winix users can ship custom resources alongside their Winix
+config and reach them through `windows.dsc(...)` without any change to
+Winix itself.
+
+### Implication for MVP scope
+
+The MVP intentionally ships only `windows.package(...)`, `windows.raw(...)`,
+`windows.dsc(...)`, and the small set of helpers listed in [MVP scope](#mvp-scope).
+Everything else in the table above is reachable today via
+`windows.dsc(...)` and is a candidate for a typed helper as real usage
+demands it. The structure is deliberate: ship the smallest typed surface
+that covers the 80% case, keep the typed escape hatch correct against the
+DSC v3 schema for the long tail, and let observed usage drive which
+helpers get promoted next.
+
 ## Architectural fit
 
 Windows is a third backend peer to Nix and Darwin, not an add-on. The
