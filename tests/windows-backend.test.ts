@@ -20,54 +20,6 @@ describe("windows.package() helper", () => {
     expect(frag).toEqual({
       windows: { packages: { "Git.Git": { id: "Git.Git", source: "winget" } } },
     });
-
-    describe("windows.raw() helper", () => {
-      it("normalizes a command string to a powershell RunCommandOnSet command", () => {
-        const frag = windows.raw(
-          "New-Item -ItemType Directory -Force -Path $env:USERPROFILE\\.local\\bin"
-        );
-        expect(frag).toEqual({
-          windows: {
-            commands: [
-              {
-                executable: "powershell",
-                arguments: [
-                  "-Command",
-                  "New-Item -ItemType Directory -Force -Path $env:USERPROFILE\\.local\\bin",
-                ],
-              },
-            ],
-          },
-        });
-      });
-
-      it("accepts an explicit executable and arguments", () => {
-        const frag = windows.raw({ executable: "pwsh", arguments: ["-Command", "Write-Host hi"] });
-        expect(frag.windows?.commands).toEqual([
-          { executable: "pwsh", arguments: ["-Command", "Write-Host hi"] },
-        ]);
-      });
-
-      it("carries an explicit resource name", () => {
-        const frag = windows.raw({
-          name: "make-bin-dir",
-          executable: "cmd",
-          arguments: ["/c", "mkdir", "foo"],
-        });
-        expect(frag.windows?.commands).toEqual([
-          {
-            name: "make-bin-dir",
-            executable: "cmd",
-            arguments: ["/c", "mkdir", "foo"],
-          },
-        ]);
-      });
-
-      it("rejects empty commands", () => {
-        expect(() => windows.raw("")).toThrow();
-        expect(() => windows.raw({ executable: "" })).toThrow();
-      });
-    });
   });
 
   it("accepts an explicit source", () => {
@@ -99,6 +51,54 @@ describe("windows.package() helper", () => {
   it("rejects empty ids", () => {
     expect(() => windows.package("")).toThrow();
     expect(() => windows.package({ id: "" })).toThrow();
+  });
+});
+
+describe("windows.raw() helper", () => {
+  it("normalizes a command string to a powershell RunCommandOnSet command", () => {
+    const frag = windows.raw(
+      "New-Item -ItemType Directory -Force -Path $env:USERPROFILE\\.local\\bin"
+    );
+    expect(frag).toEqual({
+      windows: {
+        commands: [
+          {
+            executable: "powershell",
+            arguments: [
+              "-Command",
+              "New-Item -ItemType Directory -Force -Path $env:USERPROFILE\\.local\\bin",
+            ],
+          },
+        ],
+      },
+    });
+  });
+
+  it("accepts an explicit executable and arguments", () => {
+    const frag = windows.raw({ executable: "pwsh", arguments: ["-Command", "Write-Host hi"] });
+    expect(frag.windows?.commands).toEqual([
+      { executable: "pwsh", arguments: ["-Command", "Write-Host hi"] },
+    ]);
+  });
+
+  it("carries an explicit resource name", () => {
+    const frag = windows.raw({
+      name: "make-bin-dir",
+      executable: "cmd",
+      arguments: ["/c", "mkdir", "foo"],
+    });
+    expect(frag.windows?.commands).toEqual([
+      {
+        name: "make-bin-dir",
+        executable: "cmd",
+        arguments: ["/c", "mkdir", "foo"],
+      },
+    ]);
+  });
+
+  it("rejects empty commands", () => {
+    expect(() => windows.raw("")).toThrow();
+    expect(() => windows.raw({ executable: "" })).toThrow();
   });
 });
 
