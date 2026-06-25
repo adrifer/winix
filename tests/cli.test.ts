@@ -254,6 +254,9 @@ describe("winix apply Windows output", () => {
       ).rejects.toThrow(
         'Windows package "Fastfetch-cli.Fastfetch" is not locked'
       );
+      await expect(
+        applyWorkspace(dir, { dry: false, diff: false })
+      ).rejects.toThrow("winix update --windows");
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -362,8 +365,71 @@ describe("winix apply Windows output", () => {
     }
   });
 
-  it("winix update --windows reports that resolution is phase 2 work", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "winix-update-windows-phase2-"));
+  it("winix update --windows resolves floating packages and writes the lock", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-update-windows-resolve-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+          windows.package("eza-community.eza"),
+        ])
+      `);
+
+      const calls: string[] = [];
+      await update(dir, {
+        inputs: [],
+        dry: false,
+        windows: true,
+        resolveWindowsPackageVersion: (id) => {
+          calls.push(id);
+          return id === "Fastfetch-cli.Fastfetch" ? "2.65.1" : "0.23.4";
+        },
+      });
+
+      const lock = JSON.parse(await readFile(join(dir, "winix-windows.lock"), "utf-8")) as {
+        packages: Record<string, { version: string }>;
+      };
+      expect(calls.sort()).toEqual(["Fastfetch-cli.Fastfetch", "eza-community.eza"]);
+      expect(lock.packages["Fastfetch-cli.Fastfetch"].version).toBe("2.65.1");
+      expect(lock.packages["eza-community.eza"].version).toBe("0.23.4");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("winix update --windows does not resolve inline-pinned packages", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-update-windows-pinned-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package({ id: "Fastfetch-cli.Fastfetch", version: "2.45.0" }),
+        ])
+      `);
+
+      await update(dir, {
+        inputs: [],
+        dry: false,
+        windows: true,
+        resolveWindowsPackageVersion: () => {
+          throw new Error("inline pins must not be resolved");
+        },
+      });
+
+      const lock = JSON.parse(await readFile(join(dir, "winix-windows.lock"), "utf-8")) as {
+        packages: Record<string, { version: string }>;
+      };
+      expect(lock.packages["Fastfetch-cli.Fastfetch"].version).toBe("2.45.0");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("winix update --windows --dry resolves and reports without writing the lock", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-update-windows-dry-"));
+    const logs: string[] = [];
+    const logSpy = vi.spyOn(console, "log").mockImplementation((...args) => {
+      logs.push(args.join(" "));
+    });
     try {
       await writeConfig(dir, `
         host("desktop", platforms.windows(), [
@@ -371,10 +437,49 @@ describe("winix apply Windows output", () => {
         ])
       `);
 
-      await expect(
-        update(dir, { inputs: [], dry: false, windows: true })
-      ).rejects.toThrow("not implemented yet");
+      await update(dir, {
+        inputs: [],
+        dry: true,
+        windows: true,
+        resolveWindowsPackageVersion: () => "2.65.1",
+      });
+
+      expect(existsSync(join(dir, "winix-windows.lock"))).toBe(false);
+      expect(logs.join("\n")).toContain("resolved  Fastfetch-cli.Fastfetch winget 2.65.1 (new)");
+      expect(logs.join("\n")).toContain("Dry run: winix-windows.lock would be updated.");
     } finally {
+      logSpy.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("winix update --windows reports packages that are already up to date", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-update-windows-uptodate-"));
+    const logs: string[] = [];
+    const logSpy = vi.spyOn(console, "log").mockImplementation((...args) => {
+      logs.push(args.join(" "));
+    });
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+      await writeWindowsLock(dir, {
+        "Fastfetch-cli.Fastfetch": { source: "winget", version: "2.65.1" },
+      });
+
+      await update(dir, {
+        inputs: [],
+        dry: false,
+        windows: true,
+        resolveWindowsPackageVersion: () => "2.65.1",
+      });
+
+      expect(logs.join("\n")).toContain("up to date  Fastfetch-cli.Fastfetch winget 2.65.1");
+      expect(logs.join("\n")).toContain("winix-windows.lock is already up to date.");
+    } finally {
+      logSpy.mockRestore();
       await rm(dir, { recursive: true, force: true });
     }
   });

@@ -41,7 +41,7 @@ Options:
   --host <name>   Target a specific host
   --dry           Show what would be generated (apply)
   --diff          Show diff against current output (apply)
-  --windows       Update Windows package lockfile (phase 2 pending)
+  --windows       Resolve Windows package lockfile (update)
   --strict        Treat conflicts as errors (check)
   --escape-report Show escape hatch usage (check)
   --force         Overwrite files (init)

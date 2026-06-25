@@ -62,9 +62,15 @@ The **package vertical slice is implemented and validated end-to-end**
   `configuration.winget` plus `apply.ps1`, matching Microsoft's
   WindowsDeveloperConfig document shape.
 - `winix-windows.lock` phase 1 is implemented: `winix apply` / `winix
-  switch` read the lockfile, reconcile inline version pins into it, emit
-  locked package versions, and fail clearly when a floating package has no
-  lock entry. `winix update --windows` winget resolution is still pending.
+  switch` read the lockfile, reconcile inline version pins into it, and emit
+  locked package versions. (Unlocked floating packages currently raise a hard
+  error; Phase 2 replaces that with on-the-fly auto-resolution, mirroring
+  Nix's auto-lock-on-demand.)
+- `winix-windows.lock` phase 2 (in progress): `winix update --windows`
+  resolves floating package versions via `winget show`, skips inline-pinned
+  packages, and writes deterministic lockfile updates (with `--dry` support).
+  Validated on Windows 11 25H2. Remaining: `apply` auto-resolving missing
+  entries on the fly.
 - Covered by `tests/windows-backend.test.ts` (helper, platform, evaluator,
   emitter + snapshot) and **confirmed to install a package via
   `winget configure` on Windows 11 25H2**.
@@ -96,16 +102,17 @@ single high-level pointer here. Update this as PRs land.
 - [x] `winix-windows.lock` format + read/write (`src/backends/windows/lockfile.ts`)
 - [x] Inline-pin reconciliation into the lock
 - [x] `apply`/`switch` read the lock and emit locked versions
-- [x] Fail clearly on unlocked floating packages (strict, offline: error tells the
-      user to run `winix update --windows`)
+- [x] Surface unlocked floating packages (interim: hard error pointing at
+      `winix update --windows`; superseded by auto-resolution in Phase 2)
 
 ### Phase 2 — Automatic version resolution (IN PROGRESS)
 
-- [ ] `winix update --windows` resolves floating versions via `winget show` *(needs Windows)*
-- [ ] Resolver shells out to `winget show --id <id> --exact`, parses `Version:`
-- [ ] `apply` stays strict and offline: never calls winget, only reads the lock
-- [ ] Inline-pinned packages keep their pin (not re-resolved)
-- [ ] Clear summary of resolved / up-to-date / changed packages; `--dry` reports without writing
+- [x] `winix update --windows` resolves floating versions via `winget show` (validated on Windows 11 25H2)
+- [x] Resolver shells out to `winget show --id <id> --exact`, parses `Version:` (injectable for tests)
+- [x] Inline-pinned packages keep their pin (not re-resolved); `--dry` reports without writing
+- [ ] `apply` auto-resolves *only missing* lock entries on the fly (Nix-style
+      "update the lock if needed"), then writes them; already-locked entries
+      are never re-resolved
 
 ### Phase 3 — Resource ordering + ergonomics (PENDING)
 
@@ -892,39 +899,47 @@ resources:
       version: "2.44.0"   # <- from winix-windows.lock
 ```
 
-If a package declared in `winix.config.ts` is missing from the lockfile,
-`winix apply` fails with a clear message pointing at `winix update`.
-Nothing implicit. Mirrors how Nix flakes refuse to evaluate without a
-resolved lock.
+If a package declared in `winix.config.ts` is not yet in the lockfile,
+`winix apply` resolves it on the fly, writes it to `winix-windows.lock`, and
+proceeds, exactly like Nix auto-locks a new flake input on first build.
+Packages already in the lock are honoured as-is and never re-resolved.
 
-#### Design decision: `apply` is strict and offline
+#### Design decision: mirror Nix's auto-lock-on-demand
 
-The division of labour between `apply` and `update` is deliberate and not
-negotiable:
+The division of labour between `apply` and `update` mirrors Nix's flake
+behaviour, which the Nix manual sums up as: *"every command that operates on
+a flake will also update the lock file if needed"* and *"existing lock file
+entries are not updated unless required by a flag."* Winix on Windows follows
+the same two rules:
 
-- **`winix apply` / `winix switch` never touch the network.** They read the
-  lockfile and emit. No `winget show`, no catalogue queries, no implicit
-  resolution. This keeps `apply` fast, deterministic, and reproducible: the
-  same config + same lock produce the same `configuration.winget` on every
-  machine, every time, even offline.
-- **`winix update --windows` is the only command that hits the network.** It
-  resolves floating versions via `winget show` and writes the lockfile. This
-  is the explicit, opt-in "go talk to the registry" step, exactly like
-  `nix flake update`.
+- **`winix apply` / `winix switch` resolve only what is missing.** If a
+  declared package has no lock entry yet, apply queries `winget show` for it,
+  writes the resolved version to `winix-windows.lock`, and continues. This is
+  the *"if needed"* path: a brand-new package or a fresh checkout without a
+  lock just works, no extra command required. This is what makes the Nix
+  experience feel frictionless (users rarely run `nix flake lock` by hand),
+  and Winix matches it.
+- **Packages already in the lock are never re-resolved by apply.** Once a
+  version is locked, apply emits it verbatim. The same config + same lock
+  produce the same `configuration.winget` on every machine, every time. Apply
+  only ever touches the network for entries that are genuinely missing.
+- **`winix update --windows` is the explicit "refresh everything" step.** It
+  re-resolves floating packages to their current latest version and rewrites
+  the lock, exactly like `nix flake update`. This is the only command that
+  moves *already-locked* entries forward.
 
-An alternative was considered and rejected: having `apply` auto-resolve and
-self-heal the lockfile on a cache miss (the `npm install` model, where a
-missing `package-lock.json` is silently generated). It was rejected because
-it makes `apply` non-deterministic (a command that should be a pure function
-of config + lock would suddenly depend on network state and registry timing)
-and hides a network call behind a command users expect to be local. The Nix
-mental model (`update` resolves, `apply` consumes) is the one Winix users
-already hold, so the Windows backend honours it rather than inventing a
-second contract.
+An earlier draft of this proposal made `apply` strict and offline (fail hard
+if any package was unlocked, forcing an explicit `winix update --windows`
+first). That was rejected in favour of the Nix model above: forcing a
+separate resolve step before the first apply is friction Nix users do not
+expect, and the whole point of Winix is to feel like Nix for Windows. The
+determinism guarantee is preserved either way, because apply still never
+re-resolves an entry that is already locked; it only fills genuine gaps.
 
-The escape hatch, if one is ever wanted, is an explicit
-`winix apply --update-lock` flag that runs resolve-then-apply in one step.
-The default stays strict.
+For the rare case where fully offline / hermetic apply is wanted (CI that
+must never hit the network), a future `winix apply --locked` flag can make
+apply fail instead of auto-resolving a missing entry, mirroring Nix's own
+`--no-update-lock-file` / `--locked`.
 
 ### Pinning a version inline
 
