@@ -272,6 +272,56 @@ describe("winix apply Windows output", () => {
     }
   });
 
+  it("does not re-resolve packages already in the lock (deterministic, offline)", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-locked-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      // Pre-seed the lock so the package is already resolved.
+      await writeFile(
+        join(dir, "winix-windows.lock"),
+        JSON.stringify(
+          {
+            version: 1,
+            generatedAt: "2026-01-01T00:00:00.000Z",
+            packages: {
+              "Fastfetch-cli.Fastfetch": {
+                source: "winget",
+                version: "2.0.0",
+                resolvedAt: "2026-01-01T00:00:00.000Z",
+              },
+            },
+          },
+          null,
+          2
+        ) + "\n"
+      );
+
+      // A resolver that throws if called proves apply stays offline for
+      // already-locked entries.
+      const result = await applyWorkspace(dir, {
+        dry: false,
+        diff: false,
+        resolveWindowsPackageVersion: () => {
+          throw new Error("resolver must not be called for already-locked packages");
+        },
+      });
+      const config = await readFile(
+        join(result.outDir, "desktop", "configuration.winget"),
+        "utf-8"
+      );
+
+      // Emits the locked version verbatim, no network call.
+      expect(config).toContain('version: "2.0.0"');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("auto-resolves missing packages on dry-run without writing the lock", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-dry-autolock-"));
     const warnings: string[] = [];
