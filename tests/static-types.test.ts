@@ -15,7 +15,10 @@ describe("static option types", () => {
       // The examples tsconfig resolves `@adrifer/winix` to ./dist; build it
       // if it's not there yet so this test stands on its own.
       if (!existsSync("dist/index.d.ts")) {
-        execFileSync("npm", ["run", "build"], { cwd: process.cwd(), stdio: "pipe" });
+        execFileSync(npmCommand(), npmArgs(["run", "build"]), {
+          cwd: process.cwd(),
+          stdio: "pipe",
+        });
       }
     }, 60_000);
 
@@ -31,3 +34,13 @@ describe("static option types", () => {
     }, 30_000);
   });
 });
+
+function npmCommand(): string {
+  return process.platform === "win32" ? process.env.ComSpec ?? "cmd.exe" : "npm";
+}
+
+function npmArgs(args: string[]): string[] {
+  return process.platform === "win32"
+    ? ["/d", "/s", "/c", ["npm", ...args].join(" ")]
+    : args;
+}
