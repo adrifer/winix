@@ -14,7 +14,7 @@ supported form:
 
 ```ts
 host("desktop", platforms.windows(), [
-  windows.package("Fastfetch-cli.Fastfetch"),                       // float
+  windows.package("Fastfetch-cli.Fastfetch"),                       // locked in winix-windows.lock
   windows.package({ source: "msstore", id: "9NKSQGP7F2NH" }),       // msstore
   windows.package({ id: "Microsoft.VisualStudioCode", version: "1.90.1" }), // pinned
   // windows.package({ id: "Some.Driver", elevated: true }),        // admin context
@@ -28,6 +28,11 @@ From this directory:
 ```bash
 winix apply --host desktop
 ```
+
+The checked-in `winix-windows.lock` pins floating Windows packages for
+reproducible generation. Until `winix update --windows` lands in phase 2,
+add new floating packages to that lockfile manually or give them an inline
+`version`.
 
 This writes the bundle to `.winix/out/desktop/`:
 
@@ -55,5 +60,6 @@ pwsh -File .\.winix\out\desktop\apply.ps1
   default. Add `elevated: true` only for packages that need admin (machine-wide
   installers, drivers). Defaulting to elevated makes `winget configure` fail
   from a non-elevated shell.
-- **Determinism.** Packages are emitted sorted by id, so the document is stable
-  regardless of declaration order.
+- **Determinism.** Packages are emitted sorted by id and versions come from
+  `winix-windows.lock`, so the document is stable regardless of declaration
+  order.

@@ -5,7 +5,7 @@
  *
  *   - `platforms.windows()` declares a Windows machine.
  *   - `windows.package(...)` installs winget packages, in all of its forms:
- *       - bare id (float)
+ *       - bare id (resolved from winix-windows.lock)
  *       - explicit source (msstore)
  *       - inline version pin
  *       - elevated (admin security context)
@@ -31,7 +31,8 @@ export default workspace({
 
   hosts: [
     host("desktop", platforms.windows(), [
-      // Float: latest version at apply time.
+      // Floating declarations are emitted from winix-windows.lock.
+      // Phase 2 will automate refreshing this lock via `winix update --windows`.
       windows.package("Fastfetch-cli.Fastfetch"),
       windows.package("eza-community.eza"),
 

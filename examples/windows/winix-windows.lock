@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "generatedAt": "2026-06-25T21:24:00.000Z",
+  "packages": {
+    "Fastfetch-cli.Fastfetch": {
+      "source": "winget",
+      "version": "2.65.1",
+      "resolvedAt": "2026-06-25T21:24:00.000Z"
+    },
+    "eza-community.eza": {
+      "source": "winget",
+      "version": "0.23.4",
+      "resolvedAt": "2026-06-25T21:24:00.000Z"
+    }
+  }
+}

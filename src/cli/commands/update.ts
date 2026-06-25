@@ -10,9 +10,20 @@ import { applyWorkspace } from "./apply.ts";
 interface UpdateOptions {
   inputs: string[];
   dry: boolean;
+  windows?: boolean;
 }
 
 export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
+  if (opts.windows) {
+    // TODO(phase 2): resolve floating versions via winget show and write
+    // `winix-windows.lock`.
+    throw new Error(
+      "`winix update --windows` is not implemented yet. For now, add an " +
+      "inline `version` pin or a `winix-windows.lock` entry for each floating " +
+      "Windows package."
+    );
+  }
+
   if (!opts.dry) {
     assertUpdateSupported();
   }
@@ -24,8 +35,6 @@ export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
   const evaluated = evaluate(workspace);
   const hasNixHost = evaluated.some((host) => platformForEvaluatedHost(host) !== "windows");
   if (!hasNixHost) {
-    // TODO(phase 2): resolve floating versions via winget show for
-    // `winix update --windows` instead of routing through the Nix updater.
     throw new Error(
       "`winix update` updates the Nix flake lock, but this workspace has no " +
       "NixOS or nix-darwin hosts (Windows packages are pinned via " +

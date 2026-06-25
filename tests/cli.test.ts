@@ -361,6 +361,23 @@ describe("winix apply Windows output", () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  it("winix update --windows reports that resolution is phase 2 work", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-update-windows-phase2-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      await expect(
+        update(dir, { inputs: [], dry: false, windows: true })
+      ).rejects.toThrow("not implemented yet");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("winix switch Windows dry run", () => {
