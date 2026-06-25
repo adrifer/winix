@@ -61,6 +61,10 @@ The first usable Windows backend should cover:
 
 - **Winget packages.** Install/upgrade/remove by id, via DSC v3
   `Microsoft.WinGet/Package`.
+- **Per-package version pinning via `winix-windows.lock`.** A Winix-owned
+  lockfile that records the resolved version of each declared package, so
+  `winix apply` produces the same `configuration.winget` on different
+  machines and at different times. See "Versioning and lockfile" below.
 - **Raw PowerShell escape hatch** with optional idempotency test, via DSC v3
   `Microsoft.DSC.Transitional/RunCommandOnSet`.
 - **Environment variables and PATH entries** at user and machine scope.
@@ -88,6 +92,10 @@ layered on top:
   current state, diff against the declared state, and report it from
   `winix check`. This is one of the genuine superpowers DSC v3 unlocks
   and it has no Nix equivalent on Windows. See "Drift detection" below.
+- **Extended lockfile metadata.** Beyond per-package version, also lock the
+  DSC v3 schema revision used to generate the document, the resolved
+  versions of any PowerShell modules referenced by raw resources, and
+  package checksums where winget exposes them.
 - **Chocolatey / Scoop sources** for `windows.package(...)`. Plug in as
   additional `source:` values without changing the public API shape;
   deferred until community demand surfaces.
@@ -269,6 +277,124 @@ drift detection is a Windows-specific affordance the backend can offer
 because DSC v3 makes it cheap. Deferred to future work; the MVP only stubs
 the command behind a "not implemented" message.
 
+## Versioning and lockfile
+
+Winix on Windows commits to **reproducible-by-lockfile**: declared resources
+are resolved to concrete versions once, written to a lockfile, and the
+lockfile is the source of truth for what `winix apply` emits.
+
+### Why a Winix-owned lockfile
+
+`winget configure` has no native lockfile concept. By default it resolves
+the "latest available" version of a package at apply time, which means two
+machines applying the same `configuration.winget` a week apart can end up
+on different versions. That violates the same guarantee the Nix backend
+offers via `flake.lock`.
+
+Winix fills the gap with `winix-windows.lock`. Same role as `flake.lock`
+on the Nix side, different format because the upstream primitives are
+different.
+
+### Two lockfiles, by design
+
+Nix and Windows keep **separate lockfiles** rather than sharing one:
+
+| Backend | Lockfile | Owner |
+|---|---|---|
+| Nix | `flake.lock` | Nix (Winix shells out to `nix flake update`) |
+| Windows | `winix-windows.lock` | Winix (no native winget equivalent) |
+
+This split is intentional:
+
+- `flake.lock` is owned by the Nix ecosystem. Wrapping it inside a
+  Winix-flavored container would break direct `nix flake update`,
+  `nix flake metadata`, and every other Nix tool the user already knows.
+- The two formats are structurally different. `flake.lock` locks flake
+  inputs (URLs, narHashes, git revisions). `winix-windows.lock` locks
+  package ids against versions resolved from a registry. A merged file
+  would be a thin JSON wrapper around two unrelated schemas.
+- Diff and review stay clean. A PR that only updates Windows packages
+  does not touch Nix inputs and vice versa.
+- Merge conflicts stay local to the change.
+
+The shared user-facing surface is **the CLI command**, not the file.
+
+### `winix-windows.lock` format
+
+JSON. Stable, hand-readable, diffable. Commit it to the repo.
+
+```json
+{
+  "version": 1,
+  "generatedAt": "2026-06-24T18:37:00Z",
+  "packages": {
+    "Git.Git": {
+      "source": "winget",
+      "version": "2.44.0",
+      "resolvedAt": "2026-06-24T18:37:00Z"
+    },
+    "Microsoft.VisualStudioCode": {
+      "source": "winget",
+      "version": "1.90.1",
+      "resolvedAt": "2026-06-24T18:37:00Z"
+    }
+  }
+}
+```
+
+MVP locks only the package version per entry. Additional metadata (DSC
+schema revision, PowerShell module versions, package checksums when winget
+exposes them) is in Future work.
+
+### CLI: `winix update` extended
+
+The existing `winix update` command (today scoped to `nix flake update`)
+gains a Windows path. The defaults stay friendly:
+
+```bash
+winix update                          # refresh every backend's lockfile
+winix update --nix                    # only refresh flake.lock
+winix update --windows                # only refresh winix-windows.lock
+winix update --windows Git.Git Microsoft.VisualStudioCode
+                                      # refresh only the listed packages
+winix update --dry                    # show what would change, change nothing
+```
+
+Under the hood, `--windows` calls `winget show <id>` (or the equivalent
+winget API) for each package in the workspace, takes the latest available
+version, and writes it to `winix-windows.lock`. Errors surface clearly
+when a package id no longer exists in the catalogue.
+
+### How the lockfile is used by `apply`
+
+`winix apply` and `winix switch` read `winix-windows.lock` and emit
+`configuration.winget` with the locked version pinned per package:
+
+```yaml
+# .winix/out/desktop/configuration.winget (excerpt)
+resources:
+  - name: Git.Git
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Git.Git
+      source: winget
+      version: "2.44.0"   # <- from winix-windows.lock
+```
+
+If a package declared in `winix.config.ts` is missing from the lockfile,
+`winix apply` fails with a clear message pointing at `winix update`.
+Nothing implicit. Mirrors how Nix flakes refuse to evaluate without a
+resolved lock.
+
+### Git semantics
+
+Same as `flake.lock`:
+
+- `winix-windows.lock` is **committed to source control**. It is the
+  source of truth for resolved versions.
+- `.winix/out/<host>/configuration.winget` stays **gitignored**. It is
+  generated, recreated on every apply.
+
 ## Backend strategy
 
 The backend generates a self-contained activation bundle under
@@ -368,3 +494,8 @@ its own backend.
 4. **Secrets.** Windows Credential Manager and DPAPI are obvious candidates,
    but secret integration is a cross-platform concern that should land in
    a separate proposal.
+5. **Lockfile resolution source.** `winget show <id>` is the obvious way to
+   resolve versions, but it requires winget to be available on the machine
+   running `winix update`. Alternative paths (the public winget-pkgs
+   manifest index, a hosted resolver, etc.) may be worth considering for
+   CI environments without winget installed.
