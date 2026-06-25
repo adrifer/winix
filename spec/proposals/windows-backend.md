@@ -43,6 +43,109 @@ fragments compose, types check, and the emitter writes a valid DSC v3
 `winget configure`. No reimplementation of idempotency, elevation, or
 install logic.
 
+## Architectural fit
+
+Windows is a third backend peer to Nix and Darwin, not an add-on. The
+integration follows the same three-level pattern already established in
+[SPEC.md](../SPEC.md):
+
+1. **Platform.** `platforms.windows({ ... })` joins `platforms.nixos` and
+   `platforms.darwin` as a third option. Extends the `PlatformsHelper`
+   interface in `src/helpers/platforms.ts`. Exactly one platform per host,
+   same rule as today.
+2. **Fragment key.** `windows?: WindowsOptions` becomes a new optional key
+   on the `Fragment` type, alongside `nixos?`, `darwin?`, and `home?`.
+   Each backend consumes only its own key.
+3. **Helper namespace.** `windows.*` (with `windows.package`, `windows.raw`,
+   `windows.dsc`, `windows.env`, `windows.path`, `windows.file`,
+   `windows.wsl`) mirrors `nixos.*` and `darwin.*` in shape and naming
+   conventions.
+
+### Cross-backend features come for free
+
+Because each backend reads only its own fragment key, a single feature can
+declare fragments for every backend it cares about and let the host's
+platform decide what actually applies:
+
+```ts
+// features/git.ts
+import { feature, nixos, darwin, windows, home } from "@adrifer/winix";
+
+export const git = feature("git", () => [
+  // NixOS hosts: install via Nixpkgs
+  nixos.package("git"),
+
+  // Darwin hosts: install via Nixpkgs (or Homebrew if the host opts in)
+  darwin.package("git"),
+
+  // Windows hosts: install via winget, pinned
+  windows.package({ id: "Git.Git", version: "2.44.0" }),
+
+  // Home Manager is transversal to NixOS and Darwin (not Windows):
+  // configure git declaratively where Home Manager runs
+  home.programs.git({
+    enable: true,
+    userName: "Adri",
+    userEmail: "adri@example.com",
+  }),
+]);
+```
+
+Loaded into a Windows host, only `windows.package(...)` contributes to the
+emitted `configuration.winget`. The other fragments are a no-op for that
+backend, not an error. The same model already works between NixOS and
+nix-darwin in the reference dotfiles; Windows extends it naturally.
+
+This is the **primary pattern** for writing portable features. Declare
+what each backend should do, side by side, in one place.
+
+### `windows.isActive` for the cases the primary pattern can't cover
+
+The primary pattern handles fragments that compose side by side. It does
+not handle cases where **values inside a single object** need to differ by
+platform (for example, a dictionary that has different keys per OS, or a
+path that uses different conventions per OS).
+
+For those, `windows.isActive` joins `nixos.isActive` and `darwin.isActive`
+with identical semantics. Used the same way the reference dotfiles already
+use the existing two:
+
+```ts
+// features/git.ts, continued: the gitconfig path differs per OS
+export const git = feature("git", () => {
+  const gitconfigPath = windows.isActive
+    ? "%USERPROFILE%\\.gitconfig"
+    : "~/.gitconfig";
+
+  return [
+    nixos.package("git"),
+    darwin.package("git"),
+    windows.package({ id: "Git.Git", version: "2.44.0" }),
+
+    // Home Manager renders the file on NixOS/Darwin
+    ...(!windows.isActive
+      ? [home.programs.git({ enable: true, userName: "Adri", userEmail: "adri@example.com" })]
+      : []),
+
+    // On Windows there is no Home Manager: drop the file directly
+    ...(windows.isActive
+      ? [windows.file(gitconfigPath, gitconfigContent)]
+      : []),
+  ];
+});
+```
+
+This is the same pattern `examples/reference/features/zsh.ts` already uses
+to give the `i` alias different commands on `platforms.darwin.isActive` vs.
+`platforms.nixos.isActive`, and the same pattern
+`examples/reference/features/dotfiles.ts` uses to add a `ghostty` config
+entry only when `platforms.darwin.isActive`. `windows.isActive` extends
+that existing tool, it does not introduce a new mechanism.
+
+Prefer the primary pattern (side-by-side fragments) by default; reach for
+`*.isActive` only when a single value's shape genuinely depends on the
+platform.
+
 ## Non-goals
 
 - **Reproducibility parity with Nix.** Windows does not have content-addressed
