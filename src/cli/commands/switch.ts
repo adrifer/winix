@@ -32,7 +32,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
     diff: false,
   });
 
-  const flake = `path:${result.outDir}#${hostName}`;
+  const flake = flakeRefForHost(result.outDir, hostName);
   const command = activationCommand(platform, flake);
 
   console.log(`\nRunning: ${command.join(" ")}`);
@@ -51,6 +51,7 @@ export function selectHost(
         hosts.map((host) => `  - ${host}`).join("\n")
       );
     }
+
     return requested;
   }
 
@@ -62,4 +63,8 @@ export function selectHost(
     "`winix switch` needs --host. Available hosts:\n" +
     hosts.map((host) => `  - ${host}`).join("\n")
   );
+}
+
+export function flakeRefForHost(outDir: string, hostName: string): string {
+  return `path:${outDir.replace(/\\/g, "/")}#${hostName}`;
 }

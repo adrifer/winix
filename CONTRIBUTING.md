@@ -24,7 +24,7 @@ npm install
 npm test
 ```
 
-That should give you 93/93 passing tests in a few seconds.
+That should give you 94/94 passing tests in a few seconds.
 
 ## Common workflows
 

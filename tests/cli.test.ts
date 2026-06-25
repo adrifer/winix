@@ -11,7 +11,7 @@ import {
 } from "../src/cli/analysis.js";
 import { activationCommand, assertActivationSupported } from "../src/cli/activation.js";
 import { init, resolveWinixVersionRange } from "../src/cli/commands/init.js";
-import { selectHost } from "../src/cli/commands/switch.js";
+import { flakeRefForHost, selectHost } from "../src/cli/commands/switch.js";
 import { assertUpdateSupported } from "../src/cli/commands/update.js";
 import { host, nix, nixos as nixosHelpers, platform, workspace } from "../src/index.js";
 
@@ -118,6 +118,12 @@ describe("winix switch host selection", () => {
       'Current hostname "other" does not match a configured host'
     );
   });
+
+  it("formats flake refs with POSIX separators for Nix", () => {
+    expect(flakeRefForHost("D:\\winix\\test-config\\.winix\\out", "wsl-work")).toBe(
+      "path:D:/winix/test-config/.winix/out#wsl-work"
+    );
+  });
 });
 
 describe("activation commands", () => {
@@ -151,12 +157,12 @@ describe("activation commands", () => {
 
   it("does not prefix dry-run activation commands with sudo on native Windows", () => {
     expect(
-      activationCommand("nixos", "path:C:\\repo\\.winix\\out#wsl", false, "win32")
+      activationCommand("nixos", "path:C:/repo/.winix/out#wsl", false, "win32")
     ).toEqual([
       "nixos-rebuild",
       "switch",
       "--flake",
-      "path:C:\\repo\\.winix\\out#wsl",
+      "path:C:/repo/.winix/out#wsl",
     ]);
   });
 
