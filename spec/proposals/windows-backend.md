@@ -435,18 +435,38 @@ at the file/line that declares it.
 
 #### Divergence between pin and existing lock entry
 
+The lockfile is **a resolution of the intent declared in code**. Inline
+pins are part of that intent, so whenever a command is about to act on the
+configuration, it reconciles inline pins into the lock first. This matches
+how Nix behaves: changing a pinned input URL in `flake.nix` and running
+`nix build` or `nixos-rebuild switch` updates `flake.lock` as part of the
+build, without an explicit `nix flake update` step.
+
+| Command | Reconciles inline pins into lock? |
+|---|---|
+| `winix apply` | Yes, before emitting `configuration.winget` |
+| `winix switch` | Yes, before emitting `configuration.winget` |
+| `winix update` | No, its job is the inverse (refresh floats from upstream) |
+| `winix check` | No, but **reports** divergence as drift (see below) |
+| `winix inspect` | No (read-only) |
+
 If a user adds or changes an inline `version:` and the lockfile already had
-a different version recorded, `winix apply` reconciles in favour of the
-inline pin and rewrites the lockfile entry, surfacing a one-line notice
-in the plan output:
+a different version recorded, `winix apply` and `winix switch` reconcile in
+favour of the inline pin and rewrite the lockfile entry, surfacing a
+one-line notice in the plan output:
 
 ```text
 ~ Lockfile: Git.Git updated 2.43.0 -> 2.44.0 (inline pin)
 ```
 
+`winix check` does not modify the lockfile, but the same divergence is
+reported as part of its drift output so the user knows an apply will
+rewrite the lock without surprise. This is consistent with how `winix
+check` reports any other drift between declared and actual state.
+
 This keeps the inline declaration as the unambiguous source of truth and
-makes the lockfile drift visible in normal command output rather than
-hidden in a separate `winix update` invocation.
+makes the lockfile rewrite visible in normal command output rather than
+hidden behind a separate `winix update` invocation.
 
 ### Git semantics
 
