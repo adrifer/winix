@@ -68,8 +68,23 @@ function evaluateHost(host: HostDef): EvaluatedHost {
       result.darwin = deepMerge(result.darwin, fragment.darwin);
     }
     if (fragment.windows && shouldMergeScope(resolvedFragments, "windows")) {
-      result.windows = deepMerge(result.windows, fragment.windows);
+      result.windows = mergeWindowsOptions(result.windows, fragment.windows);
     }
+  }
+
+  return result;
+}
+
+function mergeWindowsOptions(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>
+): Record<string, unknown> {
+  const targetCommands = Array.isArray(target.commands) ? target.commands : [];
+  const sourceCommands = Array.isArray(source.commands) ? source.commands : [];
+  const result = deepMerge(target, source);
+
+  if (targetCommands.length > 0 || sourceCommands.length > 0) {
+    result.commands = [...targetCommands, ...sourceCommands];
   }
 
   return result;

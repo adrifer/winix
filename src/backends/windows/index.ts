@@ -27,7 +27,7 @@
 // processor is selected by the metadata block.
 
 import type { EvaluatedHost } from "../../evaluator/index.ts";
-import type { WinPackage, WindowsOptions } from "../../types/index.ts";
+import type { WinPackage, WinRawCommand, WindowsOptions } from "../../types/index.ts";
 
 /**
  * Per-host generated output for the Windows backend.
@@ -50,6 +50,7 @@ export interface WindowsOutput {
 const DSC_SCHEMA =
   "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json";
 const WINGET_PACKAGE_TYPE = "Microsoft.WinGet/Package";
+const RUN_COMMAND_ON_SET_TYPE = "Microsoft.DSC.Transitional/RunCommandOnSet";
 
 /**
  * True when an evaluated host targets the Windows backend.
@@ -83,6 +84,7 @@ export function generateWindows(evaluatedHosts: EvaluatedHost[]): WindowsOutput 
  */
 function generateConfiguration(hostName: string, win: WindowsOptions): string {
   const packages = sortedPackages(win.packages ?? {});
+  const commands = win.commands ?? [];
 
   const lines: string[] = [];
   lines.push(`# yaml-language-server: $schema=${DSC_SCHEMA}`);
@@ -92,7 +94,7 @@ function generateConfiguration(hostName: string, win: WindowsOptions): string {
   lines.push("  winget:");
   lines.push("    processor: dscv3");
 
-  if (packages.length === 0) {
+  if (packages.length === 0 && commands.length === 0) {
     lines.push("resources: []");
     return lines.join("\n") + "\n";
   }
@@ -100,6 +102,9 @@ function generateConfiguration(hostName: string, win: WindowsOptions): string {
   lines.push("resources:");
   for (const pkg of packages) {
     lines.push(...renderPackageResource(pkg));
+  }
+  for (const [index, command] of commands.entries()) {
+    lines.push(...renderRawCommandResource(command, index));
   }
 
   return lines.join("\n") + "\n";
@@ -145,6 +150,22 @@ function renderPackageResource(pkg: WinPackage): string[] {
 }
 
 /**
+ * Render one raw command as a DSC v3
+ * `Microsoft.DSC.Transitional/RunCommandOnSet` resource.
+ */
+function renderRawCommandResource(command: WinRawCommand, index: number): string[] {
+  const out: string[] = [];
+  out.push(`  - name: ${yamlScalar(command.name ?? `run-command-${index}`)}`);
+  out.push(`    type: ${RUN_COMMAND_ON_SET_TYPE}`);
+  out.push(`    properties:`);
+  out.push(`      executable: ${yamlScalar(command.executable)}`);
+  if (command.arguments !== undefined && command.arguments.length > 0) {
+    out.push(`      arguments: ${yamlStringArray(command.arguments)}`);
+  }
+  return out;
+}
+
+/**
  * The thin apply entry point. Idempotency, elevation, ordering, and error
  * reporting all live inside `winget configure` / the DSC v3 processor.
  */
@@ -183,4 +204,8 @@ function yamlScalar(value: string): string {
 
 function yamlQuoted(value: string): string {
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+function yamlStringArray(values: string[]): string {
+  return `[${values.map((value) => yamlQuoted(value)).join(", ")}]`;
 }

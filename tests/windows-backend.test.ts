@@ -20,6 +20,54 @@ describe("windows.package() helper", () => {
     expect(frag).toEqual({
       windows: { packages: { "Git.Git": { id: "Git.Git", source: "winget" } } },
     });
+
+    describe("windows.raw() helper", () => {
+      it("normalizes a command string to a powershell RunCommandOnSet command", () => {
+        const frag = windows.raw(
+          "New-Item -ItemType Directory -Force -Path $env:USERPROFILE\\.local\\bin"
+        );
+        expect(frag).toEqual({
+          windows: {
+            commands: [
+              {
+                executable: "powershell",
+                arguments: [
+                  "-Command",
+                  "New-Item -ItemType Directory -Force -Path $env:USERPROFILE\\.local\\bin",
+                ],
+              },
+            ],
+          },
+        });
+      });
+
+      it("accepts an explicit executable and arguments", () => {
+        const frag = windows.raw({ executable: "pwsh", arguments: ["-Command", "Write-Host hi"] });
+        expect(frag.windows?.commands).toEqual([
+          { executable: "pwsh", arguments: ["-Command", "Write-Host hi"] },
+        ]);
+      });
+
+      it("carries an explicit resource name", () => {
+        const frag = windows.raw({
+          name: "make-bin-dir",
+          executable: "cmd",
+          arguments: ["/c", "mkdir", "foo"],
+        });
+        expect(frag.windows?.commands).toEqual([
+          {
+            name: "make-bin-dir",
+            executable: "cmd",
+            arguments: ["/c", "mkdir", "foo"],
+          },
+        ]);
+      });
+
+      it("rejects empty commands", () => {
+        expect(() => windows.raw("")).toThrow();
+        expect(() => windows.raw({ executable: "" })).toThrow();
+      });
+    });
   });
 
   it("accepts an explicit source", () => {
@@ -105,6 +153,27 @@ describe("platforms.windows()", () => {
     const win = desktop.windows as { packages: Record<string, { version?: string }> };
     expect(win.packages["Git.Git"].version).toBe("2.44.0");
   });
+
+  it("concatenates raw commands from multiple fragments in order", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.raw({ executable: "cmd", arguments: ["/c", "echo", "first"] }),
+          windows.raw({ executable: "cmd", arguments: ["/c", "echo", "second"] }),
+        ]),
+      ],
+    });
+    const [desktop] = evaluate(ws);
+    const win = desktop.windows as {
+      commands: Array<{ executable: string; arguments?: string[] }>;
+    };
+
+    expect(win.commands).toEqual([
+      { executable: "cmd", arguments: ["/c", "echo", "first"] },
+      { executable: "cmd", arguments: ["/c", "echo", "second"] },
+    ]);
+  });
 });
 
 describe("generateWindows() emitter", () => {
@@ -125,6 +194,13 @@ describe("generateWindows() emitter", () => {
           windows.package("Git.Git"),
           windows.package({ id: "Microsoft.VisualStudioCode", version: "1.90.1" }),
           windows.package({ source: "msstore", id: "9NKSQGP7F2NH" }),
+          windows.raw("Write-Host after-packages"),
+          windows.raw({ executable: "pwsh", arguments: ["-Command", "Write-Host explicit"] }),
+          windows.raw({
+            name: "make-bin-dir",
+            executable: "cmd",
+            arguments: ["/c", "mkdir", "foo"],
+          }),
         ]),
       ],
     });
@@ -142,6 +218,32 @@ describe("generateWindows() emitter", () => {
     });
     const out = generateWindows(evaluate(ws));
     expect(out.hosts.blank["configuration.winget"]).toContain("resources: []");
+  });
+
+  it("renders packages first, then raw commands in declaration order", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.raw({ executable: "cmd", arguments: ["/c", "echo", "first"] }),
+          windows.package("ZedIndustries.Zed"),
+          windows.package("Git.Git"),
+          windows.raw({ executable: "cmd", arguments: ["/c", "echo", "second"] }),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+
+    expect(doc.indexOf("name: Git.Git")).toBeLessThan(doc.indexOf("name: ZedIndustries.Zed"));
+    expect(doc.indexOf("name: ZedIndustries.Zed")).toBeLessThan(
+      doc.indexOf("name: run-command-0")
+    );
+    expect(doc.indexOf("name: run-command-0")).toBeLessThan(
+      doc.indexOf("name: run-command-1")
+    );
+    expect(doc).toContain("type: Microsoft.DSC.Transitional/RunCommandOnSet");
+    expect(doc).toContain('arguments: ["/c", "echo", "first"]');
+    expect(doc).toContain('arguments: ["/c", "echo", "second"]');
   });
 
   it("omits securityContext unless a package opts into elevation", () => {

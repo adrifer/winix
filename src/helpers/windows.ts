@@ -1,11 +1,11 @@
 // Windows helper namespace: `windows.*` authoring surface.
 //
-// MVP vertical slice: only `windows.package(...)`. Mirrors the shape and
+// MVP vertical slice: packages plus raw commands. Mirrors the shape and
 // naming of the `nixos.*` / `darwin.*` namespaces. Additional helpers
-// (env, path, file, raw, dsc, wsl, programs) land in follow-up milestones.
+// (env, path, file, dsc, wsl, programs) land in follow-up milestones.
 
 import type { Fragment } from "../core/types.ts";
-import type { WinPackage, WinPackageSource } from "../types/index.ts";
+import type { WinPackage, WinPackageSource, WinRawCommand } from "../types/index.ts";
 
 /**
  * Accepted call shapes for `windows.package(...)`.
@@ -21,6 +21,17 @@ export interface WinPackageSpec {
 }
 
 export type WinPackageArg = string | WinPackageSpec;
+
+/**
+ * Accepted object shape for `windows.raw(...)`.
+ */
+export interface WinRawCommandSpec {
+  name?: string;
+  executable: string;
+  arguments?: string[];
+}
+
+export type WinRawCommandArg = string | WinRawCommandSpec;
 
 function normalizePackage(arg: WinPackageArg): WinPackage {
   if (typeof arg === "string") {
@@ -53,6 +64,42 @@ function normalizePackage(arg: WinPackageArg): WinPackage {
   return pkg;
 }
 
+function normalizeRawCommand(arg: WinRawCommandArg): WinRawCommand {
+  if (typeof arg === "string") {
+    if (arg.length === 0) {
+      throw new Error("windows.raw(command) requires a non-empty command string");
+    }
+    return { executable: "powershell", arguments: ["-Command", arg] };
+  }
+
+  if (!arg || typeof arg !== "object") {
+    throw new Error("windows.raw(...) requires a command string or a spec object");
+  }
+  if (!arg.executable || typeof arg.executable !== "string") {
+    throw new Error("windows.raw({ executable }) requires a non-empty executable");
+  }
+
+  const command: WinRawCommand = {
+    executable: arg.executable,
+  };
+  if (arg.name !== undefined) {
+    if (typeof arg.name !== "string" || arg.name.length === 0) {
+      throw new Error("windows.raw({ name }) must be a non-empty string");
+    }
+    command.name = arg.name;
+  }
+  if (arg.arguments !== undefined) {
+    if (
+      !Array.isArray(arg.arguments) ||
+      arg.arguments.some((value) => typeof value !== "string")
+    ) {
+      throw new Error("windows.raw({ arguments }) must be an array of strings");
+    }
+    command.arguments = arg.arguments;
+  }
+  return command;
+}
+
 export interface WindowsHelper {
   /**
    * Declare a winget/msstore package.
@@ -64,11 +111,31 @@ export interface WindowsHelper {
    * ```
    */
   package(arg: WinPackageArg): Fragment;
+
+  /**
+   * Run an arbitrary command on every Windows apply via DSC v3's
+   * `Microsoft.DSC.Transitional/RunCommandOnSet` resource.
+   *
+   * This is an escape hatch, not a declarative/idempotent helper:
+   * `RunCommandOnSet` has no real test phase, so the command runs on every
+   * `winget configure` apply. Prefer typed helpers when available.
+   *
+   * ```ts
+   * windows.raw("New-Item -ItemType Directory -Force -Path $env:USERPROFILE\\.local\\bin")
+   * windows.raw({ executable: "pwsh", arguments: ["-Command", "Write-Host hi"] })
+   * windows.raw({ name: "make-bin-dir", executable: "cmd", arguments: ["/c", "mkdir", "foo"] })
+   * ```
+   */
+  raw(arg: WinRawCommandArg): Fragment;
 }
 
 export const windows: WindowsHelper = {
   package: (arg: WinPackageArg): Fragment => {
     const pkg = normalizePackage(arg);
     return { windows: { packages: { [pkg.id]: pkg } } };
+  },
+  raw: (arg: WinRawCommandArg): Fragment => {
+    const command = normalizeRawCommand(arg);
+    return { windows: { commands: [command] } };
   },
 };

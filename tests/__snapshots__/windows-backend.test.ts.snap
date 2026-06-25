@@ -37,6 +37,21 @@ resources:
       source: winget
       acceptAgreements: true
       version: "1.90.1"
+  - name: run-command-0
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    properties:
+      executable: powershell
+      arguments: ["-Command", "Write-Host after-packages"]
+  - name: run-command-1
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    properties:
+      executable: pwsh
+      arguments: ["-Command", "Write-Host explicit"]
+  - name: make-bin-dir
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    properties:
+      executable: cmd
+      arguments: ["/c", "mkdir", "foo"]
 ",
 }
 `;
