@@ -33,6 +33,9 @@ import {
   reconcileInlinePins,
   type WindowsLock,
 } from "./lockfile.ts";
+import { isWindowsHost } from "./host.ts";
+
+export { isWindowsHost } from "./host.ts";
 
 /**
  * Per-host generated output for the Windows backend.
@@ -56,13 +59,6 @@ const DSC_SCHEMA =
   "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json";
 const WINGET_PACKAGE_TYPE = "Microsoft.WinGet/Package";
 const RUN_COMMAND_ON_SET_TYPE = "Microsoft.DSC.Transitional/RunCommandOnSet";
-
-/**
- * True when an evaluated host targets the Windows backend.
- */
-export function isWindowsHost(host: { windows?: Record<string, unknown> }): boolean {
-  return Boolean(host.windows && Object.keys(host.windows).length > 0);
-}
 
 /**
  * Generate Windows bundles for every Windows host in the evaluated workspace.
@@ -216,7 +212,8 @@ function lockedVersionForPackage(pkg: WinPackage, lock: WindowsLock): string {
   if (entry.source !== pkg.source) {
     throw new Error(
       `Windows package "${pkg.id}" source mismatch in winix-windows.lock: ` +
-      `expected "${pkg.source}", found "${entry.source}". Run \`winix update --windows\` first.`
+      `expected "${pkg.source}", found "${entry.source}". Update the lock entry ` +
+      `or change the package source in config.`
     );
   }
   return entry.version;
