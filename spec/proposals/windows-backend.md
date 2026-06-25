@@ -1,6 +1,6 @@
 # Proposal: Windows backend
 
-> **Status:** `draft`
+> **Status:** `in-progress`
 > **Owner:** unassigned
 
 ## Motivation
@@ -71,10 +71,65 @@ The **package vertical slice is implemented and validated end-to-end**
 
 See "Worked example (validated end-to-end)" under Backend strategy for the
 exact emitted document and the contract notes learned from real-machine
-validation. Everything else in this proposal (env/path/file/raw/dsc/wsl/
-programs helpers, Windows lockfile update resolution, drift, type generation)
-remains **proposed**, not yet implemented. The slice is the mold the
-remaining helpers copy, each gated by its own snapshot test.
+validation. The slice is the mold the remaining helpers copy, each gated by
+its own snapshot test. See the Implementation roadmap below for what is done,
+in progress, and pending.
+
+## Implementation roadmap
+
+Living checklist of the Windows backend, ordered roughly by priority. This is
+the source of truth for backend progress; the top-level `ROADMAP.md` keeps a
+single high-level pointer here. Update this as PRs land.
+
+### Phase 0 — Vertical slice (DONE)
+
+- [x] `platforms.windows()` as a third backend peer
+- [x] `windows.package()` (bare id, explicit source, inline version pin, `elevated`)
+- [x] DSC v3 emitter (`configuration.winget` + `apply.ps1`), schema pinned `2023/08`
+- [x] Evaluator merge with backend isolation
+- [x] CLI wiring: `apply` / `switch` dispatch to the Windows backend
+- [x] `winix update` guard for Windows-only workspaces
+- [x] Validated end-to-end on Windows 11 25H2 (real `winget configure` install)
+
+### Phase 1 — Reproducibility (DONE)
+
+- [x] `winix-windows.lock` format + read/write (`src/backends/windows/lockfile.ts`)
+- [x] Inline-pin reconciliation into the lock
+- [x] `apply`/`switch` read the lock and emit locked versions
+- [x] Surface unlocked floating packages (interim: hard error pointing at
+      `winix update --windows`; superseded by auto-resolution in Phase 2)
+
+### Phase 2 — Automatic version resolution (IN PROGRESS)
+
+- [ ] `winix update --windows` resolves floating versions via `winget show` *(needs Windows)*
+- [ ] Resolver shells out to `winget show --id <id> --exact`, parses `Version:`
+- [ ] `apply` auto-resolves *only missing* lock entries on the fly (Nix-style
+      "update the lock if needed"), then writes them; already-locked entries
+      are never re-resolved
+- [ ] Inline-pinned packages keep their pin (not re-resolved)
+- [ ] Clear summary of resolved / up-to-date / changed packages; `--dry` reports without writing
+
+### Phase 3 — Resource ordering + ergonomics (PENDING)
+
+- [ ] **`dependsOn` + `name` on resources** *(settle DX first: string names vs handle refs)*
+- [ ] Cycle + dangling-reference validation at generation time
+- [ ] `windows.setting()` → `WindowsSettings` (Developer Mode), auto-emit ensure-module + `dependsOn`
+- [ ] `windows.requireOsVersion()` → `OsVersion` guardrail
+
+### Phase 4 — Sugar helpers (PENDING)
+
+- [ ] `windows.env()` / `windows.path()` (honest sugar over `RunCommandOnSet`; `path()` idempotent)
+- [ ] `windows.dsc()` typed escape hatch to any DSC v3 resource
+- [ ] `windows.programs.<name>()` curated install+configure helpers
+- [ ] `windows.file()` declarative file content
+
+### Phase 5 — Power features (LATER)
+
+- [ ] Drift detection via `dsc resource get` → `winix check`
+- [ ] Full DSC v3 resource catalogue (registry, services, scheduled tasks, features, fonts)
+- [ ] DSC v3 type generation (typed `windows.dsc()` like the ~24k NixOS options)
+- [ ] Extended lockfile metadata (schema rev, PS module versions, checksums)
+- [ ] Chocolatey / Scoop sources for `windows.package()`
 
 ## DSC v3 resource ecosystem
 
@@ -839,10 +894,47 @@ resources:
       version: "2.44.0"   # <- from winix-windows.lock
 ```
 
-If a package declared in `winix.config.ts` is missing from the lockfile,
-`winix apply` fails with a clear message pointing at `winix update`.
-Nothing implicit. Mirrors how Nix flakes refuse to evaluate without a
-resolved lock.
+If a package declared in `winix.config.ts` is not yet in the lockfile,
+`winix apply` resolves it on the fly, writes it to `winix-windows.lock`, and
+proceeds, exactly like Nix auto-locks a new flake input on first build.
+Packages already in the lock are honoured as-is and never re-resolved.
+
+#### Design decision: mirror Nix's auto-lock-on-demand
+
+The division of labour between `apply` and `update` mirrors Nix's flake
+behaviour, which the Nix manual sums up as: *"every command that operates on
+a flake will also update the lock file if needed"* and *"existing lock file
+entries are not updated unless required by a flag."* Winix on Windows follows
+the same two rules:
+
+- **`winix apply` / `winix switch` resolve only what is missing.** If a
+  declared package has no lock entry yet, apply queries `winget show` for it,
+  writes the resolved version to `winix-windows.lock`, and continues. This is
+  the *"if needed"* path: a brand-new package or a fresh checkout without a
+  lock just works, no extra command required. This is what makes the Nix
+  experience feel frictionless (users rarely run `nix flake lock` by hand),
+  and Winix matches it.
+- **Packages already in the lock are never re-resolved by apply.** Once a
+  version is locked, apply emits it verbatim. The same config + same lock
+  produce the same `configuration.winget` on every machine, every time. Apply
+  only ever touches the network for entries that are genuinely missing.
+- **`winix update --windows` is the explicit "refresh everything" step.** It
+  re-resolves floating packages to their current latest version and rewrites
+  the lock, exactly like `nix flake update`. This is the only command that
+  moves *already-locked* entries forward.
+
+An earlier draft of this proposal made `apply` strict and offline (fail hard
+if any package was unlocked, forcing an explicit `winix update --windows`
+first). That was rejected in favour of the Nix model above: forcing a
+separate resolve step before the first apply is friction Nix users do not
+expect, and the whole point of Winix is to feel like Nix for Windows. The
+determinism guarantee is preserved either way, because apply still never
+re-resolves an entry that is already locked; it only fills genuine gaps.
+
+For the rare case where fully offline / hermetic apply is wanted (CI that
+must never hit the network), a future `winix apply --locked` flag can make
+apply fail instead of auto-resolving a missing entry, mirroring Nix's own
+`--no-update-lock-file` / `--locked`.
 
 ### Pinning a version inline
 
