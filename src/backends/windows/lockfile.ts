@@ -18,6 +18,25 @@ export interface WindowsLock {
   packages: Record<string, WindowsLockPackage>;
 }
 
+export type WindowsPackageVersionResolver = (
+  id: string,
+  source: WinPackageSource
+) => string;
+
+export interface WindowsLockResolution {
+  id: string;
+  source: WinPackageSource;
+  version: string;
+  previousVersion?: string;
+  status: "new" | "updated" | "up-to-date";
+}
+
+export interface WindowsLockResolutionResult {
+  lock: WindowsLock;
+  resolutions: WindowsLockResolution[];
+  changed: boolean;
+}
+
 export function readWindowsLock(configDir: string): WindowsLock | null {
   const path = windowsLockPath(configDir);
   if (!existsSync(path)) return null;
@@ -98,6 +117,80 @@ export function emptyWindowsLock(now = new Date()): WindowsLock {
   };
 }
 
+export function resolveMissingWindowsLockEntries(
+  lock: WindowsLock,
+  evaluatedWindowsHosts: EvaluatedHost[],
+  resolveVersion: WindowsPackageVersionResolver,
+  now = new Date()
+): WindowsLockResolutionResult {
+  const missing = new Map<string, WinPackage>();
+
+  for (const host of evaluatedWindowsHosts) {
+    const win = host.windows as WindowsOptions;
+    for (const pkg of Object.values(win.packages ?? {})) {
+      if (pkg.version !== undefined || lock.packages[pkg.id] !== undefined) continue;
+
+      const existing = missing.get(pkg.id);
+      if (existing && existing.source !== pkg.source) {
+        throw new Error(
+          `Windows package "${pkg.id}" is declared with multiple sources. ` +
+          `Use one source per package id.`
+        );
+      }
+      missing.set(pkg.id, pkg);
+    }
+  }
+
+  return resolveWindowsLockEntries(lock, missing.values(), resolveVersion, now);
+}
+
+export function resolveWindowsLockEntries(
+  lock: WindowsLock,
+  packages: Iterable<WinPackage>,
+  resolveVersion: WindowsPackageVersionResolver,
+  now = new Date()
+): WindowsLockResolutionResult {
+  const resolvedAt = now.toISOString();
+  const next: WindowsLock = {
+    version: WINDOWS_LOCK_VERSION,
+    generatedAt: lock.generatedAt,
+    packages: cloneLockPackages(lock.packages),
+  };
+  const resolutions: WindowsLockResolution[] = [];
+  let changed = false;
+
+  for (const pkg of packages) {
+    const previous = next.packages[pkg.id];
+    const version = resolveVersion(pkg.id, pkg.source);
+    if (previous?.source === pkg.source && previous.version === version) {
+      resolutions.push({
+        id: pkg.id,
+        source: pkg.source,
+        version,
+        status: "up-to-date",
+      });
+      continue;
+    }
+
+    next.packages[pkg.id] = {
+      source: pkg.source,
+      version,
+      resolvedAt,
+    };
+    next.generatedAt = resolvedAt;
+    changed = true;
+    resolutions.push({
+      id: pkg.id,
+      source: pkg.source,
+      version,
+      previousVersion: previous?.version,
+      status: previous ? "updated" : "new",
+    });
+  }
+
+  return { lock: next, resolutions, changed };
+}
+
 export function windowsLockChanged(before: WindowsLock, after: WindowsLock): boolean {
   return serializeWindowsLock(before) !== serializeWindowsLock(after);
 }
@@ -119,6 +212,16 @@ export function serializeWindowsLock(lock: WindowsLock): string {
   }
 
   return JSON.stringify(sorted, null, 2) + "\n";
+}
+
+function cloneLockPackages(
+  packages: Record<string, WindowsLockPackage>
+): Record<string, WindowsLockPackage> {
+  const out: Record<string, WindowsLockPackage> = {};
+  for (const [id, entry] of Object.entries(packages)) {
+    out[id] = { ...entry };
+  }
+  return out;
 }
 
 function windowsLockPath(configDir: string): string {

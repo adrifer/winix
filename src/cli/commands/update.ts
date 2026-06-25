@@ -6,16 +6,18 @@ import {
   emptyWindowsLock,
   readWindowsLock,
   reconcileInlinePins,
+  resolveWindowsLockEntries,
   windowsLockChanged,
   writeWindowsLock,
   type WindowsLock,
+  type WindowsPackageVersionResolver,
 } from "../../backends/windows/lockfile.ts";
 import { isWindowsHost } from "../../backends/windows/index.ts";
 import {
   assertWingetResolutionSupported,
   resolveWingetVersion,
 } from "../../backends/windows/resolver.ts";
-import type { WinPackage, WinPackageSource, WindowsOptions } from "../../types/index.ts";
+import type { WinPackage, WindowsOptions } from "../../types/index.ts";
 import { platformForEvaluatedHost } from "../activation.ts";
 import { loadWorkspace } from "../loader.ts";
 import { runCommand } from "../run.ts";
@@ -25,7 +27,7 @@ interface UpdateOptions {
   inputs: string[];
   dry: boolean;
   windows?: boolean;
-  resolveWindowsPackageVersion?: (id: string, source: WinPackageSource) => string;
+  resolveWindowsPackageVersion?: WindowsPackageVersionResolver;
 }
 
 export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
@@ -97,7 +99,7 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
   const now = new Date();
   const originalLock = readWindowsLock(configDir) ?? emptyWindowsLock(now);
   const reconciled = reconcileInlinePins(originalLock, windowsHosts, now);
-  const lock: WindowsLock = {
+  let lock: WindowsLock = {
     ...reconciled,
     packages: { ...reconciled.packages },
   };
@@ -105,7 +107,6 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
   const floating = collectFloatingPackages(windowsHosts, pinned);
   const selected = selectPackagesForUpdate(floating, pinned, opts.inputs);
   const resolveVersion = opts.resolveWindowsPackageVersion ?? resolveWingetVersion;
-  const resolvedAt = now.toISOString();
   let changed = windowsLockChanged(originalLock, reconciled);
 
   console.log(`Updating winix-windows.lock for ${windowsHosts.length} Windows host(s).`);
@@ -119,26 +120,22 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
     console.log("  no floating Windows packages to resolve");
   }
 
-  for (const [id, pkg] of selected) {
-    const previous = lock.packages[id];
-    const latest = resolveVersion(id, pkg.source);
-    if (previous?.source === pkg.source && previous.version === latest) {
-      console.log(`  up to date  ${id} ${pkg.source} ${latest}`);
-      continue;
-    }
+  const resolved = resolveWindowsLockEntries(lock, selected.values(), resolveVersion, now);
+  lock = resolved.lock;
+  changed = changed || resolved.changed;
 
-    lock.packages[id] = {
-      source: pkg.source,
-      version: latest,
-      resolvedAt,
-    };
-    lock.generatedAt = resolvedAt;
-    changed = true;
-
-    if (previous) {
-      console.log(`  resolved  ${id} ${pkg.source} ${previous.version} -> ${latest}`);
+  for (const resolution of resolved.resolutions) {
+    if (resolution.status === "up-to-date") {
+      console.log(`  up to date  ${resolution.id} ${resolution.source} ${resolution.version}`);
+    } else if (resolution.status === "updated") {
+      console.log(
+        `  resolved  ${resolution.id} ${resolution.source} ` +
+        `${resolution.previousVersion} -> ${resolution.version}`
+      );
     } else {
-      console.log(`  resolved  ${id} ${pkg.source} ${latest} (new)`);
+      console.log(
+        `  resolved  ${resolution.id} ${resolution.source} ${resolution.version} (new)`
+      );
     }
   }
 

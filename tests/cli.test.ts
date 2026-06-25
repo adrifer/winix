@@ -240,8 +240,8 @@ describe("activation commands", () => {
 });
 
 describe("winix apply Windows output", () => {
-  it("fails clearly for a floating Windows package with no lock entry", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-unlocked-"));
+  it("auto-resolves a missing floating package, writes the lock, and emits it", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-autolock-"));
     try {
       await writeConfig(dir, `
         host("desktop", platforms.windows(), [
@@ -249,15 +249,58 @@ describe("winix apply Windows output", () => {
         ])
       `);
 
-      await expect(
-        applyWorkspace(dir, { dry: false, diff: false })
-      ).rejects.toThrow(
-        'Windows package "Fastfetch-cli.Fastfetch" is not locked'
+      const result = await applyWorkspace(
+        dir,
+        {
+          dry: false,
+          diff: false,
+          resolveWindowsPackageVersion: () => "2.65.1",
+        }
       );
-      await expect(
-        applyWorkspace(dir, { dry: false, diff: false })
-      ).rejects.toThrow("winix update --windows");
+      const config = await readFile(
+        join(result.outDir, "desktop", "configuration.winget"),
+        "utf-8"
+      );
+      const lock = JSON.parse(await readFile(join(dir, "winix-windows.lock"), "utf-8")) as {
+        packages: Record<string, { version: string }>;
+      };
+
+      expect(config).toContain('version: "2.65.1"');
+      expect(lock.packages["Fastfetch-cli.Fastfetch"].version).toBe("2.65.1");
     } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("auto-resolves missing packages on dry-run without writing the lock", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-dry-autolock-"));
+    const warnings: string[] = [];
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation((...args) => {
+      warnings.push(args.join(" "));
+    });
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      await applyWorkspace(
+        dir,
+        {
+          dry: true,
+          diff: false,
+          resolveWindowsPackageVersion: () => "2.65.1",
+        }
+      );
+
+      expect(existsSync(join(dir, "winix-windows.lock"))).toBe(false);
+      expect(warnings.join("\n")).toContain(
+        "Would update winix-windows.lock with resolved Windows package versions"
+      );
+      expect(warnings.join("\n")).toContain("Fastfetch-cli.Fastfetch winget 2.65.1");
+    } finally {
+      warnSpy.mockRestore();
       await rm(dir, { recursive: true, force: true });
     }
   });
@@ -302,13 +345,22 @@ describe("winix apply Windows output", () => {
         "Fastfetch-cli.Fastfetch": { source: "winget", version: "2.45.0" },
       });
 
-      const result = await applyWorkspace(dir, { dry: false, diff: false });
+      const calls: string[] = [];
+      const result = await applyWorkspace(dir, {
+        dry: false,
+        diff: false,
+        resolveWindowsPackageVersion: (id) => {
+          calls.push(id);
+          throw new Error("already-locked packages must not be resolved");
+        },
+      });
       const config = await readFile(
         join(result.outDir, "desktop", "configuration.winget"),
         "utf-8"
       );
 
       expect(config).toContain('version: "2.45.0"');
+      expect(calls).toEqual([]);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

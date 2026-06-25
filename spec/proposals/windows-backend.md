@@ -62,15 +62,12 @@ The **package vertical slice is implemented and validated end-to-end**
   `configuration.winget` plus `apply.ps1`, matching Microsoft's
   WindowsDeveloperConfig document shape.
 - `winix-windows.lock` phase 1 is implemented: `winix apply` / `winix
-  switch` read the lockfile, reconcile inline version pins into it, and emit
-  locked package versions. (Unlocked floating packages currently raise a hard
-  error; Phase 2 replaces that with on-the-fly auto-resolution, mirroring
-  Nix's auto-lock-on-demand.)
-- `winix-windows.lock` phase 2 (in progress): `winix update --windows`
-  resolves floating package versions via `winget show`, skips inline-pinned
-  packages, and writes deterministic lockfile updates (with `--dry` support).
-  Validated on Windows 11 25H2. Remaining: `apply` auto-resolving missing
-  entries on the fly.
+  switch` read the lockfile, reconcile inline version pins into it, emit
+  locked package versions, and keep existing lock entries deterministic.
+- `winix-windows.lock` phase 2 is implemented: `winix apply` / `winix
+  switch` auto-resolve missing floating package lock entries on demand, while
+  `winix update --windows` refreshes floating package versions via
+  `winget show`; both skip inline-pinned packages and support `--dry`.
 - Covered by `tests/windows-backend.test.ts` (helper, platform, evaluator,
   emitter + snapshot) and **confirmed to install a package via
   `winget configure` on Windows 11 25H2**.
@@ -105,12 +102,12 @@ single high-level pointer here. Update this as PRs land.
 - [x] Surface unlocked floating packages (interim: hard error pointing at
       `winix update --windows`; superseded by auto-resolution in Phase 2)
 
-### Phase 2 — Automatic version resolution (IN PROGRESS)
+### Phase 2 — Automatic version resolution (DONE)
 
 - [x] `winix update --windows` resolves floating versions via `winget show` (validated on Windows 11 25H2)
 - [x] Resolver shells out to `winget show --id <id> --exact`, parses `Version:` (injectable for tests)
 - [x] Inline-pinned packages keep their pin (not re-resolved); `--dry` reports without writing
-- [ ] `apply` auto-resolves *only missing* lock entries on the fly (Nix-style
+- [x] `apply` auto-resolves *only missing* lock entries on the fly (Nix-style
       "update the lock if needed"), then writes them; already-locked entries
       are never re-resolved
 

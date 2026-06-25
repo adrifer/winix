@@ -11,10 +11,13 @@ import {
   emptyWindowsLock,
   readWindowsLock,
   reconcileInlinePins,
+  resolveMissingWindowsLockEntries,
   windowsLockChanged,
   writeWindowsLock,
   type WindowsLock,
+  type WindowsPackageVersionResolver,
 } from "../../backends/windows/lockfile.ts";
+import { resolveWingetVersion } from "../../backends/windows/resolver.ts";
 import { platformForEvaluatedHost, type ActivationPlatform } from "../activation.ts";
 
 interface ApplyOptions {
@@ -22,6 +25,7 @@ interface ApplyOptions {
   dry: boolean;
   diff: boolean;
   windowsLockDry?: boolean;
+  resolveWindowsPackageVersion?: WindowsPackageVersionResolver;
 }
 
 export interface ApplyResult {
@@ -53,7 +57,12 @@ export async function applyWorkspace(
   const nixHosts = evaluated.filter((host) => hostPlatforms.get(host.name) !== "windows");
   const windowsHosts = evaluated.filter((host) => hostPlatforms.get(host.name) === "windows");
   const windowsLock = windowsHosts.length > 0
-    ? prepareWindowsLock(configDir, windowsHosts, opts.dry || opts.windowsLockDry === true)
+    ? prepareWindowsLock(
+      configDir,
+      windowsHosts,
+      opts.dry || opts.windowsLockDry === true,
+      opts.resolveWindowsPackageVersion ?? resolveWingetVersion
+    )
     : undefined;
   const nixOutput = nixHosts.length > 0 ? generateNix(workspace, nixHosts) : undefined;
   const windowsOutput = windowsHosts.length > 0
@@ -122,19 +131,53 @@ export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
 function prepareWindowsLock(
   configDir: string,
   windowsHosts: ReturnType<typeof evaluate>,
-  dry: boolean
+  dry: boolean,
+  resolveVersion: WindowsPackageVersionResolver
 ): WindowsLock {
-  const lock = readWindowsLock(configDir) ?? emptyWindowsLock();
-  const reconciled = reconcileInlinePins(lock, windowsHosts);
-  if (!windowsLockChanged(lock, reconciled)) return reconciled;
+  const now = new Date();
+  const lock = readWindowsLock(configDir) ?? emptyWindowsLock(now);
+  const reconciled = reconcileInlinePins(lock, windowsHosts, now);
+  const resolved = resolveMissingWindowsLockEntries(
+    reconciled,
+    windowsHosts,
+    resolveVersion,
+    now
+  );
+  const changed = windowsLockChanged(lock, resolved.lock);
+  if (!changed) return resolved.lock;
 
   if (dry) {
-    console.warn("Would update winix-windows.lock with inline Windows package pins.");
-    return reconciled;
+    printWindowsLockDryRun(resolved.resolutions);
+    return resolved.lock;
   }
 
-  writeWindowsLock(configDir, reconciled);
-  return reconciled;
+  writeWindowsLock(configDir, resolved.lock);
+  printWindowsLockUpdate(resolved.resolutions);
+  return resolved.lock;
+}
+
+function printWindowsLockDryRun(resolutions: { id: string; source: string; version: string }[]): void {
+  if (resolutions.length === 0) {
+    console.warn("Would update winix-windows.lock with inline Windows package pins.");
+    return;
+  }
+
+  console.warn("Would update winix-windows.lock with resolved Windows package versions:");
+  for (const resolution of resolutions) {
+    console.warn(`  ${resolution.id} ${resolution.source} ${resolution.version}`);
+  }
+}
+
+function printWindowsLockUpdate(resolutions: { id: string; source: string; version: string }[]): void {
+  if (resolutions.length === 0) {
+    console.log("✓ Updated winix-windows.lock with inline Windows package pins");
+    return;
+  }
+
+  console.log("✓ Updated winix-windows.lock with resolved Windows package versions");
+  for (const resolution of resolutions) {
+    console.log(`  → ${resolution.id} ${resolution.source} ${resolution.version}`);
+  }
 }
 
 function resultFor(
