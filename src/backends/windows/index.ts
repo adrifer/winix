@@ -205,8 +205,9 @@ function lockedVersionForPackage(pkg: WinPackage, lock: WindowsLock): string {
   if (!entry) {
     throw new Error(
       `Windows package "${pkg.id}" is not locked. It has no inline version pin ` +
-      `and no entry in winix-windows.lock. Add an inline version pin or a ` +
-      `winix-windows.lock entry. \`winix update --windows\` will automate this in phase 2.`
+      `and no entry in winix-windows.lock. Add an inline version pin ` +
+      `(\`windows.package({ id: "${pkg.id}", version: "..." })\`) or a ` +
+      `winix-windows.lock entry for it.`
     );
   }
   if (entry.source !== pkg.source) {

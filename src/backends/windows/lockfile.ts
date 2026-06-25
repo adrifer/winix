@@ -2,7 +2,6 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
 import type { WinPackage, WinPackageSource, WindowsOptions } from "../../types/index.ts";
-import { isWindowsHost } from "./host.ts";
 
 export const WINDOWS_LOCKFILE_NAME = "winix-windows.lock";
 export const WINDOWS_LOCK_VERSION = 1;
@@ -54,7 +53,6 @@ export function reconcileInlinePins(
   }
 
   for (const host of evaluatedWindowsHosts) {
-    if (!isWindowsHost(host)) continue;
     const win = host.windows as WindowsOptions;
     for (const pkg of Object.values(win.packages ?? {})) {
       if (pkg.version === undefined) continue;
