@@ -6,6 +6,9 @@ export type WingetShowRunner = (id: string, source: WinPackageSource) => string;
 export const WINGET_RESOLUTION_WINDOWS_ONLY_MESSAGE =
   "winget version resolution is only available on Windows. " +
   "Run `winix update --windows` on a Windows machine.";
+export const WINGET_NOT_FOUND_MESSAGE =
+  "`winget` was not found on PATH. Install App Installer / winget, or run " +
+  "`winix update --windows` on a Windows machine where winget is available.";
 
 export function resolveWingetVersion(
   id: string,
@@ -63,7 +66,7 @@ function runWingetShowCommand(id: string, source: WinPackageSource): string {
 
 function wingetError(id: string, source: WinPackageSource, err: unknown): Error {
   if (isNodeError(err) && err.code === "ENOENT") {
-    return new Error(WINGET_RESOLUTION_WINDOWS_ONLY_MESSAGE);
+    return new Error(WINGET_NOT_FOUND_MESSAGE);
   }
 
   const output = wingetErrorOutput(err);

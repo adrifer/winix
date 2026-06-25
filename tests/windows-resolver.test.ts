@@ -38,6 +38,6 @@ describe("winget resolver", () => {
       resolveWingetVersion("Fastfetch-cli.Fastfetch", "winget", () => {
         throw err;
       }, "win32")
-    ).toThrow("winget version resolution is only available on Windows");
+    ).toThrow("`winget` was not found on PATH");
   });
 });
