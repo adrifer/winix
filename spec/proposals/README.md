@@ -35,6 +35,7 @@ Each proposal must declare a status at the top of the file:
 |---|---|---|
 | [`binary-release.md`](./binary-release.md) | implemented | `nix.binaryRelease()` helper for prebuilt single-binary CLIs |
 | [`windows-backend.md`](./windows-backend.md) | in-progress | Native Windows targets (Winget, DSC, registry, scheduled tasks) |
+| [`context-injection.md`](./context-injection.md) | draft | Inject declaration namespaces into `feature`/`profile`/`host` callbacks; declare by effect; resource handles for `dependsOn` |
 
 ## Research
 
