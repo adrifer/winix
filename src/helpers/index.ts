@@ -9,7 +9,7 @@ export type {
   AccountUserRef,
 } from "./account.ts";
 export { platforms } from "./platforms.ts";
-export type { DarwinPlatformOpts, NixosPlatformOpts, PlatformsHelper } from "./platforms.ts";
+export type { DarwinPlatformOpts, NixosPlatformOpts, WindowsPlatformOpts, PlatformsHelper } from "./platforms.ts";
 export { nix } from "./nix.ts";
 export type {
   BinaryReleaseArch,
@@ -29,3 +29,5 @@ export { nixos } from "./nixos.ts";
 export type { NixosHelper, NixosProgramOptions, NixosServiceOptions, SysctlSettings, SystemdHelper, VirtualisationHelper } from "./nixos.ts";
 export { darwin } from "./darwin.ts";
 export type { DarwinHelper, DarwinProgramOptions, DarwinServiceOptions, LaunchdHelper } from "./darwin.ts";
+export { windows } from "./windows.ts";
+export type { WindowsHelper, WinPackageArg, WinPackageSpec } from "./windows.ts";

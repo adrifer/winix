@@ -3,3 +3,4 @@ export * from "./programs.ts";
 export * from "./nixos.ts";
 export * from "./home.ts";
 export * from "./darwin.ts";
+export * from "./windows.ts";

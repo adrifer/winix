@@ -18,9 +18,20 @@ export interface DarwinPlatformOpts {
   hostname?: string | false;
 }
 
+export interface WindowsPlatformOpts {
+  /**
+   * DSC v3 schema revision to pin the emitted `configuration.winget` against.
+   * Defaults to the backend's pinned default ("2024/04").
+   */
+  schema?: string;
+  /** Hostname override; falls back to the host name from eval context. */
+  hostname?: string | false;
+}
+
 export interface PlatformsHelper {
   nixos: PlatformFactory<[opts?: NixosPlatformOpts]>;
   darwin: PlatformFactory<[opts?: DarwinPlatformOpts]>;
+  windows: PlatformFactory<[opts?: WindowsPlatformOpts]>;
 }
 
 export const platforms: PlatformsHelper = {
@@ -83,6 +94,22 @@ export const platforms: PlatformsHelper = {
             autoMigrate: true,
           },
         }),
+      },
+    };
+  }),
+
+  windows: platform("windows", (opts: WindowsPlatformOpts = {}) => {
+    const ctx = getOptionalEvalContext();
+    const hostname = opts.hostname === false ? undefined : opts.hostname ?? ctx?.hostname;
+
+    return {
+      windows: {
+        // Empty packages map establishes the `windows` scope so the host is
+        // recognized as a Windows target by the evaluator and emitter, even
+        // before any windows.package(...) fragment contributes.
+        packages: {},
+        ...(hostname && { hostname }),
+        schema: opts.schema ?? "2024/04",
       },
     };
   }),
