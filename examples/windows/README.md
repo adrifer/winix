@@ -4,9 +4,7 @@ Demonstrates the implemented Windows backend slice: declaring a Windows host
 with `platforms.windows()` and installing winget packages with
 `windows.package(...)`.
 
-> **Status:** This is the validated MVP slice (packages only). The CLI does
-> not yet wire the Windows backend into `winix apply`, so for now you generate
-> the `configuration.winget` with the included script. See
+> **Status:** This is the validated MVP slice (packages only). See
 > `spec/proposals/windows-backend.md` for the full plan.
 
 ## What it shows
@@ -25,31 +23,30 @@ host("desktop", platforms.windows(), [
 
 ## Generate
 
-From the repo root, after building the package:
+From this directory:
 
 ```bash
-npm run build
-node examples/windows/generate.mjs
+winix apply --host desktop
 ```
 
-This writes the bundle to `examples/windows/out/desktop/`:
+This writes the bundle to `.winix/out/desktop/`:
 
 - `configuration.winget` — native DSC v3 document
 - `apply.ps1` — thin entry point that calls `winget configure`
 
 ## Apply (on a Windows machine)
 
-Copy the `out/desktop/` folder to your Windows box, then:
+Run:
 
 ```powershell
-winget configure -f .\configuration.winget --accept-configuration-agreements
+winix switch --host desktop
 ```
 
-Or run the generated entry point, which adds `--disable-interactivity` for an
-unattended apply:
+That invokes `winget configure` on the generated configuration. You can also
+run the generated entry point directly:
 
 ```powershell
-pwsh -File .\apply.ps1
+pwsh -File .\.winix\out\desktop\apply.ps1
 ```
 
 ## Notes

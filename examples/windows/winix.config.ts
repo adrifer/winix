@@ -12,11 +12,11 @@
  *
  * Generate the `configuration.winget` with:
  *
- *   node examples/windows/generate.mjs
+ *   winix apply --host desktop
  *
  * Then apply it on a Windows machine with:
  *
- *   winget configure -f .\out\desktop\configuration.winget --accept-configuration-agreements
+ *   winix switch --host desktop
  */
 
 import { host, platforms, windows, workspace } from "@adrifer/winix";

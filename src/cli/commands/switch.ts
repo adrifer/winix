@@ -1,4 +1,5 @@
 import { hostname } from "node:os";
+import { join } from "node:path";
 import { evaluate } from "../../evaluator/index.ts";
 import { loadWorkspace } from "../loader.ts";
 import { runCommand } from "../run.ts";
@@ -32,8 +33,11 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
     diff: false,
   });
 
-  const flake = flakeRefForHost(result.outDir, hostName);
-  const command = activationCommand(platform, flake);
+  const activationTarget =
+    platform === "windows"
+      ? windowsConfigurationForHost(result.outDir, hostName)
+      : flakeRefForHost(result.outDir, hostName);
+  const command = activationCommand(platform, activationTarget);
 
   console.log(`\nRunning: ${command.join(" ")}`);
   await runCommand(command[0], command.slice(1), { dry: opts.dry });
@@ -67,4 +71,8 @@ export function selectHost(
 
 export function flakeRefForHost(outDir: string, hostName: string): string {
   return `path:${outDir.replace(/\\/g, "/")}#${hostName}`;
+}
+
+export function windowsConfigurationForHost(outDir: string, hostName: string): string {
+  return join(outDir, hostName, "configuration.winget");
 }

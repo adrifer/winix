@@ -2,18 +2,38 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { describe, expect, it } from "vitest";
+import { pathToFileURL } from "node:url";
+import { describe, expect, it, vi } from "vitest";
 import {
   detectConflicts,
   analyzeWorkspace,
   collectEscapeReport,
   findDuplicateHosts,
 } from "../src/cli/analysis.js";
-import { activationCommand, assertActivationSupported } from "../src/cli/activation.js";
+import {
+  activationCommand,
+  assertActivationSupported,
+  platformForEvaluatedHost,
+} from "../src/cli/activation.js";
+import { applyWorkspace } from "../src/cli/commands/apply.js";
 import { init, resolveWinixVersionRange } from "../src/cli/commands/init.js";
-import { flakeRefForHost, selectHost } from "../src/cli/commands/switch.js";
+import {
+  flakeRefForHost,
+  selectHost,
+  switchCommand,
+  windowsConfigurationForHost,
+} from "../src/cli/commands/switch.js";
 import { assertUpdateSupported } from "../src/cli/commands/update.js";
-import { host, nix, nixos as nixosHelpers, platform, workspace } from "../src/index.js";
+import {
+  evaluate,
+  host,
+  nix,
+  nixos as nixosHelpers,
+  platform,
+  platforms,
+  windows,
+  workspace,
+} from "../src/index.js";
 
 const nixos = platform("linux", () => ({
   nixos: {
@@ -124,9 +144,29 @@ describe("winix switch host selection", () => {
       "path:D:/winix/test-config/.winix/out#wsl-work"
     );
   });
+
+  it("formats Windows configuration paths for activation", () => {
+    expect(windowsConfigurationForHost("D:\\winix\\test-config\\.winix\\out", "desktop")).toBe(
+      "D:\\winix\\test-config\\.winix\\out\\desktop\\configuration.winget"
+    );
+  });
 });
 
 describe("activation commands", () => {
+  it("detects Windows hosts from evaluated host output", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ]),
+      ],
+    });
+
+    const [desktop] = evaluate(ws);
+    expect(platformForEvaluatedHost(desktop)).toBe("windows");
+  });
+
   it("runs NixOS and nix-darwin activation through sudo when not root", () => {
     expect(activationCommand("nixos", "path:/repo/.winix/out#wsl", false, "linux")).toEqual([
       "sudo",
@@ -143,6 +183,17 @@ describe("activation commands", () => {
       "switch",
       "--flake",
       "path:/repo/.winix/out#macbook-pro",
+    ]);
+  });
+
+  it("runs Windows activation through winget configure without sudo", () => {
+    expect(activationCommand("windows", "D:\\repo\\.winix\\out\\desktop\\configuration.winget")).toEqual([
+      "winget",
+      "configure",
+      "-f",
+      "D:\\repo\\.winix\\out\\desktop\\configuration.winget",
+      "--accept-configuration-agreements",
+      "--disable-interactivity",
     ]);
   });
 
@@ -173,8 +224,116 @@ describe("activation commands", () => {
     expect(() => assertActivationSupported("darwin", "win32")).toThrow(
       "nix-darwin activation is not supported from native Windows yet"
     );
+    expect(() => assertActivationSupported("windows", "win32")).not.toThrow();
+    expect(() => assertActivationSupported("windows", "linux")).toThrow(
+      "winget configure` only runs on Windows"
+    );
     expect(() => assertUpdateSupported("win32")).toThrow(
       "`winix update` is not supported from native Windows yet"
     );
   });
 });
+
+describe("winix apply Windows output", () => {
+  it("writes configuration.winget and apply.ps1 for a Windows-only workspace", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      const result = await applyWorkspace(dir, { dry: false, diff: false });
+      const hostDir = join(result.outDir, "desktop");
+      const config = await readFile(join(hostDir, "configuration.winget"), "utf-8");
+      const applyScript = await readFile(join(hostDir, "apply.ps1"), "utf-8");
+
+      expect(config).toContain("processor: dscv3");
+      expect(config).toContain("type: Microsoft.WinGet/Package");
+      expect(applyScript).toContain("winget configure");
+      expect(existsSync(join(result.outDir, "hosts"))).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes both Nix and Windows outputs for a mixed workspace", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-apply-mixed-"));
+    try {
+      await writeConfig(dir, `
+        host("server", platforms.nixos(), []),
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      const result = await applyWorkspace(dir, { dry: false, diff: false });
+      const windowsConfig = await readFile(
+        join(result.outDir, "desktop", "configuration.winget"),
+        "utf-8"
+      );
+      const nixHost = await readFile(join(result.outDir, "hosts", "server.nix"), "utf-8");
+      const flake = await readFile(join(result.outDir, "flake.nix"), "utf-8");
+
+      expect(windowsConfig).toContain("processor: dscv3");
+      expect(windowsConfig).toContain("type: Microsoft.WinGet/Package");
+      expect(nixHost).toContain("Generated by Winix");
+      expect(flake).toContain("nixosConfigurations.server");
+      expect(flake).not.toContain("desktop");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("winix switch Windows dry run", () => {
+  it("runs winget configure for a Windows host", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-switch-windows-"));
+    const logs: string[] = [];
+    const logSpy = vi.spyOn(console, "log").mockImplementation((...args) => {
+      logs.push(args.join(" "));
+    });
+
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      await switchCommand(dir, { host: "desktop", dry: true });
+      const configPath = join(dir, ".winix", "out", "desktop", "configuration.winget");
+      expect(logs).toContain(
+        [
+          "winget",
+          "configure",
+          "-f",
+          configPath,
+          "--accept-configuration-agreements",
+          "--disable-interactivity",
+        ].join(" ")
+      );
+    } finally {
+      logSpy.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+async function writeConfig(dir: string, hostsSource: string): Promise<void> {
+  const indexUrl = pathToFileURL(join(process.cwd(), "src", "index.ts")).href;
+  await writeFile(
+    join(dir, "winix.config.mjs"),
+    `
+      import { host, platforms, windows, workspace } from ${JSON.stringify(indexUrl)};
+
+      export default workspace({
+        inputs: { nixpkgs: "nixos-unstable" },
+        hosts: [
+          ${hostsSource}
+        ],
+      });
+    `
+  );
+}

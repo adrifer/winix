@@ -6,7 +6,8 @@ import { existsSync } from "node:fs";
 import { loadWorkspace } from "../loader.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { generateNix, type NixOutput, type RawModuleCopy } from "../../backends/nix/index.ts";
-import { platformForEvaluatedHost } from "../activation.ts";
+import { generateWindows, type WindowsOutput } from "../../backends/windows/index.ts";
+import { platformForEvaluatedHost, type ActivationPlatform } from "../activation.ts";
 
 interface ApplyOptions {
   host?: string;
@@ -18,7 +19,7 @@ export interface ApplyResult {
   configDir: string;
   outDir: string;
   hostNames: string[];
-  hostPlatforms: Map<string, "nixos" | "darwin">;
+  hostPlatforms: Map<string, ActivationPlatform>;
 }
 
 export async function applyWorkspace(
@@ -39,45 +40,62 @@ export async function applyWorkspace(
     }
   }
 
-  const output = generateNix(workspace, evaluated);
-  printWarnings(output.warnings);
+  const hostPlatforms = platformsForHosts(evaluated);
+  const nixHosts = evaluated.filter((host) => hostPlatforms.get(host.name) !== "windows");
+  const windowsHosts = evaluated.filter((host) => hostPlatforms.get(host.name) === "windows");
+  const nixOutput = nixHosts.length > 0 ? generateNix(workspace, nixHosts) : undefined;
+  const windowsOutput = windowsHosts.length > 0 ? generateWindows(windowsHosts) : undefined;
+  printWarnings(nixOutput?.warnings ?? []);
+  printWarnings(windowsOutput?.warnings ?? []);
   const outDir = join(configDir, ".winix", "out");
 
   if (opts.dry) {
-    console.log("=== .winix/out/flake.nix ===");
-    console.log(output["flake.nix"]);
-    for (const [name, content] of Object.entries(output.hosts)) {
-      console.log(`\n=== .winix/out/hosts/${name} ===`);
-      console.log(content);
-    }
+    printDryOutput(nixOutput, windowsOutput);
     return resultFor(configDir, outDir, evaluated);
   }
 
   if (opts.diff) {
-    await showDiff(configDir, outDir, output);
+    await showDiff(configDir, outDir, nixOutput, windowsOutput);
     return resultFor(configDir, outDir, evaluated);
   }
 
-  await mkdir(join(outDir, "hosts"), { recursive: true });
-  await writeFile(join(outDir, "flake.nix"), output["flake.nix"]);
+  if (nixOutput) {
+    await mkdir(join(outDir, "hosts"), { recursive: true });
+    await writeFile(join(outDir, "flake.nix"), nixOutput["flake.nix"]);
 
-  for (const [name, content] of Object.entries(output.hosts)) {
-    await writeFile(join(outDir, "hosts", name), content);
+    for (const [name, content] of Object.entries(nixOutput.hosts)) {
+      await writeFile(join(outDir, "hosts", name), content);
+    }
+
+    await copyRawModules(configDir, outDir, nixOutput.rawModules);
+
+    // Copy flake.lock from project root if it exists.
+    const rootLock = join(cwd, "flake.lock");
+    const outLock = join(outDir, "flake.lock");
+    if (existsSync(rootLock)) {
+      await rm(outLock, { force: true });
+      await copyFile(rootLock, outLock);
+    }
   }
 
-  await copyRawModules(configDir, outDir, output.rawModules);
-
-  // Copy flake.lock from project root if it exists.
-  const rootLock = join(cwd, "flake.lock");
-  const outLock = join(outDir, "flake.lock");
-  if (existsSync(rootLock)) {
-    await rm(outLock, { force: true });
-    await copyFile(rootLock, outLock);
+  if (windowsOutput) {
+    for (const [hostName, bundle] of Object.entries(windowsOutput.hosts)) {
+      const hostDir = join(outDir, hostName);
+      await mkdir(hostDir, { recursive: true });
+      for (const [fileName, content] of Object.entries(bundle)) {
+        await writeFile(join(hostDir, fileName), content);
+      }
+    }
   }
 
-  console.log(`✓ Generated ${Object.keys(output.hosts).length} host(s) in .winix/out/`);
-  for (const name of Object.keys(output.hosts)) {
+  console.log(`✓ Generated ${evaluated.length} host(s) in .winix/out/`);
+  for (const name of Object.keys(nixOutput?.hosts ?? {})) {
     console.log(`  → hosts/${name}`);
+  }
+  for (const [hostName, bundle] of Object.entries(windowsOutput?.hosts ?? {})) {
+    for (const fileName of Object.keys(bundle)) {
+      console.log(`  → ${hostName}/${fileName}`);
+    }
   }
   printNextSteps(cwd, outDir, evaluated);
   return resultFor(configDir, outDir, evaluated);
@@ -96,9 +114,7 @@ function resultFor(
     configDir,
     outDir,
     hostNames: evaluated.map((host) => host.name),
-    hostPlatforms: new Map(
-      evaluated.map((host) => [host.name, platformForEvaluatedHost(host)])
-    ),
+    hostPlatforms: platformsForHosts(evaluated),
   };
 }
 
@@ -108,7 +124,10 @@ function printNextSteps(
   evaluated: ReturnType<typeof evaluate>
 ): void {
   if (evaluated.length === 1) {
-    console.log(`\nNext: winix switch`);
+    const [host] = evaluated;
+    const suffix =
+      platformForEvaluatedHost(host) === "windows" ? ` --host ${host.name}` : "";
+    console.log(`\nNext: winix switch${suffix}`);
     return;
   }
 
@@ -124,11 +143,51 @@ function printWarnings(warnings: string[]): void {
   }
 }
 
-async function showDiff(configDir: string, outDir: string, output: NixOutput): Promise<void> {
-  const files: [string, string][] = [
-    [join(outDir, "flake.nix"), output["flake.nix"]],
-    ...Object.entries(output.hosts).map(([name, content]) => [join(outDir, "hosts", name), content] as [string, string]),
-  ];
+function platformsForHosts(
+  evaluated: ReturnType<typeof evaluate>
+): Map<string, ActivationPlatform> {
+  return new Map(evaluated.map((host) => [host.name, platformForEvaluatedHost(host)]));
+}
+
+function printDryOutput(
+  nixOutput: NixOutput | undefined,
+  windowsOutput: WindowsOutput | undefined
+): void {
+  if (nixOutput) {
+    console.log("=== .winix/out/flake.nix ===");
+    console.log(nixOutput["flake.nix"]);
+    for (const [name, content] of Object.entries(nixOutput.hosts)) {
+      console.log(`\n=== .winix/out/hosts/${name} ===`);
+      console.log(content);
+    }
+  }
+
+  for (const [hostName, bundle] of Object.entries(windowsOutput?.hosts ?? {})) {
+    for (const [fileName, content] of Object.entries(bundle)) {
+      console.log(`\n=== .winix/out/${hostName}/${fileName} ===`);
+      console.log(content);
+    }
+  }
+}
+
+async function showDiff(
+  configDir: string,
+  outDir: string,
+  nixOutput: NixOutput | undefined,
+  windowsOutput: WindowsOutput | undefined
+): Promise<void> {
+  const files: [string, string][] = [];
+  if (nixOutput) {
+    files.push(
+      [join(outDir, "flake.nix"), nixOutput["flake.nix"]],
+      ...Object.entries(nixOutput.hosts).map(([name, content]) => [join(outDir, "hosts", name), content] as [string, string])
+    );
+  }
+  for (const [hostName, bundle] of Object.entries(windowsOutput?.hosts ?? {})) {
+    for (const [fileName, content] of Object.entries(bundle)) {
+      files.push([join(outDir, hostName, fileName), content]);
+    }
+  }
 
   let hasDiff = false;
   for (const [path, newContent] of files) {
@@ -146,7 +205,7 @@ async function showDiff(configDir: string, outDir: string, output: NixOutput): P
     }
   }
 
-  for (const rawModule of output.rawModules) {
+  for (const rawModule of nixOutput?.rawModules ?? []) {
     const source = await resolveRawModuleSource(configDir, rawModule.path);
     const target = rawModuleTarget(outDir, rawModule.path);
     const sourceContent = await readFile(source);
