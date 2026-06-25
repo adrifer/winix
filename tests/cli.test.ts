@@ -2,17 +2,38 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { describe, expect, it } from "vitest";
+import { pathToFileURL } from "node:url";
+import { describe, expect, it, vi } from "vitest";
 import {
   detectConflicts,
   analyzeWorkspace,
   collectEscapeReport,
   findDuplicateHosts,
 } from "../src/cli/analysis.js";
-import { activationCommand } from "../src/cli/activation.js";
+import {
+  activationCommand,
+  assertActivationSupported,
+  platformForEvaluatedHost,
+} from "../src/cli/activation.js";
+import { applyWorkspace } from "../src/cli/commands/apply.js";
 import { init, resolveWinixVersionRange } from "../src/cli/commands/init.js";
-import { selectHost } from "../src/cli/commands/switch.js";
-import { host, nix, nixos as nixosHelpers, platform, workspace } from "../src/index.js";
+import {
+  flakeRefForHost,
+  selectHost,
+  switchCommand,
+  windowsConfigurationForHost,
+} from "../src/cli/commands/switch.js";
+import { assertUpdateSupported, update } from "../src/cli/commands/update.js";
+import {
+  evaluate,
+  host,
+  nix,
+  nixos as nixosHelpers,
+  platform,
+  platforms,
+  windows,
+  workspace,
+} from "../src/index.js";
 
 const nixos = platform("linux", () => ({
   nixos: {
@@ -117,23 +138,67 @@ describe("winix switch host selection", () => {
       'Current hostname "other" does not match a configured host'
     );
   });
+
+  it("formats flake refs with POSIX separators for Nix", () => {
+    expect(flakeRefForHost("D:\\winix\\test-config\\.winix\\out", "wsl-work")).toBe(
+      "path:D:/winix/test-config/.winix/out#wsl-work"
+    );
+  });
+
+  it("formats Windows configuration paths for activation", () => {
+    // Use path.join for the expected value so the assertion is OS-agnostic:
+    // on Windows the separator is "\\", on Linux/CI it is "/". The function
+    // itself uses path.join, which produces the right separator per platform
+    // (winget on Windows gets backslashes).
+    const outDir = join("D:\\winix\\test-config\\.winix\\out");
+    expect(windowsConfigurationForHost(outDir, "desktop")).toBe(
+      join(outDir, "desktop", "configuration.winget")
+    );
+  });
 });
 
 describe("activation commands", () => {
+  it("detects Windows hosts from evaluated host output", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ]),
+      ],
+    });
+
+    const [desktop] = evaluate(ws);
+    expect(platformForEvaluatedHost(desktop)).toBe("windows");
+  });
+
   it("runs NixOS and nix-darwin activation through sudo when not root", () => {
-    expect(activationCommand("nixos", "path:/repo/.winix/out#wsl", false)).toEqual([
+    expect(activationCommand("nixos", "path:/repo/.winix/out#wsl", false, "linux")).toEqual([
       "sudo",
       "nixos-rebuild",
       "switch",
       "--flake",
       "path:/repo/.winix/out#wsl",
     ]);
-    expect(activationCommand("darwin", "path:/repo/.winix/out#macbook-pro", false)).toEqual([
+    expect(
+      activationCommand("darwin", "path:/repo/.winix/out#macbook-pro", false, "darwin")
+    ).toEqual([
       "sudo",
       "darwin-rebuild",
       "switch",
       "--flake",
       "path:/repo/.winix/out#macbook-pro",
+    ]);
+  });
+
+  it("runs Windows activation through winget configure without sudo", () => {
+    expect(activationCommand("windows", "D:\\repo\\.winix\\out\\desktop\\configuration.winget")).toEqual([
+      "winget",
+      "configure",
+      "-f",
+      "D:\\repo\\.winix\\out\\desktop\\configuration.winget",
+      "--accept-configuration-agreements",
+      "--disable-interactivity",
     ]);
   });
 
@@ -145,4 +210,155 @@ describe("activation commands", () => {
       "path:/repo/.winix/out#macbook-pro",
     ]);
   });
+
+  it("does not prefix dry-run activation commands with sudo on native Windows", () => {
+    expect(
+      activationCommand("nixos", "path:C:/repo/.winix/out#wsl", false, "win32")
+    ).toEqual([
+      "nixos-rebuild",
+      "switch",
+      "--flake",
+      "path:C:/repo/.winix/out#wsl",
+    ]);
+  });
+
+  it("fails clearly for native Windows activation and flake updates", () => {
+    expect(() => assertActivationSupported("nixos", "win32")).toThrow(
+      "NixOS activation is not supported from native Windows yet"
+    );
+    expect(() => assertActivationSupported("darwin", "win32")).toThrow(
+      "nix-darwin activation is not supported from native Windows yet"
+    );
+    expect(() => assertActivationSupported("windows", "win32")).not.toThrow();
+    expect(() => assertActivationSupported("windows", "linux")).toThrow(
+      "winget configure` only runs on Windows"
+    );
+    expect(() => assertUpdateSupported("win32")).toThrow(
+      "`winix update` is not supported from native Windows yet"
+    );
+  });
 });
+
+describe("winix apply Windows output", () => {
+  it("writes configuration.winget and apply.ps1 for a Windows-only workspace", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      const result = await applyWorkspace(dir, { dry: false, diff: false });
+      const hostDir = join(result.outDir, "desktop");
+      const config = await readFile(join(hostDir, "configuration.winget"), "utf-8");
+      const applyScript = await readFile(join(hostDir, "apply.ps1"), "utf-8");
+
+      expect(config).toContain("processor: dscv3");
+      expect(config).toContain("type: Microsoft.WinGet/Package");
+      expect(applyScript).toContain("winget configure");
+      expect(existsSync(join(result.outDir, "hosts"))).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes both Nix and Windows outputs for a mixed workspace", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-apply-mixed-"));
+    try {
+      await writeConfig(dir, `
+        host("server", platforms.nixos(), []),
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      const result = await applyWorkspace(dir, { dry: false, diff: false });
+      const windowsConfig = await readFile(
+        join(result.outDir, "desktop", "configuration.winget"),
+        "utf-8"
+      );
+      const nixHost = await readFile(join(result.outDir, "hosts", "server.nix"), "utf-8");
+      const flake = await readFile(join(result.outDir, "flake.nix"), "utf-8");
+
+      expect(windowsConfig).toContain("processor: dscv3");
+      expect(windowsConfig).toContain("type: Microsoft.WinGet/Package");
+      expect(nixHost).toContain("Generated by Winix");
+      expect(flake).toContain("nixosConfigurations.server");
+      expect(flake).not.toContain("desktop");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("winix update fails clearly for a Windows-only workspace", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-update-windows-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      // On a non-win32 platform assertUpdateSupported passes, so the
+      // workspace-level guard is what must reject this. It should throw
+      // before ever invoking `nix flake update`.
+      await expect(
+        update(dir, { inputs: [], dry: false })
+      ).rejects.toThrow("this workspace has no");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("winix switch Windows dry run", () => {
+  it("runs winget configure for a Windows host", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-switch-windows-"));
+    const logs: string[] = [];
+    const logSpy = vi.spyOn(console, "log").mockImplementation((...args) => {
+      logs.push(args.join(" "));
+    });
+
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      await switchCommand(dir, { host: "desktop", dry: true });
+      const configPath = join(dir, ".winix", "out", "desktop", "configuration.winget");
+      expect(logs).toContain(
+        [
+          "winget",
+          "configure",
+          "-f",
+          configPath,
+          "--accept-configuration-agreements",
+          "--disable-interactivity",
+        ].join(" ")
+      );
+    } finally {
+      logSpy.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+async function writeConfig(dir: string, hostsSource: string): Promise<void> {
+  const indexUrl = pathToFileURL(join(process.cwd(), "src", "index.ts")).href;
+  await writeFile(
+    join(dir, "winix.config.mjs"),
+    `
+      import { host, platforms, windows, workspace } from ${JSON.stringify(indexUrl)};
+
+      export default workspace({
+        inputs: { nixpkgs: "nixos-unstable" },
+        hosts: [
+          ${hostsSource}
+        ],
+      });
+    `
+  );
+}

@@ -10,7 +10,27 @@ interface UpdateOptions {
 }
 
 export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
+  if (!opts.dry) {
+    assertUpdateSupported();
+  }
+
   const result = await applyWorkspace(cwd, { dry: false, diff: false });
+
+  // `winix update` resolves the Nix flake lock. A Windows-only workspace has
+  // no flake.nix, so there is nothing to update; fail clearly instead of
+  // letting `nix flake update` error out generically.
+  const hasNixHost = [...result.hostPlatforms.values()].some(
+    (platform) => platform !== "windows"
+  );
+  if (!hasNixHost) {
+    throw new Error(
+      "`winix update` updates the Nix flake lock, but this workspace has no " +
+      "NixOS or nix-darwin hosts (Windows packages are pinned via " +
+      "`winix-windows.lock`, resolved by a future `winix` milestone). " +
+      "Nothing to update."
+    );
+  }
+
   const updateDir = await mkdtemp(join(tmpdir(), "winix-update-"));
   await cp(result.outDir, updateDir, { recursive: true });
 
@@ -37,4 +57,15 @@ export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
   } finally {
     await rm(updateDir, { recursive: true, force: true });
   }
+}
+
+export function assertUpdateSupported(
+  osPlatform: NodeJS.Platform = process.platform
+): void {
+  if (osPlatform !== "win32") return;
+
+  throw new Error(
+    "`winix update` is not supported from native Windows yet because it requires " +
+    "the Nix CLI. Run it from WSL, Linux, or macOS."
+  );
 }

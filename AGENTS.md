@@ -50,6 +50,27 @@ Everything is a `Fragment | Fragment[]`. No inheritance, no classes. Just functi
 - **No build step** for development. Source runs directly via Node.
 - **Fragment keys match Nix option names.** Use `"experimental-features"` not `experimentalFeatures`. The backend does NOT auto-convert camelCase to kebab-case for option keys.
 - **Input names** use camelCase in TS (`nixosWsl`), auto-converted to kebab-case for Nix (`nixos-wsl`).
+- **Core npm workflows must stay shell-independent.** `npm run check`, `npm test`, `npm run build`, and `npm run clean` should work from PowerShell/cmd, WSL, Linux, and macOS. Use Node scripts instead of shell-specific commands like `rm -rf`, `cp`, or `mkdir -p`.
+
+## Windows/WSL Compatibility
+
+Winix development is supported from native Windows and WSL, even before the native Windows backend is implemented.
+
+- **Separate filesystem paths from generated Nix paths.**
+  - Use `node:path` for real filesystem paths (`.winix/out`, copying raw modules, loading configs).
+  - Use `node:path.posix` or explicit POSIX formatting for generated Nix paths (`./hosts/foo.nix`, `../raw-modules/foo.nix`).
+  - Never let Windows backslashes leak into generated Nix files or Nix flake refs.
+- **CLI behavior on native Windows:**
+  - `winix check` and `winix apply --dry` should work.
+  - `winix switch --dry` should print the command without `sudo` and with forward-slash flake refs (`path:D:/repo/...#host`).
+  - Real `winix switch` should fail clearly until native Windows activation exists.
+  - Real `winix update` should fail clearly because it requires the Nix CLI; users should run it from WSL, Linux, or macOS.
+- **CLI behavior on WSL/Linux/macOS:**
+  - `winix switch --dry` should keep POSIX paths (`path:/home/...#host`) and prefix `sudo` when not root.
+  - NixOS and nix-darwin activation commands should remain unchanged outside native Windows.
+- **When adding commands or backend output, test both path surfaces.**
+  - Windows filesystem paths may contain `\`, drive letters, and spaces.
+  - Nix paths and flake refs should use `/`.
 
 ## API Shape Rules
 
@@ -75,6 +96,18 @@ Use these rules when adding or reviewing Winix SDK helpers:
 ```bash
 npx vitest run                    # Unit tests
 cd test-config && node --experimental-transform-types ../src/cli/index.ts apply --dry   # Integration
+```
+
+When touching CLI paths, activation, output layout, or npm scripts, also verify from native Windows and WSL when possible:
+
+```bash
+npm run check
+npm test -- --run
+npm run build
+cd test-config
+node --experimental-transform-types --no-warnings ../src/cli/index.ts check
+node --experimental-transform-types --no-warnings ../src/cli/index.ts apply --dry
+node --experimental-transform-types --no-warnings ../src/cli/index.ts switch --dry
 ```
 
 ## Spec

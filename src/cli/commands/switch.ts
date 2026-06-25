@@ -1,8 +1,13 @@
 import { hostname } from "node:os";
+import { join } from "node:path";
 import { evaluate } from "../../evaluator/index.ts";
 import { loadWorkspace } from "../loader.ts";
 import { runCommand } from "../run.ts";
-import { activationCommand, platformForEvaluatedHost } from "../activation.ts";
+import {
+  activationCommand,
+  assertActivationSupported,
+  platformForEvaluatedHost,
+} from "../activation.ts";
 import { applyWorkspace } from "./apply.ts";
 
 interface SwitchOptions {
@@ -18,6 +23,9 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
   if (!selected) throw new Error(`Host "${hostName}" not found`);
 
   const platform = platformForEvaluatedHost(selected);
+  if (!opts.dry) {
+    assertActivationSupported(platform);
+  }
 
   const result = await applyWorkspace(cwd, {
     host: hostName,
@@ -25,8 +33,11 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
     diff: false,
   });
 
-  const flake = `path:${result.outDir}#${hostName}`;
-  const command = activationCommand(platform, flake);
+  const activationTarget =
+    platform === "windows"
+      ? windowsConfigurationForHost(result.outDir, hostName)
+      : flakeRefForHost(result.outDir, hostName);
+  const command = activationCommand(platform, activationTarget);
 
   console.log(`\nRunning: ${command.join(" ")}`);
   await runCommand(command[0], command.slice(1), { dry: opts.dry });
@@ -44,6 +55,7 @@ export function selectHost(
         hosts.map((host) => `  - ${host}`).join("\n")
       );
     }
+
     return requested;
   }
 
@@ -55,4 +67,12 @@ export function selectHost(
     "`winix switch` needs --host. Available hosts:\n" +
     hosts.map((host) => `  - ${host}`).join("\n")
   );
+}
+
+export function flakeRefForHost(outDir: string, hostName: string): string {
+  return `path:${outDir.replace(/\\/g, "/")}#${hostName}`;
+}
+
+export function windowsConfigurationForHost(outDir: string, hostName: string): string {
+  return join(outDir, hostName, "configuration.winget");
 }

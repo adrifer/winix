@@ -12,6 +12,9 @@ If you're poking around to understand how things fit together, start with
 - **Node.js >= 20** (CI runs on 22)
 - **npm** (the repo is npm-based; bun also works locally if you prefer)
 
+The core npm workflows are shell-independent and should work from PowerShell,
+cmd, WSL, Linux, and macOS.
+
 ## Getting started
 
 ```bash
@@ -21,7 +24,7 @@ npm install
 npm test
 ```
 
-That should give you 89/89 passing tests in a few seconds.
+That should give you 94/94 passing tests in a few seconds.
 
 ## Common workflows
 

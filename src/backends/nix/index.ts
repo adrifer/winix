@@ -1,5 +1,6 @@
 // Nix backend: generates .nix files from evaluated host IR
 
+import { posix as pathPosix } from "node:path";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
 import type { ImportRef, InputDef, InputWithOptions, NixExpr, RawModuleRef, WorkspaceDef } from "../../core/types.ts";
 
@@ -53,7 +54,7 @@ function generateFlake(
       (h) =>
         `    nixosConfigurations.${h.name} = nixpkgs.lib.nixosSystem {\n` +
         `      system = "${systemForHost(h, "nixos")}";\n` +
-        `      modules = [ ./hosts/${h.name}.nix ];\n` +
+        `      modules = [ ${nixRelativePath("hosts", `${h.name}.nix`)} ];\n` +
         `      specialArgs = { inherit inputs; };\n` +
         `    };`
     )
@@ -65,7 +66,7 @@ function generateFlake(
       (h) =>
         `    darwinConfigurations.${h.name} = inputs.nix-darwin.lib.darwinSystem {\n` +
         `      system = "${systemForHost(h, "darwin")}";\n` +
-        `      modules = [ ./hosts/${h.name}.nix ];\n` +
+        `      modules = [ ${nixRelativePath("hosts", `${h.name}.nix`)} ];\n` +
         `      specialArgs = { inherit inputs; };\n` +
         `    };`
     )
@@ -269,7 +270,7 @@ function importsToNix(imports: ImportRef[], indent: number): string[] {
 
 function formatImport(imp: ImportRef): string {
   if (isRawModuleRef(imp)) {
-    return `../raw-modules/${imp.path}`;
+    return pathPosix.join("..", "raw-modules", imp.path);
   }
 
   if (typeof imp === "string") {
@@ -506,6 +507,10 @@ function inputNixName(name: string, def: InputDef): string {
 
 function toKebabCase(str: string): string {
   return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+function nixRelativePath(...segments: string[]): string {
+  return `./${pathPosix.join(...segments)}`;
 }
 
 function filterKeys(obj: Record<string, unknown>, exclude: string[]): Record<string, unknown> {

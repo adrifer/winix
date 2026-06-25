@@ -11,6 +11,7 @@ export interface EvaluatedHost {
   nixos: Record<string, unknown>;
   homeManager: Record<string, unknown>;
   darwin: Record<string, unknown>;
+  windows: Record<string, unknown>;
 }
 
 /**
@@ -53,6 +54,7 @@ function evaluateHost(host: HostDef): EvaluatedHost {
     nixos: {},
     homeManager: {},
     darwin: {},
+    windows: {},
   };
 
   for (const fragment of resolvedFragments) {
@@ -65,6 +67,9 @@ function evaluateHost(host: HostDef): EvaluatedHost {
     if (fragment.darwin && shouldMergeScope(resolvedFragments, "darwin")) {
       result.darwin = deepMerge(result.darwin, fragment.darwin);
     }
+    if (fragment.windows && shouldMergeScope(resolvedFragments, "windows")) {
+      result.windows = deepMerge(result.windows, fragment.windows);
+    }
   }
 
   return result;
@@ -72,7 +77,7 @@ function evaluateHost(host: HostDef): EvaluatedHost {
 
 function shouldMergeScope(
   fragments: Fragment[],
-  scope: "nixos" | "darwin"
+  scope: "nixos" | "darwin" | "windows"
 ): boolean {
   const platformFragments = fragments.filter((fragment) => fragment.__platform);
   if (platformFragments.length === 0) return true;

@@ -8,6 +8,9 @@ node_modules/
 # Winix generated state
 .winix/
 
+# Generated example output
+examples/**/out/
+
 # Editor / OS noise
 .vscode/
 .idea/

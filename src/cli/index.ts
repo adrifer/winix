@@ -30,9 +30,9 @@ winix - TypeScript-first system configuration
 
 Commands:
   init         Scaffold a Winix project
-  apply        Generate Nix output in .winix/out/
+  apply        Generate backend output in .winix/out/
   check        Validate configuration
-  switch       Generate output and run nixos-rebuild/darwin-rebuild
+  switch       Generate output and run the host activation command
   update       Update generated flake.lock and copy it to project root
   inspect      Print host composition and fragment graph
 
