@@ -8,7 +8,7 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 - **`winix scaffold feature <name>`** — generate a typed feature template ready for an LLM (or human) to fill in.
 - **Interactive `winix init` wizard** — guide users through platform, channel, Home Manager, example features, and Skill install with prompts (or skip with `--platform`, `--channel`, `--features`, `--skill` flags for power users).
 - **Starlight docs site** — replace the long README with a proper documentation site at [starlight.astro.build](https://starlight.astro.build).
-- **Windows integration** *(design phase)* — bring NixOS-style declarative system management to Windows. Winget, registry, scheduled tasks, PowerShell, DSC. One of the original motivations behind Winix.
+- **Windows integration** *(in progress)* — bring NixOS-style declarative system management to Windows via winget + DSC v3. Package install, raw commands, and end-to-end `apply`/`switch` already work on real Windows; lockfile, resource ordering, and OS settings helpers are next. See the [detailed phase-by-phase roadmap](./spec/proposals/windows-backend.md#implementation-roadmap) in the proposal.
 
 ## Later
 

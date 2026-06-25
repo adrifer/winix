@@ -1,6 +1,6 @@
 # Proposal: Windows backend
 
-> **Status:** `draft`
+> **Status:** `in-progress`
 > **Owner:** unassigned
 
 ## Motivation
@@ -71,10 +71,63 @@ The **package vertical slice is implemented and validated end-to-end**
 
 See "Worked example (validated end-to-end)" under Backend strategy for the
 exact emitted document and the contract notes learned from real-machine
-validation. Everything else in this proposal (env/path/file/raw/dsc/wsl/
-programs helpers, Windows lockfile update resolution, drift, type generation)
-remains **proposed**, not yet implemented. The slice is the mold the
-remaining helpers copy, each gated by its own snapshot test.
+validation. The slice is the mold the remaining helpers copy, each gated by
+its own snapshot test. See the Implementation roadmap below for what is done,
+in progress, and pending.
+
+## Implementation roadmap
+
+Living checklist of the Windows backend, ordered roughly by priority. This is
+the source of truth for backend progress; the top-level `ROADMAP.md` keeps a
+single high-level pointer here. Update this as PRs land.
+
+### Phase 0 — Vertical slice (DONE)
+
+- [x] `platforms.windows()` as a third backend peer
+- [x] `windows.package()` (bare id, explicit source, inline version pin, `elevated`)
+- [x] DSC v3 emitter (`configuration.winget` + `apply.ps1`), schema pinned `2023/08`
+- [x] Evaluator merge with backend isolation
+- [x] CLI wiring: `apply` / `switch` dispatch to the Windows backend
+- [x] `winix update` guard for Windows-only workspaces
+- [x] Validated end-to-end on Windows 11 25H2 (real `winget configure` install)
+
+### Phase 1 — Reproducibility (DONE)
+
+- [x] `winix-windows.lock` format + read/write (`src/backends/windows/lockfile.ts`)
+- [x] Inline-pin reconciliation into the lock
+- [x] `apply`/`switch` read the lock and emit locked versions
+- [x] Fail clearly on unlocked floating packages (strict, offline: error tells the
+      user to run `winix update --windows`)
+
+### Phase 2 — Automatic version resolution (IN PROGRESS)
+
+- [ ] `winix update --windows` resolves floating versions via `winget show` *(needs Windows)*
+- [ ] Resolver shells out to `winget show --id <id> --exact`, parses `Version:`
+- [ ] `apply` stays strict and offline: never calls winget, only reads the lock
+- [ ] Inline-pinned packages keep their pin (not re-resolved)
+- [ ] Clear summary of resolved / up-to-date / changed packages; `--dry` reports without writing
+
+### Phase 3 — Resource ordering + ergonomics (PENDING)
+
+- [ ] **`dependsOn` + `name` on resources** *(settle DX first: string names vs handle refs)*
+- [ ] Cycle + dangling-reference validation at generation time
+- [ ] `windows.setting()` → `WindowsSettings` (Developer Mode), auto-emit ensure-module + `dependsOn`
+- [ ] `windows.requireOsVersion()` → `OsVersion` guardrail
+
+### Phase 4 — Sugar helpers (PENDING)
+
+- [ ] `windows.env()` / `windows.path()` (honest sugar over `RunCommandOnSet`; `path()` idempotent)
+- [ ] `windows.dsc()` typed escape hatch to any DSC v3 resource
+- [ ] `windows.programs.<name>()` curated install+configure helpers
+- [ ] `windows.file()` declarative file content
+
+### Phase 5 — Power features (LATER)
+
+- [ ] Drift detection via `dsc resource get` → `winix check`
+- [ ] Full DSC v3 resource catalogue (registry, services, scheduled tasks, features, fonts)
+- [ ] DSC v3 type generation (typed `windows.dsc()` like the ~24k NixOS options)
+- [ ] Extended lockfile metadata (schema rev, PS module versions, checksums)
+- [ ] Chocolatey / Scoop sources for `windows.package()`
 
 ## DSC v3 resource ecosystem
 
@@ -843,6 +896,35 @@ If a package declared in `winix.config.ts` is missing from the lockfile,
 `winix apply` fails with a clear message pointing at `winix update`.
 Nothing implicit. Mirrors how Nix flakes refuse to evaluate without a
 resolved lock.
+
+#### Design decision: `apply` is strict and offline
+
+The division of labour between `apply` and `update` is deliberate and not
+negotiable:
+
+- **`winix apply` / `winix switch` never touch the network.** They read the
+  lockfile and emit. No `winget show`, no catalogue queries, no implicit
+  resolution. This keeps `apply` fast, deterministic, and reproducible: the
+  same config + same lock produce the same `configuration.winget` on every
+  machine, every time, even offline.
+- **`winix update --windows` is the only command that hits the network.** It
+  resolves floating versions via `winget show` and writes the lockfile. This
+  is the explicit, opt-in "go talk to the registry" step, exactly like
+  `nix flake update`.
+
+An alternative was considered and rejected: having `apply` auto-resolve and
+self-heal the lockfile on a cache miss (the `npm install` model, where a
+missing `package-lock.json` is silently generated). It was rejected because
+it makes `apply` non-deterministic (a command that should be a pure function
+of config + lock would suddenly depend on network state and registry timing)
+and hides a network call behind a command users expect to be local. The Nix
+mental model (`update` resolves, `apply` consumes) is the one Winix users
+already hold, so the Windows backend honours it rather than inventing a
+second contract.
+
+The escape hatch, if one is ever wanted, is an explicit
+`winix apply --update-lock` flag that runs resolve-then-apply in one step.
+The default stays strict.
 
 ### Pinning a version inline
 

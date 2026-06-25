@@ -34,7 +34,20 @@ Each proposal must declare a status at the top of the file:
 | File | Status | Summary |
 |---|---|---|
 | [`binary-release.md`](./binary-release.md) | implemented | `nix.binaryRelease()` helper for prebuilt single-binary CLIs |
-| [`windows-backend.md`](./windows-backend.md) | draft | Native Windows targets (Winget, DSC, registry, scheduled tasks) |
+| [`windows-backend.md`](./windows-backend.md) | in-progress | Native Windows targets (Winget, DSC, registry, scheduled tasks) |
+
+## Research
+
+Supporting investigation that informs proposals lives in
+[`../research/`](../research/). Unlike a proposal (which describes what we
+*will* build), a research note captures **evidence** gathered from upstream
+sources or experiments that back specific design decisions. Proposals cite
+their research; the research file lives separately so the proposal stays
+focused on the design.
+
+| File | Backs | Summary |
+|---|---|---|
+| [`../research/windows-scenarios.md`](../research/windows-scenarios.md) | `windows-backend.md` | Patterns mined from Microsoft's official DSC v3 dev-box configs; tiered helper recommendation |
 
 ## When to write a proposal
 
