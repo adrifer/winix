@@ -46,13 +46,16 @@ install logic.
 ## Implementation status
 
 The **package vertical slice is implemented and validated end-to-end**
-(2026-06-25):
+(2026-06-25), and the first Windows escape hatch is implemented:
 
 - `platforms.windows()` exists as a third backend peer alongside
   `platforms.nixos()` / `platforms.darwin()`, emitting the `windows`
   fragment scope.
 - `windows.package(...)` supports the bare-id, explicit-source,
   inline-version-pin, and `elevated` forms.
+- `windows.raw(...)` emits ordered
+  `Microsoft.DSC.Transitional/RunCommandOnSet` resources for arbitrary
+  commands that run on every apply.
 - The evaluator merges the `windows` scope with backend isolation (a
   Windows host does not pull in nixos/darwin fragments and vice versa).
 - The Windows emitter (`src/backends/windows/`) generates a native DSC v3

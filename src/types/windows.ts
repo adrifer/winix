@@ -1,6 +1,6 @@
 // Windows backend types: the IR carried by fragments under the `windows` key.
 //
-// These are intentionally minimal for the MVP vertical slice (packages only).
+// These are intentionally minimal for the MVP vertical slice.
 // They will grow to cover env/path/file/raw/dsc/wsl/programs as the backend
 // matures. The shape here is the *internal* representation produced by the
 // `windows.*` helpers and consumed by the Windows emitter, not the public
@@ -41,15 +41,32 @@ export interface WinPackage {
 }
 
 /**
+ * A raw Windows command to run through DSC v3's transitional command resource.
+ */
+export interface WinRawCommand {
+  /** Optional stable resource name. When omitted, the emitter generates one. */
+  name?: string;
+  /** Executable to invoke, e.g. "powershell", "pwsh", or "cmd". */
+  executable: string;
+  /** Arguments passed to the executable, in order. */
+  arguments?: string[];
+}
+
+/**
  * The `windows` scope of a Fragment. Deep-merged across all fragments for a
  * host, then handed to the Windows emitter.
  *
  * `packages` is keyed by package id so that merging is idempotent and a later
  * fragment pinning a version overrides an earlier float for the same id.
+ *
+ * `commands` is an ordered list because raw commands can repeat and declaration
+ * order controls apply order.
  */
 export interface WindowsOptions extends Record<string, unknown> {
   /** Declared packages, keyed by package id. */
   packages?: Record<string, WinPackage>;
+  /** Raw commands to run on apply, in declaration order. */
+  commands?: WinRawCommand[];
   /** Hostname for the target, set by the platform baseline. */
   hostname?: string;
 }

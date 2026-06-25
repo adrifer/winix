@@ -300,12 +300,15 @@ describe("winix apply Windows output", () => {
         ])
       `);
 
-      // On a non-win32 platform assertUpdateSupported passes, so the
-      // workspace-level guard is what must reject this. It should throw
-      // before ever invoking `nix flake update`.
+      // On non-win32 platforms assertUpdateSupported passes, so the
+      // workspace-level guard rejects this before invoking `nix flake update`.
+      // On native Windows, the platform guard rejects first because update
+      // currently requires the Nix CLI.
+      const expectedMessage =
+        process.platform === "win32" ? "not supported from native Windows" : "this workspace has no";
       await expect(
         update(dir, { inputs: [], dry: false })
-      ).rejects.toThrow("this workspace has no");
+      ).rejects.toThrow(expectedMessage);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
