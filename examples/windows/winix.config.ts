@@ -33,13 +33,14 @@ export default workspace({
     host("desktop", platforms.windows(), [
       // Float: latest version at apply time.
       windows.package("Fastfetch-cli.Fastfetch"),
-      windows.package("7zip.7zip"),
+      windows.package("eza-community.eza"),
+
 
       // Microsoft Store source.
-      windows.package({ source: "msstore", id: "9NKSQGP7F2NH" }),
+      // windows.package({ source: "msstore", id: "9NKSQGP7F2NH" }),
 
       // Pinned to an exact version.
-      windows.package({ id: "Microsoft.VisualStudioCode", version: "1.90.1" }),
+      // windows.package({ id: "Microsoft.VisualStudioCode", version: "1.90.1" }),
 
       // Elevated: installs in an admin context. Use only for packages that
       // genuinely need machine-wide install rights.
