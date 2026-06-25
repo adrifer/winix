@@ -75,9 +75,7 @@ describe("platforms.windows()", () => {
 
     const win = desktop.windows as {
       packages: Record<string, unknown>;
-      schema: string;
     };
-    expect(win.schema).toBe("2024/04");
     expect(Object.keys(win.packages).sort()).toEqual([
       "Git.Git",
       "Microsoft.VisualStudioCode",

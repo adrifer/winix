@@ -66,7 +66,7 @@ See "Worked example (validated end-to-end)" under Backend strategy for the
 exact emitted document and the contract notes learned from real-machine
 validation. Everything else in this proposal (env/path/file/raw/dsc/wsl/
 programs helpers, lockfile, drift, type generation) remains **proposed**,
-not yet implemented. The slice is the molde the remaining helpers copy,
+not yet implemented. The slice is the mold the remaining helpers copy,
 each gated by its own snapshot test.
 
 ## DSC v3 resource ecosystem

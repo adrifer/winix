@@ -19,11 +19,6 @@ export interface DarwinPlatformOpts {
 }
 
 export interface WindowsPlatformOpts {
-  /**
-   * DSC v3 schema revision to pin the emitted `configuration.winget` against.
-   * Defaults to the backend's pinned default ("2024/04").
-   */
-  schema?: string;
   /** Hostname override; falls back to the host name from eval context. */
   hostname?: string | false;
 }
@@ -109,7 +104,6 @@ export const platforms: PlatformsHelper = {
         // before any windows.package(...) fragment contributes.
         packages: {},
         ...(hostname && { hostname }),
-        schema: opts.schema ?? "2024/04",
       },
     };
   }),

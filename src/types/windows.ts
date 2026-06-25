@@ -52,6 +52,4 @@ export interface WindowsOptions extends Record<string, unknown> {
   packages?: Record<string, WinPackage>;
   /** Hostname for the target, set by the platform baseline. */
   hostname?: string;
-  /** DSC v3 schema revision the emitted document pins against. */
-  schema?: string;
 }
