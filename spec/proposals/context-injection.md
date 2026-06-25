@@ -40,6 +40,11 @@ cleanly:
 3. **Per-platform type safety and testability.** An injected context can type
    `windows` as available in the right scope and be mocked in unit tests
    without touching global state.
+4. **Third-party extensibility.** Because the context is an assembled object,
+   a plugin can contribute an additional namespace without changing the core.
+   This is the foundation for a future ecosystem (see
+   [Future: third-party namespaces](#future-third-party-namespaces)); globals
+   offer no clean, public extension point.
 
 This is the single most important API decision in Winix, because it shapes how
 every `feature`, `profile`, and `host` body is written. It must be designed
@@ -247,9 +252,61 @@ is real instead of relying on the ambient global.
 4. Globals can be soft-deprecated later (a lint/docs nudge), but there is no
    hard removal in this proposal.
 
+## Future: third-party namespaces
+
+The injected context is also the natural **extension point** for the ecosystem.
+This proposal does not specify a plugin system, but it is designed so one can be
+added later without reworking the core.
+
+Today the namespaces are fixed package exports (`home`, `nix`, `windows`, ...).
+Under context injection, the context object is **assembled** before being passed
+to a callback. A third-party namespace therefore becomes a single additional
+entry in that assembly rather than a change to the core:
+
+```ts
+// Future plugin system (separate proposal): register at the workspace level.
+workspace({
+  plugins: [dockerPlugin],
+  hosts: [/* ... */],
+});
+
+// The plugin's namespace then appears in every callback's context:
+feature("my-stack", ({ home, docker }) => {
+  home.program("git", { /* ... */ });
+  const db = docker.container("postgres", { /* ... */ });
+  docker.container("app", { /* ... */ }, { dependsOn: db });
+});
+```
+
+Why the context model makes this clean:
+
+- **Small, public contract.** A namespace only needs to (a) produce `Fragment`s
+  (the existing `core/types.ts` type) and (b) optionally return handles for
+  `dependsOn`. That is a contract that can be published and versioned; today
+  everything is internal and there is nothing stable to extend against.
+- **Cross-plugin `dependsOn` for free.** Handles carry identity and the graph
+  is resolved in the emitter, so a resource from one plugin can depend on a
+  resource from another (or from the core) without the plugins knowing about
+  each other. Interoperability falls out of the handle machinery.
+- **Isolated and testable.** A plugin is exercised by passing a mock context,
+  with no global state and without booting the full evaluator.
+
+The parts a dedicated plugin-system proposal must still settle: how plugins are
+registered (`workspace({ plugins })` is the obvious shape), which backend(s)
+consume a given namespace's fragments (routing), and the stable public contract
+(`definePlugin({ name, namespace, emit })` or similar). The contract must be
+treated carefully because, once third parties depend on it, it cannot break
+lightly. It is intentionally kept **out of this proposal** so the context change
+can be reviewed and built on its own, while the structure-vs-declaration split
+above already guarantees that adding a namespace stays a clean, additive
+operation.
+
 ## Non-goals
 
 - **Not removing the global helpers.** They keep working; this is additive.
+- **Not specifying the plugin system.** Third-party namespaces are enabled (see
+  above) but the registration mechanism, routing, and public contract are a
+  separate proposal.
 - **Not pure-Nix lazy evaluation.** Winix stays imperative-with-guards; no
   `mkIf` thunk semantics.
 - **Not auto-inferred dependencies.** `dependsOn` is explicit via handles.
@@ -259,17 +316,19 @@ is real instead of relying on the ambient global.
 - **Not changing `workspace`/`input` structure.** Those stay as plain
   top-level constructors.
 
-## Open questions
+## Resolved decisions
 
-1. **Single context shape for all three containers?** `feature`, `profile`,
-   and `host` would receive the same `WinixContext`. Is there any namespace
-   that should be absent in one of them (e.g. should `host` bodies expose
-   something `feature` bodies should not)? Current answer: one shared shape,
-   simplest and matches that they all just "contain declarations".
-2. **Handle ergonomics for cross-host references.** In-host `dependsOn` is
-   well-defined. Cross-host dependencies are out of scope (and arguably should
-   stay impossible), but the error message must make that explicit.
-3. **Generated names for id-less resources.** Per-host counter (`raw-1`) is
-   proposed for determinism. Alternative: a short content hash. Counter wins
-   for readable, stable diffs as long as ordering is stable; revisit if
-   reordering churn becomes a problem.
+1. **Single context shape for all three containers.** `feature`, `profile`,
+   and `host` receive the same `WinixContext`. No namespace is hidden in any of
+   them; they all just "contain declarations", so one shared shape is the
+   simplest and most consistent design.
+2. **Cross-host references are out of scope.** In-host `dependsOn` is the only
+   supported form. A handle from another host is a hard error, reported clearly
+   at generation time ("`dependsOn` cannot reference a resource from another
+   host") rather than producing invalid output. Cross-host ordering stays
+   impossible by design.
+3. **Generated names use a per-host counter.** Id-less resources (`raw`,
+   `setting`) get deterministic names like `raw-1`, `setting-1` from the
+   resource type plus a per-host counter. Readable, stable diffs as long as
+   ordering is stable. A content-hash alternative is noted only as a fallback to
+   revisit if reordering churn ever becomes a problem; not adopted now.
