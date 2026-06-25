@@ -146,8 +146,13 @@ describe("winix switch host selection", () => {
   });
 
   it("formats Windows configuration paths for activation", () => {
-    expect(windowsConfigurationForHost("D:\\winix\\test-config\\.winix\\out", "desktop")).toBe(
-      "D:\\winix\\test-config\\.winix\\out\\desktop\\configuration.winget"
+    // Use path.join for the expected value so the assertion is OS-agnostic:
+    // on Windows the separator is "\\", on Linux/CI it is "/". The function
+    // itself uses path.join, which produces the right separator per platform
+    // (winget on Windows gets backslashes).
+    const outDir = join("D:\\winix\\test-config\\.winix\\out");
+    expect(windowsConfigurationForHost(outDir, "desktop")).toBe(
+      join(outDir, "desktop", "configuration.winget")
     );
   });
 });
