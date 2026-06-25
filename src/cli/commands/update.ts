@@ -10,6 +10,10 @@ interface UpdateOptions {
 }
 
 export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
+  if (!opts.dry) {
+    assertUpdateSupported();
+  }
+
   const result = await applyWorkspace(cwd, { dry: false, diff: false });
   const updateDir = await mkdtemp(join(tmpdir(), "winix-update-"));
   await cp(result.outDir, updateDir, { recursive: true });
@@ -37,4 +41,15 @@ export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
   } finally {
     await rm(updateDir, { recursive: true, force: true });
   }
+}
+
+export function assertUpdateSupported(
+  osPlatform: NodeJS.Platform = process.platform
+): void {
+  if (osPlatform !== "win32") return;
+
+  throw new Error(
+    "`winix update` is not supported from native Windows yet because it requires " +
+    "the Nix CLI. Run it from WSL, Linux, or macOS."
+  );
 }

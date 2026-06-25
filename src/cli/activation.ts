@@ -3,14 +3,31 @@ export type ActivationPlatform = "nixos" | "darwin";
 export function activationCommand(
   platform: ActivationPlatform,
   flake: string,
-  isRoot = isCurrentProcessRoot()
+  isRoot = isCurrentProcessRoot(),
+  osPlatform: NodeJS.Platform = process.platform
 ): string[] {
   const command =
     platform === "darwin"
       ? ["darwin-rebuild", "switch", "--flake", flake]
       : ["nixos-rebuild", "switch", "--flake", flake];
 
+  if (osPlatform === "win32") return command;
   return withSudo(command, isRoot);
+}
+
+export function assertActivationSupported(
+  platform: ActivationPlatform,
+  osPlatform: NodeJS.Platform = process.platform
+): void {
+  if (osPlatform !== "win32") return;
+
+  const target = platform === "darwin" ? "nix-darwin" : "NixOS";
+  const supportedEnvironment = platform === "darwin" ? "macOS" : "WSL or Linux";
+  throw new Error(
+    `${target} activation is not supported from native Windows yet. ` +
+    "Use `winix apply` or `winix apply --dry` to generate output, then run " +
+    `\`winix switch\` from ${supportedEnvironment}.`
+  );
 }
 
 export function platformForEvaluatedHost(host: {

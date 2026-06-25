@@ -2,7 +2,11 @@ import { hostname } from "node:os";
 import { evaluate } from "../../evaluator/index.ts";
 import { loadWorkspace } from "../loader.ts";
 import { runCommand } from "../run.ts";
-import { activationCommand, platformForEvaluatedHost } from "../activation.ts";
+import {
+  activationCommand,
+  assertActivationSupported,
+  platformForEvaluatedHost,
+} from "../activation.ts";
 import { applyWorkspace } from "./apply.ts";
 
 interface SwitchOptions {
@@ -18,6 +22,9 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
   if (!selected) throw new Error(`Host "${hostName}" not found`);
 
   const platform = platformForEvaluatedHost(selected);
+  if (!opts.dry) {
+    assertActivationSupported(platform);
+  }
 
   const result = await applyWorkspace(cwd, {
     host: hostName,

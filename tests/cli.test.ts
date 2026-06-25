@@ -9,9 +9,10 @@ import {
   collectEscapeReport,
   findDuplicateHosts,
 } from "../src/cli/analysis.js";
-import { activationCommand } from "../src/cli/activation.js";
+import { activationCommand, assertActivationSupported } from "../src/cli/activation.js";
 import { init, resolveWinixVersionRange } from "../src/cli/commands/init.js";
 import { selectHost } from "../src/cli/commands/switch.js";
+import { assertUpdateSupported } from "../src/cli/commands/update.js";
 import { host, nix, nixos as nixosHelpers, platform, workspace } from "../src/index.js";
 
 const nixos = platform("linux", () => ({
@@ -121,14 +122,16 @@ describe("winix switch host selection", () => {
 
 describe("activation commands", () => {
   it("runs NixOS and nix-darwin activation through sudo when not root", () => {
-    expect(activationCommand("nixos", "path:/repo/.winix/out#wsl", false)).toEqual([
+    expect(activationCommand("nixos", "path:/repo/.winix/out#wsl", false, "linux")).toEqual([
       "sudo",
       "nixos-rebuild",
       "switch",
       "--flake",
       "path:/repo/.winix/out#wsl",
     ]);
-    expect(activationCommand("darwin", "path:/repo/.winix/out#macbook-pro", false)).toEqual([
+    expect(
+      activationCommand("darwin", "path:/repo/.winix/out#macbook-pro", false, "darwin")
+    ).toEqual([
       "sudo",
       "darwin-rebuild",
       "switch",
@@ -144,5 +147,28 @@ describe("activation commands", () => {
       "--flake",
       "path:/repo/.winix/out#macbook-pro",
     ]);
+  });
+
+  it("does not prefix dry-run activation commands with sudo on native Windows", () => {
+    expect(
+      activationCommand("nixos", "path:C:\\repo\\.winix\\out#wsl", false, "win32")
+    ).toEqual([
+      "nixos-rebuild",
+      "switch",
+      "--flake",
+      "path:C:\\repo\\.winix\\out#wsl",
+    ]);
+  });
+
+  it("fails clearly for native Windows activation and flake updates", () => {
+    expect(() => assertActivationSupported("nixos", "win32")).toThrow(
+      "NixOS activation is not supported from native Windows yet"
+    );
+    expect(() => assertActivationSupported("darwin", "win32")).toThrow(
+      "nix-darwin activation is not supported from native Windows yet"
+    );
+    expect(() => assertUpdateSupported("win32")).toThrow(
+      "`winix update` is not supported from native Windows yet"
+    );
   });
 });
