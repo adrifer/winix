@@ -24,12 +24,14 @@ resources:
       id: 9NKSQGP7F2NH
       source: msstore
       acceptAgreements: true
+      version: "1.0.0"
   - name: Git.Git
     type: Microsoft.WinGet/Package
     properties:
       id: Git.Git
       source: winget
       acceptAgreements: true
+      version: "2.44.0"
   - name: Microsoft.VisualStudioCode
     type: Microsoft.WinGet/Package
     properties:
@@ -54,4 +56,24 @@ resources:
       arguments: ["/c", "mkdir", "foo"]
 ",
 }
+`;
+
+exports[`winix-windows.lock > writes deterministic JSON with sorted package keys 1`] = `
+"{
+  "version": 1,
+  "generatedAt": "2026-06-24T18:37:00.000Z",
+  "packages": {
+    "Git.Git": {
+      "source": "winget",
+      "version": "2.44.0",
+      "resolvedAt": "2026-06-24T18:37:00.000Z"
+    },
+    "ZedIndustries.Zed": {
+      "source": "winget",
+      "version": "0.190.0",
+      "resolvedAt": "2026-06-24T18:37:00.000Z"
+    }
+  }
+}
+"
 `;

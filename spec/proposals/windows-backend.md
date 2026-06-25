@@ -61,6 +61,10 @@ The **package vertical slice is implemented and validated end-to-end**
 - The Windows emitter (`src/backends/windows/`) generates a native DSC v3
   `configuration.winget` plus `apply.ps1`, matching Microsoft's
   WindowsDeveloperConfig document shape.
+- `winix-windows.lock` phase 1 is implemented: `winix apply` / `winix
+  switch` read the lockfile, reconcile inline version pins into it, emit
+  locked package versions, and fail clearly when a floating package has no
+  lock entry. `winix update --windows` winget resolution is still pending.
 - Covered by `tests/windows-backend.test.ts` (helper, platform, evaluator,
   emitter + snapshot) and **confirmed to install a package via
   `winget configure` on Windows 11 25H2**.
@@ -68,9 +72,9 @@ The **package vertical slice is implemented and validated end-to-end**
 See "Worked example (validated end-to-end)" under Backend strategy for the
 exact emitted document and the contract notes learned from real-machine
 validation. Everything else in this proposal (env/path/file/raw/dsc/wsl/
-programs helpers, lockfile, drift, type generation) remains **proposed**,
-not yet implemented. The slice is the mold the remaining helpers copy,
-each gated by its own snapshot test.
+programs helpers, Windows lockfile update resolution, drift, type generation)
+remains **proposed**, not yet implemented. The slice is the mold the
+remaining helpers copy, each gated by its own snapshot test.
 
 ## DSC v3 resource ecosystem
 

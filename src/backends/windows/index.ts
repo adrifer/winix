@@ -28,6 +28,14 @@
 
 import type { EvaluatedHost } from "../../evaluator/index.ts";
 import type { WinPackage, WinRawCommand, WindowsOptions } from "../../types/index.ts";
+import {
+  emptyWindowsLock,
+  reconcileInlinePins,
+  type WindowsLock,
+} from "./lockfile.ts";
+import { isWindowsHost } from "./host.ts";
+
+export { isWindowsHost } from "./host.ts";
 
 /**
  * Per-host generated output for the Windows backend.
@@ -53,25 +61,22 @@ const WINGET_PACKAGE_TYPE = "Microsoft.WinGet/Package";
 const RUN_COMMAND_ON_SET_TYPE = "Microsoft.DSC.Transitional/RunCommandOnSet";
 
 /**
- * True when an evaluated host targets the Windows backend.
- */
-export function isWindowsHost(host: { windows?: Record<string, unknown> }): boolean {
-  return Boolean(host.windows && Object.keys(host.windows).length > 0);
-}
-
-/**
  * Generate Windows bundles for every Windows host in the evaluated workspace.
  * Non-Windows hosts are skipped.
  */
-export function generateWindows(evaluatedHosts: EvaluatedHost[]): WindowsOutput {
+export function generateWindows(
+  evaluatedHosts: EvaluatedHost[],
+  lock: WindowsLock = emptyWindowsLock()
+): WindowsOutput {
   const hosts: Record<string, WindowsHostOutput> = {};
   const warnings: string[] = [];
+  const windowsHosts = evaluatedHosts.filter(isWindowsHost);
+  const resolvedLock = reconcileInlinePins(lock, windowsHosts);
 
-  for (const host of evaluatedHosts) {
-    if (!isWindowsHost(host)) continue;
+  for (const host of windowsHosts) {
     const win = host.windows as WindowsOptions;
     hosts[host.name] = {
-      "configuration.winget": generateConfiguration(host.name, win),
+      "configuration.winget": generateConfiguration(host.name, win, resolvedLock),
       "apply.ps1": generateApplyScript(),
     };
   }
@@ -82,7 +87,11 @@ export function generateWindows(evaluatedHosts: EvaluatedHost[]): WindowsOutput 
 /**
  * Render the WinGet Configuration YAML document (DSC v3) for one host.
  */
-function generateConfiguration(hostName: string, win: WindowsOptions): string {
+function generateConfiguration(
+  hostName: string,
+  win: WindowsOptions,
+  lock: WindowsLock
+): string {
   const packages = sortedPackages(win.packages ?? {});
   const commands = win.commands ?? [];
 
@@ -101,7 +110,7 @@ function generateConfiguration(hostName: string, win: WindowsOptions): string {
 
   lines.push("resources:");
   for (const pkg of packages) {
-    lines.push(...renderPackageResource(pkg));
+    lines.push(...renderPackageResource(pkg, lockedVersionForPackage(pkg, lock)));
   }
   for (const [index, command] of commands.entries()) {
     lines.push(...renderRawCommandResource(command, index));
@@ -120,13 +129,13 @@ function generateConfiguration(hostName: string, win: WindowsOptions): string {
  *       id: Git.Git
  *       source: winget
  *       acceptAgreements: true
- *       version: "2.44.0"   # only when pinned
+ *       version: "2.44.0"   # from winix-windows.lock
  *     metadata:
  *       winget:
  *         securityContext: elevated
  * ```
  */
-function renderPackageResource(pkg: WinPackage): string[] {
+function renderPackageResource(pkg: WinPackage, version: string): string[] {
   const out: string[] = [];
   out.push(`  - name: ${yamlScalar(pkg.id)}`);
   out.push(`    type: ${WINGET_PACKAGE_TYPE}`);
@@ -134,10 +143,8 @@ function renderPackageResource(pkg: WinPackage): string[] {
   out.push(`      id: ${yamlScalar(pkg.id)}`);
   out.push(`      source: ${yamlScalar(pkg.source)}`);
   out.push(`      acceptAgreements: true`);
-  if (pkg.version !== undefined) {
-    // Quote versions so values like "1.0" are not parsed as numbers.
-    out.push(`      version: ${yamlQuoted(pkg.version)}`);
-  }
+  // Quote versions so values like "1.0" are not parsed as numbers.
+  out.push(`      version: ${yamlQuoted(version)}`);
   // Only request elevation when explicitly asked. Per-user packages install
   // fine without it, and forcing elevation makes `winget configure` fail with
   // an internal error when run from a non-elevated shell.
@@ -191,6 +198,26 @@ function sortedPackages(packages: Record<string, WinPackage>): WinPackage[] {
   return Object.keys(packages)
     .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
     .map((id) => packages[id]);
+}
+
+function lockedVersionForPackage(pkg: WinPackage, lock: WindowsLock): string {
+  const entry = lock.packages[pkg.id];
+  if (!entry) {
+    throw new Error(
+      `Windows package "${pkg.id}" is not locked. It has no inline version pin ` +
+      `and no entry in winix-windows.lock. Add an inline version pin ` +
+      `(\`windows.package({ id: "${pkg.id}", version: "..." })\`) or a ` +
+      `winix-windows.lock entry for it.`
+    );
+  }
+  if (entry.source !== pkg.source) {
+    throw new Error(
+      `Windows package "${pkg.id}" source mismatch in winix-windows.lock: ` +
+      `expected "${pkg.source}", found "${entry.source}". Update the lock entry ` +
+      `or change the package source in config.`
+    );
+  }
+  return entry.version;
 }
 
 /**

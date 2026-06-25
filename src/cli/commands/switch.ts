@@ -31,6 +31,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
     host: hostName,
     dry: false,
     diff: false,
+    windowsLockDry: opts.dry,
   });
 
   const activationTarget =

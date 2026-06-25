@@ -1,3 +1,6 @@
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { describe, it, expect } from "vitest";
 import {
   host,
@@ -9,6 +12,12 @@ import {
   generateWindows,
   isWindowsHost,
 } from "../src/index.ts";
+import {
+  readWindowsLock,
+  reconcileInlinePins,
+  writeWindowsLock,
+  type WindowsLock,
+} from "../src/backends/windows/lockfile.ts";
 
 const inputs = defineInputs({
   nixpkgs: "github:NixOS/nixpkgs/nixos-unstable",
@@ -205,7 +214,11 @@ describe("generateWindows() emitter", () => {
       ],
     });
 
-    const out = generateWindows(evaluate(ws));
+    const out = generateWindows(evaluate(ws), windowsLock({
+      "9NKSQGP7F2NH": { source: "msstore", version: "1.0.0" },
+      "Git.Git": { source: "winget", version: "2.44.0" },
+      "Microsoft.VisualStudioCode": { source: "winget", version: "1.90.1" },
+    }));
     expect(out.warnings).toEqual([]);
     expect(Object.keys(out.hosts)).toEqual(["desktop"]);
     expect(out.hosts.desktop).toMatchSnapshot();
@@ -232,7 +245,10 @@ describe("generateWindows() emitter", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    const doc = generateWindows(evaluate(ws), windowsLock({
+      "Git.Git": { source: "winget", version: "2.44.0" },
+      "ZedIndustries.Zed": { source: "winget", version: "0.190.0" },
+    })).hosts.desktop["configuration.winget"];
 
     expect(doc.indexOf("name: Git.Git")).toBeLessThan(doc.indexOf("name: ZedIndustries.Zed"));
     expect(doc.indexOf("name: ZedIndustries.Zed")).toBeLessThan(
@@ -256,7 +272,10 @@ describe("generateWindows() emitter", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    const doc = generateWindows(evaluate(ws), windowsLock({
+      "Fastfetch-cli.Fastfetch": { source: "winget", version: "2.45.0" },
+      "Some.Driver": { source: "winget", version: "1.2.3" },
+    })).hosts.desktop["configuration.winget"];
 
     // The non-elevated package block must not contain securityContext.
     const fastfetchBlock = doc.slice(
@@ -270,3 +289,128 @@ describe("generateWindows() emitter", () => {
     expect(driverBlock).toContain("securityContext: elevated");
   });
 });
+
+describe("winix-windows.lock", () => {
+  it("parses a valid lockfile and returns null when absent", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-lock-read-"));
+    try {
+      expect(readWindowsLock(dir)).toBeNull();
+
+      await writeFile(
+        join(dir, "winix-windows.lock"),
+        JSON.stringify({
+          version: 1,
+          generatedAt: "2026-06-24T18:37:00.000Z",
+          packages: {
+            "Git.Git": {
+              source: "winget",
+              version: "2.44.0",
+              resolvedAt: "2026-06-24T18:37:00.000Z",
+            },
+          },
+        })
+      );
+
+      expect(readWindowsLock(dir)).toEqual({
+        version: 1,
+        generatedAt: "2026-06-24T18:37:00.000Z",
+        packages: {
+          "Git.Git": {
+            source: "winget",
+            version: "2.44.0",
+            resolvedAt: "2026-06-24T18:37:00.000Z",
+          },
+        },
+      });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("throws on a malformed lockfile or unsupported lock version", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-lock-invalid-"));
+    try {
+      await writeFile(join(dir, "winix-windows.lock"), "{ nope");
+      expect(() => readWindowsLock(dir)).toThrow("Malformed winix-windows.lock");
+
+      await writeFile(
+        join(dir, "winix-windows.lock"),
+        JSON.stringify({ version: 2, generatedAt: "now", packages: {} })
+      );
+      expect(() => readWindowsLock(dir)).toThrow(
+        "Unsupported winix-windows.lock version 2"
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes deterministic JSON with sorted package keys", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-lock-write-"));
+    try {
+      writeWindowsLock(dir, windowsLock({
+        "ZedIndustries.Zed": { source: "winget", version: "0.190.0" },
+        "Git.Git": { source: "winget", version: "2.44.0" },
+      }));
+
+      await expect(readFile(join(dir, "winix-windows.lock"), "utf-8")).resolves.toMatchSnapshot();
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("reconciles inline pins into the lock and leaves floating entries untouched", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.package({ id: "Git.Git", version: "2.44.0" }),
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ]),
+      ],
+    });
+    const lock = windowsLock({
+      "Fastfetch-cli.Fastfetch": {
+        source: "winget",
+        version: "2.45.0",
+        resolvedAt: "2026-06-24T18:37:00.000Z",
+      },
+    });
+    const now = new Date("2026-06-25T21:10:00.000Z");
+
+    const reconciled = reconcileInlinePins(lock, evaluate(ws), now);
+
+    expect(reconciled.packages).toEqual({
+      "Fastfetch-cli.Fastfetch": {
+        source: "winget",
+        version: "2.45.0",
+        resolvedAt: "2026-06-24T18:37:00.000Z",
+      },
+      "Git.Git": {
+        source: "winget",
+        version: "2.44.0",
+        resolvedAt: "2026-06-25T21:10:00.000Z",
+      },
+    });
+    expect(reconcileInlinePins(reconciled, evaluate(ws), now)).toEqual(reconciled);
+  });
+});
+
+function windowsLock(
+  packages: Record<string, { source: "winget" | "msstore"; version: string; resolvedAt?: string }>
+): WindowsLock {
+  return {
+    version: 1,
+    generatedAt: "2026-06-24T18:37:00.000Z",
+    packages: Object.fromEntries(
+      Object.entries(packages).map(([id, entry]) => [
+        id,
+        {
+          source: entry.source,
+          version: entry.version,
+          resolvedAt: entry.resolvedAt ?? "2026-06-24T18:37:00.000Z",
+        },
+      ])
+    ),
+  };
+}

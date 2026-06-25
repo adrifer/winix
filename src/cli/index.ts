@@ -15,6 +15,7 @@ const { positionals, values } = parseArgs({
     host: { type: "string" },
     dry: { type: "boolean", default: false },
     diff: { type: "boolean", default: false },
+    windows: { type: "boolean", default: false },
     strict: { type: "boolean", default: false },
     force: { type: "boolean", default: false },
     "escape-report": { type: "boolean", default: false },
@@ -40,6 +41,7 @@ Options:
   --host <name>   Target a specific host
   --dry           Show what would be generated (apply)
   --diff          Show diff against current output (apply)
+  --windows       Update Windows package lockfile (phase 2 pending)
   --strict        Treat conflicts as errors (check)
   --escape-report Show escape hatch usage (check)
   --force         Overwrite files (init)
@@ -102,6 +104,7 @@ switch (command) {
     try {
       await update(cwd, {
         dry: values.dry as boolean,
+        windows: values.windows as boolean,
         inputs: positionals.slice(1),
       });
     } catch (err) {
