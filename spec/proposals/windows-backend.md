@@ -158,12 +158,14 @@ Typed against the bundled winget catalogue (generated per release, same
 pattern as the NixOS option types):
 
 ```ts
-// Most common: winget source by default
+// Floats: version resolved at `winix update` time, recorded in winix-windows.lock
 windows.package("Git.Git")
 
 // Explicit source for non-winget catalogues
-windows.package({ source: "msstore",     id: "9NKSQGP7F2NH" })
-windows.package({ source: "winget",      id: "Git.Git", version: "2.44.0" })
+windows.package({ source: "msstore", id: "9NKSQGP7F2NH" })
+
+// Pinned: this exact version, always. See "Pinning a version inline" below.
+windows.package({ source: "winget", id: "Git.Git", version: "2.44.0" })
 ```
 
 Sources known at the MVP: `"winget"` (default), `"msstore"`. Additional
@@ -385,6 +387,66 @@ If a package declared in `winix.config.ts` is missing from the lockfile,
 `winix apply` fails with a clear message pointing at `winix update`.
 Nothing implicit. Mirrors how Nix flakes refuse to evaluate without a
 resolved lock.
+
+### Pinning a version inline
+
+`windows.package(...)` accepts an optional `version:` field. When present,
+it acts as an **absolute pin**: that exact version is what gets emitted to
+`configuration.winget` and applied to the host, regardless of what is
+available upstream.
+
+```ts
+// Floats: latest at `winix update` time, lockfile resolves dynamically
+windows.package("Git.Git")
+
+// Pinned: this exact version, every apply, on every machine
+windows.package({ id: "Git.Git", version: "2.44.0" })
+windows.package({
+  id: "Microsoft.VisualStudioCode",
+  source: "winget",
+  version: "1.90.1",
+})
+```
+
+This pattern mirrors how Nix flake inputs work: an `inputs.nixpkgs.url`
+with a git rev pinned is honoured literally; one without lets `flake.lock`
+resolve and float. Same idea, different surface.
+
+#### Interaction with `winix-windows.lock`
+
+Pinned packages **still appear in the lockfile** with their pinned
+version. The lockfile is the source of truth that `winix apply` reads, and
+should reflect the complete intended state of the system without forcing
+the Windows backend to re-parse the TypeScript config to know what version
+to install. It also gives auditing tools a single file that describes
+everything that will be applied.
+
+The difference between pinned and floating is purely in how the entry got
+there and what happens on update, not in what the lockfile records:
+
+| Declaration | Lockfile entry | `winix update` behaviour |
+|---|---|---|
+| `windows.package("Git.Git")` | Floating: version resolved from upstream | Refreshes to latest available |
+| `windows.package({ id, version: "2.44.0" })` | Pinned: version copied from the inline pin | Skipped; pin is the source of truth |
+
+`winix update --windows Git.Git` on a pinned package is a no-op with a
+clear message explaining the package is pinned in the config and pointing
+at the file/line that declares it.
+
+#### Divergence between pin and existing lock entry
+
+If a user adds or changes an inline `version:` and the lockfile already had
+a different version recorded, `winix apply` reconciles in favour of the
+inline pin and rewrites the lockfile entry, surfacing a one-line notice
+in the plan output:
+
+```text
+~ Lockfile: Git.Git updated 2.43.0 -> 2.44.0 (inline pin)
+```
+
+This keeps the inline declaration as the unambiguous source of truth and
+makes the lockfile drift visible in normal command output rather than
+hidden in a separate `winix update` invocation.
 
 ### Git semantics
 
