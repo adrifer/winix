@@ -81,6 +81,7 @@ labels are scoping commitments, not implementation status:
 | `Microsoft.Dsc/Include` | Compose a configuration from external DSC documents | ⬛ Used internally by the Winix codegen; not a user-facing helper |
 | `Microsoft.Dsc/Assertion` | Validate preconditions before applying | ⬛ [Escape hatch only] via `windows.dsc(...)` |
 | `Microsoft.Dsc/Group` | Group resources for ordered or conditional application | ⬛ Used internally by the Winix codegen; not a user-facing helper |
+| _(composition over the above)_ | Install + configure a known program with one call (`windows.programs.git`, `windows.programs.vscode`, etc.) | ✅ [MVP helper] `windows.programs.*` (curated set; see "Proposed authoring API") |
 
 The `Microsoft.Windows/WindowsPowerShell` adapter row is worth calling out
 separately: it unlocks **every existing PSDSC v1/v2 module** (a decade of
@@ -242,6 +243,12 @@ The first usable Windows backend should cover:
 - **Dotfile / config file placement** (e.g. `komorebi.json`, `whkdrc`).
 - **WSL host-side configuration** (`.wslconfig`, distro registration, default
   distro). The NixOS side of WSL is already handled by the Nix backend.
+- **Curated `windows.programs.*` helpers** for a small initial set of common
+  developer programs (e.g. `git`, `vscode`, `starship`, `powershell`,
+  `windowsTerminal`). Each helper bundles the package install plus the
+  idiomatic config-file generation for that program. Same pattern as
+  `home.programs.*` in Home Manager, surfaced to Windows. See "Proposed
+  authoring API" for details.
 - **Generated DSC v3 types.** A build step pulls the DSC v3 JSON Schema and
   emits TypeScript types for the document, resource shapes, and known
   resource types. Same pattern as the NixOS option type generator.
@@ -383,6 +390,112 @@ windows.dsc({
 
 `windows.dsc()` is what `windows.package()`, `windows.env()`, etc. desugar
 into. Users only reach for it when a helper does not exist yet.
+
+### `windows.programs.<name>(...)` — install + configure in one call
+
+For a curated set of common developer programs, Winix ships a
+higher-level helper that bundles the package install with the idiomatic
+config-file generation for that program. Same shape and intent as
+`home.programs.<name>` in Home Manager, surfaced to Windows.
+
+```ts
+windows.programs.git({
+  enable: true,
+  userName: "Adri",
+  userEmail: "adri@example.com",
+  defaultBranch: "main",
+  delta: { enable: true },
+});
+
+windows.programs.vscode({
+  enable: true,
+  extensions: ["ms-azuretools.vscode-docker", "esbenp.prettier-vscode"],
+  userSettings: {
+    "editor.fontFamily": "JetBrainsMono Nerd Font",
+    "editor.formatOnSave": true,
+  },
+});
+```
+
+Under the hood each helper desugars to the lower-level primitives the
+backend already needs (`windows.package`, `windows.file`, `windows.env`,
+or `windows.dsc` as appropriate). There is no new primitive: `programs`
+is composition over the existing surface, exactly like the curated
+helpers in the Nix backend are composition over plain Nix attribute sets.
+
+The value is twofold:
+
+1. **Config-file generation is handled.** `windows.programs.git` knows how
+   to serialise its options into a valid `.gitconfig` (INI). The user
+   never writes INI or JSON config strings by hand. Same for VSCode
+   settings (JSON), PowerShell profiles (.ps1), Windows Terminal
+   (settings.json), etc.
+2. **Symmetry with Home Manager.** When a feature targets multiple
+   backends, the cross-platform shape stays readable because the per-
+   backend lines line up visually:
+
+```ts
+export const git = feature("git", () => [
+  nixos.package("git"),
+  darwin.package("git"),
+
+  // Windows: install via winget + render .gitconfig from typed options
+  windows.programs.git({
+    enable: true,
+    userName: "Adri",
+    userEmail: "adri@example.com",
+  }),
+
+  // NixOS + Darwin: same shape, rendered by Home Manager
+  home.programs.git({
+    enable: true,
+    userName: "Adri",
+    userEmail: "adri@example.com",
+  }),
+]);
+```
+
+Note that `windows.programs.*` and `home.programs.*` deliberately do
+**not** share a type. They are independent surfaces that converge on a
+similar shape by convention. Trying to share types would force the Nix
+backend to depend on Windows specifics (or vice-versa) and re-introduce
+the "logical package id" coupling that [non-goals](#non-goals) already
+rejects. The convergence is at the human-readability level only.
+
+#### Initial curated set (MVP)
+
+MVP ships a small, opinionated shortlist of helpers covering the most
+common developer-machine programs:
+
+- `windows.programs.git` (cross-symmetric with `home.programs.git`)
+- `windows.programs.vscode` (install + extensions + user settings)
+- `windows.programs.starship` (cross-symmetric with `home.programs.starship`)
+- `windows.programs.powershell` (profile + module install)
+- `windows.programs.windowsTerminal` (`settings.json` generation)
+
+More can be added incrementally without API churn. The criterion for
+promoting a program from "users call `windows.package` + `windows.file`
+themselves" to "shipped as `windows.programs.<name>`" is observed
+demand plus a stable enough config format that the typed surface buys
+more than it locks in.
+
+#### Third-party programs
+
+Third-party programs follow the same extensibility model as the rest of
+Winix: a published npm package exports a function returning a `Fragment`
+or `Fragment[]`. No core changes required.
+
+```ts
+// npm: winix-windows-fragment-foo
+import { feature, windows } from "@adrifer/winix";
+
+export const foo = feature("foo", (opts: FooOptions) => [
+  windows.package({ id: "FooCo.Foo", version: opts.version }),
+  windows.file("%LOCALAPPDATA%\\Foo\\config.json", JSON.stringify(opts.config)),
+]);
+```
+
+`windows.programs.*` is the first-party curated set, not the only path.
 
 ### Platform baseline
 
