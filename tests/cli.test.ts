@@ -240,12 +240,31 @@ describe("activation commands", () => {
 });
 
 describe("winix apply Windows output", () => {
-  it("writes configuration.winget and apply.ps1 for a Windows-only workspace", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-"));
+  it("fails clearly for a floating Windows package with no lock entry", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-unlocked-"));
     try {
       await writeConfig(dir, `
         host("desktop", platforms.windows(), [
           windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+
+      await expect(
+        applyWorkspace(dir, { dry: false, diff: false })
+      ).rejects.toThrow(
+        'Windows package "Fastfetch-cli.Fastfetch" is not locked'
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes configuration.winget, apply.ps1, and inline pins to the lock", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package({ id: "Fastfetch-cli.Fastfetch", version: "2.45.0" }),
         ])
       `);
 
@@ -256,8 +275,37 @@ describe("winix apply Windows output", () => {
 
       expect(config).toContain("processor: dscv3");
       expect(config).toContain("type: Microsoft.WinGet/Package");
+      expect(config).toContain('version: "2.45.0"');
       expect(applyScript).toContain("winget configure");
+      const lock = JSON.parse(await readFile(join(dir, "winix-windows.lock"), "utf-8")) as {
+        packages?: Record<string, { version?: string }>;
+      };
+      expect(lock.packages?.["Fastfetch-cli.Fastfetch"]?.version).toBe("2.45.0");
       expect(existsSync(join(result.outDir, "hosts"))).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("emits the locked version for a floating Windows package with a lock entry", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-locked-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ])
+      `);
+      await writeWindowsLock(dir, {
+        "Fastfetch-cli.Fastfetch": { source: "winget", version: "2.45.0" },
+      });
+
+      const result = await applyWorkspace(dir, { dry: false, diff: false });
+      const config = await readFile(
+        join(result.outDir, "desktop", "configuration.winget"),
+        "utf-8"
+      );
+
+      expect(config).toContain('version: "2.45.0"');
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -269,7 +317,7 @@ describe("winix apply Windows output", () => {
       await writeConfig(dir, `
         host("server", platforms.nixos(), []),
         host("desktop", platforms.windows(), [
-          windows.package("Fastfetch-cli.Fastfetch"),
+          windows.package({ id: "Fastfetch-cli.Fastfetch", version: "2.45.0" }),
         ])
       `);
 
@@ -326,7 +374,7 @@ describe("winix switch Windows dry run", () => {
     try {
       await writeConfig(dir, `
         host("desktop", platforms.windows(), [
-          windows.package("Fastfetch-cli.Fastfetch"),
+          windows.package({ id: "Fastfetch-cli.Fastfetch", version: "2.45.0" }),
         ])
       `);
 
@@ -346,6 +394,7 @@ describe("winix switch Windows dry run", () => {
       logSpy.mockRestore();
       await rm(dir, { recursive: true, force: true });
     }
+
   });
 });
 
@@ -363,5 +412,32 @@ async function writeConfig(dir: string, hostsSource: string): Promise<void> {
         ],
       });
     `
+  );
+}
+
+async function writeWindowsLock(
+  dir: string,
+  packages: Record<string, { source: "winget" | "msstore"; version: string }>
+): Promise<void> {
+  await writeFile(
+    join(dir, "winix-windows.lock"),
+    JSON.stringify(
+      {
+        version: 1,
+        generatedAt: "2026-06-24T18:37:00.000Z",
+        packages: Object.fromEntries(
+          Object.entries(packages).map(([id, entry]) => [
+            id,
+            {
+              source: entry.source,
+              version: entry.version,
+              resolvedAt: "2026-06-24T18:37:00.000Z",
+            },
+          ])
+        ),
+      },
+      null,
+      2
+    ) + "\n"
   );
 }

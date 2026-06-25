@@ -7,12 +7,21 @@ import { loadWorkspace } from "../loader.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { generateNix, type NixOutput, type RawModuleCopy } from "../../backends/nix/index.ts";
 import { generateWindows, type WindowsOutput } from "../../backends/windows/index.ts";
+import {
+  emptyWindowsLock,
+  readWindowsLock,
+  reconcileInlinePins,
+  windowsLockChanged,
+  writeWindowsLock,
+  type WindowsLock,
+} from "../../backends/windows/lockfile.ts";
 import { platformForEvaluatedHost, type ActivationPlatform } from "../activation.ts";
 
 interface ApplyOptions {
   host?: string;
   dry: boolean;
   diff: boolean;
+  windowsLockDry?: boolean;
 }
 
 export interface ApplyResult {
@@ -43,8 +52,13 @@ export async function applyWorkspace(
   const hostPlatforms = platformsForHosts(evaluated);
   const nixHosts = evaluated.filter((host) => hostPlatforms.get(host.name) !== "windows");
   const windowsHosts = evaluated.filter((host) => hostPlatforms.get(host.name) === "windows");
+  const windowsLock = windowsHosts.length > 0
+    ? prepareWindowsLock(configDir, windowsHosts, opts.dry || opts.windowsLockDry === true)
+    : undefined;
   const nixOutput = nixHosts.length > 0 ? generateNix(workspace, nixHosts) : undefined;
-  const windowsOutput = windowsHosts.length > 0 ? generateWindows(windowsHosts) : undefined;
+  const windowsOutput = windowsHosts.length > 0
+    ? generateWindows(windowsHosts, windowsLock)
+    : undefined;
   printWarnings(nixOutput?.warnings ?? []);
   printWarnings(windowsOutput?.warnings ?? []);
   const outDir = join(configDir, ".winix", "out");
@@ -103,6 +117,24 @@ export async function applyWorkspace(
 
 export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
   await applyWorkspace(cwd, opts);
+}
+
+function prepareWindowsLock(
+  configDir: string,
+  windowsHosts: ReturnType<typeof evaluate>,
+  dry: boolean
+): WindowsLock {
+  const lock = readWindowsLock(configDir) ?? emptyWindowsLock();
+  const reconciled = reconcileInlinePins(lock, windowsHosts);
+  if (!windowsLockChanged(lock, reconciled)) return reconciled;
+
+  if (dry) {
+    console.warn("Would update winix-windows.lock with inline Windows package pins.");
+    return reconciled;
+  }
+
+  writeWindowsLock(configDir, reconciled);
+  return reconciled;
 }
 
 function resultFor(
