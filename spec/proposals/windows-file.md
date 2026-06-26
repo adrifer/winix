@@ -85,12 +85,15 @@ This is the entire reason `file` is not a trivial helper. Researched facts
 
 - Detect whether symlink creation will succeed (elevated **or** Developer
   Mode on) before attempting it.
-- Fail with a **clear, actionable error** if it can't, naming the fix
+- Fail with a **clear, actionable error** if it can't, naming both fixes
   ("enable Developer Mode: Settings → Privacy & Security → For developers, or
-  run elevated"), not a cryptic `New-Item` error.
-- Ideally cross-reference the planned `windows.setting()` / Developer Mode
-  helper (windows-backend.md Phase 3) so a user can declare Developer Mode in
-  the same workspace and have `file` depend on it.
+  pass `elevate: true` to run this apply elevated"), not a cryptic `New-Item`
+  error.
+- **Not** auto-toggle Developer Mode or auto-emit a Developer Mode
+  dependency (decided in review): Developer Mode is a machine-wide setting and
+  mixing it into `file` is the wrong layer. The recommended long-term path is
+  the user declaring Developer Mode themselves via the future
+  `windows.setting()` helper; the per-apply escape hatch is `elevate: true`.
 
 ## Resource backing (no native file resource exists)
 
@@ -131,12 +134,20 @@ windows.file.remove(target: string, opts?: WinFileOpts): ResourceHandle
 
 interface WinFileOpts {
   force?: boolean;        // overwrite an existing file/link at target (default false)
+  backup?: boolean;       // when clobbering, rename the existing target to `<target>.bak` instead of deleting (default false)
   recursive?: boolean;    // symlink: link dir contents individually vs the dir itself
-  linkType?: "auto" | "symlink" | "junction"; // dir links: prefer junction when no privilege (default "auto")
+  elevate?: boolean;      // request UAC elevation for this apply, for symlinks when Developer Mode is off (default false)
   encoding?: "utf8" | "utf8bom" | "ascii";     // text mode (default "utf8", no BOM)
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 ```
+
+> **Note on `linkType`.** An earlier draft proposed a `linkType: "auto" |
+> "symlink" | "junction"` knob to dodge the privilege problem with directory
+> junctions. Dropped per review: symlinks are a niche dev need, and the
+> cleaner escape hatch for the no-privilege case is `elevate: true` (request
+> UAC), consistent with how `env` `scope: machine` already elevates. Junctions
+> are not exposed as a user-facing option.
 
 Naming follows the intention-verb style settled for `env`/`path`
 (`env.set/remove`, `path.add/remove`): `file.text/symlink/copy/remove`. The
@@ -164,6 +175,13 @@ host("ADRIFER-VISION", platforms.windows(), ({ windows }) => {
     "%USERPROFILE%\\dotfiles\\nvim",
     { recursive: false }, // link the directory itself
   );
+
+  // if Developer Mode is off, opt into elevation for this symlink
+  windows.file.symlink(
+    "%USERPROFILE%\\.wezterm.lua",
+    "%USERPROFILE%\\dotfiles\\wezterm\\.wezterm.lua",
+    { elevate: true }, // triggers a UAC prompt on apply
+  );
 });
 ```
 
@@ -172,44 +190,57 @@ host("ADRIFER-VISION", platforms.windows(), ({ windows }) => {
 Carried over from the hardware-validated `path` work:
 
 1. **Surgical, never destructive.** `file.symlink`/`file.text` manage only
-   the named target. Never touch sibling files. `force: false` must refuse to
-   clobber a pre-existing *non-managed* file at the target and error clearly,
-   rather than silently overwriting a user's real file.
+   the named target. Never touch sibling files. With `force: false` the helper
+   must refuse to clobber a pre-existing *non-managed* file at the target and
+   error clearly, rather than silently overwriting a user's real file. A
+   single `force` flag (no separate dir flag, matching Home Manager) governs
+   overwrite; `backup: true` renames the existing target to `<target>.bak`
+   instead of deleting it. **A real directory with contents is never deleted
+   even with `force: true`** — the helper errors and asks the user to move it
+   (or use `backup`), so `file` can never `rm -rf` a populated directory by
+   accident.
 2. **Idempotent via `testScript`.** Re-apply is a no-op when the target
    already matches (same content for text; same link target for symlink).
 3. **Encoding fidelity.** Text mode defaults to UTF-8 **without BOM** (the
    common cross-platform expectation); `encoding: "utf8bom"` opt-in. Avoid
    PowerShell's historical habit of injecting a BOM.
-4. **Privilege-aware symlinks.** Detect elevation/Developer Mode; clear error
-   if neither; allow `linkType: "junction"` as a no-privilege directory
-   fallback.
+4. **Privilege-aware symlinks.** Detect elevation/Developer Mode; if neither,
+   error clearly and point at the two fixes (Developer Mode, or `elevate:
+   true`). No junction fallback, no auto-toggling Developer Mode.
 5. **`%VAR%` expansion.** Targets and sources may contain environment
    variables (`%USERPROFILE%`, `%LOCALAPPDATA%`); expand them at apply time.
 
-## Open questions (for the PR thread)
+## Decisions (resolved in review, 2026-06-26)
 
-1. **Directory symlink default when Developer Mode is off.** Auto-fallback to
-   a junction (works, no privilege, but directory-only/same-volume), or hard
-   error and make the user choose? Leaning: `linkType: "auto"` tries symlink,
-   falls back to junction for directories, errors for files.
-2. **`force` semantics.** Should `force: true` also replace a real directory
-   with a link? That is destructive; maybe require an even more explicit
-   opt-in.
-3. **`executable` from Home Manager.** Largely meaningless on Windows (no
-   POSIX exec bit; executability is by extension/ACL). Probably **omit** the
-   option on Windows rather than no-op it, to avoid implying a guarantee.
-4. **Relationship to `windows.setting()` / Developer Mode.** Should
-   `file.symlink` auto-emit a Developer Mode assertion / dependency, or just
-   detect-and-error? Auto-emitting changes machine state (Developer Mode is a
-   machine-wide toggle) and may need elevation itself, so detect-and-error is
-   the safer default; declaring Developer Mode stays the user's explicit call
-   via the (future) `windows.setting()` helper.
-5. **Content source for `text` from a file.** Do we want
-   `file.text(target, readFileSync(...))` ergonomics, or a dedicated
-   `file.fromTemplate(...)`? Probably out of scope: the user can read the
-   file in TS.
-6. **Drift / `winix check`.** `testScript` already encodes desired state, so
-   `file` slots into the Phase 5 drift-detection story for free.
+The open questions below were settled with the owner:
+
+1. **No auto-handling of Developer Mode state.** Symlinks are a niche dev
+   need; `file` does not inspect or change settings beyond what it needs. If
+   Developer Mode is off, the user passes **`elevate: true`** on the symlink
+   call to run that apply elevated (UAC). This replaces the earlier
+   `linkType: junction` idea.
+2. **One `force` flag, plus `backup`, never delete a populated directory.**
+   Mirrors Home Manager (single per-file `force`; backup-by-rename rather than
+   a second flag). Real directories with contents are protected by behavior,
+   not by an extra flag: even with `force: true` they are never `rm`'d.
+3. **`executable` is omitted on Windows.** There is no POSIX exec bit on
+   Windows (executability comes from extension/ACLs), so an `executable`
+   option would be a no-op lie. Dropped rather than silently ignored.
+4. **Developer Mode is not mixed into `file`.** Off → user passes `elevate:
+   true` (detect-and-error points there). Declaring Developer Mode stays an
+   explicit, separate concern (future `windows.setting()` helper).
+5. **No template helper.** `file.text(target, content)` is enough; the user
+   can build content in TypeScript.
+6. **Drift tie-in accepted.** `testScript` already encodes desired state, so
+   `file` slots into the Phase 5 `winix check` drift story for free.
+
+## Remaining open question (for the PR thread)
+
+- **`elevate: true` UX.** Elevation means that apply triggers a UAC prompt
+  every run, which is friction for a recurring dotfile workflow. `elevate:
+  true` is therefore positioned as a **secondary escape hatch**; the
+  recommended path stays Developer Mode (one-time toggle, no per-apply
+  prompt). Confirm this framing reads right in the docs/examples.
 
 ## Phasing
 
@@ -219,8 +250,8 @@ Carried over from the hardware-validated `path` work:
 - **Phase B:** `file.symlink` for files, with privilege/Developer Mode
   detection and clear errors. The dotfile-reuse use case. Validate on
   hardware (elevated, Developer Mode on, and neither).
-- **Phase C:** directory symlinks + `recursive` + junction fallback +
-  `file.copy`. The trickiest cases.
+- **Phase C:** directory symlinks + `recursive` + `file.copy`. The trickiest
+  cases.
 
 ## Validation plan (hardware, deferred)
 
@@ -232,6 +263,6 @@ Windows box. Tests to run when implementing:
 - `file.symlink` (file): non-elevated with Developer Mode **on** (expect
   success), non-elevated with Developer Mode **off** (expect the clear error,
   not a cryptic one), elevated (expect success).
-- `file.symlink` (dir): symlink vs junction fallback; `recursive` true/false.
+- `file.symlink` (dir): file vs directory symlink; `recursive` true/false.
 - Confirm the emitted YAML round-trips through a real YAML parser (inline
   PowerShell deserializes as multiline), as done for `path`.
