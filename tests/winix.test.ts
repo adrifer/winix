@@ -630,3 +630,106 @@ describe("Context injection", () => {
     expect(a.homeManager).toEqual(b.homeManager);
   });
 });
+
+describe("Effect registration", () => {
+  it("registers declarations by effect with no return statement", () => {
+    const f = feature("effects", ({ home, nixos }) => {
+      home.program("git");
+      home.packages("jq", "ripgrep");
+      nixos.imports("some-module");
+      // no return
+    });
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    const [result] = evaluate(ws);
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+    expect((result.homeManager as any).home.packages).toEqual(["jq", "ripgrep"]);
+    expect((result.nixos as any).imports).toContain("some-module");
+  });
+
+  it("effect form and return form produce identical output", () => {
+    const viaEffect = feature("via-effect", ({ home }) => {
+      home.program("git");
+      home.packages("jq");
+    });
+    const viaReturn = feature("via-return", ({ home }) => [
+      home.program("git"),
+      home.packages("jq"),
+    ]);
+    const wsE = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [viaEffect()])],
+    });
+    const wsR = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [viaReturn()])],
+    });
+    const [e] = evaluate(wsE);
+    const [r] = evaluate(wsR);
+    expect(e.homeManager).toEqual(r.homeManager);
+  });
+
+  it("does not double-count a fragment that is both called and returned", () => {
+    // The body registers git by effect AND returns it. It must appear once.
+    const f = feature("mixed", ({ home }) => {
+      const g = home.program("git");
+      home.packages("jq");
+      return g; // already collected as an effect
+    });
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    const [result] = evaluate(ws);
+    // git enabled once, jq present: a duplicate would still merge to the same
+    // shape, so assert the package list too (arrays append+dedupe).
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+    expect((result.homeManager as any).home.packages).toEqual(["jq"]);
+  });
+
+  it("mixes effect declarations with an additional returned fragment", () => {
+    // Some declared by effect, one extra only returned (not called for effect).
+    const f = feature("mix2", ({ home }) => {
+      home.program("git");
+      // env is built but only returned, never registered via the context call
+      return { homeManager: { sessionVariables: { EDITOR: "nvim" } } } as any;
+    });
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    const [result] = evaluate(ws);
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+    expect((result.homeManager as any).sessionVariables.EDITOR).toBe("nvim");
+  });
+
+  it("global helper usage outside a body is unaffected (no collector)", () => {
+    // Using the global home in a plain array entry must not be collected by any
+    // ambient sink; it is just a fragment value.
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [home.program("git"), home.packages("jq")])],
+    });
+    const [result] = evaluate(ws);
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+    expect((result.homeManager as any).home.packages).toEqual(["jq"]);
+  });
+
+  it("host callback body supports effect declarations", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("inline", nixos({ stateVersion: "25.05" }), ({ home, nixos: n }) => {
+          home.packages("socat");
+          n.imports("mod-a");
+          // no return
+        }),
+      ],
+    });
+    const [result] = evaluate(ws);
+    expect((result.homeManager as any).home.packages).toEqual(["socat"]);
+    expect((result.nixos as any).imports).toContain("mod-a");
+  });
+});

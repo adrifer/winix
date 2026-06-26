@@ -2,6 +2,7 @@
 
 import { posix as pathPosix } from "node:path";
 import { createWinixContext, type WinixContext } from "./context.ts";
+import { withCollector, wasCollected } from "./collector.ts";
 import type {
   Fragment,
   FragmentFactory,
@@ -97,7 +98,12 @@ export function feature<T extends unknown[]>(
       __lazy: true,
       __id: id,
       __resolve: () => {
-        const result = factory(createWinixContext(), ...args);
+        const ctx = createWinixContext();
+        let returned: FragmentResult | undefined;
+        const effects = withCollector(() => {
+          returned = factory(ctx, ...args);
+        });
+        const result = mergeEffectsAndReturn(effects, returned);
         return annotateResult(result, id);
       },
     };
@@ -162,7 +168,14 @@ export function host(
     const lazy: LazyFragment = {
       __lazy: true,
       __id: `${name}:inline`,
-      __resolve: () => body(createWinixContext()),
+      __resolve: () => {
+        const ctx = createWinixContext();
+        let returned: FragmentResult | undefined;
+        const effects = withCollector(() => {
+          returned = body(ctx);
+        });
+        return mergeEffectsAndReturn(effects, returned);
+      },
     };
     return { name, platform, fragments: [lazy] };
   }
@@ -212,6 +225,56 @@ export function escape(expr: string): NixExpr {
     __winixNixExpr: true,
     expr,
   };
+}
+
+/**
+ * Combine fragments declared by effect with whatever the body returned.
+ *
+ * - Effect-only body (no return / returns undefined): just the effects.
+ * - Return-only body (legacy, no effects collected): just the return value,
+ *   so existing `() => home.program(...)` features behave exactly as before.
+ * - Mixed: effects first (declaration order), then any returned entries that
+ *   were NOT already captured as effects (dedupe via wasCollected), so
+ *   `return home.program(...)` does not double-count.
+ */
+function mergeEffectsAndReturn(
+  effects: Fragment[],
+  returned: FragmentResult | undefined
+): FragmentResult {
+  const hasReturn = returned !== undefined && returned !== null;
+  if (effects.length === 0) {
+    // Legacy path: nothing registered by effect, pass the return through as-is.
+    return hasReturn ? returned! : [];
+  }
+  if (!hasReturn) {
+    return effects;
+  }
+  const extraFromReturn = filterUncollected(returned!);
+  return [...effects, ...extraFromReturn];
+}
+
+/**
+ * Flatten a FragmentResult into entries that were not already collected by
+ * effect. Preserves lazy entries (they resolve later) and arrays.
+ */
+function filterUncollected(result: FragmentResult): FragmentEntry[] {
+  const entries = Array.isArray(result) ? result : [result];
+  const out: FragmentEntry[] = [];
+  for (const entry of entries) {
+    if (Array.isArray(entry)) {
+      out.push(...filterUncollected(entry));
+      continue;
+    }
+    if (isLazy(entry)) {
+      // Lazy entries resolve on their own later; never collected here.
+      out.push(entry);
+      continue;
+    }
+    if (!wasCollected(entry)) {
+      out.push(entry as FragmentEntry);
+    }
+  }
+  return out;
 }
 
 function annotateResult(result: FragmentResult, id: string): FragmentResult {
