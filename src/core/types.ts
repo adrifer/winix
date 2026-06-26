@@ -33,6 +33,32 @@ export interface NixExpr {
   expr: string;
 }
 
+/**
+ * Identity of a single emittable resource, used to wire `dependsOn` across
+ * declarations within one host. Currently only the Windows backend produces
+ * resources with handles.
+ *
+ * - `package`: identified by its natural, stable package id.
+ * - `command`: has no natural id, so it carries a unique token; the emitter
+ *   assigns it a generated name (`command-N`) per host.
+ */
+export type ResourceRef =
+  | { kind: "package"; id: string }
+  | { kind: "command"; token: symbol };
+
+/**
+ * A resource handle: the value returned by resource-producing helpers like
+ * `windows.package(...)` / `windows.raw(...)`.
+ *
+ * It is a normal Fragment (so it still merges and registers as an effect),
+ * decorated with `__winixHandle` so it can be passed to another resource's
+ * `dependsOn` to express ordering. The handle is opaque to user code; only the
+ * emitter reads `__winixHandle` to resolve dependency references to names.
+ */
+export interface ResourceHandle extends Fragment {
+  __winixHandle: ResourceRef;
+}
+
 export type ImportRef = string | RawModuleRef;
 
 /**

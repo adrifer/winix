@@ -210,28 +210,40 @@ handles into `dependsOn` strings:
 ```yaml
 resources:
   - type: Microsoft.WinGet/Package
-    name: OpenJS.NodeJS                # name = package id (decided below)
+    name: OpenJS NodeJS                # sanitized from the id (decided below)
     properties:
-      id: OpenJS.NodeJS
+      id: OpenJS.NodeJS                # the real id winget reads, dots intact
       version: "20.11.0"               # from winix-windows.lock (Phase 2)
 
   - type: Microsoft.DSC.Transitional/RunCommandOnSet
-    name: raw-1                        # generated name for id-less resources
+    name: command 1                    # generated name for id-less resources
     dependsOn:
-      - OpenJS.NodeJS
+      - "[resourceId('Microsoft.WinGet/Package', 'OpenJS NodeJS')]"
     properties: { /* ... */ }
 ```
 
 **Naming rules:**
 
-- **Packages:** `name` = the package `id` (`Git.Git`, `OpenJS.NodeJS`). One
-  obvious, stable, human-readable identifier. If the same id is declared twice
-  in one host, the generator raises a clear error rather than emitting
-  duplicate `name`s (declaring the same package twice is already a mistake).
-- **Resources without a natural id** (`raw`, `setting`, …): a generated name
-  from the resource type plus a per-host counter (`raw-1`, `setting-1`). The
-  user never types these; they exist only in the emitted YAML and in
-  `dependsOn` wiring, which is driven by handles, not strings.
+The DSC v3 schema (2023/08) restricts an instance `name` to `^[a-zA-Z0-9 ]+$`
+(letters, numbers, spaces only), and `dependsOn` entries must be
+`[resourceId('<type>', '<name>')]` lookups. Package ids like `Git.Git` contain
+dots and so cannot be used verbatim as a `name`. Therefore:
+
+- **Packages:** `name` = the **sanitized** package id (`Git.Git` → `Git Git`,
+  `Fastfetch-cli.Fastfetch` → `Fastfetch cli Fastfetch`). Non-`[a-zA-Z0-9 ]`
+  characters collapse to single spaces; the result is trimmed. The **real id**
+  is preserved in `properties.id`, which is what winget actually installs. A
+  future `name:` override on the package spec takes precedence.
+- **Resources without a natural id** (`raw`, `setting`, …): an explicit `name`
+  (sanitized) when given, else a generated `command N` / `setting N` per-host
+  counter. The user never types these; they exist only in the emitted YAML and
+  in `dependsOn` wiring, which is driven by handles, not strings.
+- **Collisions:** if two resources sanitize to the same base name, a ` N`
+  suffix keeps them unique (`Git Git`, `Git Git 2`), since DSC requires
+  instance names to be unique within a document.
+- **Cross-host references:** a handle captured in one host and passed to
+  another host's `dependsOn` is a hard error at generation time (ordering is
+  only expressible within a single configuration document).
 
 **Validation at generation time:** every handle referenced by `dependsOn`
 must belong to the same host. Dangling references and dependency cycles are
@@ -348,7 +360,8 @@ operation.
    host") rather than producing invalid output. Cross-host ordering stays
    impossible by design.
 3. **Generated names use a per-host counter.** Id-less resources (`raw`,
-   `setting`) get deterministic names like `raw-1`, `setting-1` from the
-   resource type plus a per-host counter. Readable, stable diffs as long as
-   ordering is stable. A content-hash alternative is noted only as a fallback to
-   revisit if reordering churn ever becomes a problem; not adopted now.
+   `setting`) get deterministic names like `command 1`, `setting 1` from the
+   resource kind plus a per-host counter (sanitized to the DSC `^[a-zA-Z0-9 ]+$`
+   grammar). Readable, stable diffs as long as ordering is stable. A
+   content-hash alternative is noted only as a fallback to revisit if reordering
+   churn ever becomes a problem; not adopted now.

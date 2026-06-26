@@ -4,7 +4,7 @@
 // naming of the `nixos.*` / `darwin.*` namespaces. Additional helpers
 // (env, path, file, dsc, wsl, programs) land in follow-up milestones.
 
-import type { Fragment } from "../core/types.ts";
+import type { Fragment, ResourceHandle, ResourceRef } from "../core/types.ts";
 import type { WinPackage, WinPackageSource, WinRawCommand } from "../types/index.ts";
 
 /**
@@ -18,6 +18,8 @@ export interface WinPackageSpec {
   source?: WinPackageSource;
   version?: string;
   elevated?: boolean;
+  /** Resources this package must be applied after (handles from other calls). */
+  dependsOn?: ResourceHandle[];
 }
 
 export type WinPackageArg = string | WinPackageSpec;
@@ -29,9 +31,34 @@ export interface WinRawCommandSpec {
   name?: string;
   executable: string;
   arguments?: string[];
+  /** Resources this command must run after (handles from other calls). */
+  dependsOn?: ResourceHandle[];
 }
 
 export type WinRawCommandArg = string | WinRawCommandSpec;
+
+/**
+ * Resolve an array of resource handles passed to `dependsOn` into the stable
+ * resource references the emitter wires up. Throws on a value that is not a
+ * Winix resource handle (e.g. a plain fragment or a handle from a non-resource
+ * helper), since only resources can be ordered.
+ */
+function resolveDependsOn(handles: ResourceHandle[] | undefined): ResourceRef[] | undefined {
+  if (!handles || handles.length === 0) return undefined;
+  const refs: ResourceRef[] = [];
+  for (const handle of handles) {
+    const ref = (handle as Partial<ResourceHandle>)?.__winixHandle;
+    if (!ref) {
+      throw new Error(
+        "windows.*(dependsOn) expects resource handles returned by " +
+        "windows.package(...) or windows.raw(...). Got a value without a " +
+        "resource identity."
+      );
+    }
+    refs.push(ref);
+  }
+  return refs;
+}
 
 function normalizePackage(arg: WinPackageArg): WinPackage {
   if (typeof arg === "string") {
@@ -61,6 +88,8 @@ function normalizePackage(arg: WinPackageArg): WinPackage {
   if (arg.elevated !== undefined) {
     pkg.elevated = arg.elevated;
   }
+  const deps = resolveDependsOn(arg.dependsOn);
+  if (deps) pkg.dependsOn = deps;
   return pkg;
 }
 
@@ -69,7 +98,10 @@ function normalizeRawCommand(arg: WinRawCommandArg): WinRawCommand {
     if (arg.length === 0) {
       throw new Error("windows.raw(command) requires a non-empty command string");
     }
-    return { executable: "powershell", arguments: ["-Command", arg] };
+    return withToken({
+      executable: "powershell",
+      arguments: ["-Command", arg],
+    });
   }
 
   if (!arg || typeof arg !== "object") {
@@ -97,6 +129,23 @@ function normalizeRawCommand(arg: WinRawCommandArg): WinRawCommand {
     }
     command.arguments = arg.arguments;
   }
+  const deps = resolveDependsOn(arg.dependsOn);
+  if (deps) command.dependsOn = deps;
+  return withToken(command);
+}
+
+/**
+ * Stamp a non-enumerable identity token onto a command so a handle can
+ * reference it via `dependsOn`. Non-enumerable so it never shows up in deep
+ * equality checks, JSON, or the emitted YAML; it is read only by the helper
+ * (to build the handle ref) and the emitter (to resolve names).
+ */
+function withToken(command: WinRawCommand): WinRawCommand {
+  Object.defineProperty(command, "token", {
+    value: Symbol("winix.command"),
+    enumerable: false,
+    configurable: true,
+  });
   return command;
 }
 
@@ -110,7 +159,7 @@ export interface WindowsHelper {
    * windows.package({ id: "Git.Git", version: "2.44.0" })
    * ```
    */
-  package(arg: WinPackageArg): Fragment;
+  package(arg: WinPackageArg): ResourceHandle;
 
   /**
    * Run an arbitrary command on every Windows apply via DSC v3's
@@ -126,16 +175,32 @@ export interface WindowsHelper {
    * windows.raw({ name: "make-bin-dir", executable: "cmd", arguments: ["/c", "mkdir", "foo"] })
    * ```
    */
-  raw(arg: WinRawCommandArg): Fragment;
+  raw(arg: WinRawCommandArg): ResourceHandle;
+}
+
+/**
+ * Attach a resource identity to a fragment, turning it into a handle that can
+ * be passed to another resource's `dependsOn`. The `__winixHandle` marker is
+ * non-enumerable so it never leaks into the merged IR or emitted output.
+ */
+function asHandle(fragment: Fragment, ref: ResourceRef): ResourceHandle {
+  Object.defineProperty(fragment, "__winixHandle", {
+    value: ref,
+    enumerable: false,
+    configurable: true,
+  });
+  return fragment as ResourceHandle;
 }
 
 export const windows: WindowsHelper = {
-  package: (arg: WinPackageArg): Fragment => {
+  package: (arg: WinPackageArg): ResourceHandle => {
     const pkg = normalizePackage(arg);
-    return { windows: { packages: { [pkg.id]: pkg } } };
+    const fragment: Fragment = { windows: { packages: { [pkg.id]: pkg } } };
+    return asHandle(fragment, { kind: "package", id: pkg.id });
   },
-  raw: (arg: WinRawCommandArg): Fragment => {
+  raw: (arg: WinRawCommandArg): ResourceHandle => {
     const command = normalizeRawCommand(arg);
-    return { windows: { commands: [command] } };
+    const fragment: Fragment = { windows: { commands: [command] } };
+    return asHandle(fragment, { kind: "command", token: command.token! });
   },
 };

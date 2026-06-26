@@ -250,12 +250,12 @@ describe("generateWindows() emitter", () => {
       "ZedIndustries.Zed": { source: "winget", version: "0.190.0" },
     })).hosts.desktop["configuration.winget"];
 
-    expect(doc.indexOf("name: Git.Git")).toBeLessThan(doc.indexOf("name: ZedIndustries.Zed"));
-    expect(doc.indexOf("name: ZedIndustries.Zed")).toBeLessThan(
-      doc.indexOf("name: run-command-0")
+    expect(doc.indexOf('name: "Git Git"')).toBeLessThan(doc.indexOf('name: "ZedIndustries Zed"'));
+    expect(doc.indexOf('name: "ZedIndustries Zed"')).toBeLessThan(
+      doc.indexOf('name: "command 1"')
     );
-    expect(doc.indexOf("name: run-command-0")).toBeLessThan(
-      doc.indexOf("name: run-command-1")
+    expect(doc.indexOf('name: "command 1"')).toBeLessThan(
+      doc.indexOf('name: "command 2"')
     );
     expect(doc).toContain("type: Microsoft.DSC.Transitional/RunCommandOnSet");
     expect(doc).toContain('arguments: ["/c", "echo", "first"]');
@@ -279,14 +279,140 @@ describe("generateWindows() emitter", () => {
 
     // The non-elevated package block must not contain securityContext.
     const fastfetchBlock = doc.slice(
-      doc.indexOf("name: Fastfetch-cli.Fastfetch"),
-      doc.indexOf("name: Some.Driver")
+      doc.indexOf('name: "Fastfetch cli Fastfetch"'),
+      doc.indexOf('name: "Some Driver"')
     );
     expect(fastfetchBlock).not.toContain("securityContext");
 
     // The elevated package block must contain it.
-    const driverBlock = doc.slice(doc.indexOf("name: Some.Driver"));
+    const driverBlock = doc.slice(doc.indexOf('name: "Some Driver"'));
     expect(driverBlock).toContain("securityContext: elevated");
+  });
+
+  it("sanitizes resource ids into schema-valid instance names", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.package("Git.Git"),
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws), windowsLock({
+      "Git.Git": { source: "winget", version: "2.44.0" },
+      "Fastfetch-cli.Fastfetch": { source: "winget", version: "2.45.0" },
+    })).hosts.desktop["configuration.winget"];
+
+    // Dots/dashes collapse to spaces; the real id stays in properties.id.
+    expect(doc).toContain('name: "Git Git"');
+    expect(doc).toContain("      id: Git.Git");
+    expect(doc).toContain('name: "Fastfetch cli Fastfetch"');
+    expect(doc).toContain("      id: Fastfetch-cli.Fastfetch");
+
+    // Every emitted instance name must satisfy the DSC v3 name grammar.
+    for (const line of doc.split("\n")) {
+      const m = line.match(/^  - name: (?:"([^"]+)"|(.+))$/);
+      if (!m) continue;
+      const name = m[1] ?? m[2];
+      expect(name).toMatch(/^[a-zA-Z0-9 ]+$/);
+    }
+  });
+
+  it("disambiguates colliding sanitized names with a numeric suffix", () => {
+    // Two distinct ids that sanitize to the same base must stay unique.
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.package("Foo.Bar"),
+          windows.package("Foo-Bar"),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws), windowsLock({
+      "Foo.Bar": { source: "winget", version: "1.0.0" },
+      "Foo-Bar": { source: "winget", version: "2.0.0" },
+    })).hosts.desktop["configuration.winget"];
+
+    expect(doc).toContain('name: "Foo Bar"');
+    expect(doc).toContain('name: "Foo Bar 2"');
+  });
+
+  it("emits dependsOn referencing a package handle by resourceId", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          const git = windows.package("Git.Git");
+          windows.raw({
+            name: "clone repos",
+            executable: "pwsh",
+            arguments: ["-c", "git clone ..."],
+            dependsOn: [git],
+          });
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws), windowsLock({
+      "Git.Git": { source: "winget", version: "2.44.0" },
+    })).hosts.desktop["configuration.winget"];
+
+    // The command resource depends on the package resource via resourceId.
+    const cmdBlock = doc.slice(doc.indexOf('name: "clone repos"'));
+    expect(cmdBlock).toContain(
+      `dependsOn: ["[resourceId('Microsoft.WinGet/Package', 'Git Git')]"]`
+    );
+  });
+
+  it("emits dependsOn referencing a raw command handle", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          const prep = windows.raw({
+            name: "prep",
+            executable: "pwsh",
+            arguments: ["-c", "mkdir x"],
+          });
+          windows.package({ id: "Git.Git", dependsOn: [prep] });
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws), windowsLock({
+      "Git.Git": { source: "winget", version: "2.44.0" },
+    })).hosts.desktop["configuration.winget"];
+
+    const pkgBlock = doc.slice(doc.indexOf('name: "Git Git"'));
+    expect(pkgBlock).toContain(
+      `dependsOn: ["[resourceId('Microsoft.DSC.Transitional/RunCommandOnSet', 'prep')]"]`
+    );
+  });
+
+  it("throws when dependsOn references a resource from another host", () => {
+    // A handle captured in one host must not be used in another host's body.
+    let leaked: ReturnType<typeof windows.package> | undefined;
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("a", platforms.windows(), ({ windows }) => {
+          leaked = windows.package("Git.Git");
+        }),
+        host("b", platforms.windows(), ({ windows }) => {
+          windows.raw({
+            name: "x",
+            executable: "pwsh",
+            arguments: ["-c", "echo hi"],
+            dependsOn: [leaked!],
+          });
+        }),
+      ],
+    });
+    expect(() =>
+      generateWindows(evaluate(ws), windowsLock({
+        "Git.Git": { source: "winget", version: "2.44.0" },
+      }))
+    ).toThrow(/not declared in host "b"/);
   });
 });
 

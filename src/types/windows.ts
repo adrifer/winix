@@ -6,6 +6,8 @@
 // `windows.*` helpers and consumed by the Windows emitter, not the public
 // authoring surface.
 
+import type { ResourceRef } from "../core/types.ts";
+
 /**
  * A winget package source. MVP supports the two first-party catalogues.
  * Additional sources (chocolatey, scoop) can plug in later without changing
@@ -38,6 +40,12 @@ export interface WinPackage {
    * `winget configure` is run from a non-elevated shell.
    */
   elevated?: boolean;
+  /**
+   * Resources this package must be applied after, as resolved resource
+   * references (from handles passed to `dependsOn`). Emitted as DSC v3
+   * `dependsOn` entries. References must belong to the same host.
+   */
+  dependsOn?: ResourceRef[];
 }
 
 /**
@@ -50,6 +58,18 @@ export interface WinRawCommand {
   executable: string;
   /** Arguments passed to the executable, in order. */
   arguments?: string[];
+  /**
+   * Unique identity token for this command, so a handle returned by
+   * `windows.raw(...)` can be referenced in another resource's `dependsOn`.
+   * Survives fragment merging (commands are concatenated by reference, never
+   * cloned). Non-enumerable in spirit; carried internally only.
+   */
+  token?: symbol;
+  /**
+   * Resources this command must run after, as resolved resource references.
+   * Emitted as DSC v3 `dependsOn`. References must belong to the same host.
+   */
+  dependsOn?: ResourceRef[];
 }
 
 /**

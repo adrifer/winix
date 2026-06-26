@@ -27,6 +27,7 @@
 // processor is selected by the metadata block.
 
 import type { EvaluatedHost } from "../../evaluator/index.ts";
+import type { ResourceRef } from "../../core/types.ts";
 import type { WinPackage, WinRawCommand, WindowsOptions } from "../../types/index.ts";
 import {
   emptyWindowsLock,
@@ -108,15 +109,142 @@ function generateConfiguration(
     return lines.join("\n") + "\n";
   }
 
+  // Two-pass: first assign every resource a schema-valid, unique name and build
+  // the ref → (type, name) map; then render, resolving each resource's
+  // `dependsOn` against that map.
+  const naming = assignResourceNames(hostName, packages, commands);
+
   lines.push("resources:");
   for (const pkg of packages) {
-    lines.push(...renderPackageResource(pkg, lockedVersionForPackage(pkg, lock)));
+    const plan = naming.packages.get(pkg)!;
+    lines.push(...renderPackageResource(pkg, lockedVersionForPackage(pkg, lock), plan, naming));
   }
-  for (const [index, command] of commands.entries()) {
-    lines.push(...renderRawCommandResource(command, index));
+  for (const command of commands) {
+    const plan = naming.commands.get(command)!;
+    lines.push(...renderRawCommandResource(command, plan, naming));
   }
 
   return lines.join("\n") + "\n";
+}
+
+/** A resource's resolved DSC identity: its type and schema-valid name. */
+interface ResourcePlan {
+  type: string;
+  name: string;
+}
+
+/** The naming plan for one host: per-resource plans plus the ref lookup map. */
+interface NamingPlan {
+  packages: Map<WinPackage, ResourcePlan>;
+  commands: Map<WinRawCommand, ResourcePlan>;
+  /** Resolve a dependsOn ref to the depended-upon resource's plan. */
+  byPackageId: Map<string, ResourcePlan>;
+  byCommandToken: Map<symbol, ResourcePlan>;
+  hostName: string;
+}
+
+/**
+ * Convert an arbitrary identifier into a DSC v3 instance name, which the schema
+ * restricts to `^[a-zA-Z0-9 ]+$` (letters, numbers, spaces only). Non-matching
+ * characters (dots, slashes, dashes, underscores) collapse to single spaces;
+ * the result is trimmed. Package ids like `Git.Git` become `Git Git`. The real
+ * package id is preserved separately in `properties.id`, which winget reads.
+ */
+function sanitizeName(raw: string): string {
+  const cleaned = raw.replace(/[^a-zA-Z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+  return cleaned.length > 0 ? cleaned : "resource";
+}
+
+/**
+ * Assign a unique, schema-valid name to every resource in a host and build the
+ * lookup maps used to resolve `dependsOn` references.
+ *
+ * Naming rules:
+ * - Packages default to the sanitized package id (`Git.Git` → `Git Git`), or an
+ *   explicit `name` when one is later supported on packages.
+ * - Commands use their explicit `name` (sanitized) when given, else a generated
+ *   `command N` counter in declaration order.
+ * - On a name collision, a ` N` suffix is appended to keep names unique, since
+ *   DSC requires instance names to be unique within a document.
+ */
+function assignResourceNames(
+  hostName: string,
+  packages: readonly WinPackage[],
+  commands: readonly WinRawCommand[]
+): NamingPlan {
+  const used = new Set<string>();
+  const plan: NamingPlan = {
+    packages: new Map(),
+    commands: new Map(),
+    byPackageId: new Map(),
+    byCommandToken: new Map(),
+    hostName,
+  };
+
+  const unique = (base: string): string => {
+    let name = base;
+    let n = 2;
+    while (used.has(name)) {
+      name = `${base} ${n}`;
+      n += 1;
+    }
+    used.add(name);
+    return name;
+  };
+
+  for (const pkg of packages) {
+    const name = unique(sanitizeName(pkg.id));
+    const rp: ResourcePlan = { type: WINGET_PACKAGE_TYPE, name };
+    plan.packages.set(pkg, rp);
+    plan.byPackageId.set(pkg.id, rp);
+  }
+
+  let commandCounter = 0;
+  for (const command of commands) {
+    commandCounter += 1;
+    const base = command.name
+      ? sanitizeName(command.name)
+      : `command ${commandCounter}`;
+    const name = unique(base);
+    const rp: ResourcePlan = { type: RUN_COMMAND_ON_SET_TYPE, name };
+    plan.commands.set(command, rp);
+    if (command.token) {
+      plan.byCommandToken.set(command.token, rp);
+    }
+  }
+
+  return plan;
+}
+
+/**
+ * Resolve a resource's `dependsOn` references into DSC v3 `resourceId()`
+ * lookup strings. Throws when a referenced resource is not present in this
+ * host's naming plan, which happens if a handle from another host is passed to
+ * `dependsOn` (cross-host ordering is not expressible in a single document).
+ */
+function resolveDependsOnRefs(
+  refs: ResourceRef[] | undefined,
+  naming: NamingPlan
+): string[] {
+  if (!refs || refs.length === 0) return [];
+  const ids: string[] = [];
+  for (const ref of refs) {
+    const target =
+      ref.kind === "package"
+        ? naming.byPackageId.get(ref.id)
+        : naming.byCommandToken.get(ref.token);
+    if (!target) {
+      const what =
+        ref.kind === "package" ? `package "${ref.id}"` : "a raw command";
+      throw new Error(
+        `windows dependsOn references ${what} that is not declared in host ` +
+        `"${naming.hostName}". Resources can only depend on other resources ` +
+        `within the same host.`
+      );
+    }
+    ids.push(`[resourceId('${target.type}', '${target.name}')]`);
+  }
+  return ids;
 }
 
 /**
@@ -135,10 +263,19 @@ function generateConfiguration(
  *         securityContext: elevated
  * ```
  */
-function renderPackageResource(pkg: WinPackage, version: string): string[] {
+function renderPackageResource(
+  pkg: WinPackage,
+  version: string,
+  plan: ResourcePlan,
+  naming: NamingPlan
+): string[] {
   const out: string[] = [];
-  out.push(`  - name: ${yamlScalar(pkg.id)}`);
+  out.push(`  - name: ${yamlScalar(plan.name)}`);
   out.push(`    type: ${WINGET_PACKAGE_TYPE}`);
+  const deps = resolveDependsOnRefs(pkg.dependsOn, naming);
+  if (deps.length > 0) {
+    out.push(`    dependsOn: ${yamlStringArray(deps)}`);
+  }
   out.push(`    properties:`);
   out.push(`      id: ${yamlScalar(pkg.id)}`);
   out.push(`      source: ${yamlScalar(pkg.source)}`);
@@ -160,10 +297,18 @@ function renderPackageResource(pkg: WinPackage, version: string): string[] {
  * Render one raw command as a DSC v3
  * `Microsoft.DSC.Transitional/RunCommandOnSet` resource.
  */
-function renderRawCommandResource(command: WinRawCommand, index: number): string[] {
+function renderRawCommandResource(
+  command: WinRawCommand,
+  plan: ResourcePlan,
+  naming: NamingPlan
+): string[] {
   const out: string[] = [];
-  out.push(`  - name: ${yamlScalar(command.name ?? `run-command-${index}`)}`);
+  out.push(`  - name: ${yamlScalar(plan.name)}`);
   out.push(`    type: ${RUN_COMMAND_ON_SET_TYPE}`);
+  const deps = resolveDependsOnRefs(command.dependsOn, naming);
+  if (deps.length > 0) {
+    out.push(`    dependsOn: ${yamlStringArray(deps)}`);
+  }
   out.push(`    properties:`);
   out.push(`      executable: ${yamlScalar(command.executable)}`);
   if (command.arguments !== undefined && command.arguments.length > 0) {
