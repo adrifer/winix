@@ -65,9 +65,9 @@ export const account: AccountNamespace = {
     name: string,
     factory: (...args: T) => AccountOpts
   ): AccountUserFactory<T> => {
-    const fn = feature(`account:user:${name}`, (...args: T) =>
+    const fn = feature(`account:user:${name}`, (_ctx, ...args: T) =>
       accountFragment(name, factory(...args))
-    ) as AccountUserFactory<T>;
+    ) as unknown as AccountUserFactory<T>;
     defineMetadata(fn, "name", name);
     defineMetadata(fn, "kind", "account.user");
     return fn;
@@ -76,9 +76,9 @@ export const account: AccountNamespace = {
     name: string,
     factory: (...args: T) => AccountGroupOpts = (() => ({})) as (...args: T) => AccountGroupOpts
   ): AccountGroupFactory<T> => {
-    const fn = feature(`account:group:${name}`, (...args: T) =>
+    const fn = feature(`account:group:${name}`, (_ctx, ...args: T) =>
       groupFragment(name, factory(...args))
-    ) as AccountGroupFactory<T>;
+    ) as unknown as AccountGroupFactory<T>;
     defineMetadata(fn, "name", name);
     defineMetadata(fn, "kind", "account.group");
     return fn;

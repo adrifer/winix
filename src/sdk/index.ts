@@ -1,6 +1,7 @@
 // SDK: helpers exposed to user configs (platform, feature, host, workspace, etc.)
 
 import { posix as pathPosix } from "node:path";
+import { createWinixContext, type WinixContext } from "./context.ts";
 import type {
   Fragment,
   FragmentFactory,
@@ -89,14 +90,14 @@ export function platform<T extends unknown[]>(
 
 export function feature<T extends unknown[]>(
   id: string,
-  factory: (...args: T) => FragmentResult
+  factory: (ctx: WinixContext, ...args: T) => FragmentResult
 ): FragmentFactory<T> {
   const fn = ((...args: T): LazyFragment => {
     return {
       __lazy: true,
       __id: id,
       __resolve: () => {
-        const result = factory(...args);
+        const result = factory(createWinixContext(), ...args);
         return annotateResult(result, id);
       },
     };
@@ -117,7 +118,7 @@ export function feature<T extends unknown[]>(
 
 export function profile<T extends unknown[]>(
   id: string,
-  factory: (...args: T) => FragmentResult
+  factory: (ctx: WinixContext, ...args: T) => FragmentResult
 ): ProfileFactory<T>;
 export function profile(
   id: string,
@@ -125,12 +126,12 @@ export function profile(
 ): ProfileFactory<[]>;
 export function profile<T extends unknown[]>(
   id: string,
-  entriesOrFactory: FragmentResult | ((...args: T) => FragmentResult)
+  entriesOrFactory: FragmentResult | ((ctx: WinixContext, ...args: T) => FragmentResult)
 ): ProfileFactory<T> {
   const factory =
     typeof entriesOrFactory === "function"
-      ? (entriesOrFactory as (...args: T) => FragmentResult)
-      : (() => entriesOrFactory);
+      ? (entriesOrFactory as (ctx: WinixContext, ...args: T) => FragmentResult)
+      : ((_ctx: WinixContext, ..._args: T) => entriesOrFactory);
 
   return feature(id, factory) as ProfileFactory<T>;
 }
@@ -141,8 +142,31 @@ export function host(
   name: string,
   platform: PlatformLazyFragment,
   fragments: readonly FragmentEntry[]
+): HostDef;
+export function host(
+  name: string,
+  platform: PlatformLazyFragment,
+  body: (ctx: WinixContext) => FragmentResult
+): HostDef;
+export function host(
+  name: string,
+  platform: PlatformLazyFragment,
+  fragmentsOrBody: readonly FragmentEntry[] | ((ctx: WinixContext) => FragmentResult)
 ): HostDef {
-  return { name, platform, fragments };
+  if (typeof fragmentsOrBody === "function") {
+    // Callback form: wrap the body in an anonymous feature-like lazy fragment so
+    // it resolves under the host's eval context (and, in later layers, its
+    // handle collector). The body declares via the injected context and/or
+    // returns fragments.
+    const body = fragmentsOrBody;
+    const lazy: LazyFragment = {
+      __lazy: true,
+      __id: `${name}:inline`,
+      __resolve: () => body(createWinixContext()),
+    };
+    return { name, platform, fragments: [lazy] };
+  }
+  return { name, platform, fragments: fragmentsOrBody };
 }
 
 // --- workspace() ---

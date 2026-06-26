@@ -26,7 +26,7 @@ const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
   },
 }));
 
-const wsl = feature("wsl", (opts?: { defaultUser?: string }) => ({
+const wsl = feature("wsl", (_ctx, opts?: { defaultUser?: string }) => ({
   nixos: {
     wsl: { enable: true, defaultUser: opts?.defaultUser },
     packages: ["wl-clipboard"],
@@ -536,5 +536,93 @@ describe("Nix backend", () => {
     expect(output.warnings).toContain(
       "home-manager module import detected but workspace inputs do not include home-manager"
     );
+  });
+});
+
+describe("Context injection", () => {
+  it("injects the declaration namespaces into a feature callback", () => {
+    let seen: string[] = [];
+    const f = feature("ctx-probe", (ctx) => {
+      // Reset each call (the factory may run more than once during evaluation).
+      seen = ["home", "nix", "nixos", "darwin", "windows", "account", "overlay", "platforms"].filter(
+        (key) => key in ctx
+      );
+      return ctx.home.program("git");
+    });
+
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    const [result] = evaluate(ws);
+
+    expect(seen).toEqual(["home", "nix", "nixos", "darwin", "windows", "account", "overlay", "platforms"]);
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+  });
+
+  it("context namespaces behave identically to the global imports", () => {
+    // Destructured-from-context and global home produce the same fragment.
+    const viaContext = feature("via-context", ({ home: h }) => h.program("git"));
+    const viaGlobal = feature("via-global", () => home.program("git"));
+
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("a", nixos({ stateVersion: "25.05" }), [viaContext()]),
+        host("b", nixos({ stateVersion: "25.05" }), [viaGlobal()]),
+      ],
+    });
+    const [a, b] = evaluate(ws);
+    expect(a.homeManager).toEqual(b.homeManager);
+  });
+
+  it("context platforms.isActive reflects the evaluating host", () => {
+    // The local test platform is registered with id "linux" (see top of file),
+    // so platforms.darwin.isActive must be false while evaluating it.
+    const results: boolean[] = [];
+    const f = feature("plat-probe", ({ platforms }) => {
+      results.push(platforms.darwin.isActive);
+      return home.program("git");
+    });
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    evaluate(ws);
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((v) => v === false)).toBe(true);
+  });
+
+  it("host accepts a callback body with injected context (inline declarations)", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("inline", nixos({ stateVersion: "25.05" }), ({ home: h, nixos: n }) => [
+          h.packages("socat", "bubblewrap"),
+          n.imports("some-module"),
+        ]),
+      ],
+    });
+    const [result] = evaluate(ws);
+    expect((result.homeManager as any).home.packages).toEqual(["socat", "bubblewrap"]);
+    expect((result.nixos as any).imports).toContain("some-module");
+  });
+
+  it("host callback and array forms produce equivalent results", () => {
+    const arrayForm = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("x", nixos({ stateVersion: "25.05" }), [home.packages("jq")]),
+      ],
+    });
+    const callbackForm = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("x", nixos({ stateVersion: "25.05" }), ({ home: h }) => h.packages("jq")),
+      ],
+    });
+    const [a] = evaluate(arrayForm);
+    const [b] = evaluate(callbackForm);
+    expect(a.homeManager).toEqual(b.homeManager);
   });
 });
