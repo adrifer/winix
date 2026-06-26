@@ -73,6 +73,24 @@ export type FragmentEntry = LazyFragment | Fragment | readonly FragmentEntry[];
 export type FragmentResult = FragmentEntry;
 
 /**
+ * The return type allowed for *authoring callbacks* (`feature`/`profile`/`host`
+ * bodies). It is a `FragmentResult` OR nothing (`void`/`undefined`), because a
+ * callback may declare purely by effect through the injected namespaces and
+ * return nothing at all:
+ *
+ * ```ts
+ * feature("dev", ({ home }) => { home.program("git"); }); // returns void
+ * ```
+ *
+ * The runtime already treats a `undefined`/`null` return as "no returned
+ * content" and falls back to the collected effects (see
+ * `mergeEffectsAndReturn`); this type makes the public signatures match that
+ * behavior. `FragmentResult` itself stays strict for internal use where a
+ * concrete result is always present.
+ */
+export type AuthoringResult = FragmentResult | void;
+
+/**
  * A lazy fragment descriptor: holds the factory + args for deferred evaluation.
  */
 export interface LazyFragment {

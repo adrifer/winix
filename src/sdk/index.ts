@@ -12,6 +12,7 @@ import type {
   PlatformLazyFragment,
   FragmentEntry,
   FragmentResult,
+  AuthoringResult,
   InputDef,
   InputWithOptions,
   WorkspaceDef,
@@ -91,7 +92,7 @@ export function platform<T extends unknown[]>(
 
 export function feature<T extends unknown[]>(
   id: string,
-  factory: (ctx: WinixContext, ...args: T) => FragmentResult
+  factory: (ctx: WinixContext, ...args: T) => AuthoringResult
 ): FragmentFactory<T> {
   const fn = ((...args: T): LazyFragment => {
     return {
@@ -99,7 +100,7 @@ export function feature<T extends unknown[]>(
       __id: id,
       __resolve: () => {
         const ctx = createWinixContext();
-        let returned: FragmentResult | undefined;
+        let returned: AuthoringResult = undefined;
         const effects = withCollector(() => {
           returned = factory(ctx, ...args);
         });
@@ -124,7 +125,7 @@ export function feature<T extends unknown[]>(
 
 export function profile<T extends unknown[]>(
   id: string,
-  factory: (ctx: WinixContext, ...args: T) => FragmentResult
+  factory: (ctx: WinixContext, ...args: T) => AuthoringResult
 ): ProfileFactory<T>;
 export function profile(
   id: string,
@@ -132,11 +133,11 @@ export function profile(
 ): ProfileFactory<[]>;
 export function profile<T extends unknown[]>(
   id: string,
-  entriesOrFactory: FragmentResult | ((ctx: WinixContext, ...args: T) => FragmentResult)
+  entriesOrFactory: FragmentResult | ((ctx: WinixContext, ...args: T) => AuthoringResult)
 ): ProfileFactory<T> {
   const factory =
     typeof entriesOrFactory === "function"
-      ? (entriesOrFactory as (ctx: WinixContext, ...args: T) => FragmentResult)
+      ? (entriesOrFactory as (ctx: WinixContext, ...args: T) => AuthoringResult)
       : ((_ctx: WinixContext, ..._args: T) => entriesOrFactory);
 
   return feature(id, factory) as ProfileFactory<T>;
@@ -152,12 +153,12 @@ export function host(
 export function host(
   name: string,
   platform: PlatformLazyFragment,
-  body: (ctx: WinixContext) => FragmentResult
+  body: (ctx: WinixContext) => AuthoringResult
 ): HostDef;
 export function host(
   name: string,
   platform: PlatformLazyFragment,
-  fragmentsOrBody: readonly FragmentEntry[] | ((ctx: WinixContext) => FragmentResult)
+  fragmentsOrBody: readonly FragmentEntry[] | ((ctx: WinixContext) => AuthoringResult)
 ): HostDef {
   if (typeof fragmentsOrBody === "function") {
     // Callback form: wrap the body in an anonymous feature-like lazy fragment so
@@ -170,7 +171,7 @@ export function host(
       __id: `${name}:inline`,
       __resolve: () => {
         const ctx = createWinixContext();
-        let returned: FragmentResult | undefined;
+        let returned: AuthoringResult = undefined;
         const effects = withCollector(() => {
           returned = body(ctx);
         });
@@ -239,7 +240,7 @@ export function escape(expr: string): NixExpr {
  */
 function mergeEffectsAndReturn(
   effects: Fragment[],
-  returned: FragmentResult | undefined
+  returned: AuthoringResult
 ): FragmentResult {
   const hasReturn = returned !== undefined && returned !== null;
   if (effects.length === 0) {
