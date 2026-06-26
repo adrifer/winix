@@ -64,11 +64,11 @@ export interface WinDscSpec {
 
 /**
  * Which environment targets an `env`/`path` write applies to. `Process` makes
- * the change visible to the current `winget configure` process; `User` and
- * `Machine` persist it. Defaults to `["Process", "User"]` (per-user, no
- * elevation needed).
+ * the change visible to the current `winget configure` process; `Machine`
+ * persists it. Defaults to `["Process", "Machine"]`, matching the
+ * PSDscResources/Environment resource.
  */
-export type WinEnvTarget = "Process" | "User" | "Machine";
+export type WinEnvTarget = "Process" | "Machine";
 
 /** Accepted object shape for `windows.env(...)`. */
 export interface WinEnvSpec {
@@ -217,7 +217,7 @@ function withDscToken(resource: WinDscResource): WinDscResource {
 
 const DSC_POWERSHELL_ADAPTER = "Microsoft.DSC/PowerShell";
 const PSDSC_ENVIRONMENT = "PSDscResources/Environment";
-const DEFAULT_ENV_TARGET: WinEnvTarget[] = ["Process", "User"];
+const DEFAULT_ENV_TARGET: WinEnvTarget[] = ["Process", "Machine"];
 
 function normalizeDsc(arg: WinDscSpec): WinDscResource {
   if (!arg || typeof arg !== "object") {
@@ -245,14 +245,14 @@ function normalizeDsc(arg: WinDscSpec): WinDscResource {
 }
 
 /**
- * Validate the shared env/path target list. Defaults to per-user when omitted.
+ * Validate the shared env/path target list.
  */
 function normalizeEnvTarget(target: WinEnvTarget[] | undefined): WinEnvTarget[] {
   if (target === undefined) return DEFAULT_ENV_TARGET;
   if (!Array.isArray(target) || target.length === 0) {
     throw new Error("windows.env/path target must be a non-empty array");
   }
-  const valid: WinEnvTarget[] = ["Process", "User", "Machine"];
+  const valid: WinEnvTarget[] = ["Process", "Machine"];
   for (const t of target) {
     if (!valid.includes(t)) {
       throw new Error(

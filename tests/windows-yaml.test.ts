@@ -60,8 +60,8 @@ describe("windows yaml serializer", () => {
 
   describe("arrays", () => {
     it("renders a scalar array as a block sequence", () => {
-      expect(yamlEntry("Target", ["Process", "User"], 0).join("\n")).toBe(
-        ["Target:", "- Process", "- User"].join("\n")
+      expect(yamlEntry("Target", ["Process", "Machine"], 0).join("\n")).toBe(
+        ["Target:", "- Process", "- Machine"].join("\n")
       );
     });
 
@@ -109,7 +109,7 @@ describe("windows yaml serializer", () => {
               Name: "EDITOR",
               Value: "nvim",
               Ensure: "Present",
-              Target: ["Process", "User"],
+              Target: ["Process", "Machine"],
             },
           },
         ],
@@ -125,7 +125,7 @@ describe("windows yaml serializer", () => {
           "    Ensure: Present",
           "    Target:",
           "    - Process",
-          "    - User",
+          "    - Machine",
         ].join("\n")
       );
     });

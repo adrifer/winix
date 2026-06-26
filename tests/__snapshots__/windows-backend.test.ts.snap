@@ -94,7 +94,7 @@ resources:
           Value: nvim
           Target:
           - Process
-          - User
+          - Machine
   - name: "Path USERPROFILE local bin"
     type: Microsoft.DSC/PowerShell
     properties:
@@ -108,7 +108,7 @@ resources:
           Path: true
           Target:
           - Process
-          - User
+          - Machine
 "
 `;
 

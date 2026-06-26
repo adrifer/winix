@@ -54,8 +54,8 @@ export default workspace({
       // windows.package({ id: "Some.Driver", elevated: true });
 
       // --- Environment variables ---
-      // A plain user environment variable. Defaults to Target [Process, User]
-      // so it persists for the user and is visible to the current run.
+      // A machine environment variable. Defaults to Target [Process, Machine]
+      // so it persists machine-wide and is visible to the current run.
       windows.env({ name: "EDITOR", value: "nvim" });
 
       // Remove a variable you no longer want.

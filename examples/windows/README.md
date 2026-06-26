@@ -81,9 +81,10 @@ host("desktop", platforms.windows(), ({ windows }) => {
 - **PATH is idempotent.** `windows.path(...)` sets the resource's `Path: true`
   flag, which appends to (rather than replaces) PATH and de-duplicates, so
   re-applying never grows it.
-- **Targets.** Both default to `Target: [Process, User]` (per-user, visible to
-  the current run, no elevation). Pass `target: ["Machine"]` for a machine-wide
-  variable (needs an elevated apply).
+- **Targets.** Both default to `Target: [Process, Machine]`, matching
+  `PSDscResources/Environment`. `Process` makes later resources in the same
+  `winget configure` run see the variable; `Machine` persists it machine-wide
+  and may require elevation.
 
 When no typed helper exists, `windows.dsc(...)` declares any DSC v3 resource by
 `type` + `properties`. The properties object is emitted verbatim as YAML, so it

@@ -577,7 +577,7 @@ describe("windows.dsc() / env() / path() helpers", () => {
                 Name: "EDITOR",
                 Ensure: "Present",
                 Value: "nvim",
-                Target: ["Process", "User"],
+                Target: ["Process", "Machine"],
               },
             },
           ],
@@ -589,7 +589,7 @@ describe("windows.dsc() / env() / path() helpers", () => {
   it("windows.env() supports removal via ensure Absent (no value required)", () => {
     const frag = windows.env({ name: "OLD_VAR", ensure: "Absent" });
     const inner = frag.windows?.dsc?.[0].properties?.resources as any[];
-    expect(inner[0].properties).toEqual({ Name: "OLD_VAR", Ensure: "Absent", Target: ["Process", "User"] });
+    expect(inner[0].properties).toEqual({ Name: "OLD_VAR", Ensure: "Absent", Target: ["Process", "Machine"] });
   });
 
   it("windows.env() requires a value when present", () => {
@@ -604,12 +604,16 @@ describe("windows.dsc() / env() / path() helpers", () => {
       Ensure: "Present",
       Value: "%USERPROFILE%\\.local\\bin",
       Path: true,
-      Target: ["Process", "User"],
+      Target: ["Process", "Machine"],
     });
   });
 
   it("rejects an invalid target", () => {
     expect(() => windows.env({ name: "X", value: "y", target: ["Bogus" as any] })).toThrow(/invalid/);
+  });
+
+  it("rejects the unsupported User target", () => {
+    expect(() => windows.env({ name: "X", value: "y", target: ["User" as any] })).toThrow(/invalid/);
   });
 });
 
