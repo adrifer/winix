@@ -548,6 +548,143 @@ describe("winix-windows.lock", () => {
   });
 });
 
+describe("windows.dsc() / env() / path() helpers", () => {
+  it("windows.dsc() normalizes a generic resource fragment", () => {
+    const frag = windows.dsc({
+      type: "Microsoft.Windows/Service",
+      properties: { name: "spooler", startType: "automatic" },
+    });
+    expect(frag.windows?.dsc).toEqual([
+      {
+        resourceType: "Microsoft.Windows/Service",
+        properties: { name: "spooler", startType: "automatic" },
+      },
+    ]);
+  });
+
+  it("windows.env() builds the PSDSC Environment adapter shape", () => {
+    const frag = windows.env({ name: "EDITOR", value: "nvim" });
+    expect(frag.windows?.dsc).toEqual([
+      {
+        resourceType: "Microsoft.DSC/PowerShell",
+        name: "Set EDITOR",
+        properties: {
+          resources: [
+            {
+              name: "EDITOR",
+              type: "PSDscResources/Environment",
+              properties: {
+                Name: "EDITOR",
+                Ensure: "Present",
+                Value: "nvim",
+                Target: ["Process", "User"],
+              },
+            },
+          ],
+        },
+      },
+    ]);
+  });
+
+  it("windows.env() supports removal via ensure Absent (no value required)", () => {
+    const frag = windows.env({ name: "OLD_VAR", ensure: "Absent" });
+    const inner = frag.windows?.dsc?.[0].properties?.resources as any[];
+    expect(inner[0].properties).toEqual({ Name: "OLD_VAR", Ensure: "Absent", Target: ["Process", "User"] });
+  });
+
+  it("windows.env() requires a value when present", () => {
+    expect(() => windows.env({ name: "X" })).toThrow(/value/);
+  });
+
+  it("windows.path() sets Path:true for idempotent append", () => {
+    const frag = windows.path({ value: "%USERPROFILE%\\.local\\bin" });
+    const inner = (frag.windows?.dsc?.[0].properties?.resources as any[])[0];
+    expect(inner.properties).toEqual({
+      Name: "Path",
+      Ensure: "Present",
+      Value: "%USERPROFILE%\\.local\\bin",
+      Path: true,
+      Target: ["Process", "User"],
+    });
+  });
+
+  it("rejects an invalid target", () => {
+    expect(() => windows.env({ name: "X", value: "y", target: ["Bogus" as any] })).toThrow(/invalid/);
+  });
+});
+
+describe("generateWindows() emitter: dsc / env / path", () => {
+  it("emits a generic dsc resource verbatim", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.dsc({
+            type: "Microsoft.Windows/Service",
+            properties: { name: "spooler", startType: "automatic" },
+          }),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain("type: Microsoft.Windows/Service");
+    expect(doc).toContain("name: spooler");
+    expect(doc).toContain("startType: automatic");
+    expect(doc).toMatchSnapshot();
+  });
+
+  it("emits env and path as PSDSC adapter resources", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.env({ name: "EDITOR", value: "nvim" }),
+          windows.path({ value: "%USERPROFILE%\\.local\\bin" }),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain("type: Microsoft.DSC/PowerShell");
+    expect(doc).toContain("type: PSDscResources/Environment");
+    expect(doc).toContain("Path: true");
+    expect(doc).toMatchSnapshot();
+  });
+
+  it("emits dependsOn referencing a dsc handle by resourceId", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          const editor = windows.env({ name: "EDITOR", value: "nvim" });
+          windows.path({ value: "%USERPROFILE%\\.local\\bin", dependsOn: [editor] });
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain(
+      `dependsOn: ["[resourceId('Microsoft.DSC/PowerShell', 'Set EDITOR')]"]`
+    );
+  });
+
+  it("a package can depend on an env handle", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          const editor = windows.env({ name: "EDITOR", value: "nvim" });
+          windows.package({ id: "Git.Git", dependsOn: [editor] });
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws), windowsLock({
+      "Git.Git": { source: "winget", version: "2.44.0" },
+    })).hosts.desktop["configuration.winget"];
+    expect(doc).toContain(
+      `dependsOn: ["[resourceId('Microsoft.DSC/PowerShell', 'Set EDITOR')]"]`
+    );
+  });
+});
+
 function windowsLock(
   packages: Record<string, { source: "winget" | "msstore"; version: string; resolvedAt?: string }>
 ): WindowsLock {

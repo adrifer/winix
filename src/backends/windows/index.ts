@@ -28,7 +28,13 @@
 
 import type { EvaluatedHost } from "../../evaluator/index.ts";
 import type { ResourceRef } from "../../core/types.ts";
-import type { WinPackage, WinRawCommand, WindowsOptions } from "../../types/index.ts";
+import type {
+  WinDscResource,
+  WinPackage,
+  WinRawCommand,
+  WindowsOptions,
+} from "../../types/index.ts";
+import { yamlEntry, yamlScalar, type YamlValue } from "./yaml.ts";
 import {
   emptyWindowsLock,
   reconcileInlinePins,
@@ -95,6 +101,7 @@ function generateConfiguration(
 ): string {
   const packages = sortedPackages(win.packages ?? {});
   const commands = win.commands ?? [];
+  const dscResources = win.dsc ?? [];
 
   const lines: string[] = [];
   lines.push(`# yaml-language-server: $schema=${DSC_SCHEMA}`);
@@ -104,7 +111,7 @@ function generateConfiguration(
   lines.push("  winget:");
   lines.push("    processor: dscv3");
 
-  if (packages.length === 0 && commands.length === 0) {
+  if (packages.length === 0 && commands.length === 0 && dscResources.length === 0) {
     lines.push("resources: []");
     return lines.join("\n") + "\n";
   }
@@ -112,7 +119,7 @@ function generateConfiguration(
   // Two-pass: first assign every resource a schema-valid, unique name and build
   // the ref → (type, name) map; then render, resolving each resource's
   // `dependsOn` against that map.
-  const naming = assignResourceNames(hostName, packages, commands);
+  const naming = assignResourceNames(hostName, packages, commands, dscResources);
 
   lines.push("resources:");
   for (const pkg of packages) {
@@ -122,6 +129,10 @@ function generateConfiguration(
   for (const command of commands) {
     const plan = naming.commands.get(command)!;
     lines.push(...renderRawCommandResource(command, plan, naming));
+  }
+  for (const resource of dscResources) {
+    const plan = naming.dsc.get(resource)!;
+    lines.push(...renderDscResource(resource, plan, naming));
   }
 
   return lines.join("\n") + "\n";
@@ -137,9 +148,11 @@ interface ResourcePlan {
 interface NamingPlan {
   packages: Map<WinPackage, ResourcePlan>;
   commands: Map<WinRawCommand, ResourcePlan>;
+  dsc: Map<WinDscResource, ResourcePlan>;
   /** Resolve a dependsOn ref to the depended-upon resource's plan. */
   byPackageId: Map<string, ResourcePlan>;
   byCommandToken: Map<symbol, ResourcePlan>;
+  byDscToken: Map<symbol, ResourcePlan>;
   hostName: string;
 }
 
@@ -170,14 +183,17 @@ function sanitizeName(raw: string): string {
 function assignResourceNames(
   hostName: string,
   packages: readonly WinPackage[],
-  commands: readonly WinRawCommand[]
+  commands: readonly WinRawCommand[],
+  dscResources: readonly WinDscResource[]
 ): NamingPlan {
   const used = new Set<string>();
   const plan: NamingPlan = {
     packages: new Map(),
     commands: new Map(),
+    dsc: new Map(),
     byPackageId: new Map(),
     byCommandToken: new Map(),
+    byDscToken: new Map(),
     hostName,
   };
 
@@ -213,6 +229,20 @@ function assignResourceNames(
     }
   }
 
+  let dscCounter = 0;
+  for (const resource of dscResources) {
+    dscCounter += 1;
+    const base = resource.name
+      ? sanitizeName(resource.name)
+      : `dsc ${dscCounter}`;
+    const name = unique(base);
+    const rp: ResourcePlan = { type: resource.resourceType, name };
+    plan.dsc.set(resource, rp);
+    if (resource.token) {
+      plan.byDscToken.set(resource.token, rp);
+    }
+  }
+
   return plan;
 }
 
@@ -229,13 +259,19 @@ function resolveDependsOnRefs(
   if (!refs || refs.length === 0) return [];
   const ids: string[] = [];
   for (const ref of refs) {
-    const target =
-      ref.kind === "package"
-        ? naming.byPackageId.get(ref.id)
-        : naming.byCommandToken.get(ref.token);
+    let target: ResourcePlan | undefined;
+    let what: string;
+    if (ref.kind === "package") {
+      target = naming.byPackageId.get(ref.id);
+      what = `package "${ref.id}"`;
+    } else if (ref.kind === "command") {
+      target = naming.byCommandToken.get(ref.token);
+      what = "a raw command";
+    } else {
+      target = naming.byDscToken.get(ref.token);
+      what = "a DSC resource";
+    }
     if (!target) {
-      const what =
-        ref.kind === "package" ? `package "${ref.id}"` : "a raw command";
       throw new Error(
         `windows dependsOn references ${what} that is not declared in host ` +
         `"${naming.hostName}". Resources can only depend on other resources ` +
@@ -318,9 +354,39 @@ function renderRawCommandResource(
 }
 
 /**
- * The thin apply entry point. Idempotency, elevation, ordering, and error
- * reporting all live inside `winget configure` / the DSC v3 processor.
+ * Render one generic DSC resource (from `windows.dsc(...)` and the env/path
+ * helpers) as a DSC v3 resource block. The `properties` object is serialized
+ * verbatim via the YAML helper, so arbitrary nested shapes (including the
+ * `Microsoft.DSC/PowerShell` adapter's `resources:` array) round-trip exactly.
  */
+function renderDscResource(
+  resource: WinDscResource,
+  plan: ResourcePlan,
+  naming: NamingPlan
+): string[] {
+  const out: string[] = [];
+  out.push(`  - name: ${yamlScalar(plan.name)}`);
+  out.push(`    type: ${yamlScalar(resource.resourceType)}`);
+  const deps = resolveDependsOnRefs(resource.dependsOn, naming);
+  if (deps.length > 0) {
+    out.push(`    dependsOn: ${yamlStringArray(deps)}`);
+  }
+  const properties = resource.properties ?? {};
+  if (Object.keys(properties).length === 0) {
+    out.push(`    properties: {}`);
+  } else {
+    // Serialize properties at depth 0, then re-indent under `properties:` (2
+    // levels deep within the resource block: 4 spaces).
+    out.push(`    properties:`);
+    for (const [key, value] of Object.entries(properties)) {
+      const lines = yamlEntry(key, value as YamlValue, 0);
+      for (const line of lines) {
+        out.push(`      ${line}`);
+      }
+    }
+  }
+  return out;
+}
 function generateApplyScript(): string {
   return [
     "# Generated by Winix. Do not edit.",
@@ -364,16 +430,17 @@ function lockedVersionForPackage(pkg: WinPackage, lock: WindowsLock): string {
 }
 
 /**
- * Render a YAML scalar. Package ids and sources are simple tokens; quote
- * defensively only if the value contains YAML-significant characters.
+ * Render a quoted YAML string for `dependsOn` array items, which are always
+ * quoted because they contain `[`, `]`, `'`, and `(` (the `resourceId(...)`
+ * expression). Reuses the shared scalar quoting via a forced-quote path.
  */
-function yamlScalar(value: string): string {
-  if (/^[A-Za-z0-9._+\-]+$/.test(value)) return value;
-  return yamlQuoted(value);
-}
-
 function yamlQuoted(value: string): string {
-  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  // The shared yamlScalar would quote these anyway (they contain `[`), but be
+  // explicit: dependsOn ids are always emitted quoted.
+  const escaped = value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"');
+  return `"${escaped}"`;
 }
 
 function yamlStringArray(values: string[]): string {

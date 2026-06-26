@@ -9,6 +9,12 @@
  *       - explicit source (msstore)
  *       - inline version pin
  *       - elevated (admin security context)
+ *   - `windows.env(...)` / `windows.path(...)` manage environment variables and
+ *     PATH entries declaratively (via the PSDSC Environment resource, since DSC
+ *     v3 has no native environment resource yet).
+ *   - `windows.dsc(...)` is the escape hatch: declare any DSC v3 resource by
+ *     type + properties when no typed helper exists.
+ *   - `dependsOn` orders resources using the handle returned by each helper.
  *
  * Generate the `configuration.winget` with:
  *
@@ -30,22 +36,50 @@ export default workspace({
   },
 
   hosts: [
-    host("desktop", platforms.windows(), [
+    host("desktop", platforms.windows(), ({ windows }) => {
+      // --- Packages (winget) ---
       // Floating declarations are emitted from winix-windows.lock.
-      // Phase 2 will automate refreshing this lock via `winix update --windows`.
-      windows.package("Fastfetch-cli.Fastfetch"),
-      windows.package("eza-community.eza"),
-
+      // `winix update --windows` refreshes the lock.
+      windows.package("Fastfetch-cli.Fastfetch");
+      windows.package("eza-community.eza");
 
       // Microsoft Store source.
-      // windows.package({ source: "msstore", id: "9NKSQGP7F2NH" }),
+      // windows.package({ source: "msstore", id: "9NKSQGP7F2NH" });
 
       // Pinned to an exact version.
-      // windows.package({ id: "Microsoft.VisualStudioCode", version: "1.90.1" }),
+      // windows.package({ id: "Microsoft.VisualStudioCode", version: "1.90.1" });
 
       // Elevated: installs in an admin context. Use only for packages that
       // genuinely need machine-wide install rights.
-      // windows.package({ id: "Some.Driver", elevated: true }),
-    ]),
+      // windows.package({ id: "Some.Driver", elevated: true });
+
+      // --- Environment variables ---
+      // A plain user environment variable. Defaults to Target [Process, User]
+      // so it persists for the user and is visible to the current run.
+      windows.env({ name: "EDITOR", value: "nvim" });
+
+      // Remove a variable you no longer want.
+      // windows.env({ name: "OLD_TOOL_HOME", ensure: "Absent" });
+
+      // --- PATH entries ---
+      // Appends idempotently: the underlying Environment resource de-duplicates,
+      // so re-applying never grows PATH. `%USERPROFILE%` expands at apply time.
+      windows.path({ value: "%USERPROFILE%\\.local\\bin" });
+
+      // --- Ordering with dependsOn ---
+      // The handle returned by any helper can be passed to another resource's
+      // `dependsOn` to force apply order within this host.
+      const cargoHome = windows.env({ name: "CARGO_HOME", value: "%USERPROFILE%\\.cargo" });
+      windows.path({ value: "%CARGO_HOME%\\bin", dependsOn: [cargoHome] });
+
+      // --- Escape hatch: any DSC v3 resource ---
+      // When no typed helper exists, declare the resource directly. `properties`
+      // is emitted verbatim, so this targets native DSC v3 resources like
+      // Microsoft.Windows/Service straight from the bundled resource set.
+      // windows.dsc({
+      //   type: "Microsoft.Windows/Service",
+      //   properties: { name: "spooler", startType: "automatic" },
+      // });
+    }),
   ],
 });

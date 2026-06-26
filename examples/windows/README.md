@@ -2,11 +2,13 @@
 
 Demonstrates the implemented Windows backend slice: declaring a Windows host
 with `platforms.windows()`, installing winget packages with
-`windows.package(...)`, and running arbitrary commands with `windows.raw(...)`.
+`windows.package(...)`, running arbitrary commands with `windows.raw(...)`, and
+managing environment/PATH and arbitrary DSC v3 resources with
+`windows.env(...)` / `windows.path(...)` / `windows.dsc(...)`.
 
-> **Status:** This is the validated MVP slice (packages plus raw commands).
-> Only `windows.package` and `windows.raw` exist publicly today. See
-> `spec/proposals/windows-backend.md` for the full plan.
+> **Status:** Packages, raw commands, env/path, and the generic DSC escape
+> hatch exist publicly today. See `spec/proposals/windows-backend.md` for the
+> full plan.
 
 ## What it shows
 
@@ -46,7 +48,7 @@ This writes the bundle to `.winix/out/desktop/`:
 `Microsoft.DSC.Transitional/RunCommandOnSet`). It accepts a command string or
 an explicit `{ executable, arguments }` object.
 
-Both `windows.package(...)` and `windows.raw(...)` return a **handle**. Capture
+Every `windows.*` resource helper returns a **handle**. Capture
 it only when something must be applied after it, and pass it to `dependsOn`
 (a single handle or an array of handles):
 
@@ -60,6 +62,43 @@ host("desktop", platforms.windows(), ({ windows }) => {
   });
 });
 ```
+
+## Environment variables, PATH, and the DSC escape hatch
+
+`windows.env(...)` and `windows.path(...)` manage environment state
+declaratively. DSC v3 has no native environment resource yet, so these emit the
+`PSDscResources/Environment` resource through the `Microsoft.DSC/PowerShell`
+adapter. That detail is hidden: the authoring surface stays typed and small.
+
+```ts
+host("desktop", platforms.windows(), ({ windows }) => {
+  windows.env({ name: "EDITOR", value: "nvim" });          // set
+  windows.env({ name: "OLD_TOOL_HOME", ensure: "Absent" }); // remove
+  windows.path({ value: "%USERPROFILE%\\.local\\bin" });    // append to PATH
+});
+```
+
+- **PATH is idempotent.** `windows.path(...)` sets the resource's `Path: true`
+  flag, which appends to (rather than replaces) PATH and de-duplicates, so
+  re-applying never grows it.
+- **Targets.** Both default to `Target: [Process, User]` (per-user, visible to
+  the current run, no elevation). Pass `target: ["Machine"]` for a machine-wide
+  variable (needs an elevated apply).
+
+When no typed helper exists, `windows.dsc(...)` declares any DSC v3 resource by
+`type` + `properties`. The properties object is emitted verbatim as YAML, so it
+targets native DSC v3 resources (or any PSDSC resource via the adapter)
+directly:
+
+```ts
+windows.dsc({
+  type: "Microsoft.Windows/Service",
+  properties: { name: "spooler", startType: "automatic" },
+});
+```
+
+`windows.dsc(...)` also returns a handle, so generic resources participate in
+`dependsOn` ordering like every other helper.
 
 In the emitted DSC v3 document, each resource gets a name that satisfies the
 schema's `^[a-zA-Z0-9 ]+$` rule: a package's name is its **sanitized** id
