@@ -1,10 +1,11 @@
 # Windows example
 
 Demonstrates the implemented Windows backend slice: declaring a Windows host
-with `platforms.windows()` and installing winget packages with
-`windows.package(...)`.
+with `platforms.windows()`, installing winget packages with
+`windows.package(...)`, and running arbitrary commands with `windows.raw(...)`.
 
-> **Status:** This is the validated MVP slice (packages only). See
+> **Status:** This is the validated MVP slice (packages plus raw commands).
+> Only `windows.package` and `windows.raw` exist publicly today. See
 > `spec/proposals/windows-backend.md` for the full plan.
 
 ## What it shows
@@ -38,6 +39,34 @@ This writes the bundle to `.winix/out/desktop/`:
 
 - `configuration.winget` — native DSC v3 document
 - `apply.ps1` — thin entry point that calls `winget configure`
+
+## Raw commands and ordering
+
+`windows.raw(...)` runs an arbitrary command on every apply (via DSC v3's
+`Microsoft.DSC.Transitional/RunCommandOnSet`). It accepts a command string or
+an explicit `{ executable, arguments }` object.
+
+Both `windows.package(...)` and `windows.raw(...)` return a **handle**. Capture
+it only when something must be applied after it, and pass it to `dependsOn`
+(a single handle or an array of handles):
+
+```ts
+host("desktop", platforms.windows(), ({ windows }) => {
+  const node = windows.package("OpenJS.NodeJS");
+  windows.raw({
+    executable: "npm",
+    arguments: ["install", "--global", "typescript"],
+    dependsOn: node, // run after Node is installed
+  });
+});
+```
+
+In the emitted DSC v3 document, each resource gets a name that satisfies the
+schema's `^[a-zA-Z0-9 ]+$` rule: a package's name is its **sanitized** id
+(`OpenJS.NodeJS` → `OpenJS NodeJS`) with the real id kept in `properties.id`
+(what winget reads), and an id-less raw command gets a generated `command N`.
+`dependsOn` is rendered as `[resourceId('<type>', '<name>')]`. A handle from one
+host passed to another host's `dependsOn` is a hard error at generation time.
 
 ## Apply (on a Windows machine)
 

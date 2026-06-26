@@ -73,13 +73,31 @@ The current package surface splits cleanly in two:
 
 | Kind | Members | Role | After this proposal |
 |---|---|---|---|
-| **Structure constructors** | `workspace`, `host`, `profile`, `feature`, `input`, `defineInputs`, `rawModule` | Build the project tree | Imported from the package, top-level. `host`/`profile`/`feature` gain a callback form. |
-| **Declaration namespaces** | `home`, `nix`, `nixos`, `darwin`, `windows`, `account`, `overlay`, `platforms` | Declare/query within the current host | Injected into the callback of `feature`/`profile`/`host`. Still importable as globals (back-compat). |
+| **Structure constructors** | `workspace`, `host`, `profile`, `feature`, `input`, `defineInputs`, `rawModule` | Build the project tree | Imported from the package, top-level. `host`/`feature` gain a callback form; `profile` is array-only (see note below). |
+| **Declaration namespaces** | `home`, `nix`, `nixos`, `darwin`, `windows`, `account`, `overlay`, `platforms` | Declare/query within the current host | Injected into the callback of `feature`/`host`. Still importable as globals (back-compat). |
+
+> **Landed decision (v0.2): `profile` is array-only.** `feature()` and
+> `profile()` were structurally identical, which made the effect-vs-return rule
+> apply in two places and blurred their roles. `profile()` now accepts **only**
+> an array of entries (instantiated features/profiles and bare fragments such as
+> `overlay.stable(...)` or `nixos.boot({...})`); it does **not** take an
+> authoring callback, cannot declare by effect, and receives no injected
+> context. Passing a callback is a compile error and a runtime `TypeError`. The
+> model is explicit: **features declare** (effects or return), **profiles group
+> features**. Any logic or injected namespace belongs in a `feature()` that the
+> profile lists. `host` keeps both forms (array or callback) because a host is
+> where configuration becomes machine-specific and may legitimately need inline
+> logic.
 
 `platforms` is special: it is both a **constructor** (`platforms.nixos({...})`
 as the second arg to `host`) and a **query** (`platforms.darwin.isActive`
 inside a body). The constructor use stays top-level; the query use is part of
 the injected context.
+
+> The original draft of this proposal gave `profile` a callback form too. That
+> was dropped before landing: see the array-only note above. References to a
+> profile callback elsewhere in this document are historical and superseded by
+> that decision.
 
 ## Proposed API
 
@@ -128,6 +146,10 @@ file-level imports, because their usage shape is not "declare inside a body":
 This keeps the context to "what declares the *body* of your unit" rather than
 "everything the library exports."
 
+`profile` is the exception: it takes **only** an array of entries, never a
+callback (see the array-only note in *Two kinds of API*). Context injection and
+effect registration therefore apply to `feature` and `host` bodies only.
+
 `host` receives the same context in its body, because a host can hold inline
 declarations (not just features):
 
@@ -164,8 +186,11 @@ export const gitEverywhere = feature("git", ({ home, windows, platforms }) => {
   if (platforms.windows.isActive) {
     const git = windows.package("Git.Git");
     windows.raw(
-      { test: "git config --global user.name", apply: "git config --global user.name Adri" },
-      { dependsOn: [git] }
+      {
+        executable: "powershell",
+        arguments: ["-Command", "git config --global user.name Adri"],
+        dependsOn: [git],
+      },
     );
   }
 });
@@ -202,10 +227,11 @@ windows.package("Fastfetch-cli.Fastfetch");
 
 // Ordered case: capture and reference.
 const node = windows.package("OpenJS.NodeJS");
-windows.raw(
-  { test: "Get-Command tsc -ErrorAction SilentlyContinue", apply: "npm install --global typescript" },
-  { dependsOn: node }            // single handle or array of handles
-);
+windows.raw({
+  executable: "powershell",
+  arguments: ["-Command", "npm install --global typescript"],
+  dependsOn: node,            // single handle or array of handles
+});
 ```
 
 `dependsOn` accepts a single handle or an array (`Handle | Handle[]`).
@@ -270,7 +296,7 @@ working unchanged under back-compat:
 | Logic + `return` | `zsh` | same body, `({ home, platforms })`, `nix` stays a file-level import; drop final return |
 | Conditional spread | `dotfiles` | identical; `platforms` from context |
 | `account.user(name, cb)` | `adrifer` | unchanged: `account` is a top-level constructor, its callback stays `() => ({...})` |
-| `profile([...])` with inline `nixos.*` | `lxcProfile` | array stays valid; callback form available for inline decls |
+| `profile([...])` with inline `nixos.*` | `lxcProfile` | array stays the **only** form; bare fragments like `nixos.boot({...})` remain valid entries |
 | `workspace({ inputs, hosts })` | root config | unchanged (pure structure) |
 
 `account.user` is a top-level factory constructor, not a body declaration, so
