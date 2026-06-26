@@ -7,10 +7,11 @@ const mode = process.argv[2];
 const args = process.argv.slice(3);
 
 if (mode !== "stable" && mode !== "preview") {
-  fail("Usage: npm run release:stable|release:preview -- [--patch|--minor|--major] [--dry-run]");
+  fail("Usage: npm run release:stable|release:preview -- [--patch|--minor|--major] [--from-branch] [--dry-run]");
 }
 
 const dryRun = args.includes("--dry-run");
+const fromBranch = args.includes("--from-branch");
 const bumpFlags = args.filter((arg) => ["--patch", "--minor", "--major"].includes(arg));
 
 if (bumpFlags.length > 1) {
@@ -26,8 +27,22 @@ const branch = git(["branch", "--show-current"]);
 const status = git(["status", "--porcelain"]);
 const packageVersion = parseVersion(readPackageVersion());
 
-if (branch !== "main") {
-  fail(`Releases must be created from main. Current branch is ${branch || "(detached)"}.`);
+// Stable releases must always come from main so that `latest` on npm always
+// corresponds to main's history. Preview releases may opt into running from a
+// feature branch with --from-branch: git tags are global to the repo and point
+// at a specific commit regardless of branch, so a -preview.N tag on a feature
+// branch's HEAD is valid and lets that exact commit be published to the npm
+// `preview` dist-tag (for trying a branch before merging it). The clean-tree
+// requirement is kept in all cases.
+if (mode === "stable" && branch !== "main") {
+  fail(`Stable releases must be created from main. Current branch is ${branch || "(detached)"}.`);
+}
+
+if (mode === "preview" && branch !== "main" && !fromBranch) {
+  fail(
+    `Preview releases default to main (current branch is ${branch || "(detached)"}).\n` +
+    `To publish a preview from this branch's current commit, pass --from-branch.`
+  );
 }
 
 if (status !== "") {
@@ -85,7 +100,7 @@ if (mode === "stable") {
   run("git", ["push", "origin", nextTag]);
 }
 
-console.log(`Release tag ${nextTag} pushed. GitHub Actions will publish it to npm.`);
+console.log(`Release tag ${nextTag} pushed (from ${branch || "detached HEAD"}). GitHub Actions will publish it to npm.`);
 
 function nextStableVersion({ latest, latestStable, explicitBump, defaultBump }) {
   if (!latest && !latestStable) {
