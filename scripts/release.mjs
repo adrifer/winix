@@ -7,11 +7,10 @@ const mode = process.argv[2];
 const args = process.argv.slice(3);
 
 if (mode !== "stable" && mode !== "preview") {
-  fail("Usage: npm run release:stable|release:preview -- [--patch|--minor|--major] [--from-branch] [--dry-run]");
+  fail("Usage: npm run release:stable|release:preview -- [--patch|--minor|--major] [--dry-run]");
 }
 
 const dryRun = args.includes("--dry-run");
-const fromBranch = args.includes("--from-branch");
 const bumpFlags = args.filter((arg) => ["--patch", "--minor", "--major"].includes(arg));
 
 if (bumpFlags.length > 1) {
@@ -28,21 +27,13 @@ const status = git(["status", "--porcelain"]);
 const packageVersion = parseVersion(readPackageVersion());
 
 // Stable releases must always come from main so that `latest` on npm always
-// corresponds to main's history. Preview releases may opt into running from a
-// feature branch with --from-branch: git tags are global to the repo and point
-// at a specific commit regardless of branch, so a -preview.N tag on a feature
-// branch's HEAD is valid and lets that exact commit be published to the npm
-// `preview` dist-tag (for trying a branch before merging it). The clean-tree
-// requirement is kept in all cases.
+// corresponds to main's history. Preview releases may run from any branch:
+// git tags are global to the repo and point at a specific commit regardless
+// of branch, so a -preview.N tag on a feature branch's HEAD is valid and lets
+// that exact commit be published to the npm `preview` dist-tag (for trying a
+// branch before merging it). The clean-tree requirement is kept in all cases.
 if (mode === "stable" && branch !== "main") {
   fail(`Stable releases must be created from main. Current branch is ${branch || "(detached)"}.`);
-}
-
-if (mode === "preview" && branch !== "main" && !fromBranch) {
-  fail(
-    `Preview releases default to main (current branch is ${branch || "(detached)"}).\n` +
-    `To publish a preview from this branch's current commit, pass --from-branch.`
-  );
 }
 
 if (status !== "") {
