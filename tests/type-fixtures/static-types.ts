@@ -136,11 +136,20 @@ const mixedFeature = feature("mixed", ({ home }) => {
 });
 void mixedFeature;
 
-// profile (callback form): effect-only.
-const devProfile = profile("dev", ({ home }) => {
+// profile: only accepts an array of entries (features + bare fragments),
+// never a callback. The array form is the only authoring form for profiles.
+const devProfile = profile("dev", [
+  gitFeature(),
+  mixedFeature(),
+]);
+void devProfile;
+
+// profile rejects a callback at the type level (profiles group features; they
+// cannot declare by effect or take injected context).
+// @ts-expect-error profile() does not accept an authoring callback
+profile("dev-bad", ({ home }) => {
   home.program("ripgrep");
 });
-void devProfile;
 
 // host (callback body): effect-only inline declarations.
 const wslHost = host("wsl", platforms.nixos({ stateVersion: "25.05" }), ({ nixos, home }) => {

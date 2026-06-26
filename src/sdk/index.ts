@@ -122,25 +122,34 @@ export function feature<T extends unknown[]>(
 }
 
 // --- profile() ---
-
-export function profile<T extends unknown[]>(
-  id: string,
-  factory: (ctx: WinixContext, ...args: T) => AuthoringResult
-): ProfileFactory<T>;
+//
+// Unlike feature(), a profile is intentionally restricted: it only accepts an
+// array of entries (instantiated features/profiles and bare fragments such as
+// overlay.stable(...) or nixos.boot(...)). It does NOT accept an authoring
+// callback, so a profile cannot declare by effect or take injected context.
+// The model is: features declare (effects/return), profiles group features.
+// If a grouping needs logic or injected namespaces, put that logic in a
+// feature() and add that feature to the profile's array.
 export function profile(
   id: string,
-  entries: FragmentEntry | readonly FragmentEntry[]
-): ProfileFactory<[]>;
-export function profile<T extends unknown[]>(
-  id: string,
-  entriesOrFactory: FragmentResult | ((ctx: WinixContext, ...args: T) => AuthoringResult)
-): ProfileFactory<T> {
-  const factory =
-    typeof entriesOrFactory === "function"
-      ? (entriesOrFactory as (ctx: WinixContext, ...args: T) => AuthoringResult)
-      : ((_ctx: WinixContext, ..._args: T) => entriesOrFactory);
+  entries: readonly FragmentEntry[]
+): ProfileFactory<[]> {
+  if (typeof entries === "function") {
+    throw new TypeError(
+      `profile("${id}", ...) only accepts an array of entries, not a callback. ` +
+        `Profiles group features; they cannot declare by effect or take injected ` +
+        `context. Move that logic into a feature() and add it to the array: ` +
+        `profile("${id}", [myFeature(), ...]).`
+    );
+  }
+  if (!Array.isArray(entries)) {
+    throw new TypeError(
+      `profile("${id}", ...) expects an array of entries, e.g. ` +
+        `profile("${id}", [featureA(), featureB()]).`
+    );
+  }
 
-  return feature(id, factory) as ProfileFactory<T>;
+  return feature(id, () => entries) as ProfileFactory<[]>;
 }
 
 // --- host() ---
