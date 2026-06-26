@@ -548,6 +548,202 @@ describe("winix-windows.lock", () => {
   });
 });
 
+describe("windows.dsc() / env.* / path.* helpers", () => {
+  it("windows.dsc() normalizes a generic resource fragment", () => {
+    const frag = windows.dsc({
+      type: "Microsoft.Windows/Service",
+      properties: { name: "spooler", startType: "automatic" },
+    });
+    expect(frag.windows?.dsc).toEqual([
+      {
+        resourceType: "Microsoft.Windows/Service",
+        properties: { name: "spooler", startType: "automatic" },
+      },
+    ]);
+  });
+
+  it("windows.env.set() builds a user-scope Registry resource by default", () => {
+    const frag = windows.env.set("EDITOR", "nvim");
+    expect(frag.windows?.dsc).toEqual([
+      {
+        resourceType: "Microsoft.Windows/Registry",
+        name: "Set EDITOR",
+        properties: {
+          keyPath: "HKCU\\Environment",
+          valueName: "EDITOR",
+          _exist: true,
+          valueData: { String: "nvim" },
+        },
+      },
+    ]);
+  });
+
+  it("windows.env.set() supports machine scope via HKLM", () => {
+    const resource = windows.env.set("JAVA_HOME", "C:\\Java", { scope: "machine" })
+      .windows?.dsc?.[0];
+    expect(resource?.resourceType).toBe("Microsoft.Windows/Registry");
+    expect(resource?.properties).toEqual({
+      keyPath: "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
+      valueName: "JAVA_HOME",
+      _exist: true,
+      valueData: { String: "C:\\Java" },
+    });
+  });
+
+  it("windows.env.remove() uses _exist:false and omits valueData", () => {
+    const frag = windows.env.remove("OLD_VAR");
+    expect(frag.windows?.dsc?.[0].properties).toEqual({
+      keyPath: "HKCU\\Environment",
+      valueName: "OLD_VAR",
+      _exist: false,
+    });
+  });
+
+  it("windows.env.set() requires a value", () => {
+    expect(() => windows.env.set("X", undefined as any)).toThrow(/value/);
+  });
+
+  it("windows.path.add() emits an idempotent user-scope WindowsPowerShellScript", () => {
+    const frag = windows.path.add("%USERPROFILE%\\.local\\bin");
+    const resource = frag.windows?.dsc?.[0];
+    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    const props = resource?.properties as Record<string, string>;
+    expect(props.getScript).toContain("$registryPath = 'HKCU:\\Environment'");
+    expect(props.testScript).toContain("$entries -contains $dir");
+    expect(props.setScript).toContain("$new = if ([string]::IsNullOrEmpty($current)) { $dir } else { \"$current;$dir\" }");
+    expect(props.setScript).toContain("[Environment]::SetEnvironmentVariable('Path', $new, $target)");
+    expect(props.setScript).toContain("[Microsoft.Win32.RegistryValueKind]::ExpandString");
+    expect(props.setScript).toContain("Set-ItemProperty -Path $registryPath -Name 'Path' -Value $afterValue -Type ExpandString");
+    expect(props.setScript).not.toContain("Select-Object -Unique");
+  });
+
+  it("windows.path.add() supports machine scope via HKLM", () => {
+    const resource = windows.path.add("C:\\tools\\bin", { scope: "machine" }).windows?.dsc?.[0];
+    const props = resource?.properties as Record<string, string>;
+    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(props.getScript).toContain(
+      "$registryPath = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment'"
+    );
+    expect(props.setScript).toContain("$target = 'Machine'");
+  });
+
+  it("windows.path.remove() removes only the target entry and is idempotent", () => {
+    const frag = windows.path.remove("%USERPROFILE%\\.old-bin");
+    const resource = frag.windows?.dsc?.[0];
+    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    const props = resource?.properties as Record<string, string>;
+    expect(props.testScript).toContain("-not ($entries -contains $dir)");
+    expect(props.setScript).toContain("if ($entries -contains $dir) {");
+    expect(props.setScript).toContain("$new = ($entries | Where-Object { $_ -ne $dir }) -join ';'");
+    expect(props.setScript).toContain("[Environment]::SetEnvironmentVariable('Path', $new, $target)");
+    expect(props.setScript).toContain("[Microsoft.Win32.RegistryValueKind]::ExpandString");
+  });
+
+  it("rejects an invalid scope", () => {
+    expect(() => windows.env.set("X", "y", { scope: "process" as any })).toThrow(/invalid/);
+  });
+});
+
+describe("generateWindows() emitter: dsc / env / path", () => {
+  it("emits a generic dsc resource verbatim", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.dsc({
+            type: "Microsoft.Windows/Service",
+            properties: { name: "spooler", startType: "automatic" },
+          }),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain("type: Microsoft.Windows/Service");
+    expect(doc).toContain("name: spooler");
+    expect(doc).toContain("startType: automatic");
+    expect(doc).toMatchSnapshot();
+  });
+
+  it("emits env as Registry and path as WindowsPowerShellScript resources", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.env.set("EDITOR", "nvim"),
+          windows.path.add("%USERPROFILE%\\.local\\bin"),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain("type: Microsoft.Windows/Registry");
+    expect(doc).toContain("type: Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(doc).not.toContain("type: PSDscResources/Environment");
+    expect(doc).not.toContain("type: Microsoft.DSC/PowerShell");
+    expect(doc).toContain("keyPath: \"HKCU\\\\Environment\"");
+    expect(doc).toContain("_exist: true");
+    expect(doc).toContain("$entries -contains $dir");
+    expect(doc).toMatchSnapshot();
+  });
+
+  it("emits scoped env and path set/remove variants", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.env.set("USER_VAR", "u"),
+          windows.env.set("MACHINE_VAR", "m", { scope: "machine" }),
+          windows.env.remove("OLD_USER_VAR"),
+          windows.path.add("C:\\user-bin"),
+          windows.path.add("C:\\machine-bin", { scope: "machine" }),
+          windows.path.remove("C:\\old-user-bin"),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain("type: Microsoft.Windows/Registry");
+    expect(doc).toContain("type: Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(doc).toContain("keyPath: \"HKLM\\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\Session Manager\\\\Environment\"");
+    expect(doc).toContain("_exist: false");
+    expect(doc).toContain("$target = 'Machine'");
+    expect(doc).toContain("-not ($entries -contains $dir)");
+    expect(doc).toMatchSnapshot();
+  });
+
+  it("emits dependsOn referencing a dsc handle by resourceId", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          const editor = windows.env.set("EDITOR", "nvim");
+          windows.path.add("%USERPROFILE%\\.local\\bin", { dependsOn: [editor] });
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain(
+      `dependsOn: ["[resourceId('Microsoft.Windows/Registry', 'Set EDITOR')]"]`
+    );
+  });
+
+  it("a package can depend on an env handle", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          const editor = windows.env.set("EDITOR", "nvim");
+          windows.package({ id: "Git.Git", dependsOn: [editor] });
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws), windowsLock({
+      "Git.Git": { source: "winget", version: "2.44.0" },
+    })).hosts.desktop["configuration.winget"];
+    expect(doc).toContain(
+      `dependsOn: ["[resourceId('Microsoft.Windows/Registry', 'Set EDITOR')]"]`
+    );
+  });
+});
+
 function windowsLock(
   packages: Record<string, { source: "winget" | "msstore"; version: string; resolvedAt?: string }>
 ): WindowsLock {

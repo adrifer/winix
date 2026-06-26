@@ -41,10 +41,14 @@ export interface NixExpr {
  * - `package`: identified by its natural, stable package id.
  * - `command`: has no natural id, so it carries a unique token; the emitter
  *   assigns it a generated name (`command-N`) per host.
+ * - `dsc`: a generic DSC resource (from `windows.dsc(...)` and the typed
+ *   helpers built on it, like env/path). Like commands it has no natural id,
+ *   so it carries a unique token resolved to a generated name per host.
  */
 export type ResourceRef =
   | { kind: "package"; id: string }
-  | { kind: "command"; token: symbol };
+  | { kind: "command"; token: symbol }
+  | { kind: "dsc"; token: symbol };
 
 /**
  * A resource handle: the value returned by resource-producing helpers like

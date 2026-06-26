@@ -120,7 +120,7 @@ single high-level pointer here. Update this as PRs land.
 
 ### Phase 4 — Sugar helpers (PENDING)
 
-- [ ] `windows.env()` / `windows.path()` (honest sugar over `RunCommandOnSet`; `path()` idempotent)
+- [x] `windows.env.*` / `windows.path.*` (native Registry + idempotent script helpers)
 - [ ] `windows.dsc()` typed escape hatch to any DSC v3 resource
 - [ ] `windows.programs.<name>()` curated install+configure helpers
 - [ ] `windows.file()` declarative file content
@@ -348,7 +348,7 @@ The first usable Windows backend should cover:
 Research into Microsoft's official dev-box configs
 (`spec/research/windows-scenarios.md`) surfaced the concrete patterns real
 setups use. The highest-value ones (`dependsOn`/`name` ordering,
-`windows.setting()`, `windows.requireOsVersion()`, `windows.env()`/`path()`)
+`windows.setting()`, `windows.requireOsVersion()`, `windows.env.*`/`path.*`)
 have been promoted into the "Proposed authoring API" section above with
 status and priority. What remains below is genuinely later-stage.
 
@@ -389,8 +389,8 @@ export const baseline = feature("windows.baseline", () => [
   windows.package("Microsoft.PowerShell"),
 
   // Environment + PATH
-  windows.env({ EDITOR: "nvim" }),
-  windows.path("%USERPROFILE%\\.local\\bin"),
+  windows.env.set("EDITOR", "nvim"),
+  windows.path.add("%USERPROFILE%\\.local\\bin"),
 
   // Config file placement
   windows.file("$env:APPDATA\\komorebi\\komorebi.json", {
@@ -498,7 +498,7 @@ windows.dsc({
 })
 ```
 
-`windows.dsc()` is what `windows.package()`, `windows.env()`, etc. desugar
+`windows.dsc()` is what lower-level helpers can desugar
 into. Users only reach for it when a helper does not exist yet.
 
 ### Resource ordering: `dependsOn` and `name`
@@ -582,39 +582,41 @@ windows.requireOsVersion("10.0.17763"); // Windows 10 1809+
 A natural fit as an early `dependsOn` target (everything depends on the OS
 check) or simply emitted first. Clean native resource, low risk.
 
-### `windows.env(...)` / `windows.path(...)` — environment and PATH
+### `windows.env.*` / `windows.path.*` — environment and PATH
 
-**Status: proposed (sugar over `raw`, deliberately).**
+**Status: implemented preview.**
 
-These are **important conveniences** even though they are not backed by a
-clean declarative DSC resource. There is no first-class
-`Environment`/`Path` resource in the DSC v3 set Winix targets; Microsoft's
-own configs manipulate the environment via `RunCommandOnSet` +
-`[Environment]::SetEnvironmentVariable(...)`. Winix therefore implements
-these as **typed sugar that codegens the appropriate PowerShell** under a
-`RunCommandOnSet`, not as idempotent DSC.
+These are **important conveniences** backed by different native Windows DSC
+primitives because env vars and PATH need different behavior. Environment
+variables use the native `Microsoft.Windows/Registry` resource. PATH uses
+`Microsoft.DSC.Transitional/WindowsPowerShellScript` because the registry
+resource has no append/remove semantics and would otherwise clobber PATH.
 
 ```ts
 // Set a user (default) or machine environment variable
-windows.env({ GOPATH: "$env:USERPROFILE\\go" });
-windows.env({ name: "FOO", value: "bar", scope: "machine" });
+windows.env.set("GOPATH", "%USERPROFILE%\\go");
+windows.env.set("FOO", "bar", { scope: "machine" });
+windows.env.remove("OLD_FOO");
 
-// Append a directory to PATH (idempotent: checks before appending)
-windows.path("$env:USERPROFILE\\.local\\bin");
-windows.path({ value: "C:\\tools\\bin", scope: "machine" });
+// Add/remove one directory from PATH (idempotent and surgical)
+windows.path.add("%USERPROFILE%\\.local\\bin");
+windows.path.add("C:\\tools\\bin", { scope: "machine" });
+windows.path.remove("C:\\old-tools\\bin");
 ```
 
 Design commitments to keep the sugar honest:
 
-- The generated PowerShell for `windows.path(...)` **must be idempotent**: read
-  the current PATH, append only if the entry is absent, so re-applies don't
-  duplicate entries. (This is the one place the sugar earns real value over
-  raw.)
-- `scope` defaults to `user` (no elevation needed); `machine` implies
-  `elevated`.
-- The JSDoc must state plainly that these desugar to `RunCommandOnSet` and are
-  best-effort/script-based, not declarative DSC, so users aren't surprised by
-  the capability tier.
+- `windows.env.set/remove` emits `Microsoft.Windows/Registry` against
+  `HKCU\Environment` or
+  `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment`.
+- The generated PowerShell for `windows.path.add/remove` **must be idempotent**
+  and minimally invasive: add appends only the target dir when absent; remove
+  removes only the target dir. It must not dedupe, reorder, trim, or normalize
+  unrelated PATH entries.
+- PATH writes preserve the registry value kind so `REG_EXPAND_SZ` stays
+  expandable.
+- `scope` defaults to `user` (no elevation needed); `machine` requires an
+  elevated apply.
 
 The whole point of Winix is to endulzar the rough edges, so shipping these as
 first-class helpers is right even when the underlying primitive is a script.

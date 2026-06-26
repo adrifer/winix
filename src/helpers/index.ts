@@ -30,4 +30,15 @@ export type { NixosHelper, NixosProgramOptions, NixosServiceOptions, SysctlSetti
 export { darwin } from "./darwin.ts";
 export type { DarwinHelper, DarwinProgramOptions, DarwinServiceOptions, LaunchdHelper } from "./darwin.ts";
 export { windows } from "./windows.ts";
-export type { WindowsHelper, WinPackageArg, WinPackageSpec, WinRawCommandArg, WinRawCommandSpec } from "./windows.ts";
+export type {
+  WindowsHelper,
+  WinDscSpec,
+  WinEnvNamespace,
+  WinEnvOpts,
+  WinEnvScope,
+  WinPackageArg,
+  WinPackageSpec,
+  WinPathNamespace,
+  WinRawCommandArg,
+  WinRawCommandSpec,
+} from "./windows.ts";

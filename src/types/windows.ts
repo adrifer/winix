@@ -73,6 +73,57 @@ export interface WinRawCommand {
 }
 
 /**
+ * A generic DSC v3 resource, produced by `windows.dsc(...)` and by the typed
+ * helpers built on top of it (env/path). This is the escape hatch's IR: it
+ * carries an arbitrary DSC resource `type` and a free-form `properties` object
+ * that the emitter serializes verbatim as YAML.
+ *
+ * Typed helpers (env/path) construct native DSC resources internally:
+ * `Microsoft.Windows/Registry` for env and
+ * `Microsoft.DSC.Transitional/WindowsPowerShellScript` for PATH.
+ */
+export interface WinDscResource {
+  /**
+   * Fully qualified DSC resource type, e.g. `Microsoft.Windows/Registry` or
+   * `Microsoft.Windows/Service`.
+   */
+  resourceType: string;
+  /**
+   * Optional friendly name. When omitted, the emitter generates one
+   * (`dsc N` in declaration order), sanitized to the DSC name charset.
+   */
+  name?: string;
+  /**
+   * Free-form DSC resource properties, serialized verbatim to YAML. May be a
+   * deeply nested object (e.g. the adapter's `resources:` array). Restricted to
+   * JSON-like values (string/number/boolean/null/array/object).
+   */
+  properties?: WinDscProperties;
+  /**
+   * Unique identity token so a handle returned by `windows.dsc(...)`,
+   * `windows.env.*(...)`, or `windows.path.*(...)` can be referenced in another
+   * resource's `dependsOn`. Non-enumerable in spirit; carried internally only.
+   */
+  token?: symbol;
+  /**
+   * Resources this resource must be applied after, as resolved references.
+   * Emitted as DSC v3 `dependsOn`. References must belong to the same host.
+   */
+  dependsOn?: ResourceRef[];
+}
+
+/** JSON-like value accepted in generic DSC `properties`. */
+export type WinDscPropertyValue =
+  | string
+  | number
+  | boolean
+  | null
+  | WinDscPropertyValue[]
+  | { [key: string]: WinDscPropertyValue };
+
+export type WinDscProperties = { [key: string]: WinDscPropertyValue };
+
+/**
  * The `windows` scope of a Fragment. Deep-merged across all fragments for a
  * host, then handed to the Windows emitter.
  *
@@ -87,6 +138,12 @@ export interface WindowsOptions extends Record<string, unknown> {
   packages?: Record<string, WinPackage>;
   /** Raw commands to run on apply, in declaration order. */
   commands?: WinRawCommand[];
+  /**
+   * Generic DSC resources (from `windows.dsc(...)` and the env/path helpers),
+   * in declaration order. Ordered because they have no natural key and order
+   * can carry meaning; `dependsOn` expresses hard ordering.
+   */
+  dsc?: WinDscResource[];
   /** Hostname for the target, set by the platform baseline. */
   hostname?: string;
 }

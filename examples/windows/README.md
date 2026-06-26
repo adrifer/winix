@@ -2,11 +2,14 @@
 
 Demonstrates the implemented Windows backend slice: declaring a Windows host
 with `platforms.windows()`, installing winget packages with
-`windows.package(...)`, and running arbitrary commands with `windows.raw(...)`.
+`windows.package(...)`, running arbitrary commands with `windows.raw(...)`, and
+managing environment/PATH and arbitrary DSC v3 resources with
+`windows.env.set/remove(...)` / `windows.path.add/remove(...)` /
+`windows.dsc(...)`.
 
-> **Status:** This is the validated MVP slice (packages plus raw commands).
-> Only `windows.package` and `windows.raw` exist publicly today. See
-> `spec/proposals/windows-backend.md` for the full plan.
+> **Status:** Packages, raw commands, env/path, and the generic DSC escape
+> hatch exist publicly today. See `spec/proposals/windows-backend.md` for the
+> full plan.
 
 ## What it shows
 
@@ -46,7 +49,7 @@ This writes the bundle to `.winix/out/desktop/`:
 `Microsoft.DSC.Transitional/RunCommandOnSet`). It accepts a command string or
 an explicit `{ executable, arguments }` object.
 
-Both `windows.package(...)` and `windows.raw(...)` return a **handle**. Capture
+Every `windows.*` resource helper returns a **handle**. Capture
 it only when something must be applied after it, and pass it to `dependsOn`
 (a single handle or an array of handles):
 
@@ -60,6 +63,48 @@ host("desktop", platforms.windows(), ({ windows }) => {
   });
 });
 ```
+
+## Environment variables, PATH, and the DSC escape hatch
+
+`windows.env.*(...)` and `windows.path.*(...)` manage environment state
+declaratively using built-in Windows DSC resources. Environment variables use
+`Microsoft.Windows/Registry`; PATH entries use an idempotent
+`Microsoft.DSC.Transitional/WindowsPowerShellScript` so PATH can be appended to
+or pruned without clobbering unrelated entries.
+
+```ts
+host("desktop", platforms.windows(), ({ windows }) => {
+  windows.env.set("EDITOR", "nvim");
+  windows.env.remove("OLD_TOOL_HOME");
+  windows.path.add("%USERPROFILE%\\.local\\bin");
+  windows.path.remove("%USERPROFILE%\\.old-bin");
+  windows.env.set("JAVA_HOME", "C:\\Program Files\\Java\\jdk", { scope: "machine" });
+});
+```
+
+- **Scopes.** The default is `scope: "user"` (`HKCU\Environment`), which does
+  not require elevation. Use `scope: "machine"` for machine-wide values
+  (`HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment`), which
+  requires an elevated apply.
+- **PATH is idempotent and surgical.** `windows.path.add(...)` appends the
+  requested entry only when missing, and `windows.path.remove(...)` removes only
+  that exact entry. Winix does not de-duplicate, reorder, trim, or normalize the
+  rest of PATH.
+
+When no typed helper exists, `windows.dsc(...)` declares any DSC v3 resource by
+`type` + `properties`. The properties object is emitted verbatim as YAML, so it
+targets native DSC v3 resources (or any PSDSC resource via the adapter)
+directly:
+
+```ts
+windows.dsc({
+  type: "Microsoft.Windows/Service",
+  properties: { name: "spooler", startType: "automatic" },
+});
+```
+
+`windows.dsc(...)` also returns a handle, so generic resources participate in
+`dependsOn` ordering like every other helper.
 
 In the emitted DSC v3 document, each resource gets a name that satisfies the
 schema's `^[a-zA-Z0-9 ]+$` rule: a package's name is its **sanitized** id
