@@ -122,8 +122,20 @@ nixos.raw({ networking: { hostName: "wsl" } });
 const devFeature = feature("dev", ({ home, windows }) => {
   home.program("git");
   windows.package("Git.Git");
+  const editor = windows.env.set("EDITOR", "nvim");
+  windows.path.add("%USERPROFILE%\\.local\\bin", { dependsOn: editor });
+  windows.path.remove("%USERPROFILE%\\.old-bin", { scope: "machine" });
 });
 void devFeature;
+
+// @ts-expect-error env is a namespace with intention-named methods, not a callable
+windows.env({ name: "EDITOR", value: "nvim" });
+
+// @ts-expect-error path is a namespace with intention-named methods, not a callable
+windows.path({ value: "%USERPROFILE%\\.local\\bin" });
+
+// @ts-expect-error scope must be user or machine
+windows.env.set("EDITOR", "nvim", { scope: "process" });
 
 // feature: returning a fragment still type-checks (back-compat).
 const gitFeature = feature("git", ({ home }) => home.program("git"));

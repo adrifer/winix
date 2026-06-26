@@ -9,9 +9,10 @@
  *       - explicit source (msstore)
  *       - inline version pin
  *       - elevated (admin security context)
- *   - `windows.env(...)` / `windows.path(...)` manage environment variables and
- *     PATH entries declaratively (via the PSDSC Environment resource, since DSC
- *     v3 has no native environment resource yet).
+ *   - `windows.env.set/remove(...)` manages registry-backed user/machine
+ *     environment variables via the native Microsoft.Windows/Registry resource.
+ *   - `windows.path.add/remove(...)` manages PATH entries surgically with an
+ *     idempotent WindowsPowerShellScript resource.
  *   - `windows.dsc(...)` is the escape hatch: declare any DSC v3 resource by
  *     type + properties when no typed helper exists.
  *   - `dependsOn` orders resources using the handle returned by each helper.
@@ -54,23 +55,27 @@ export default workspace({
       // windows.package({ id: "Some.Driver", elevated: true });
 
       // --- Environment variables ---
-      // A machine environment variable. Defaults to Target [Process, Machine]
-      // so it persists machine-wide and is visible to the current run.
-      windows.env({ name: "EDITOR", value: "nvim" });
+      // A user environment variable (default scope: "user"; no elevation).
+      windows.env.set("EDITOR", "nvim");
 
       // Remove a variable you no longer want.
-      // windows.env({ name: "OLD_TOOL_HOME", ensure: "Absent" });
+      // windows.env.remove("OLD_TOOL_HOME");
+
+      // Machine-scope variables write HKLM and require an elevated apply.
+      // windows.env.set("JAVA_HOME", "C:\\Program Files\\Java\\jdk", { scope: "machine" });
 
       // --- PATH entries ---
-      // Appends idempotently: the underlying Environment resource de-duplicates,
-      // so re-applying never grows PATH. `%USERPROFILE%` expands at apply time.
-      windows.path({ value: "%USERPROFILE%\\.local\\bin" });
+      // Appends idempotently to the user PATH without normalizing other entries.
+      windows.path.add("%USERPROFILE%\\.local\\bin");
+
+      // Remove a PATH entry without touching the rest of PATH.
+      // windows.path.remove("%USERPROFILE%\\.old-bin");
 
       // --- Ordering with dependsOn ---
       // The handle returned by any helper can be passed to another resource's
       // `dependsOn` to force apply order within this host.
-      const cargoHome = windows.env({ name: "CARGO_HOME", value: "%USERPROFILE%\\.cargo" });
-      windows.path({ value: "%CARGO_HOME%\\bin", dependsOn: [cargoHome] });
+      const cargoHome = windows.env.set("CARGO_HOME", "%USERPROFILE%\\.cargo");
+      windows.path.add("%CARGO_HOME%\\bin", { dependsOn: [cargoHome] });
 
       // --- Escape hatch: any DSC v3 resource ---
       // When no typed helper exists, declare the resource directly. `properties`

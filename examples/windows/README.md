@@ -4,7 +4,8 @@ Demonstrates the implemented Windows backend slice: declaring a Windows host
 with `platforms.windows()`, installing winget packages with
 `windows.package(...)`, running arbitrary commands with `windows.raw(...)`, and
 managing environment/PATH and arbitrary DSC v3 resources with
-`windows.env(...)` / `windows.path(...)` / `windows.dsc(...)`.
+`windows.env.set/remove(...)` / `windows.path.add/remove(...)` /
+`windows.dsc(...)`.
 
 > **Status:** Packages, raw commands, env/path, and the generic DSC escape
 > hatch exist publicly today. See `spec/proposals/windows-backend.md` for the
@@ -65,26 +66,30 @@ host("desktop", platforms.windows(), ({ windows }) => {
 
 ## Environment variables, PATH, and the DSC escape hatch
 
-`windows.env(...)` and `windows.path(...)` manage environment state
-declaratively. DSC v3 has no native environment resource yet, so these emit the
-`PSDscResources/Environment` resource through the `Microsoft.DSC/PowerShell`
-adapter. That detail is hidden: the authoring surface stays typed and small.
+`windows.env.*(...)` and `windows.path.*(...)` manage environment state
+declaratively using built-in Windows DSC resources. Environment variables use
+`Microsoft.Windows/Registry`; PATH entries use an idempotent
+`Microsoft.DSC.Transitional/WindowsPowerShellScript` so PATH can be appended to
+or pruned without clobbering unrelated entries.
 
 ```ts
 host("desktop", platforms.windows(), ({ windows }) => {
-  windows.env({ name: "EDITOR", value: "nvim" });          // set
-  windows.env({ name: "OLD_TOOL_HOME", ensure: "Absent" }); // remove
-  windows.path({ value: "%USERPROFILE%\\.local\\bin" });    // append to PATH
+  windows.env.set("EDITOR", "nvim");
+  windows.env.remove("OLD_TOOL_HOME");
+  windows.path.add("%USERPROFILE%\\.local\\bin");
+  windows.path.remove("%USERPROFILE%\\.old-bin");
+  windows.env.set("JAVA_HOME", "C:\\Program Files\\Java\\jdk", { scope: "machine" });
 });
 ```
 
-- **PATH is idempotent.** `windows.path(...)` sets the resource's `Path: true`
-  flag, which appends to (rather than replaces) PATH and de-duplicates, so
-  re-applying never grows it.
-- **Targets.** Both default to `Target: [Process, Machine]`, matching
-  `PSDscResources/Environment`. `Process` makes later resources in the same
-  `winget configure` run see the variable; `Machine` persists it machine-wide
-  and may require elevation.
+- **Scopes.** The default is `scope: "user"` (`HKCU\Environment`), which does
+  not require elevation. Use `scope: "machine"` for machine-wide values
+  (`HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment`), which
+  requires an elevated apply.
+- **PATH is idempotent and surgical.** `windows.path.add(...)` appends the
+  requested entry only when missing, and `windows.path.remove(...)` removes only
+  that exact entry. Winix does not de-duplicate, reorder, trim, or normalize the
+  rest of PATH.
 
 When no typed helper exists, `windows.dsc(...)` declares any DSC v3 resource by
 `type` + `properties`. The properties object is emitted verbatim as YAML, so it

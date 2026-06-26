@@ -60,8 +60,8 @@ describe("windows yaml serializer", () => {
 
   describe("arrays", () => {
     it("renders a scalar array as a block sequence", () => {
-      expect(yamlEntry("Target", ["Process", "Machine"], 0).join("\n")).toBe(
-        ["Target:", "- Process", "- Machine"].join("\n")
+      expect(yamlEntry("changedProperties", ["valueData", "_exist"], 0).join("\n")).toBe(
+        ["changedProperties:", "- valueData", "- _exist"].join("\n")
       );
     });
 
@@ -73,20 +73,20 @@ describe("windows yaml serializer", () => {
       const value = {
         resources: [
           {
-            name: "EDITOR",
-            type: "PSDscResources/Environment",
-            properties: { Name: "EDITOR", Value: "nvim" },
+            name: "Set EDITOR",
+            type: "Microsoft.Windows/Registry",
+            properties: { keyPath: "HKCU\\Environment", valueName: "EDITOR" },
           },
         ],
       };
       expect(render(value)).toBe(
         [
           "resources:",
-          "- name: EDITOR",
-          "  type: PSDscResources/Environment",
+          '- name: "Set EDITOR"',
+          "  type: Microsoft.Windows/Registry",
           "  properties:",
-          "    Name: EDITOR",
-          "    Value: nvim",
+          '    keyPath: "HKCU\\\\Environment"',
+          "    valueName: EDITOR",
         ].join("\n")
       );
     });
@@ -98,34 +98,21 @@ describe("windows yaml serializer", () => {
     });
   });
 
-  describe("the PSDSC adapter shape (env/path target)", () => {
-    it("renders the full Microsoft.DSC/PowerShell wrapper", () => {
+  describe("Windows resource property shapes", () => {
+    it("renders the Microsoft.Windows/Registry env shape", () => {
       const properties = {
-        resources: [
-          {
-            name: "Set EDITOR",
-            type: "PSDscResources/Environment",
-            properties: {
-              Name: "EDITOR",
-              Value: "nvim",
-              Ensure: "Present",
-              Target: ["Process", "Machine"],
-            },
-          },
-        ],
+        keyPath: "HKCU\\Environment",
+        valueName: "EDITOR",
+        _exist: true,
+        valueData: { String: "nvim" },
       };
       expect(render(properties)).toBe(
         [
-          "resources:",
-          '- name: "Set EDITOR"',
-          "  type: PSDscResources/Environment",
-          "  properties:",
-          "    Name: EDITOR",
-          "    Value: nvim",
-          "    Ensure: Present",
-          "    Target:",
-          "    - Process",
-          "    - Machine",
+          'keyPath: "HKCU\\\\Environment"',
+          "valueName: EDITOR",
+          "_exist: true",
+          "valueData:",
+          "  String: nvim",
         ].join("\n")
       );
     });

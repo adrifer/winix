@@ -7,8 +7,7 @@
 //
 // SCOPE: this serializes arbitrary *JSON-like* values (string, number, boolean,
 // null, arrays, plain objects) into block-style YAML. It is used for the
-// `properties` of a generic DSC resource, including the nested `resources:`
-// array of the `Microsoft.DSC/PowerShell` adapter. It is deliberately NOT a
+// `properties` of generic and typed DSC resources. It is deliberately NOT a
 // general YAML emitter: it does not handle anchors, tags, or non-JSON values.
 //
 // DETERMINISM: object keys are emitted in insertion order. Callers that need a

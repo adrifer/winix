@@ -354,10 +354,10 @@ function renderRawCommandResource(
 }
 
 /**
- * Render one generic DSC resource (from `windows.dsc(...)` and the env/path
- * helpers) as a DSC v3 resource block. The `properties` object is serialized
- * verbatim via the YAML helper, so arbitrary nested shapes (including the
- * `Microsoft.DSC/PowerShell` adapter's `resources:` array) round-trip exactly.
+ * Render one generic DSC resource (from `windows.dsc(...)` and typed helpers)
+ * as a DSC v3 resource block. The `properties` object is serialized verbatim
+ * via the YAML helper, so arbitrary nested DSC resource shapes round-trip
+ * exactly.
  */
 function renderDscResource(
   resource: WinDscResource,

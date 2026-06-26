@@ -86,11 +86,11 @@ These are ranked by (value × how-clean-the-DSC-primitive-is × demo appeal).
 
 ### Tier 3 — known-hard / lower ROI for now
 
-6. **`windows.env()` / `windows.path()`** — NO clean native DSC resource exists.
-   MS does PATH/env manipulation via `RunCommandOnSet` + `[Environment]::SetEnvironmentVariable`,
-   not a declarative resource. So these would be sugar over `windows.raw()`, not a
-   real declarative helper. Doable but honest framing: it's codegen'd PowerShell,
-   not idempotent DSC. Defer until `raw` + `dependsOn` land.
+6. **`windows.env.*` / `windows.path.*`** — implemented as typed helpers over
+   the best native resources for each job. Env vars use `Microsoft.Windows/Registry`
+   against `HKCU\Environment` / `HKLM\...\Environment`; PATH uses
+   `Microsoft.DSC.Transitional/WindowsPowerShellScript` so add/remove operations
+   are idempotent and do not clobber unrelated PATH entries.
 
 7. **`windows.programs.*`** (curated helpers like `windows.programs.git`) — nice demo
    sugar but lower architectural value than the structural features above. The spec

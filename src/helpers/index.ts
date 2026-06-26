@@ -33,11 +33,12 @@ export { windows } from "./windows.ts";
 export type {
   WindowsHelper,
   WinDscSpec,
-  WinEnvSpec,
-  WinEnvTarget,
+  WinEnvNamespace,
+  WinEnvOpts,
+  WinEnvScope,
   WinPackageArg,
   WinPackageSpec,
-  WinPathSpec,
+  WinPathNamespace,
   WinRawCommandArg,
   WinRawCommandSpec,
 } from "./windows.ts";

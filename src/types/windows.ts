@@ -78,13 +78,13 @@ export interface WinRawCommand {
  * carries an arbitrary DSC resource `type` and a free-form `properties` object
  * that the emitter serializes verbatim as YAML.
  *
- * Typed helpers (env/path) construct one of these internally with the
- * `Microsoft.DSC/PowerShell` adapter type wrapping a `PSDscResources/*`
- * resource, since DSC v3 has no native environment-variable resource yet.
+ * Typed helpers (env/path) construct native DSC resources internally:
+ * `Microsoft.Windows/Registry` for env and
+ * `Microsoft.DSC.Transitional/WindowsPowerShellScript` for PATH.
  */
 export interface WinDscResource {
   /**
-   * Fully qualified DSC resource type, e.g. `Microsoft.DSC/PowerShell` or
+   * Fully qualified DSC resource type, e.g. `Microsoft.Windows/Registry` or
    * `Microsoft.Windows/Service`.
    */
   resourceType: string;
@@ -100,8 +100,8 @@ export interface WinDscResource {
    */
   properties?: WinDscProperties;
   /**
-   * Unique identity token so a handle returned by `windows.dsc(...)` /
-   * `windows.env(...)` / `windows.path(...)` can be referenced in another
+   * Unique identity token so a handle returned by `windows.dsc(...)`,
+   * `windows.env.*(...)`, or `windows.path.*(...)` can be referenced in another
    * resource's `dependsOn`. Non-enumerable in spirit; carried internally only.
    */
   token?: symbol;

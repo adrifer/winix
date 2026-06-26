@@ -26,8 +26,7 @@ export interface WinPackageSpec {
   elevated?: boolean;
   /**
    * Resources this package must be applied after. Accepts a single handle or
-   * an array of handles, both returned by `windows.package(...)` /
-   * `windows.raw(...)`.
+   * an array of handles returned by resource-producing `windows.*` helpers.
    */
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
@@ -62,30 +61,12 @@ export interface WinDscSpec {
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
-/**
- * Which environment targets an `env`/`path` write applies to. `Process` makes
- * the change visible to the current `winget configure` process; `Machine`
- * persists it. Defaults to `["Process", "Machine"]`, matching the
- * PSDscResources/Environment resource.
- */
-export type WinEnvTarget = "Process" | "Machine";
+/** Scope for Windows environment and PATH writes. */
+export type WinEnvScope = "user" | "machine";
 
-/** Accepted object shape for `windows.env(...)`. */
-export interface WinEnvSpec {
-  name: string;
-  /** Value to set. Omit with `ensure: "Absent"` to remove the variable. */
-  value?: string;
-  ensure?: "Present" | "Absent";
-  target?: WinEnvTarget[];
-  dependsOn?: ResourceHandle | ResourceHandle[];
-}
-
-/** Accepted object shape for `windows.path(...)`. */
-export interface WinPathSpec {
-  /** Directory to ensure on PATH. */
-  value: string;
-  ensure?: "Present" | "Absent";
-  target?: WinEnvTarget[];
+/** Options shared by `windows.env.*` and `windows.path.*` methods. */
+export interface WinEnvOpts {
+  scope?: WinEnvScope;
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -107,7 +88,7 @@ function resolveDependsOn(
     if (!ref) {
       throw new Error(
         "windows.*(dependsOn) expects resource handles returned by " +
-        "windows.package(...) or windows.raw(...). Got a value without a " +
+        "resource-producing windows.* helpers. Got a value without a " +
         "resource identity."
       );
     }
@@ -215,9 +196,15 @@ function withDscToken(resource: WinDscResource): WinDscResource {
   return resource;
 }
 
-const DSC_POWERSHELL_ADAPTER = "Microsoft.DSC/PowerShell";
-const PSDSC_ENVIRONMENT = "PSDscResources/Environment";
-const DEFAULT_ENV_TARGET: WinEnvTarget[] = ["Process", "Machine"];
+const REGISTRY_RESOURCE = "Microsoft.Windows/Registry";
+const WINDOWS_POWERSHELL_SCRIPT_RESOURCE =
+  "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+const USER_ENV_KEY_PATH = "HKCU\\Environment";
+const MACHINE_ENV_KEY_PATH =
+  "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
+const USER_ENV_REGISTRY_PATH = "HKCU:\\Environment";
+const MACHINE_ENV_REGISTRY_PATH =
+  "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
 
 function normalizeDsc(arg: WinDscSpec): WinDscResource {
   if (!arg || typeof arg !== "object") {
@@ -244,109 +231,184 @@ function normalizeDsc(arg: WinDscSpec): WinDscResource {
   return withDscToken(resource);
 }
 
-/**
- * Validate the shared env/path target list.
- */
-function normalizeEnvTarget(target: WinEnvTarget[] | undefined): WinEnvTarget[] {
-  if (target === undefined) return DEFAULT_ENV_TARGET;
-  if (!Array.isArray(target) || target.length === 0) {
-    throw new Error("windows.env/path target must be a non-empty array");
+function normalizeEnvOpts(opts: WinEnvOpts | undefined, helper: string): WinEnvOpts | undefined {
+  if (opts === undefined) return undefined;
+  if (opts === null || typeof opts !== "object" || Array.isArray(opts)) {
+    throw new Error(`${helper} options must be an object when provided`);
   }
-  const valid: WinEnvTarget[] = ["Process", "Machine"];
-  for (const t of target) {
-    if (!valid.includes(t)) {
-      throw new Error(
-        `windows.env/path target "${t}" is invalid; expected one of ` +
-        valid.join(", ")
-      );
-    }
+  if (
+    opts.scope !== undefined &&
+    opts.scope !== "user" &&
+    opts.scope !== "machine"
+  ) {
+    throw new Error(
+      `${helper} scope "${opts.scope}" is invalid; expected "user" or "machine"`
+    );
   }
-  return target;
+  return opts;
 }
 
-/**
- * Build the `PSDscResources/Environment` adapter resource shared by env and
- * path. `isPath` toggles the resource's `Path: true` flag, which makes the
- * Environment resource APPEND to (rather than replace) the existing value and
- * de-duplicate, giving idempotent PATH management.
- */
-function buildEnvironmentDsc(opts: {
-  innerName: string;
-  variableName: string;
+function envScope(opts: WinEnvOpts | undefined): WinEnvScope {
+  return opts?.scope ?? "user";
+}
+
+function envKeyPath(scope: WinEnvScope): string {
+  return scope === "machine" ? MACHINE_ENV_KEY_PATH : USER_ENV_KEY_PATH;
+}
+
+function envRegistryPath(scope: WinEnvScope): string {
+  return scope === "machine" ? MACHINE_ENV_REGISTRY_PATH : USER_ENV_REGISTRY_PATH;
+}
+
+function envTarget(scope: WinEnvScope): "User" | "Machine" {
+  return scope === "machine" ? "Machine" : "User";
+}
+
+function registryDsc(opts: {
+  name: string;
+  keyPath: string;
+  valueName: string;
   value?: string;
-  ensure: "Present" | "Absent";
-  target: WinEnvTarget[];
-  isPath: boolean;
+  exists: boolean;
   dependsOn?: ResourceRef[];
 }): WinDscResource {
-  const inner: WinDscProperties = {
-    Name: opts.variableName,
-    Ensure: opts.ensure,
+  const properties: WinDscProperties = {
+    keyPath: opts.keyPath,
+    valueName: opts.valueName,
+    _exist: opts.exists,
   };
-  if (opts.value !== undefined) inner.Value = opts.value;
-  if (opts.isPath) inner.Path = true;
-  inner.Target = opts.target;
-
+  if (opts.exists) {
+    properties.valueData = { String: opts.value ?? "" };
+  }
   const resource: WinDscResource = {
-    resourceType: DSC_POWERSHELL_ADAPTER,
-    name: opts.innerName,
-    properties: {
-      resources: [
-        {
-          name: opts.variableName,
-          type: PSDSC_ENVIRONMENT,
-          properties: inner,
-        },
-      ],
-    },
+    resourceType: REGISTRY_RESOURCE,
+    name: opts.name,
+    properties,
   };
   if (opts.dependsOn) resource.dependsOn = opts.dependsOn;
   return withDscToken(resource);
 }
 
-function normalizeEnv(arg: WinEnvSpec): WinDscResource {
-  if (!arg || typeof arg !== "object") {
-    throw new Error("windows.env(...) requires a spec object");
+function normalizeEnv(
+  name: string,
+  ensure: "Present" | "Absent",
+  value: string | undefined,
+  opts: WinEnvOpts | undefined
+): WinDscResource {
+  const normalizedOpts = normalizeEnvOpts(opts, "windows.env.*");
+  if (!name || typeof name !== "string") {
+    throw new Error("windows.env.*(name) requires a non-empty variable name");
   }
-  if (!arg.name || typeof arg.name !== "string") {
-    throw new Error("windows.env({ name }) requires a non-empty variable name");
+  if (ensure === "Present" && (value === undefined || typeof value !== "string")) {
+    throw new Error(`windows.env.set("${name}", value) requires a string value`);
   }
-  const ensure = arg.ensure ?? "Present";
-  if (ensure === "Present" && (arg.value === undefined || typeof arg.value !== "string")) {
-    throw new Error(
-      `windows.env("${arg.name}") requires a string value when ensure is "Present"`
-    );
-  }
-  if (arg.value !== undefined && typeof arg.value !== "string") {
-    throw new Error(`windows.env("${arg.name}") value must be a string`);
-  }
-  return buildEnvironmentDsc({
-    innerName: `Set ${arg.name}`,
-    variableName: arg.name,
-    value: arg.value,
-    ensure,
-    target: normalizeEnvTarget(arg.target),
-    isPath: false,
-    dependsOn: resolveDependsOn(arg.dependsOn),
+  const scope = envScope(normalizedOpts);
+  return registryDsc({
+    name: ensure === "Present" ? `Set ${name}` : `Remove ${name}`,
+    keyPath: envKeyPath(scope),
+    valueName: name,
+    value,
+    exists: ensure === "Present",
+    dependsOn: resolveDependsOn(normalizedOpts?.dependsOn),
   });
 }
 
-function normalizePath(arg: WinPathSpec): WinDscResource {
-  if (!arg || typeof arg !== "object") {
-    throw new Error("windows.path(...) requires a spec object");
+function normalizePath(
+  value: string,
+  ensure: "Present" | "Absent",
+  opts: WinEnvOpts | undefined
+): WinDscResource {
+  const normalizedOpts = normalizeEnvOpts(opts, "windows.path.*");
+  if (!value || typeof value !== "string") {
+    throw new Error("windows.path.*(value) requires a non-empty directory");
   }
-  if (!arg.value || typeof arg.value !== "string") {
-    throw new Error("windows.path({ value }) requires a non-empty directory");
-  }
-  return buildEnvironmentDsc({
-    innerName: `Path ${arg.value}`,
-    variableName: "Path",
-    value: arg.value,
-    ensure: arg.ensure ?? "Present",
-    target: normalizeEnvTarget(arg.target),
-    isPath: true,
-    dependsOn: resolveDependsOn(arg.dependsOn),
-  });
+  const scope = envScope(normalizedOpts);
+  const resource: WinDscResource = {
+    resourceType: WINDOWS_POWERSHELL_SCRIPT_RESOURCE,
+    name: `${ensure === "Present" ? "Add" : "Remove"} ${value} ${
+      ensure === "Present" ? "to" : "from"
+    } PATH`,
+    properties: buildPathScriptProperties({
+      dir: value,
+      scope,
+      action: ensure === "Present" ? "add" : "remove",
+    }),
+  };
+  const deps = resolveDependsOn(normalizedOpts?.dependsOn);
+  if (deps) resource.dependsOn = deps;
+  return withDscToken(resource);
+}
+
+function buildPathScriptProperties(opts: {
+  dir: string;
+  scope: WinEnvScope;
+  action: "add" | "remove";
+}): WinDscProperties {
+  const registryPath = envRegistryPath(opts.scope);
+  const target = envTarget(opts.scope);
+  const quotedDir = psSingleQuoted(opts.dir);
+  const quotedRegistryPath = psSingleQuoted(registryPath);
+  const quotedTarget = psSingleQuoted(target);
+  const presentCheck =
+    opts.action === "add"
+      ? "$entries -contains $dir"
+      : "-not ($entries -contains $dir)";
+
+  return {
+    getScript: [
+      `$registryPath = ${quotedRegistryPath}`,
+      "Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue",
+    ].join("\n"),
+    testScript: [
+      `$dir = ${quotedDir}`,
+      `$registryPath = ${quotedRegistryPath}`,
+      "$current = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue",
+      "$entries = if ([string]::IsNullOrEmpty($current)) { @() } else { $current -split ';' }",
+      presentCheck,
+    ].join("\n"),
+    setScript: [
+      `$dir = ${quotedDir}`,
+      `$registryPath = ${quotedRegistryPath}`,
+      `$target = ${quotedTarget}`,
+      "$key = Get-Item -Path $registryPath",
+      "$originalKind = $null",
+      "try { $originalKind = $key.GetValueKind('Path') } catch { $originalKind = $null }",
+      "$current = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue",
+      "$entries = if ([string]::IsNullOrEmpty($current)) { @() } else { $current -split ';' }",
+      ...(opts.action === "add"
+        ? [
+            "if ($entries -notcontains $dir) {",
+            "  $new = if ([string]::IsNullOrEmpty($current)) { $dir } else { \"$current;$dir\" }",
+            "  [Environment]::SetEnvironmentVariable('Path', $new, $target)",
+            "}",
+          ]
+        : [
+            "if ($entries -contains $dir) {",
+            "  $new = ($entries | Where-Object { $_ -ne $dir }) -join ';'",
+            "  [Environment]::SetEnvironmentVariable('Path', $new, $target)",
+            "}",
+          ]),
+      "$afterKey = Get-Item -Path $registryPath",
+      "$afterValue = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue",
+      "if ($originalKind -eq [Microsoft.Win32.RegistryValueKind]::ExpandString -and $afterKey.GetValueKind('Path') -ne [Microsoft.Win32.RegistryValueKind]::ExpandString) {",
+      "  Set-ItemProperty -Path $registryPath -Name 'Path' -Value $afterValue -Type ExpandString",
+      "}",
+    ].join("\n"),
+  };
+}
+
+function psSingleQuoted(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+export interface WinEnvNamespace {
+  set(name: string, value: string, opts?: WinEnvOpts): ResourceHandle;
+  remove(name: string, opts?: WinEnvOpts): ResourceHandle;
+}
+
+export interface WinPathNamespace {
+  add(value: string, opts?: WinEnvOpts): ResourceHandle;
+  remove(value: string, opts?: WinEnvOpts): ResourceHandle;
 }
 
 export interface WindowsHelper {
@@ -381,7 +443,7 @@ export interface WindowsHelper {
    * Declare an arbitrary DSC v3 resource (escape hatch). The `type` is a fully
    * qualified DSC resource type and `properties` is serialized verbatim to the
    * generated configuration. Use this for resources Winix has no typed helper
-   * for, including PSDSC resources via the `Microsoft.DSC/PowerShell` adapter.
+   * for.
    *
    * ```ts
    * windows.dsc({
@@ -393,25 +455,26 @@ export interface WindowsHelper {
   dsc(arg: WinDscSpec): ResourceHandle;
 
   /**
-   * Manage a user (or machine) environment variable declaratively via the
-   * `PSDscResources/Environment` resource (DSC v3 has no native env resource).
+   * Manage a user/machine environment variable declaratively via the native
+   * `Microsoft.Windows/Registry` DSC resource.
    *
    * ```ts
-   * windows.env({ name: "EDITOR", value: "nvim" });
-   * windows.env({ name: "OLD_VAR", ensure: "Absent" });
+   * windows.env.set("EDITOR", "nvim");
+   * windows.env.remove("OLD_VAR");
    * ```
    */
-  env(arg: WinEnvSpec): ResourceHandle;
+  env: WinEnvNamespace;
 
   /**
-   * Ensure a directory is on the PATH, appending idempotently (the underlying
-   * Environment resource de-duplicates). A specialized `env` for `Path`.
+   * Ensure a directory is on the PATH, appending/removing surgically via an
+   * idempotent `Microsoft.DSC.Transitional/WindowsPowerShellScript` resource.
    *
    * ```ts
-   * windows.path({ value: "%USERPROFILE%\\.local\\bin" });
+   * windows.path.add("%USERPROFILE%\\.local\\bin");
+   * windows.path.remove("%USERPROFILE%\\.old-bin");
    * ```
    */
-  path(arg: WinPathSpec): ResourceHandle;
+  path: WinPathNamespace;
 }
 
 /**
@@ -426,6 +489,11 @@ function asHandle(fragment: Fragment, ref: ResourceRef): ResourceHandle {
     configurable: true,
   });
   return fragment as ResourceHandle;
+}
+
+function dscHandle(resource: WinDscResource): ResourceHandle {
+  const fragment: Fragment = { windows: { dsc: [resource] } };
+  return asHandle(fragment, { kind: "dsc", token: resource.token! });
 }
 
 export const windows: WindowsHelper = {
@@ -444,14 +512,16 @@ export const windows: WindowsHelper = {
     const fragment: Fragment = { windows: { dsc: [resource] } };
     return asHandle(fragment, { kind: "dsc", token: resource.token! });
   },
-  env: (arg: WinEnvSpec): ResourceHandle => {
-    const resource = normalizeEnv(arg);
-    const fragment: Fragment = { windows: { dsc: [resource] } };
-    return asHandle(fragment, { kind: "dsc", token: resource.token! });
+  env: {
+    set: (name: string, value: string, opts?: WinEnvOpts): ResourceHandle =>
+      dscHandle(normalizeEnv(name, "Present", value, opts)),
+    remove: (name: string, opts?: WinEnvOpts): ResourceHandle =>
+      dscHandle(normalizeEnv(name, "Absent", undefined, opts)),
   },
-  path: (arg: WinPathSpec): ResourceHandle => {
-    const resource = normalizePath(arg);
-    const fragment: Fragment = { windows: { dsc: [resource] } };
-    return asHandle(fragment, { kind: "dsc", token: resource.token! });
+  path: {
+    add: (value: string, opts?: WinEnvOpts): ResourceHandle =>
+      dscHandle(normalizePath(value, "Present", opts)),
+    remove: (value: string, opts?: WinEnvOpts): ResourceHandle =>
+      dscHandle(normalizePath(value, "Absent", opts)),
   },
 };
