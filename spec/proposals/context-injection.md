@@ -133,13 +133,21 @@ declarations (not just features):
 
 ```ts
 host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), ({ nixos, home }) => {
-  linuxProfile();          // a feature/profile: called for effect
-  wsl();                   // ditto
-  nixos.sysctl({ /* ... */ });   // inline declaration, uses host context
-  azureDevCli();
-  home.packages("socat", "bubblewrap");
+  nixos.sysctl({ /* ... */ });        // inline declaration: registered as effect
+  home.packages("socat", "bubblewrap"); // inline declaration: registered as effect
+
+  // Composing other features/profiles: their factories return lazy fragments,
+  // which are NOT auto-collected. Return them (single value or array) so they
+  // compose into this host:
+  return [linuxProfile(), wsl(), azureDevCli()];
 });
 ```
+
+Effect auto-registration applies to declarations made *through the injected
+namespaces* (`nixos.*`, `home.*`, `windows.*`, …). Calling another `feature()`
+or `profile()` factory yields a lazy fragment that must be returned (or spread
+into an array with other returns) to take effect; it is intentionally not
+swept up by the collector, so composition stays explicit.
 
 The name (`"wsl-work"`) and platform (`platforms.nixos({...})`) remain
 positional structural arguments and are **not** part of the context.

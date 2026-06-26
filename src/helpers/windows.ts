@@ -18,8 +18,12 @@ export interface WinPackageSpec {
   source?: WinPackageSource;
   version?: string;
   elevated?: boolean;
-  /** Resources this package must be applied after (handles from other calls). */
-  dependsOn?: ResourceHandle[];
+  /**
+   * Resources this package must be applied after. Accepts a single handle or
+   * an array of handles, both returned by `windows.package(...)` /
+   * `windows.raw(...)`.
+   */
+  dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
 export type WinPackageArg = string | WinPackageSpec;
@@ -31,20 +35,27 @@ export interface WinRawCommandSpec {
   name?: string;
   executable: string;
   arguments?: string[];
-  /** Resources this command must run after (handles from other calls). */
-  dependsOn?: ResourceHandle[];
+  /**
+   * Resources this command must run after. Accepts a single handle or an array
+   * of handles.
+   */
+  dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
 export type WinRawCommandArg = string | WinRawCommandSpec;
 
 /**
- * Resolve an array of resource handles passed to `dependsOn` into the stable
- * resource references the emitter wires up. Throws on a value that is not a
- * Winix resource handle (e.g. a plain fragment or a handle from a non-resource
+ * Resolve `dependsOn` (a single handle or an array) into the stable resource
+ * references the emitter wires up. Throws on a value that is not a Winix
+ * resource handle (e.g. a plain fragment or a handle from a non-resource
  * helper), since only resources can be ordered.
  */
-function resolveDependsOn(handles: ResourceHandle[] | undefined): ResourceRef[] | undefined {
-  if (!handles || handles.length === 0) return undefined;
+function resolveDependsOn(
+  dependsOn: ResourceHandle | ResourceHandle[] | undefined
+): ResourceRef[] | undefined {
+  if (!dependsOn) return undefined;
+  const handles = Array.isArray(dependsOn) ? dependsOn : [dependsOn];
+  if (handles.length === 0) return undefined;
   const refs: ResourceRef[] = [];
   for (const handle of handles) {
     const ref = (handle as Partial<ResourceHandle>)?.__winixHandle;

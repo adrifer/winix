@@ -54,14 +54,23 @@ export interface WinixContext {
 /**
  * Heuristic: does a returned value look like a Fragment (a declaration to
  * register), as opposed to a NixExpr, a boolean (`isActive`), a nested factory,
- * etc.? Fragments are plain objects keyed by scope (`home`/`nixos`/`darwin`/
- * `windows`/`overlay`) and never carry the NixExpr/lazy/platform markers.
+ * a `HomeFile` builder result, etc.?
+ *
+ * A Fragment is a plain object carrying at least one known scope key
+ * (`nixos` / `homeManager` / `darwin` / `windows`). Requiring a scope key is
+ * what keeps non-fragment helper returns out of the effect collector: e.g.
+ * `home.symlink(...)` returns a `HomeFile` (`{ source, text, ... }`) with no
+ * scope key, so it is correctly left alone instead of being registered and
+ * polluting the merged fragment list.
  */
+const FRAGMENT_SCOPE_KEYS = ["nixos", "homeManager", "darwin", "windows"] as const;
+
 function looksLikeFragment(value: unknown): value is Fragment {
   if (value === null || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
   if (v.__winixNixExpr || v.__lazy || v.__winixRawModule || v.__platform) return false;
-  return true;
+  // Must declare into at least one real scope to count as a collectible effect.
+  return FRAGMENT_SCOPE_KEYS.some((key) => v[key] !== undefined);
 }
 
 /**

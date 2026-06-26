@@ -732,4 +732,31 @@ describe("Effect registration", () => {
     expect((result.homeManager as any).home.packages).toEqual(["socat"]);
     expect((result.nixos as any).imports).toContain("mod-a");
   });
+
+  it("does not treat non-fragment helper returns (HomeFile) as collectible effects", () => {
+    // home.symlink(...) returns a HomeFile ({ source: NixExpr }) with no scope
+    // key. The collector must ignore it (only the configFiles fragment that
+    // consumes it carries it into homeManager). This pins the tightened
+    // looksLikeFragment heuristic: a bare HomeFile is not swept up, and the
+    // symlink reaches output only through xdg.configFile.
+    const f = feature("symlink-file", ({ home }) => {
+      const link = home.symlink("~/dotfiles/nvim");
+      home.program("git"); // a genuine effect, alongside the non-fragment value
+      return home.configFiles({ nvim: link });
+    });
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    const [result] = evaluate(ws);
+    const hm = result.homeManager as any;
+    // The symlink landed under xdg.configFile.nvim (via configFiles)...
+    expect(hm.xdg.configFile.nvim.source.__winixNixExpr).toBe(true);
+    expect(hm.programs.git.enable).toBe(true);
+    // ...and the bare HomeFile did not leak its `source` key anywhere else.
+    expect((result as any).source).toBeUndefined();
+    expect(hm.source).toBeUndefined();
+    // Output is exactly the two intended keys under homeManager, nothing extra.
+    expect(Object.keys(hm).sort()).toEqual(["programs", "xdg"]);
+  });
 });

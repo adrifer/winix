@@ -389,6 +389,32 @@ describe("generateWindows() emitter", () => {
     );
   });
 
+  it("accepts a single handle (not an array) in dependsOn", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          const git = windows.package("Git.Git");
+          // Single handle, no array wrapping.
+          windows.raw({
+            name: "clone repos",
+            executable: "pwsh",
+            arguments: ["-c", "git clone ..."],
+            dependsOn: git,
+          });
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws), windowsLock({
+      "Git.Git": { source: "winget", version: "2.44.0" },
+    })).hosts.desktop["configuration.winget"];
+
+    const cmdBlock = doc.slice(doc.indexOf('name: "clone repos"'));
+    expect(cmdBlock).toContain(
+      `dependsOn: ["[resourceId('Microsoft.WinGet/Package', 'Git Git')]"]`
+    );
+  });
+
   it("throws when dependsOn references a resource from another host", () => {
     // A handle captured in one host must not be used in another host's body.
     let leaked: ReturnType<typeof windows.package> | undefined;
