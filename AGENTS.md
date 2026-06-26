@@ -13,7 +13,7 @@ Winix is a TypeScript-first system configuration tool that generates Nix (NixOS,
 ```
 src/
   core/types.ts          # All type definitions. Start here.
-  sdk/index.ts           # User-facing API: platform(), feature(), host(), workspace()
+  sdk/index.ts           # User-facing API: feature(), profile(), host(), platforms.*, workspace()
   evaluator/index.ts     # Two-pass: collect IDs → resolve with context → deep merge
   backends/nix/index.ts  # Generates flake.nix + host .nix modules
   cli/
@@ -26,12 +26,20 @@ src/
 ## Key Concepts
 
 ### Fragment Pattern
-Everything is a `Fragment | Fragment[]`. No inheritance, no classes. Just functions returning data.
+Everything is a `Fragment | Fragment[]`. No inheritance, no classes. Just functions returning data. Bodies may also **declare by effect** through injected namespaces (`home.*`, `nixos.*`, `darwin.*`, `windows.*`), which auto-register without a return.
 
 ### Three Helpers
-- `platform(id, factory)` — system base (NixOS, darwin). Only one per host. Has `.isActive`.
-- `feature(id, factory)` — everything else. N per host. Has `.isActive`.
-- `host(name, platform, fragments[])` — top-level target. No `.isActive`.
+Distinct roles: a **feature declares** config, a **profile groups** features, and a **host** is the target.
+- `feature(id, callback)` — **declares** config. N per host. Has `.isActive`. The callback receives an injected context; it can declare by effect and/or return fragments.
+- `profile(id, entries[])` — **groups** features. **Array of entries only** (instantiated features/profiles and bare fragments). No callback: passing one is a compile error and a runtime `TypeError`. Has `.isActive`.
+- `host(name, platform, entries[])` or `host(name, platform, callback)` — top-level target. Entries array **or** callback (effects + return). No `.isActive`.
+
+Platforms are built through `platforms.*` (`platforms.nixos({...})`, `platforms.darwin({...})`, `platforms.windows()`) and passed as a host's second argument; they expose `.isActive` too (`platforms.nixos.isActive`).
+
+### Context Injection & Effects
+- `feature` and the callback form of `host` receive `{ home, nixos, darwin, windows, platforms }`. `nix`, `account`, and `overlay` are NOT injected (stay file-level imports).
+- Declarations through an injected namespace **auto-register** (no return needed). Calling another `feature()`/`profile()` factory returns a lazy fragment that is **not** auto-collected and **must be returned** to compose it.
+- Additive and back-compat: the return forms (one fragment, array, or after local logic) still work; an effect-only callback returning nothing type-checks (`AuthoringResult = FragmentResult | void`); imported globals still work (a global `home.*` call is not auto-registered, so it must be returned).
 
 ### Lazy Evaluation
 `platform()` and `feature()` return `LazyFragment` descriptors (not resolved fragments). The evaluator:
@@ -54,7 +62,7 @@ Everything is a `Fragment | Fragment[]`. No inheritance, no classes. Just functi
 
 ## Windows/WSL Compatibility
 
-Winix development is supported from native Windows and WSL, even before the native Windows backend is implemented.
+Winix development is supported from native Windows and WSL. A native Windows backend MVP now exists: `windows.package(...)` and `windows.raw(...)` (both return a `ResourceHandle` and accept `dependsOn`), declared on a `platforms.windows()` host. The emitter generates a DSC v3 configuration (`winget configure`). Only `windows.package`/`windows.raw` are public today; `windows.env/path/file/setting/dsc/wsl/programs` are not yet implemented. See `spec/proposals/windows-backend.md` for the full plan.
 
 - **Separate filesystem paths from generated Nix paths.**
   - Use `node:path` for real filesystem paths (`.winix/out`, copying raw modules, loading configs).

@@ -19,7 +19,6 @@ import {
   home,
   host,
   input,
-  nixos,
   platforms,
   workspace,
 } from "@adrifer/winix";
@@ -34,13 +33,13 @@ const inputs = defineInputs({
   }),
 });
 
-const wsl = feature("wsl", () => [
-  nixos.imports("inputs.nixos-wsl.nixosModules.wsl"),
-  nixos({ wsl: { enable: true } }),
-  nixos.program("nix-ld"),
-]);
+const wsl = feature("wsl", ({ nixos }) => {
+  nixos.imports("inputs.nixos-wsl.nixosModules.wsl");
+  nixos({ wsl: { enable: true } });
+  nixos.program("nix-ld");
+});
 
-const shell = feature("shell", () =>
+const shell = feature("shell", ({ home, platforms }) =>
   home.program("zsh", {
     shellAliases: {
       g: "lazygit",
@@ -71,6 +70,11 @@ export default workspace({
   ],
 });
 ```
+
+Feature and host callbacks receive an injected context
+(`{ home, nixos, darwin, windows, platforms }`); declarations made through it
+register automatically, so no `return` is needed. The older style still works:
+import the helpers as globals and `return` the fragments you build.
 
 ## Why Winix?
 
@@ -183,15 +187,16 @@ export default workspace({
 
 ### Features and profiles
 
-Features are reusable lazy fragments. Profiles are reusable bundles.
+Features **declare** config and are the flexible building block. Profiles
+**group** features and take an array of entries only (no callback).
 
 ```ts
-const git = feature("git", () =>
+const git = feature("git", ({ home }) => {
   home.program("git", {
     userName: "Adrian Fernandez",
     userEmail: "me@example.com",
-  })
-);
+  });
+});
 
 const developer = profile("developer", [
   git(),
@@ -199,7 +204,8 @@ const developer = profile("developer", [
 ]);
 ```
 
-Fragments can return one fragment or an array of fragments:
+A feature can also return one fragment or an array of fragments (the older
+style still works):
 
 ```ts
 const neovim = feature("neovim", () => [
@@ -208,12 +214,15 @@ const neovim = feature("neovim", () => [
 ]);
 ```
 
+When a feature body composes other features, return them: a `feature()`/
+`profile()` call yields a lazy fragment that is not auto-collected.
+
 ### Platform-aware configuration
 
 Fragments can ask whether another platform or feature is active.
 
 ```ts
-const shell = feature("shell", () =>
+const shell = feature("shell", ({ home, platforms }) =>
   home.program("zsh", {
     shellAliases: {
       ...(platforms.nixos.isActive && { rebuild: "sudo nixos-rebuild switch" }),
@@ -322,6 +331,30 @@ rawModule("./legacy/system.nix")
 rawModule.homeManager("./legacy/home.nix")
 rawModule.darwin("./legacy/darwin.nix")
 ```
+
+### Windows (preview)
+
+Winix has an early native Windows backend. Declare a `platforms.windows()` host
+and install winget/msstore packages with `windows.package(...)`; use
+`windows.raw(...)` for arbitrary commands. Both return a handle you can pass to
+another resource's `dependsOn` to express ordering.
+
+```ts
+host("desktop", platforms.windows(), ({ windows }) => {
+  const node = windows.package("OpenJS.NodeJS");
+  windows.package({ source: "msstore", id: "9NKSQGP7F2NH" });
+  windows.raw({
+    executable: "npm",
+    arguments: ["install", "--global", "typescript"],
+    dependsOn: node,
+  });
+});
+```
+
+This generates a DSC v3 document that `winget configure` applies. The backend is
+an MVP: only `windows.package` and `windows.raw` exist today. See
+[`examples/windows/`](examples/windows) and
+[`spec/proposals/windows-backend.md`](spec/proposals/windows-backend.md).
 
 ## Generated Nix
 

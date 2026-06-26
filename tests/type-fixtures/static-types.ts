@@ -1,4 +1,4 @@
-import { account, darwin, home, nix, nixos, type Fragment, type ZshOptions } from "@adrifer/winix";
+import { account, darwin, home, nix, nixos, feature, profile, host, platforms, type Fragment, type ZshOptions } from "@adrifer/winix";
 import type { GitOptions } from "@adrifer/winix/types";
 
 home.program("zsh", {
@@ -112,3 +112,48 @@ nixos("{ some nix code }");
 
 // @ts-expect-error .raw() accepts raw Nix strings, not option objects
 nixos.raw({ networking: { hostName: "wsl" } });
+
+// --- Authoring callbacks may be effect-only (return void) ---
+// Before the AuthoringResult fix these failed to type-check because the
+// callback was inferred as `() => void`, which was not assignable to a
+// `=> FragmentResult` parameter.
+
+// feature: declare purely by effect, no return.
+const devFeature = feature("dev", ({ home, windows }) => {
+  home.program("git");
+  windows.package("Git.Git");
+});
+void devFeature;
+
+// feature: returning a fragment still type-checks (back-compat).
+const gitFeature = feature("git", ({ home }) => home.program("git"));
+void gitFeature;
+
+// feature: mixed effect + return.
+const mixedFeature = feature("mixed", ({ home }) => {
+  home.program("bat");
+  return home.program("eza");
+});
+void mixedFeature;
+
+// profile: only accepts an array of entries (features + bare fragments),
+// never a callback. The array form is the only authoring form for profiles.
+const devProfile = profile("dev", [
+  gitFeature(),
+  mixedFeature(),
+]);
+void devProfile;
+
+// profile rejects a callback at the type level (profiles group features; they
+// cannot declare by effect or take injected context).
+// @ts-expect-error profile() does not accept an authoring callback
+profile("dev-bad", ({ home }) => {
+  home.program("ripgrep");
+});
+
+// host (callback body): effect-only inline declarations.
+const wslHost = host("wsl", platforms.nixos({ stateVersion: "25.05" }), ({ nixos, home }) => {
+  nixos.imports("inputs.nixos-wsl.nixosModules.wsl");
+  home.packages("socat");
+});
+void wslHost;

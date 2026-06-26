@@ -26,8 +26,14 @@ const branch = git(["branch", "--show-current"]);
 const status = git(["status", "--porcelain"]);
 const packageVersion = parseVersion(readPackageVersion());
 
-if (branch !== "main") {
-  fail(`Releases must be created from main. Current branch is ${branch || "(detached)"}.`);
+// Stable releases must always come from main so that `latest` on npm always
+// corresponds to main's history. Preview releases may run from any branch:
+// git tags are global to the repo and point at a specific commit regardless
+// of branch, so a -preview.N tag on a feature branch's HEAD is valid and lets
+// that exact commit be published to the npm `preview` dist-tag (for trying a
+// branch before merging it). The clean-tree requirement is kept in all cases.
+if (mode === "stable" && branch !== "main") {
+  fail(`Stable releases must be created from main. Current branch is ${branch || "(detached)"}.`);
 }
 
 if (status !== "") {
@@ -85,7 +91,7 @@ if (mode === "stable") {
   run("git", ["push", "origin", nextTag]);
 }
 
-console.log(`Release tag ${nextTag} pushed. GitHub Actions will publish it to npm.`);
+console.log(`Release tag ${nextTag} pushed (from ${branch || "detached HEAD"}). GitHub Actions will publish it to npm.`);
 
 function nextStableVersion({ latest, latestStable, explicitBump, defaultBump }) {
   if (!latest && !latestStable) {

@@ -60,6 +60,7 @@ export type {
   WinRawCommand,
 } from "./types/index.ts";
 export { platform, feature, profile, host, workspace, input, defineInputs, rawModule, withContext } from "./sdk/index.ts";
+export type { WinixContext } from "./sdk/context.ts";
 export { evaluate } from "./evaluator/index.ts";
 export type { EvaluatedHost } from "./evaluator/index.ts";
 export { generateNix } from "./backends/nix/index.ts";

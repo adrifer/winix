@@ -12,7 +12,7 @@ Nix code, then delegates activation to the platform's native tools:
 winix.config.ts (user)
       │
       ▼
-  SDK (platform, feature, host, workspace)
+  SDK (feature, profile, host, platforms, workspace)
       │  registers nodes in the dendritic graph
       ▼
   Evaluator (two-pass)
@@ -40,7 +40,9 @@ src/
 │   ├── types.ts              # All public type definitions (Fragment, Host, ...)
 │   └── index.ts
 ├── sdk/
-│   └── index.ts              # platform(), feature(), host(), workspace()
+│   ├── index.ts              # platform(), feature(), profile(), host(), workspace()
+│   ├── context.ts            # WinixContext: the namespaces injected into callbacks
+│   └── collector.ts          # effect-registration sink (declare-by-calling)
 ├── helpers/
 │   ├── nixos.ts              # nixos(), nixos.program(), nixos.service(), ...
 │   ├── darwin.ts             # darwin(), darwin.homebrew(), darwin.launchd, ...
@@ -55,8 +57,10 @@ src/
 ├── evaluator/
 │   └── index.ts              # two-pass evaluator
 ├── backends/
-│   └── nix/
-│       └── index.ts          # IR → Nix string emission
+│   ├── nix/
+│   │   └── index.ts          # IR → Nix string emission
+│   └── windows/
+│       └── index.ts          # IR → DSC v3 winget Configuration (MVP)
 └── cli/
     ├── index.ts              # CLI entry point (parseArgs)
     ├── loader.ts             # locates and imports winix.config.ts
@@ -100,6 +104,39 @@ A user fragment goes through four stages:
 stores `factory` and a stable id. The evaluator invokes each factory exactly
 once per host during pass 1, allowing fragments to be reused across hosts
 without duplicating expensive computation per call.
+
+### Authoring callbacks: injected context and effect registration
+
+When a `feature` (or the callback form of `host`) factory runs, the SDK builds
+a `WinixContext` (`src/sdk/context.ts`) and passes it as the first argument.
+The context exposes the declaration namespaces `home`, `nixos`, `darwin`,
+`windows`, and `platforms` — the same singletons the package exports, wrapped in
+a `Proxy`. `nix`, `account`, and `overlay` are intentionally not injected.
+
+Declarations are collected two ways, both reconciled by
+`mergeEffectsAndReturn` in `src/sdk/index.ts`:
+
+1. **By effect.** While the body runs, an effect sink is active
+   (`withCollector`, `src/sdk/collector.ts`). The context proxy detects when a
+   wrapped namespace method returns a `Fragment` and pushes it onto the sink
+   (`collect`), so `home.program("git")` registers without a `return`. The
+   proxy ignores non-fragment returns (booleans from `.isActive`, `NixExpr`
+   builders, lazy fragments), so only real declarations are swept up.
+2. **By return.** The body may still return a fragment or array (the legacy
+   forms). Returned entries already captured by effect are de-duped via
+   `wasCollected`; lazy fragments returned from composing another
+   `feature()`/`profile()` are passed through untouched (they are **not**
+   auto-collected, so composition stays explicit).
+
+The authoring return type is `AuthoringResult = FragmentResult | void`, so an
+effect-only body that returns nothing type-checks. Globals continue to read the
+ambient `EvalContext` exactly as before; a global `home.*` call outside an
+active collector is not registered, so it must be returned.
+
+`profile(id, entries)` takes only an array (no callback): it is a thin wrapper
+that resolves to its entries, so context injection and effect registration
+apply to `feature` and `host` bodies only. Passing a callback throws a
+`TypeError`.
 
 ### Stable IDs
 

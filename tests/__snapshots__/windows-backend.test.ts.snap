@@ -25,31 +25,31 @@ resources:
       source: msstore
       acceptAgreements: true
       version: "1.0.0"
-  - name: Git.Git
+  - name: "Git Git"
     type: Microsoft.WinGet/Package
     properties:
       id: Git.Git
       source: winget
       acceptAgreements: true
       version: "2.44.0"
-  - name: Microsoft.VisualStudioCode
+  - name: "Microsoft VisualStudioCode"
     type: Microsoft.WinGet/Package
     properties:
       id: Microsoft.VisualStudioCode
       source: winget
       acceptAgreements: true
       version: "1.90.1"
-  - name: run-command-0
+  - name: "command 1"
     type: Microsoft.DSC.Transitional/RunCommandOnSet
     properties:
       executable: powershell
       arguments: ["-Command", "Write-Host after-packages"]
-  - name: run-command-1
+  - name: "command 2"
     type: Microsoft.DSC.Transitional/RunCommandOnSet
     properties:
       executable: pwsh
       arguments: ["-Command", "Write-Host explicit"]
-  - name: make-bin-dir
+  - name: "make bin dir"
     type: Microsoft.DSC.Transitional/RunCommandOnSet
     properties:
       executable: cmd

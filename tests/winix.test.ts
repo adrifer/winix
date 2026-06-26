@@ -26,7 +26,7 @@ const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
   },
 }));
 
-const wsl = feature("wsl", (opts?: { defaultUser?: string }) => ({
+const wsl = feature("wsl", (_ctx, opts?: { defaultUser?: string }) => ({
   nixos: {
     wsl: { enable: true, defaultUser: opts?.defaultUser },
     packages: ["wl-clipboard"],
@@ -536,5 +536,227 @@ describe("Nix backend", () => {
     expect(output.warnings).toContain(
       "home-manager module import detected but workspace inputs do not include home-manager"
     );
+  });
+});
+
+describe("Context injection", () => {
+  it("injects the declaration namespaces into a feature callback", () => {
+    let seen: string[] = [];
+    const f = feature("ctx-probe", (ctx) => {
+      // Reset each call (the factory may run more than once during evaluation).
+      seen = ["home", "nixos", "darwin", "windows", "platforms"].filter(
+        (key) => key in ctx
+      );
+      // nix/account/overlay are intentionally NOT injected (file-level globals).
+      for (const absent of ["nix", "account", "overlay"]) {
+        if (absent in ctx) seen.push(`UNEXPECTED:${absent}`);
+      }
+      return ctx.home.program("git");
+    });
+
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    const [result] = evaluate(ws);
+
+    expect(seen).toEqual(["home", "nixos", "darwin", "windows", "platforms"]);
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+  });
+
+  it("context namespaces behave identically to the global imports", () => {
+    // Destructured-from-context and global home produce the same fragment.
+    const viaContext = feature("via-context", ({ home: h }) => h.program("git"));
+    const viaGlobal = feature("via-global", () => home.program("git"));
+
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("a", nixos({ stateVersion: "25.05" }), [viaContext()]),
+        host("b", nixos({ stateVersion: "25.05" }), [viaGlobal()]),
+      ],
+    });
+    const [a, b] = evaluate(ws);
+    expect(a.homeManager).toEqual(b.homeManager);
+  });
+
+  it("context platforms.isActive reflects the evaluating host", () => {
+    // The local test platform is registered with id "linux" (see top of file),
+    // so platforms.darwin.isActive must be false while evaluating it.
+    const results: boolean[] = [];
+    const f = feature("plat-probe", ({ platforms }) => {
+      results.push(platforms.darwin.isActive);
+      return home.program("git");
+    });
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    evaluate(ws);
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((v) => v === false)).toBe(true);
+  });
+
+  it("host accepts a callback body with injected context (inline declarations)", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("inline", nixos({ stateVersion: "25.05" }), ({ home: h, nixos: n }) => [
+          h.packages("socat", "bubblewrap"),
+          n.imports("some-module"),
+        ]),
+      ],
+    });
+    const [result] = evaluate(ws);
+    expect((result.homeManager as any).home.packages).toEqual(["socat", "bubblewrap"]);
+    expect((result.nixos as any).imports).toContain("some-module");
+  });
+
+  it("host callback and array forms produce equivalent results", () => {
+    const arrayForm = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("x", nixos({ stateVersion: "25.05" }), [home.packages("jq")]),
+      ],
+    });
+    const callbackForm = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("x", nixos({ stateVersion: "25.05" }), ({ home: h }) => h.packages("jq")),
+      ],
+    });
+    const [a] = evaluate(arrayForm);
+    const [b] = evaluate(callbackForm);
+    expect(a.homeManager).toEqual(b.homeManager);
+  });
+});
+
+describe("Effect registration", () => {
+  it("registers declarations by effect with no return statement", () => {
+    const f = feature("effects", ({ home, nixos }) => {
+      home.program("git");
+      home.packages("jq", "ripgrep");
+      nixos.imports("some-module");
+      // no return
+    });
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    const [result] = evaluate(ws);
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+    expect((result.homeManager as any).home.packages).toEqual(["jq", "ripgrep"]);
+    expect((result.nixos as any).imports).toContain("some-module");
+  });
+
+  it("effect form and return form produce identical output", () => {
+    const viaEffect = feature("via-effect", ({ home }) => {
+      home.program("git");
+      home.packages("jq");
+    });
+    const viaReturn = feature("via-return", ({ home }) => [
+      home.program("git"),
+      home.packages("jq"),
+    ]);
+    const wsE = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [viaEffect()])],
+    });
+    const wsR = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [viaReturn()])],
+    });
+    const [e] = evaluate(wsE);
+    const [r] = evaluate(wsR);
+    expect(e.homeManager).toEqual(r.homeManager);
+  });
+
+  it("does not double-count a fragment that is both called and returned", () => {
+    // The body registers git by effect AND returns it. It must appear once.
+    const f = feature("mixed", ({ home }) => {
+      const g = home.program("git");
+      home.packages("jq");
+      return g; // already collected as an effect
+    });
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    const [result] = evaluate(ws);
+    // git enabled once, jq present: a duplicate would still merge to the same
+    // shape, so assert the package list too (arrays append+dedupe).
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+    expect((result.homeManager as any).home.packages).toEqual(["jq"]);
+  });
+
+  it("mixes effect declarations with an additional returned fragment", () => {
+    // Some declared by effect, one extra only returned (not called for effect).
+    const f = feature("mix2", ({ home }) => {
+      home.program("git");
+      // env is built but only returned, never registered via the context call
+      return { homeManager: { sessionVariables: { EDITOR: "nvim" } } } as any;
+    });
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    const [result] = evaluate(ws);
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+    expect((result.homeManager as any).sessionVariables.EDITOR).toBe("nvim");
+  });
+
+  it("global helper usage outside a body is unaffected (no collector)", () => {
+    // Using the global home in a plain array entry must not be collected by any
+    // ambient sink; it is just a fragment value.
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [home.program("git"), home.packages("jq")])],
+    });
+    const [result] = evaluate(ws);
+    expect((result.homeManager as any).programs.git.enable).toBe(true);
+    expect((result.homeManager as any).home.packages).toEqual(["jq"]);
+  });
+
+  it("host callback body supports effect declarations", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("inline", nixos({ stateVersion: "25.05" }), ({ home, nixos: n }) => {
+          home.packages("socat");
+          n.imports("mod-a");
+          // no return
+        }),
+      ],
+    });
+    const [result] = evaluate(ws);
+    expect((result.homeManager as any).home.packages).toEqual(["socat"]);
+    expect((result.nixos as any).imports).toContain("mod-a");
+  });
+
+  it("does not treat non-fragment helper returns (HomeFile) as collectible effects", () => {
+    // home.symlink(...) returns a HomeFile ({ source: NixExpr }) with no scope
+    // key. The collector must ignore it (only the configFiles fragment that
+    // consumes it carries it into homeManager). This pins the tightened
+    // looksLikeFragment heuristic: a bare HomeFile is not swept up, and the
+    // symlink reaches output only through xdg.configFile.
+    const f = feature("symlink-file", ({ home }) => {
+      const link = home.symlink("~/dotfiles/nvim");
+      home.program("git"); // a genuine effect, alongside the non-fragment value
+      return home.configFiles({ nvim: link });
+    });
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("h", nixos({ stateVersion: "25.05" }), [f()])],
+    });
+    const [result] = evaluate(ws);
+    const hm = result.homeManager as any;
+    // The symlink landed under xdg.configFile.nvim (via configFiles)...
+    expect(hm.xdg.configFile.nvim.source.__winixNixExpr).toBe(true);
+    expect(hm.programs.git.enable).toBe(true);
+    // ...and the bare HomeFile did not leak its `source` key anywhere else.
+    expect((result as any).source).toBeUndefined();
+    expect(hm.source).toBeUndefined();
+    // Output is exactly the two intended keys under homeManager, nothing extra.
+    expect(Object.keys(hm).sort()).toEqual(["programs", "xdg"]);
   });
 });

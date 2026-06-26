@@ -60,8 +60,8 @@ nix-darwin, WSL, and LXC machines without giving up Nix-level reproducibility.
 | **Workspace** | A Winix project rooted at a `winix.config.ts` file. |
 | **Host** | A concrete machine target (e.g. `wsl-work`, `macbook-pro`). |
 | **Platform** | The system base for a host (e.g. NixOS, nix-darwin). Exactly one per host. |
-| **Feature** | A reusable configuration concern (e.g. Git, shells, editors, WSL). N per host. |
-| **Profile** | A reusable bundle of fragments grouped for convenience (e.g. `developer`). |
+| **Feature** | A reusable configuration concern that **declares** config (e.g. Git, shells, editors, WSL). N per host. Has `.isActive`. |
+| **Profile** | An **array-only** bundle of entries that **groups** features for convenience (e.g. `developer`). Takes only an array, never a callback. |
 | **Fragment** | The core building block: a pure function returning a `Fragment` object. |
 | **Lazy fragment** | A `platform()` / `feature()` descriptor with `.isActive` and deferred resolution. |
 | **Account** | A user or group declaration (`account.user()`, `account.group()`). |
@@ -104,15 +104,29 @@ value. Users never think about Nix module paths directly; they describe intent.
 
 ### Three helpers, one mental model
 
-| Helper | Purpose | Count per host | Has `.isActive` |
-|---|---|---|---|
-| `platform(id, factory)` | System base (NixOS, darwin) | exactly 1 | yes |
-| `feature(id, factory)` | Anything else | 0..N | yes |
-| `host(name, platform, fragments[])` | Top-level target | — | no |
+The three structural helpers have distinct roles: a **feature declares**
+configuration, a **profile groups** features, and a **host** is the target.
 
-`platform()` and `feature()` return **lazy fragments**: descriptors that defer
-their factory until evaluation knows the host context. This is what makes
+| Helper | Role | Body shape | Count per host | Has `.isActive` |
+|---|---|---|---|---|
+| `feature(id, callback)` | **Declare** config (effects or return) | callback (injected context); declares by effect and/or returns fragments | 0..N | yes |
+| `profile(id, entries[])` | **Group** features | **array of entries only** (no callback) | 0..N | yes |
+| `host(name, platform, entries[])` or `host(name, platform, callback)` | Top-level **target** | entries array **or** callback (effects + return) | — | no |
+
+Platforms are constructed through the `platforms.*` namespace
+(`platforms.nixos({...})`, `platforms.darwin({...})`, `platforms.windows()`)
+and passed as a host's second argument. Like features, they expose `.isActive`
+(`platforms.nixos.isActive`).
+
+`platforms.*()` and `feature()` return **lazy fragments**: descriptors that
+defer their factory until evaluation knows the host context. This is what makes
 `feature.isActive` work regardless of fragment order in the host list.
+
+A `profile()` takes **only an array** of entries (instantiated
+features/profiles and bare fragments such as `overlay.stable(...)` or
+`nixos.boot({...})`). Passing a callback to `profile()` is a compile error and
+a runtime `TypeError`: profiles group features, they do not declare. Any logic
+or injected namespace belongs in a `feature()` that the profile lists.
 
 ## 4. Composition: dendritic graph
 
@@ -304,6 +318,88 @@ export function wsl(opts?: WslOpts): Fragment {
 }
 ```
 
+### Context injection and effects
+
+A `feature()` (and the callback form of `host()`) receives an injected context
+object. Destructure the declaration namespaces you need instead of importing
+them as globals:
+
+```ts
+import { feature } from "@adrifer/winix";
+
+export const git = feature("git", ({ home }) => {
+  home.program("git", { userName: "Tony Stark", userEmail: "tony@starkindustries.com" });
+});
+```
+
+The injected context exposes exactly these namespaces:
+`home`, `nixos`, `darwin`, `windows`, and `platforms` (for its query side,
+`platforms.darwin.isActive`). Three helpers are intentionally **not** injected
+and stay as file-level imports, because their usage is not "declare inside a
+body":
+
+- `nix` is a pure `NixExpr`-building utility (the `lib` of Winix); it never
+  returns a `Fragment`.
+- `account` is a top-level constructor (`const tony = account.user(...)`).
+- `overlay` is used as a direct value in profile arrays
+  (`profile("linux", [overlay.stable("nixpkgs-stable")])`).
+
+**Declare by effect vs. return.** A declaration made *through an injected
+namespace* registers the moment it is called — no `return` is needed:
+
+```ts
+feature("dev", ({ home, windows }) => {
+  home.program("git");        // effect: registered, no return
+  windows.package("Git.Git"); // effect: registered, no return
+});
+```
+
+There is one asymmetry to keep in mind:
+
+> Injected namespaces declare by effect (no return). Calling another
+> `feature()` or `profile()` factory returns a lazy fragment that is **not**
+> auto-collected and **must be returned** to compose it.
+
+```ts
+feature("workstation", ({ home }) => {
+  home.packages("ripgrep");     // effect: auto-registered
+  return [developer(), editors()]; // composed features: must be returned
+});
+```
+
+**Back-compat.** This is additive. The return forms all still work: return one
+fragment, return an array, or return after local logic. An effect-only callback
+that returns nothing type-checks (the authoring return type is
+`FragmentResult | void`). Globals also still work: a file that imports `home`
+from the package and never destructures the context behaves identically (a
+global `home.*` call is not auto-registered, so it must be returned, exactly as
+before).
+
+**`host()` keeps both forms.** A host can hold inline declarations (effects)
+*and* compose features (return):
+
+```ts
+host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), ({ nixos, home }) => {
+  nixos.sysctl({ "fs.inotify.max_user_watches": 1048576 }); // inline effect
+  home.packages("socat", "bubblewrap");                     // inline effect
+  return [developer(), wsl()];                              // composed features
+});
+```
+
+**`profile()` is array-only.** A profile groups features and takes only an
+array of entries; it does not accept a callback, cannot declare by effect, and
+receives no injected context:
+
+```ts
+// ✅ allowed
+profile("linux", [adrifer(), nixGc(), overlay.stable("nixpkgs-stable")]);
+
+// ❌ compile error + runtime TypeError: a profile takes an array, never a
+//    callback. Put the logic in a feature() and list it instead.
+const badBody = ({ home }) => { home.program("eza"); };
+profile("linux", badBody);
+```
+
 ### Type-safe `.isActive` checks
 
 Conditions use imported objects, never magic strings.
@@ -330,10 +426,17 @@ returns `Fragment | Fragment[]`**.
 // npm: winix-fragment-tailscale
 import { feature } from "@adrifer/winix";
 
-export const tailscale = feature("tailscale", (opts?: { exitNode?: boolean }) => ({
-  nixos: { services: { tailscale: { enable: true, ...opts } } },
-}));
+export const tailscale = feature(
+  "tailscale",
+  ({ nixos }, opts?: { exitNode?: boolean }) => {
+    nixos.service("tailscale", { ...opts });
+  }
+);
 ```
+
+The injected context is always the first callback parameter; the fragment's own
+arguments follow it. (Returning `Fragment | Fragment[]` from a global helper
+still works too; injected declarations just register by effect.)
 
 Used like any first-party fragment:
 
@@ -542,6 +645,63 @@ export function wsl(opts?: WslOpts): Fragment {
 `nix.expr()` marks a value as a Nix literal. The compiler emits it verbatim
 without quoting. Narrower helpers (`nix.pkg()`, `nix.str()`, `nix.script()`,
 `nix.lib.*`, `nix.binaryRelease()`) are preferred when they fit.
+
+### Resource handles and `dependsOn` (Windows backend)
+
+> **Scope:** This applies to the Windows backend only. `windows.package(...)`
+> and `windows.raw(...)` are the resource-producing helpers today.
+
+The Windows backend emits a DSC v3 configuration, which is a dependency graph:
+a resource has a name and other resources can reference it via `dependsOn`. To
+express ordering type-safely, `windows.package(...)` and `windows.raw(...)`
+return a **`ResourceHandle`** with identity. Capturing the handle is optional;
+capture it only when another resource must be applied after it.
+
+```ts
+const node = windows.package("OpenJS.NodeJS");
+windows.raw(
+  { executable: "npm", arguments: ["install", "--global", "typescript"], dependsOn: node }
+);
+```
+
+- `dependsOn` accepts a single handle or an array of handles
+  (`ResourceHandle | ResourceHandle[]`).
+- A handle from one host passed to another host's `dependsOn` is a **hard
+  error** at generation time; ordering is only expressible within one
+  configuration document.
+- The handle is opaque to user code; only the emitter reads it to resolve
+  dependency references to names.
+
+#### Emitted DSC v3
+
+The emitter assigns each resource a stable `name` and translates captured
+handles into `dependsOn` lookups. DSC v3 (schema 2023/08) restricts an instance
+`name` to `^[a-zA-Z0-9 ]+$` (letters, numbers, spaces), and `dependsOn` entries
+must be `[resourceId('<type>', '<name>')]`. Therefore:
+
+- **Packages:** `name` is the **sanitized** id (`Git.Git` → `Git Git`); the
+  real id is preserved in `properties.id`, which is what winget installs.
+- **Resources without a natural id** (`raw`): a sanitized explicit `name` when
+  given, else a generated `command N` per-host counter.
+- Collisions get a ` N` suffix so instance names stay unique.
+
+```yaml
+resources:
+  - type: Microsoft.WinGet/Package
+    name: OpenJS NodeJS
+    properties:
+      id: OpenJS.NodeJS
+  - type: Microsoft.DSC.Transitional/RunCommandOnSet
+    name: command 1
+    dependsOn:
+      - "[resourceId('Microsoft.WinGet/Package', 'OpenJS NodeJS')]"
+    properties: { /* ... */ }
+```
+
+The Windows backend is an MVP: only `windows.package(...)` and
+`windows.raw(...)` exist publicly today. See
+[`proposals/windows-backend.md`](./proposals/windows-backend.md) for the
+forward-looking design.
 
 ### Diagnostics
 

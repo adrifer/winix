@@ -33,6 +33,32 @@ export interface NixExpr {
   expr: string;
 }
 
+/**
+ * Identity of a single emittable resource, used to wire `dependsOn` across
+ * declarations within one host. Currently only the Windows backend produces
+ * resources with handles.
+ *
+ * - `package`: identified by its natural, stable package id.
+ * - `command`: has no natural id, so it carries a unique token; the emitter
+ *   assigns it a generated name (`command-N`) per host.
+ */
+export type ResourceRef =
+  | { kind: "package"; id: string }
+  | { kind: "command"; token: symbol };
+
+/**
+ * A resource handle: the value returned by resource-producing helpers like
+ * `windows.package(...)` / `windows.raw(...)`.
+ *
+ * It is a normal Fragment (so it still merges and registers as an effect),
+ * decorated with `__winixHandle` so it can be passed to another resource's
+ * `dependsOn` to express ordering. The handle is opaque to user code; only the
+ * emitter reads `__winixHandle` to resolve dependency references to names.
+ */
+export interface ResourceHandle extends Fragment {
+  __winixHandle: ResourceRef;
+}
+
 export type ImportRef = string | RawModuleRef;
 
 /**
@@ -45,6 +71,24 @@ export type FragmentEntry = LazyFragment | Fragment | readonly FragmentEntry[];
  * What a lazy fragment can resolve into.
  */
 export type FragmentResult = FragmentEntry;
+
+/**
+ * The return type allowed for *authoring callbacks* (`feature`/`profile`/`host`
+ * bodies). It is a `FragmentResult` OR nothing (`void`/`undefined`), because a
+ * callback may declare purely by effect through the injected namespaces and
+ * return nothing at all:
+ *
+ * ```ts
+ * feature("dev", ({ home }) => { home.program("git"); }); // returns void
+ * ```
+ *
+ * The runtime already treats a `undefined`/`null` return as "no returned
+ * content" and falls back to the collected effects (see
+ * `mergeEffectsAndReturn`); this type makes the public signatures match that
+ * behavior. `FragmentResult` itself stays strict for internal use where a
+ * concrete result is always present.
+ */
+export type AuthoringResult = FragmentResult | void;
 
 /**
  * A lazy fragment descriptor: holds the factory + args for deferred evaluation.

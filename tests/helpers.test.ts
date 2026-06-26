@@ -512,6 +512,20 @@ describe("curated helpers", () => {
     expect((evaluated.homeManager as any).programs.starship.enable).toBe(true);
   });
 
+  it("profile() rejects a callback at runtime with a helpful error", () => {
+    expect(() =>
+      // @ts-expect-error profile does not accept a callback
+      profile("bad", ((ctx: unknown) => ctx) as never)
+    ).toThrow(/only accepts an array of entries, not a callback/);
+  });
+
+  it("profile() rejects a non-array entries argument at runtime", () => {
+    expect(() =>
+      // @ts-expect-error profile expects an array
+      profile("bad", home.packages("ripgrep") as never)
+    ).toThrow(/expects an array of entries/);
+  });
+
   it("platforms.nixos() provides a typed default NixOS platform", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable", homeManager: "github:nix-community/home-manager" },
