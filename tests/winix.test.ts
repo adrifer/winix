@@ -544,9 +544,13 @@ describe("Context injection", () => {
     let seen: string[] = [];
     const f = feature("ctx-probe", (ctx) => {
       // Reset each call (the factory may run more than once during evaluation).
-      seen = ["home", "nix", "nixos", "darwin", "windows", "account", "overlay", "platforms"].filter(
+      seen = ["home", "nixos", "darwin", "windows", "platforms"].filter(
         (key) => key in ctx
       );
+      // nix/account/overlay are intentionally NOT injected (file-level globals).
+      for (const absent of ["nix", "account", "overlay"]) {
+        if (absent in ctx) seen.push(`UNEXPECTED:${absent}`);
+      }
       return ctx.home.program("git");
     });
 
@@ -556,7 +560,7 @@ describe("Context injection", () => {
     });
     const [result] = evaluate(ws);
 
-    expect(seen).toEqual(["home", "nix", "nixos", "darwin", "windows", "account", "overlay", "platforms"]);
+    expect(seen).toEqual(["home", "nixos", "darwin", "windows", "platforms"]);
     expect((result.homeManager as any).programs.git.enable).toBe(true);
   });
 

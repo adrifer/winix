@@ -86,12 +86,12 @@ the injected context.
 ### 1. Context injection
 
 `feature`, `profile`, and `host` accept a callback that receives the
-declaration namespaces destructured:
+*body declaration* namespaces destructured:
 
 ```ts
 import { feature } from "@adrifer/winix";
 
-export const git = feature("git", ({ home, nix }) => {
+export const git = feature("git", ({ home }) => {
   home.program("git", { /* ... */ });
 });
 ```
@@ -101,15 +101,32 @@ The injected context object exposes:
 ```ts
 interface WinixContext {
   home: HomeHelper;
-  nix: NixNamespace;
   nixos: NixosHelper;
   darwin: DarwinHelper;
   windows: WindowsHelper;
-  account: AccountNamespace;
-  overlay: OverlayHelper;
   platforms: PlatformsHelper; // query side: platforms.darwin.isActive, etc.
 }
 ```
+
+**Scope rule: the context holds only what you destructure inside a callback
+body to declare that unit's body.** That is the per-platform declaration
+namespaces plus `platforms` (for its query side, `platforms.darwin.isActive`).
+Three namespaces are deliberately **left out** of the context and stay as
+file-level imports, because their usage shape is not "declare inside a body":
+
+- **`nix`** is a pure `NixExpr`-building utility (the `lib` of Winix). Every
+  method returns a `NixExpr` or a helper value, never a `Fragment`, so it
+  declares nothing on its own. You import it where you build an expression
+  (`home.env("PATH", nix.concat(...))`), like `lib` in NixOS.
+- **`account`** is used top-level as a factory constructor
+  (`const adri = account.user("adri", () => ({...}))`), the same way you define
+  a `feature` at module scope, never inside another unit's body.
+- **`overlay`** is used as a direct value in profile arrays
+  (`profile("linux", [overlay.stable("nixpkgs-stable")])`), not destructured
+  from a callback.
+
+This keeps the context to "what declares the *body* of your unit" rather than
+"everything the library exports."
 
 `host` receives the same context in its body, because a host can hold inline
 declarations (not just features):
@@ -230,15 +247,18 @@ working unchanged under back-compat:
 |---|---|---|
 | Return one helper | `git`, `packages`, `fzf` | `({ home }) => { home.program(...) }` or keep the return |
 | Return array of N | `wsl` | `({ nixos }) => { nixos.imports(...); nixos({...}); ... }` |
-| Logic + `return` | `zsh` | same body, `({ home, nix, platforms })`, drop final return |
+| Logic + `return` | `zsh` | same body, `({ home, platforms })`, `nix` stays a file-level import; drop final return |
 | Conditional spread | `dotfiles` | identical; `platforms` from context |
-| `account.user(name, cb)` | `adrifer` | callback gains the context arg so it is genuinely context-aware |
+| `account.user(name, cb)` | `adrifer` | unchanged: `account` is a top-level constructor, its callback stays `() => ({...})` |
 | `profile([...])` with inline `nixos.*` | `lxcProfile` | array stays valid; callback form available for inline decls |
 | `workspace({ inputs, hosts })` | root config | unchanged (pure structure) |
 
-`account.user` already takes a `() => ({...})` callback documented as
-"context-aware"; this proposal feeds it the same context object so the promise
-is real instead of relying on the ambient global.
+`account.user` is a top-level factory constructor, not a body declaration, so
+it stays out of the injected context: you write `const adri = account.user("adri",
+() => ({...}))` at module scope, the same way you define a `feature`. Its inner
+callback keeps the documented `() => ({...})` shape and stays context-aware via
+the ambient `EvalContext` (which it already reads), so nothing about authoring
+an account changes.
 
 ## Migration strategy
 
