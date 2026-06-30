@@ -1,10 +1,14 @@
-# Proposal: `windows.file` — declarative files and dotfile symlinks
+# Proposal: `windows.file.*` — declarative files and dotfile symlinks
 
 > **Status:** `draft`
 > **Owner:** unassigned
 > **Depends on:** `windows-backend.md` (Phase 4 originally sketched a
 > content-only `windows.file()`; this proposal expands that scope to cover
 > symlinks and source files, the primitives a real dotfile workflow needs).
+
+This is the localized proposal for the Windows file helper. The broader
+Windows backend proposal should only describe that a file helper exists and
+link here for API shape, safety rules, phasing, and implementation details.
 
 ## Motivation
 
@@ -68,6 +72,16 @@ This is the entire reason `file` is not a trivial helper. Researched facts
    `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock` →
    `AllowDevelopmentWithoutDevLicense` = `1`.
 
+   Implementation caveat, validated on Windows 11 with DSC 3.2.2 / winget
+   1.29.20-preview (2026-06-29): the DSC
+   `Microsoft.DSC.Transitional/WindowsPowerShellScript` resource runs Windows
+   PowerShell 5.1, and `New-Item -ItemType SymbolicLink` still fails there
+   non-elevated even when Developer Mode is enabled. The emitted script should
+   use `cmd /c mklink` (file links) and `cmd /c mklink /D` (directory links),
+   which do honor Developer Mode in the DSC/winget execution path. Calling
+   nested `pwsh` also works, but `mklink` avoids adding a PowerShell 7
+   dependency.
+
 3. **Directory junctions need no privilege, but only work for directories on
    the same volume.** `mklink /J` / `New-Item -ItemType Junction` creates a
    junction with no elevation, but junctions are directory-only and do not
@@ -107,6 +121,18 @@ Therefore `file`, like `path`, is emitted via the built-in
 property (no PSDSC module install) and reuses the exact mechanism already
 validated for `path` on hardware.
 
+This is the **MVP backing**, not a claim that inline Windows PowerShell is the
+ideal long-term primitive. The modern platform direction is DSC v3 resources
+orchestrated by `winget configure`; if Microsoft adds a native file resource,
+or if Winix grows a small first-party DSC resource for files, this helper
+should switch to that. Until then, the transitional script resource is the only
+inbox DSC resource found that gives us declarative `get`/`test`/`set` without
+shipping another runtime component.
+
+For symlink mode, do not use PowerShell's `New-Item -ItemType SymbolicLink` in
+the generated `setScript`; use `mklink` through `cmd.exe` so Developer Mode
+works under the Windows PowerShell 5.1 host used by DSC.
+
 Two emission modes, picked by the helper from its arguments:
 
 - **content mode** (`text`): write the literal bytes to the target.
@@ -116,6 +142,21 @@ Two emission modes, picked by the helper from its arguments:
   the target is a link pointing at `source`.
 - (optional, later) **copy mode**: `source` copied rather than linked, for
   cases where a live link is undesirable.
+
+## Local scope
+
+This proposal owns only the typed helper surface for managing files on native
+Windows hosts:
+
+- `windows.file.text(...)`
+- `windows.file.symlink(...)`
+- `windows.file.copy(...)`
+- `windows.file.remove(...)`
+
+It does **not** design `windows.programs.*` helpers, generic DSC typing,
+Developer Mode management, WSL dotfiles, or cross-platform logical file
+abstractions. Those may compose this helper later, but they are outside this
+proposal.
 
 ## Proposed authoring API
 
@@ -152,6 +193,9 @@ interface WinFileOpts {
 Naming follows the intention-verb style settled for `env`/`path`
 (`env.set/remove`, `path.add/remove`): `file.text/symlink/copy/remove`. The
 verb says what happens; the underlying script resource stays hidden.
+
+The previous broad Windows-backend sketch used `windows.file(target, ...)` as
+a placeholder. That call shape is superseded by the verb-based namespace above.
 
 ### Example: reuse a Linux dotfile on Windows
 
@@ -266,3 +310,50 @@ Windows box. Tests to run when implementing:
 - `file.symlink` (dir): file vs directory symlink; `recursive` true/false.
 - Confirm the emitted YAML round-trips through a real YAML parser (inline
   PowerShell deserializes as multiline), as done for `path`.
+
+## Local probe results (2026-06-29)
+
+Run on this development machine:
+
+- Windows Package Manager: `v1.29.20-preview`
+- DSC: `3.2.2`
+- Shell: non-elevated
+- Developer Mode registry value:
+  `AllowDevelopmentWithoutDevLicense = 1`
+
+Findings:
+
+1. `Microsoft.DSC.Transitional/WindowsPowerShellScript` is present and supports
+   `get`, `set`, and `test`.
+2. No general native file/symlink DSC resource is present. Resource search only
+   found unrelated file-adjacent resources such as
+   `Microsoft.PowerShell/Profile`,
+   `Microsoft.PowerToys/FileLocksmithSettings`, and
+   `Microsoft.WinGet/UserSettingsFile`.
+3. `file.text` is viable through `winget configure`: a temp-file
+   `WindowsPowerShellScript` wrote UTF-8 without BOM, and a subsequent
+   `winget configure test` returned desired state.
+4. `New-Item -ItemType SymbolicLink` succeeds in PowerShell 7 but fails in
+   Windows PowerShell 5.1 with `Administrator privilege required for this
+   operation`; the same failure occurs under `winget configure` because the DSC
+   script resource hosts Windows PowerShell 5.1.
+5. `cmd /c mklink` succeeds non-elevated with Developer Mode enabled, both
+   directly and through `winget configure`, for file symlinks.
+6. `cmd /c mklink /D` succeeds non-elevated with Developer Mode enabled through
+   `winget configure`, for directory symlinks.
+
+Design adjustment from the probe: symlink scripts should be implemented with
+`mklink`, not `New-Item`, and tests should include the Windows PowerShell 5.1
+case so we do not regress to a command that only works in PowerShell 7.
+
+Modernity check:
+
+- Microsoft docs still position `winget configure` + DSC as the current
+  declarative Windows setup path.
+- DSC v3 docs emphasize that modern resources can be written in any language
+  and do not require PowerShell. That is the cleaner long-term implementation
+  model for a Winix-owned file resource.
+- The installed legacy adapter resources (`Microsoft.DSC/PowerShell` and
+  `Microsoft.Windows/WindowsPowerShell`) are marked deprecated in favor of
+  `Microsoft.Adapters/*`, but those newer adapter names are not present on this
+  machine. The transitional script resource itself is not marked deprecated.

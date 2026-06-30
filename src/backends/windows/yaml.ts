@@ -91,6 +91,14 @@ export function yamlEntry(key: string, value: YamlValue, depth: number): string[
     return out;
   }
 
+  if (typeof value === "string" && value.includes("\n")) {
+    const childPad = INDENT.repeat(depth + 1);
+    return [
+      `${pad}${k}: |-`,
+      ...value.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").map((line) => `${childPad}${line}`),
+    ];
+  }
+
   return [`${pad}${k}: ${yamlScalar(value)}`];
 }
 

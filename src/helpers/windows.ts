@@ -7,6 +7,7 @@
 import type { Fragment, ResourceHandle, ResourceRef } from "../core/types.ts";
 import type {
   WinDscProperties,
+  WinDscMetadata,
   WinDscResource,
   WinPackage,
   WinPackageSource,
@@ -67,6 +68,18 @@ export type WinEnvScope = "user" | "machine";
 /** Options shared by `windows.env.*` and `windows.path.*` methods. */
 export interface WinEnvOpts {
   scope?: WinEnvScope;
+  dependsOn?: ResourceHandle | ResourceHandle[];
+}
+
+export type WinFileEncoding = "utf8" | "utf8bom" | "ascii";
+
+/** Options shared by `windows.file.*` methods. */
+export interface WinFileOpts {
+  force?: boolean;
+  backup?: boolean;
+  recursive?: boolean;
+  elevate?: boolean;
+  encoding?: WinFileEncoding;
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -196,6 +209,19 @@ function withDscToken(resource: WinDscResource): WinDscResource {
   return resource;
 }
 
+/** Stamp internal typed-helper metadata without affecting public equality/YAML. */
+function withDscMetadata(
+  resource: WinDscResource,
+  metadata: WinDscMetadata
+): WinDscResource {
+  Object.defineProperty(resource, "winix", {
+    value: metadata,
+    enumerable: false,
+    configurable: true,
+  });
+  return resource;
+}
+
 const REGISTRY_RESOURCE = "Microsoft.Windows/Registry";
 const WINDOWS_POWERSHELL_SCRIPT_RESOURCE =
   "Microsoft.DSC.Transitional/WindowsPowerShellScript";
@@ -270,6 +296,7 @@ function registryDsc(opts: {
   valueName: string;
   value?: string;
   exists: boolean;
+  scope: WinEnvScope;
   dependsOn?: ResourceRef[];
 }): WinDscResource {
   const properties: WinDscProperties = {
@@ -286,7 +313,13 @@ function registryDsc(opts: {
     properties,
   };
   if (opts.dependsOn) resource.dependsOn = opts.dependsOn;
-  return withDscToken(resource);
+  return withDscMetadata(withDscToken(resource), {
+    kind: "env",
+    action: opts.exists ? "set" : "remove",
+    name: opts.valueName,
+    value: opts.value,
+    scope: opts.scope,
+  });
 }
 
 function normalizeEnv(
@@ -309,6 +342,7 @@ function normalizeEnv(
     valueName: name,
     value,
     exists: ensure === "Present",
+    scope,
     dependsOn: resolveDependsOn(normalizedOpts?.dependsOn),
   });
 }
@@ -336,7 +370,141 @@ function normalizePath(
   };
   const deps = resolveDependsOn(normalizedOpts?.dependsOn);
   if (deps) resource.dependsOn = deps;
+  return withDscMetadata(withDscToken(resource), {
+    kind: "path",
+    action: ensure === "Present" ? "add" : "remove",
+    value,
+    scope,
+  });
+}
+
+function normalizeFileOpts(opts: WinFileOpts | undefined, helper: string): WinFileOpts {
+  if (opts === undefined) return {};
+  if (opts === null || typeof opts !== "object" || Array.isArray(opts)) {
+    throw new Error(`${helper} options must be an object when provided`);
+  }
+  for (const key of ["force", "backup", "recursive", "elevate"] as const) {
+    if (opts[key] !== undefined && typeof opts[key] !== "boolean") {
+      throw new Error(`${helper} option "${key}" must be a boolean`);
+    }
+  }
+  if (
+    opts.encoding !== undefined &&
+    opts.encoding !== "utf8" &&
+    opts.encoding !== "utf8bom" &&
+    opts.encoding !== "ascii"
+  ) {
+    throw new Error(
+      `${helper} encoding "${opts.encoding}" is invalid; expected "utf8", "utf8bom", or "ascii"`
+    );
+  }
+  return opts;
+}
+
+function fileDsc(
+  name: string,
+  properties: WinDscProperties,
+  opts: WinFileOpts
+): WinDscResource {
+  const resource: WinDscResource = {
+    resourceType: WINDOWS_POWERSHELL_SCRIPT_RESOURCE,
+    name,
+    properties,
+  };
+  const deps = resolveDependsOn(opts.dependsOn);
+  if (deps) resource.dependsOn = deps;
+  if (opts.elevate) resource.elevated = true;
   return withDscToken(resource);
+}
+
+function normalizeFileText(
+  target: string,
+  content: string,
+  opts: WinFileOpts | undefined
+): WinDscResource {
+  const normalizedOpts = normalizeFileOpts(opts, "windows.file.text");
+  if (!target || typeof target !== "string") {
+    throw new Error("windows.file.text(target) requires a non-empty target path");
+  }
+  if (typeof content !== "string") {
+    throw new Error("windows.file.text(target, content) requires string content");
+  }
+  const encoding = normalizedOpts.encoding ?? "utf8";
+  return fileDsc(
+    `Write file ${target}`,
+    buildFileTextScriptProperties({
+      target,
+      content,
+      encoding,
+      force: normalizedOpts.force ?? false,
+      backup: normalizedOpts.backup ?? false,
+    }),
+    normalizedOpts
+  );
+}
+
+function normalizeFileSymlink(
+  target: string,
+  source: string,
+  opts: WinFileOpts | undefined
+): WinDscResource {
+  const normalizedOpts = normalizeFileOpts(opts, "windows.file.symlink");
+  if (!target || typeof target !== "string") {
+    throw new Error("windows.file.symlink(target) requires a non-empty target path");
+  }
+  if (!source || typeof source !== "string") {
+    throw new Error("windows.file.symlink(target, source) requires a non-empty source path");
+  }
+  return fileDsc(
+    `Link file ${target}`,
+    buildFileSymlinkScriptProperties({
+      target,
+      source,
+      recursive: normalizedOpts.recursive ?? false,
+      force: normalizedOpts.force ?? false,
+      backup: normalizedOpts.backup ?? false,
+    }),
+    normalizedOpts
+  );
+}
+
+function normalizeFileCopy(
+  target: string,
+  source: string,
+  opts: WinFileOpts | undefined
+): WinDscResource {
+  const normalizedOpts = normalizeFileOpts(opts, "windows.file.copy");
+  if (!target || typeof target !== "string") {
+    throw new Error("windows.file.copy(target) requires a non-empty target path");
+  }
+  if (!source || typeof source !== "string") {
+    throw new Error("windows.file.copy(target, source) requires a non-empty source path");
+  }
+  return fileDsc(
+    `Copy file ${target}`,
+    buildFileCopyScriptProperties({
+      target,
+      source,
+      force: normalizedOpts.force ?? false,
+      backup: normalizedOpts.backup ?? false,
+    }),
+    normalizedOpts
+  );
+}
+
+function normalizeFileRemove(
+  target: string,
+  opts: WinFileOpts | undefined
+): WinDscResource {
+  const normalizedOpts = normalizeFileOpts(opts, "windows.file.remove");
+  if (!target || typeof target !== "string") {
+    throw new Error("windows.file.remove(target) requires a non-empty target path");
+  }
+  return fileDsc(
+    `Remove file ${target}`,
+    buildFileRemoveScriptProperties({ target }),
+    normalizedOpts
+  );
 }
 
 function buildPathScriptProperties(opts: {
@@ -397,6 +565,306 @@ function buildPathScriptProperties(opts: {
   };
 }
 
+function buildFileTextScriptProperties(opts: {
+  target: string;
+  content: string;
+  encoding: WinFileEncoding;
+  force: boolean;
+  backup: boolean;
+}): WinDscProperties {
+  const vars = [
+    `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+    `$content = ${psSingleQuoted(opts.content)}`,
+    `$encoding = ${psSingleQuoted(opts.encoding)}`,
+    `$force = ${psBoolean(opts.force)}`,
+    `$backup = ${psBoolean(opts.backup)}`,
+  ];
+  return {
+    getScript: [
+      ...filePathPrelude(),
+      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      "if (Test-Path -LiteralPath $target -PathType Leaf) { [IO.File]::ReadAllText($target) } else { '' }",
+    ].join("\n"),
+    testScript: [
+      ...fileTextPrelude(),
+      ...vars,
+      "$desired = Get-WinixTextBytes $content $encoding",
+      "if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { return $false }",
+      "$actual = [IO.File]::ReadAllBytes($target)",
+      "Test-WinixBytesEqual $actual $desired",
+    ].join("\n"),
+    setScript: [
+      ...fileTextPrelude(),
+      ...vars,
+      "$desired = Get-WinixTextBytes $content $encoding",
+      "if (Test-Path -LiteralPath $target -PathType Leaf) {",
+      "  $actual = [IO.File]::ReadAllBytes($target)",
+      "  if (Test-WinixBytesEqual $actual $desired) { return }",
+      "}",
+      "Move-WinixExistingTarget $target $force $backup",
+      "Ensure-WinixParentDirectory $target",
+      "[IO.File]::WriteAllBytes($target, $desired)",
+    ].join("\n"),
+  };
+}
+
+function buildFileSymlinkScriptProperties(opts: {
+  target: string;
+  source: string;
+  recursive: boolean;
+  force: boolean;
+  backup: boolean;
+}): WinDscProperties {
+  const vars = fileScriptVars({
+    target: opts.target,
+    source: opts.source,
+    recursive: opts.recursive,
+    force: opts.force,
+    backup: opts.backup,
+  });
+  return {
+    getScript: [
+      ...fileSymlinkPrelude(),
+      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      "if (Test-Path -LiteralPath $target) { (Get-Item -LiteralPath $target -Force).LinkType } else { '' }",
+    ].join("\n"),
+    testScript: [
+      ...fileSymlinkPrelude(),
+      ...vars,
+      "if ($recursive) { Test-WinixRecursiveSymlink $source $target } else { Test-WinixSymlink $source $target }",
+    ].join("\n"),
+    setScript: [
+      ...fileSymlinkPrelude(),
+      ...vars,
+      "Assert-WinixCanCreateSymlink",
+      "if (-not (Test-Path -LiteralPath $source)) { throw \"Source path does not exist: $source\" }",
+      "if ($recursive) {",
+      "  Set-WinixRecursiveSymlink $source $target $force $backup",
+      "} else {",
+      "  Set-WinixSymlink $source $target $force $backup",
+      "}",
+    ].join("\n"),
+  };
+}
+
+function buildFileCopyScriptProperties(opts: {
+  target: string;
+  source: string;
+  force: boolean;
+  backup: boolean;
+}): WinDscProperties {
+  const vars = fileScriptVars({
+    target: opts.target,
+    source: opts.source,
+    force: opts.force,
+    backup: opts.backup,
+  });
+  return {
+    getScript: [
+      ...filePathPrelude(),
+      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      "if (Test-Path -LiteralPath $target) { $target } else { '' }",
+    ].join("\n"),
+    testScript: [
+      ...fileCopyPrelude(),
+      ...vars,
+      "Test-WinixCopy $source $target",
+    ].join("\n"),
+    setScript: [
+      ...fileCopyPrelude(),
+      ...vars,
+      "if (-not (Test-Path -LiteralPath $source)) { throw \"Source path does not exist: $source\" }",
+      "if (Test-WinixCopy $source $target) { return }",
+      "Move-WinixExistingTarget $target $force $backup",
+      "Ensure-WinixParentDirectory $target",
+      "if (Test-Path -LiteralPath $source -PathType Container) {",
+      "  New-Item -ItemType Directory -Force -Path $target | Out-Null",
+      "  Copy-Item -Path (Join-Path $source '*') -Destination $target -Recurse -Force",
+      "} else {",
+      "  Copy-Item -LiteralPath $source -Destination $target -Force",
+      "}",
+    ].join("\n"),
+  };
+}
+
+function buildFileRemoveScriptProperties(opts: { target: string }): WinDscProperties {
+  return {
+    getScript: [
+      ...filePathPrelude(),
+      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      "if (Test-Path -LiteralPath $target) { $target } else { '' }",
+    ].join("\n"),
+    testScript: [
+      ...filePathPrelude(),
+      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      "-not (Test-Path -LiteralPath $target)",
+    ].join("\n"),
+    setScript: [
+      ...filePathPrelude(),
+      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      "if (-not (Test-Path -LiteralPath $target)) { return }",
+      "$item = Get-Item -LiteralPath $target -Force",
+      "if ($item.PSIsContainer -and $null -eq $item.LinkType) {",
+      "  throw \"Refusing to remove real directory: $target\"",
+      "}",
+      "Remove-Item -LiteralPath $target -Force",
+    ].join("\n"),
+  };
+}
+
+function fileScriptVars(values: Record<string, string | boolean>): string[] {
+  return Object.entries(values).map(([name, value]) =>
+    typeof value === "boolean"
+      ? `$${name} = ${psBoolean(value)}`
+      : `$${name} = Expand-WinixPath ${psSingleQuoted(value)}`
+  );
+}
+
+function filePathPrelude(): string[] {
+  return [
+    "function Expand-WinixPath([string]$Path) { [Environment]::ExpandEnvironmentVariables($Path) }",
+  ];
+}
+
+function fileTextPrelude(): string[] {
+  return [
+    ...filePathPrelude(),
+    "function Ensure-WinixParentDirectory([string]$Path) {",
+    "  $parent = Split-Path -Parent $Path",
+    "  if (-not [string]::IsNullOrEmpty($parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }",
+    "}",
+    "function Test-WinixBytesEqual([byte[]]$Actual, [byte[]]$Desired) {",
+    "  if ($Actual.Length -ne $Desired.Length) { return $false }",
+    "  for ($i = 0; $i -lt $Actual.Length; $i++) { if ($Actual[$i] -ne $Desired[$i]) { return $false } }",
+    "  return $true",
+    "}",
+    "function Get-WinixTextBytes([string]$Content, [string]$EncodingName) {",
+    "  if ($EncodingName -eq 'ascii') { return [byte[]][Text.Encoding]::ASCII.GetBytes($Content) }",
+    "  $encoder = [Text.UTF8Encoding]::new($EncodingName -eq 'utf8bom')",
+    "  return [byte[]]($encoder.GetPreamble() + $encoder.GetBytes($Content))",
+    "}",
+    ...fileMoveTargetPrelude(),
+  ];
+}
+
+function fileMoveTargetPrelude(): string[] {
+  return [
+    "function Move-WinixExistingTarget([string]$Path, [bool]$Force, [bool]$Backup) {",
+    "  if (-not (Test-Path -LiteralPath $Path)) { return }",
+    "  if ($Backup) {",
+    "    $backupPath = \"$Path.bak\"",
+    "    if (Test-Path -LiteralPath $backupPath) { throw \"Backup target already exists: $backupPath\" }",
+    "    Move-Item -LiteralPath $Path -Destination $backupPath",
+    "    return",
+    "  }",
+    "  if (-not $Force) { throw \"Target already exists and differs: $Path. Pass force: true or backup: true.\" }",
+    "  $item = Get-Item -LiteralPath $Path -Force",
+    "  if ($item.PSIsContainer -and $null -eq $item.LinkType) {",
+    "    $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)",
+    "    if ($children.Count -gt 0) { throw \"Refusing to delete populated directory: $Path. Move it manually or use backup: true.\" }",
+    "  }",
+    "  Remove-Item -LiteralPath $Path -Force -Recurse",
+    "}",
+  ];
+}
+
+function fileSymlinkPrelude(): string[] {
+  return [
+    ...filePathPrelude(),
+    "function Ensure-WinixParentDirectory([string]$Path) {",
+    "  $parent = Split-Path -Parent $Path",
+    "  if (-not [string]::IsNullOrEmpty($parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }",
+    "}",
+    ...fileMoveTargetPrelude(),
+    "function Test-WinixSymlink([string]$Source, [string]$Target) {",
+    "  if (-not (Test-Path -LiteralPath $Target)) { return $false }",
+    "  $item = Get-Item -LiteralPath $Target -Force",
+    "  ($item.LinkType -eq 'SymbolicLink') -and [string]::Equals([string]$item.Target, $Source, [StringComparison]::OrdinalIgnoreCase)",
+    "}",
+    "function Invoke-WinixMklink([string]$Source, [string]$Target) {",
+    "  Ensure-WinixParentDirectory $Target",
+    "  $isDirectory = Test-Path -LiteralPath $Source -PathType Container",
+    "  $flag = if ($isDirectory) { '/D ' } else { '' }",
+    "  & $env:ComSpec /c \"mklink $flag`\"$Target`\" `\"$Source`\"\"",
+    "  if ($LASTEXITCODE -ne 0) { throw \"mklink failed with exit code $LASTEXITCODE\" }",
+    "}",
+    "function Set-WinixSymlink([string]$Source, [string]$Target, [bool]$Force, [bool]$Backup) {",
+    "  if (Test-WinixSymlink $Source $Target) { return }",
+    "  Move-WinixExistingTarget $Target $Force $Backup",
+    "  Invoke-WinixMklink $Source $Target",
+    "}",
+    "function Get-WinixRelativePath([string]$Root, [string]$Path) {",
+    "  $prefix = $Root.TrimEnd('\\') + '\\'",
+    "  $Path.Substring($prefix.Length)",
+    "}",
+    "function Test-WinixRecursiveSymlink([string]$Source, [string]$Target) {",
+    "  if (-not (Test-Path -LiteralPath $Source -PathType Container)) { return $false }",
+    "  if (-not (Test-Path -LiteralPath $Target -PathType Container)) { return $false }",
+    "  $root = (Resolve-Path -LiteralPath $Source).ProviderPath",
+    "  foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {",
+    "    $relative = Get-WinixRelativePath $root $dir.FullName",
+    "    if (-not (Test-Path -LiteralPath (Join-Path $Target $relative) -PathType Container)) { return $false }",
+    "  }",
+    "  foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {",
+    "    $relative = Get-WinixRelativePath $root $file.FullName",
+    "    if (-not (Test-WinixSymlink $file.FullName (Join-Path $Target $relative))) { return $false }",
+    "  }",
+    "  return $true",
+    "}",
+    "function Set-WinixRecursiveSymlink([string]$Source, [string]$Target, [bool]$Force, [bool]$Backup) {",
+    "  if (-not (Test-Path -LiteralPath $Source -PathType Container)) { throw \"Recursive symlink source must be a directory: $Source\" }",
+    "  if (Test-WinixRecursiveSymlink $Source $Target) { return }",
+    "  New-Item -ItemType Directory -Force -Path $Target | Out-Null",
+    "  $root = (Resolve-Path -LiteralPath $Source).ProviderPath",
+    "  foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {",
+    "    New-Item -ItemType Directory -Force -Path (Join-Path $Target (Get-WinixRelativePath $root $dir.FullName)) | Out-Null",
+    "  }",
+    "  foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {",
+    "    Set-WinixSymlink $file.FullName (Join-Path $Target (Get-WinixRelativePath $root $file.FullName)) $Force $Backup",
+    "  }",
+    "}",
+    "function Assert-WinixCanCreateSymlink {",
+    "  $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()",
+    "  if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { return }",
+    "  $devMode = Get-ItemPropertyValue -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock' -Name AllowDevelopmentWithoutDevLicense -ErrorAction SilentlyContinue",
+    "  if ($devMode -eq 1) { return }",
+    "  throw 'Creating Windows symlinks requires elevation or Developer Mode. Enable Developer Mode in Windows Settings, or pass elevate: true.'",
+    "}",
+  ];
+}
+
+function fileCopyPrelude(): string[] {
+  return [
+    ...fileTextPrelude(),
+    "function Get-WinixRelativePath([string]$Root, [string]$Path) {",
+    "  $prefix = $Root.TrimEnd('\\') + '\\'",
+    "  $Path.Substring($prefix.Length)",
+    "}",
+    "function Test-WinixCopy([string]$Source, [string]$Target) {",
+    "  if (-not (Test-Path -LiteralPath $Source) -or -not (Test-Path -LiteralPath $Target)) { return $false }",
+    "  if (Test-Path -LiteralPath $Source -PathType Leaf) {",
+    "    if (-not (Test-Path -LiteralPath $Target -PathType Leaf)) { return $false }",
+    "    return Test-WinixBytesEqual ([IO.File]::ReadAllBytes($Target)) ([IO.File]::ReadAllBytes($Source))",
+    "  }",
+    "  if (-not (Test-Path -LiteralPath $Target -PathType Container)) { return $false }",
+    "  $root = (Resolve-Path -LiteralPath $Source).ProviderPath",
+    "  foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {",
+    "    if (-not (Test-Path -LiteralPath (Join-Path $Target (Get-WinixRelativePath $root $dir.FullName)) -PathType Container)) { return $false }",
+    "  }",
+    "  foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {",
+    "    $targetFile = Join-Path $Target (Get-WinixRelativePath $root $file.FullName)",
+    "    if (-not (Test-Path -LiteralPath $targetFile -PathType Leaf)) { return $false }",
+    "    if (-not (Test-WinixBytesEqual ([IO.File]::ReadAllBytes($targetFile)) ([IO.File]::ReadAllBytes($file.FullName)))) { return $false }",
+    "  }",
+    "  return $true",
+    "}",
+  ];
+}
+
+function psBoolean(value: boolean): string {
+  return value ? "$true" : "$false";
+}
+
 function psSingleQuoted(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
@@ -409,6 +877,13 @@ export interface WinEnvNamespace {
 export interface WinPathNamespace {
   add(value: string, opts?: WinEnvOpts): ResourceHandle;
   remove(value: string, opts?: WinEnvOpts): ResourceHandle;
+}
+
+export interface WinFileNamespace {
+  text(target: string, content: string, opts?: WinFileOpts): ResourceHandle;
+  symlink(target: string, source: string, opts?: WinFileOpts): ResourceHandle;
+  copy(target: string, source: string, opts?: WinFileOpts): ResourceHandle;
+  remove(target: string, opts?: WinFileOpts): ResourceHandle;
 }
 
 export interface WindowsHelper {
@@ -475,6 +950,19 @@ export interface WindowsHelper {
    * ```
    */
   path: WinPathNamespace;
+
+  /**
+   * Manage files, copies, and dotfile symlinks declaratively via an idempotent
+   * `Microsoft.DSC.Transitional/WindowsPowerShellScript` resource.
+   *
+   * ```ts
+   * windows.file.text("%USERPROFILE%\\.gitconfig", "[user]\n");
+   * windows.file.symlink("%LOCALAPPDATA%\\nvim", "%USERPROFILE%\\dotfiles\\nvim");
+   * windows.file.copy("%APPDATA%\\tool\\config.json", ".\\config.json");
+   * windows.file.remove("%USERPROFILE%\\.oldrc");
+   * ```
+   */
+  file: WinFileNamespace;
 }
 
 /**
@@ -523,5 +1011,15 @@ export const windows: WindowsHelper = {
       dscHandle(normalizePath(value, "Present", opts)),
     remove: (value: string, opts?: WinEnvOpts): ResourceHandle =>
       dscHandle(normalizePath(value, "Absent", opts)),
+  },
+  file: {
+    text: (target: string, content: string, opts?: WinFileOpts): ResourceHandle =>
+      dscHandle(normalizeFileText(target, content, opts)),
+    symlink: (target: string, source: string, opts?: WinFileOpts): ResourceHandle =>
+      dscHandle(normalizeFileSymlink(target, source, opts)),
+    copy: (target: string, source: string, opts?: WinFileOpts): ResourceHandle =>
+      dscHandle(normalizeFileCopy(target, source, opts)),
+    remove: (target: string, opts?: WinFileOpts): ResourceHandle =>
+      dscHandle(normalizeFileRemove(target, opts)),
   },
 };

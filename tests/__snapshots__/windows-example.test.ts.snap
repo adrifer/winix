@@ -40,12 +40,6 @@ resources:
       _exist: true
       valueData:
         String: nvim
-  - name: "Add USERPROFILE local bin to PATH"
-    type: Microsoft.DSC.Transitional/WindowsPowerShellScript
-    properties:
-      getScript: "$registryPath = 'HKCU:\\\\Environment'\\nGet-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue"
-      testScript: "$dir = '%USERPROFILE%\\\\.local\\\\bin'\\n$registryPath = 'HKCU:\\\\Environment'\\n$current = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue\\n$entries = if ([string]::IsNullOrEmpty($current)) { @() } else { $current -split ';' }\\n$entries -contains $dir"
-      setScript: "$dir = '%USERPROFILE%\\\\.local\\\\bin'\\n$registryPath = 'HKCU:\\\\Environment'\\n$target = 'User'\\n$key = Get-Item -Path $registryPath\\n$originalKind = $null\\ntry { $originalKind = $key.GetValueKind('Path') } catch { $originalKind = $null }\\n$current = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue\\n$entries = if ([string]::IsNullOrEmpty($current)) { @() } else { $current -split ';' }\\nif ($entries -notcontains $dir) {\\n  $new = if ([string]::IsNullOrEmpty($current)) { $dir } else { \\"$current;$dir\\" }\\n  [Environment]::SetEnvironmentVariable('Path', $new, $target)\\n}\\n$afterKey = Get-Item -Path $registryPath\\n$afterValue = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue\\nif ($originalKind -eq [Microsoft.Win32.RegistryValueKind]::ExpandString -and $afterKey.GetValueKind('Path') -ne [Microsoft.Win32.RegistryValueKind]::ExpandString) {\\n  Set-ItemProperty -Path $registryPath -Name 'Path' -Value $afterValue -Type ExpandString\\n}"
   - name: "Set CARGO HOME"
     type: Microsoft.Windows/Registry
     properties:
@@ -56,11 +50,130 @@ resources:
         String: "%USERPROFILE%\\\\.cargo"
   - name: "Add CARGO HOME bin to PATH"
     type: Microsoft.DSC.Transitional/WindowsPowerShellScript
-    dependsOn: ["[resourceId('Microsoft.Windows/Registry', 'Set CARGO HOME')]"]
+    dependsOn: ["Set CARGO HOME"]
     properties:
-      getScript: "$registryPath = 'HKCU:\\\\Environment'\\nGet-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue"
-      testScript: "$dir = '%CARGO_HOME%\\\\bin'\\n$registryPath = 'HKCU:\\\\Environment'\\n$current = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue\\n$entries = if ([string]::IsNullOrEmpty($current)) { @() } else { $current -split ';' }\\n$entries -contains $dir"
-      setScript: "$dir = '%CARGO_HOME%\\\\bin'\\n$registryPath = 'HKCU:\\\\Environment'\\n$target = 'User'\\n$key = Get-Item -Path $registryPath\\n$originalKind = $null\\ntry { $originalKind = $key.GetValueKind('Path') } catch { $originalKind = $null }\\n$current = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue\\n$entries = if ([string]::IsNullOrEmpty($current)) { @() } else { $current -split ';' }\\nif ($entries -notcontains $dir) {\\n  $new = if ([string]::IsNullOrEmpty($current)) { $dir } else { \\"$current;$dir\\" }\\n  [Environment]::SetEnvironmentVariable('Path', $new, $target)\\n}\\n$afterKey = Get-Item -Path $registryPath\\n$afterValue = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue\\nif ($originalKind -eq [Microsoft.Win32.RegistryValueKind]::ExpandString -and $afterKey.GetValueKind('Path') -ne [Microsoft.Win32.RegistryValueKind]::ExpandString) {\\n  Set-ItemProperty -Path $registryPath -Name 'Path' -Value $afterValue -Type ExpandString\\n}"
+      getScript: |-
+        $registryPath = 'HKCU:\\Environment'
+        Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue
+      testScript: |-
+        $dir = '%USERPROFILE%\\.cargo\\bin'
+        $registryPath = 'HKCU:\\Environment'
+        $current = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue
+        $entries = if ([string]::IsNullOrEmpty($current)) { @() } else { $current -split ';' }
+        $entries -contains $dir
+      setScript: |-
+        $dir = '%USERPROFILE%\\.cargo\\bin'
+        $registryPath = 'HKCU:\\Environment'
+        $target = 'User'
+        $key = Get-Item -Path $registryPath
+        $originalKind = $null
+        try { $originalKind = $key.GetValueKind('Path') } catch { $originalKind = $null }
+        $current = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue
+        $entries = if ([string]::IsNullOrEmpty($current)) { @() } else { $current -split ';' }
+        if ($entries -notcontains $dir) {
+          $new = if ([string]::IsNullOrEmpty($current)) { $dir } else { "$current;$dir" }
+          [Environment]::SetEnvironmentVariable('Path', $new, $target)
+        }
+        $afterKey = Get-Item -Path $registryPath
+        $afterValue = Get-ItemPropertyValue -Path $registryPath -Name 'Path' -ErrorAction SilentlyContinue
+        if ($originalKind -eq [Microsoft.Win32.RegistryValueKind]::ExpandString -and $afterKey.GetValueKind('Path') -ne [Microsoft.Win32.RegistryValueKind]::ExpandString) {
+          Set-ItemProperty -Path $registryPath -Name 'Path' -Value $afterValue -Type ExpandString
+        }
+  - name: "Write file USERPROFILE config winix example hello txt"
+    type: Microsoft.DSC.Transitional/WindowsPowerShellScript
+    properties:
+      getScript: |-
+        function Expand-WinixPath([string]$Path) { [Environment]::ExpandEnvironmentVariables($Path) }
+        $target = Expand-WinixPath '%USERPROFILE%\\.config\\winix-example\\hello.txt'
+        if (Test-Path -LiteralPath $target -PathType Leaf) { [IO.File]::ReadAllText($target) } else { '' }
+      testScript: |-
+        function Expand-WinixPath([string]$Path) { [Environment]::ExpandEnvironmentVariables($Path) }
+        function Ensure-WinixParentDirectory([string]$Path) {
+          $parent = Split-Path -Parent $Path
+          if (-not [string]::IsNullOrEmpty($parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
+        }
+        function Test-WinixBytesEqual([byte[]]$Actual, [byte[]]$Desired) {
+          if ($Actual.Length -ne $Desired.Length) { return $false }
+          for ($i = 0; $i -lt $Actual.Length; $i++) { if ($Actual[$i] -ne $Desired[$i]) { return $false } }
+          return $true
+        }
+        function Get-WinixTextBytes([string]$Content, [string]$EncodingName) {
+          if ($EncodingName -eq 'ascii') { return [byte[]][Text.Encoding]::ASCII.GetBytes($Content) }
+          $encoder = [Text.UTF8Encoding]::new($EncodingName -eq 'utf8bom')
+          return [byte[]]($encoder.GetPreamble() + $encoder.GetBytes($Content))
+        }
+        function Move-WinixExistingTarget([string]$Path, [bool]$Force, [bool]$Backup) {
+          if (-not (Test-Path -LiteralPath $Path)) { return }
+          if ($Backup) {
+            $backupPath = "$Path.bak"
+            if (Test-Path -LiteralPath $backupPath) { throw "Backup target already exists: $backupPath" }
+            Move-Item -LiteralPath $Path -Destination $backupPath
+            return
+          }
+          if (-not $Force) { throw "Target already exists and differs: $Path. Pass force: true or backup: true." }
+          $item = Get-Item -LiteralPath $Path -Force
+          if ($item.PSIsContainer -and $null -eq $item.LinkType) {
+            $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
+            if ($children.Count -gt 0) { throw "Refusing to delete populated directory: $Path. Move it manually or use backup: true." }
+          }
+          Remove-Item -LiteralPath $Path -Force -Recurse
+        }
+        $target = Expand-WinixPath '%USERPROFILE%\\.config\\winix-example\\hello.txt'
+        $content = 'managed by Winix
+        '
+        $encoding = 'utf8'
+        $force = $false
+        $backup = $false
+        $desired = Get-WinixTextBytes $content $encoding
+        if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { return $false }
+        $actual = [IO.File]::ReadAllBytes($target)
+        Test-WinixBytesEqual $actual $desired
+      setScript: |-
+        function Expand-WinixPath([string]$Path) { [Environment]::ExpandEnvironmentVariables($Path) }
+        function Ensure-WinixParentDirectory([string]$Path) {
+          $parent = Split-Path -Parent $Path
+          if (-not [string]::IsNullOrEmpty($parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
+        }
+        function Test-WinixBytesEqual([byte[]]$Actual, [byte[]]$Desired) {
+          if ($Actual.Length -ne $Desired.Length) { return $false }
+          for ($i = 0; $i -lt $Actual.Length; $i++) { if ($Actual[$i] -ne $Desired[$i]) { return $false } }
+          return $true
+        }
+        function Get-WinixTextBytes([string]$Content, [string]$EncodingName) {
+          if ($EncodingName -eq 'ascii') { return [byte[]][Text.Encoding]::ASCII.GetBytes($Content) }
+          $encoder = [Text.UTF8Encoding]::new($EncodingName -eq 'utf8bom')
+          return [byte[]]($encoder.GetPreamble() + $encoder.GetBytes($Content))
+        }
+        function Move-WinixExistingTarget([string]$Path, [bool]$Force, [bool]$Backup) {
+          if (-not (Test-Path -LiteralPath $Path)) { return }
+          if ($Backup) {
+            $backupPath = "$Path.bak"
+            if (Test-Path -LiteralPath $backupPath) { throw "Backup target already exists: $backupPath" }
+            Move-Item -LiteralPath $Path -Destination $backupPath
+            return
+          }
+          if (-not $Force) { throw "Target already exists and differs: $Path. Pass force: true or backup: true." }
+          $item = Get-Item -LiteralPath $Path -Force
+          if ($item.PSIsContainer -and $null -eq $item.LinkType) {
+            $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
+            if ($children.Count -gt 0) { throw "Refusing to delete populated directory: $Path. Move it manually or use backup: true." }
+          }
+          Remove-Item -LiteralPath $Path -Force -Recurse
+        }
+        $target = Expand-WinixPath '%USERPROFILE%\\.config\\winix-example\\hello.txt'
+        $content = 'managed by Winix
+        '
+        $encoding = 'utf8'
+        $force = $false
+        $backup = $false
+        $desired = Get-WinixTextBytes $content $encoding
+        if (Test-Path -LiteralPath $target -PathType Leaf) {
+          $actual = [IO.File]::ReadAllBytes($target)
+          if (Test-WinixBytesEqual $actual $desired) { return }
+        }
+        Move-WinixExistingTarget $target $force $backup
+        Ensure-WinixParentDirectory $target
+        [IO.File]::WriteAllBytes($target, $desired)
 ",
 }
 `;

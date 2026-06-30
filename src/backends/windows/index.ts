@@ -29,7 +29,9 @@
 import type { EvaluatedHost } from "../../evaluator/index.ts";
 import type { ResourceRef } from "../../core/types.ts";
 import type {
+  WinDscProperties,
   WinDscResource,
+  WinDscPropertyValue,
   WinPackage,
   WinRawCommand,
   WindowsOptions,
@@ -101,7 +103,7 @@ function generateConfiguration(
 ): string {
   const packages = sortedPackages(win.packages ?? {});
   const commands = win.commands ?? [];
-  const dscResources = win.dsc ?? [];
+  const dscResources = resolveManagedEnvironmentReferences(win.dsc ?? []);
 
   const lines: string[] = [];
   lines.push(`# yaml-language-server: $schema=${DSC_SCHEMA}`);
@@ -136,6 +138,166 @@ function generateConfiguration(
   }
 
   return lines.join("\n") + "\n";
+}
+
+interface ManagedEnvEntry {
+  name: string;
+  value: string;
+}
+
+const WINDOWS_ENV_TOKEN = /%([^%]+)%/g;
+
+function canonicalEnvName(name: string): string {
+  return name.toLocaleUpperCase("en-US");
+}
+
+function resolveManagedEnvironmentReferences(
+  resources: readonly WinDscResource[]
+): WinDscResource[] {
+  if (resources.length === 0) return [];
+
+  const managedEnv = new Map<string, ManagedEnvEntry>();
+  for (const resource of resources) {
+    const metadata = resource.winix;
+    if (metadata?.kind === "env" && metadata.action === "set") {
+      managedEnv.set(canonicalEnvName(metadata.name), {
+        name: metadata.name,
+        value: metadata.value ?? "",
+      });
+    }
+  }
+
+  if (managedEnv.size === 0) return [...resources];
+
+  const resolvedEnv = new Map<string, string>();
+  const resolveEnv = (key: string, stack: string[]): string => {
+    const cached = resolvedEnv.get(key);
+    if (cached !== undefined) return cached;
+
+    const entry = managedEnv.get(key);
+    if (!entry) return `%${key}%`;
+
+    const nextStack = [...stack, key];
+    const resolved = entry.value.replace(WINDOWS_ENV_TOKEN, (token, name: string) => {
+      const depKey = canonicalEnvName(name);
+      if (!managedEnv.has(depKey)) return token;
+
+      const cycleStart = nextStack.indexOf(depKey);
+      if (cycleStart !== -1) {
+        const cycle = [...nextStack.slice(cycleStart), depKey]
+          .map((cycleKey) => managedEnv.get(cycleKey)?.name ?? cycleKey)
+          .join(" -> ");
+        throw new Error(`Circular Windows environment variable reference: ${cycle}`);
+      }
+
+      return resolveEnv(depKey, nextStack);
+    });
+
+    resolvedEnv.set(key, resolved);
+    return resolved;
+  };
+
+  for (const key of managedEnv.keys()) {
+    resolveEnv(key, []);
+  }
+
+  const resolveString = (value: string): string =>
+    value.replace(WINDOWS_ENV_TOKEN, (token, name: string) => {
+      const key = canonicalEnvName(name);
+      return managedEnv.has(key) ? resolveEnv(key, []) : token;
+    });
+
+  return resources.map((resource) => {
+    const metadata = resource.winix;
+    if (metadata?.kind === "env" && metadata.action === "set") {
+      const resolvedValue = resolveString(metadata.value ?? "");
+      const properties = rewriteEnvValue(resource.properties, resolvedValue);
+      return cloneDscResource(resource, properties);
+    }
+    if (metadata?.kind === "path") {
+      const resolvedValue = resolveString(metadata.value);
+      if (resolvedValue === metadata.value) return resource;
+      const properties = rewritePathValue(resource.properties, metadata.value, resolvedValue);
+      return cloneDscResource(resource, properties);
+    }
+    return resource;
+  });
+}
+
+function rewriteEnvValue(
+  properties: WinDscProperties | undefined,
+  value: string
+): WinDscProperties | undefined {
+  if (!properties) return properties;
+  const valueData = properties.valueData;
+  if (!valueData || typeof valueData !== "object" || Array.isArray(valueData)) {
+    return properties;
+  }
+  return {
+    ...properties,
+    valueData: {
+      ...valueData,
+      String: value,
+    },
+  };
+}
+
+function rewritePathValue(
+  properties: WinDscProperties | undefined,
+  originalValue: string,
+  resolvedValue: string
+): WinDscProperties | undefined {
+  if (!properties) return properties;
+  const original = psSingleQuoted(originalValue);
+  const resolved = psSingleQuoted(resolvedValue);
+  const rewritten: WinDscProperties = {};
+  for (const [key, value] of Object.entries(properties)) {
+    rewritten[key] = rewritePathPropertyValue(value, original, resolved);
+  }
+  return rewritten;
+}
+
+function rewritePathPropertyValue(
+  value: WinDscPropertyValue,
+  original: string,
+  resolved: string
+): WinDscPropertyValue {
+  if (typeof value === "string") {
+    return value.replaceAll(original, resolved);
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => rewritePathPropertyValue(entry, original, resolved));
+  }
+  if (value && typeof value === "object") {
+    const rewritten: { [key: string]: WinDscPropertyValue } = {};
+    for (const [key, child] of Object.entries(value)) {
+      rewritten[key] = rewritePathPropertyValue(child, original, resolved);
+    }
+    return rewritten;
+  }
+  return value;
+}
+
+function cloneDscResource(
+  resource: WinDscResource,
+  properties: WinDscProperties | undefined
+): WinDscResource {
+  const cloned: WinDscResource = { ...resource, properties };
+  if (resource.token) {
+    Object.defineProperty(cloned, "token", {
+      value: resource.token,
+      enumerable: false,
+      configurable: true,
+    });
+  }
+  if (resource.winix) {
+    Object.defineProperty(cloned, "winix", {
+      value: resource.winix,
+      enumerable: false,
+      configurable: true,
+    });
+  }
+  return cloned;
 }
 
 /** A resource's resolved DSC identity: its type and schema-valid name. */
@@ -247,10 +409,13 @@ function assignResourceNames(
 }
 
 /**
- * Resolve a resource's `dependsOn` references into DSC v3 `resourceId()`
- * lookup strings. Throws when a referenced resource is not present in this
- * host's naming plan, which happens if a handle from another host is passed to
- * `dependsOn` (cross-host ordering is not expressible in a single document).
+ * Resolve a resource's `dependsOn` references into WinGet Configuration
+ * instance names. The underlying DSC v3 schema documents `resourceId(...)`
+ * lookups, but `winget configure`'s dscv3 processor currently resolves
+ * dependencies by simple resource name. Throws when a referenced resource is
+ * not present in this host's naming plan, which happens if a handle from
+ * another host is passed to `dependsOn` (cross-host ordering is not expressible
+ * in a single document).
  */
 function resolveDependsOnRefs(
   refs: ResourceRef[] | undefined,
@@ -278,7 +443,7 @@ function resolveDependsOnRefs(
         `within the same host.`
       );
     }
-    ids.push(`[resourceId('${target.type}', '${target.name}')]`);
+    ids.push(target.name);
   }
   return ids;
 }
@@ -385,6 +550,11 @@ function renderDscResource(
       }
     }
   }
+  if (resource.elevated) {
+    out.push(`    metadata:`);
+    out.push(`      winget:`);
+    out.push(`        securityContext: elevated`);
+  }
   return out;
 }
 function generateApplyScript(): string {
@@ -445,4 +615,8 @@ function yamlQuoted(value: string): string {
 
 function yamlStringArray(values: string[]): string {
   return `[${values.map((value) => yamlQuoted(value)).join(", ")}]`;
+}
+
+function psSingleQuoted(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
 }
