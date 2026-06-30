@@ -19,6 +19,16 @@ describe("windows yaml serializer", () => {
       expect(yamlScalar("a: b")).toBe('"a: b"');
     });
 
+    it("renders multiline string entries as literal block scalars", () => {
+      expect(yamlEntry("setScript", "$x = 1\nWrite-Host $x", 1).join("\n")).toBe(
+        [
+          "  setScript: |-",
+          "    $x = 1",
+          "    Write-Host $x",
+        ].join("\n")
+      );
+    });
+
     it("quotes strings that look like other YAML types", () => {
       expect(yamlScalar("true")).toBe('"true"');
       expect(yamlScalar("123")).toBe('"123"');

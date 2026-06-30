@@ -123,7 +123,8 @@ single high-level pointer here. Update this as PRs land.
 - [x] `windows.env.*` / `windows.path.*` (native Registry + idempotent script helpers)
 - [ ] `windows.dsc()` typed escape hatch to any DSC v3 resource
 - [ ] `windows.programs.<name>()` curated install+configure helpers
-- [ ] `windows.file()` declarative file content
+- [ ] `windows.file.*` declarative files (see
+      [`windows-file.md`](./windows-file.md))
 
 ### Phase 5 — Power features (LATER)
 
@@ -286,9 +287,9 @@ export const git = feature("git", () => {
       ? [home.programs.git({ enable: true, userName: "Adri", userEmail: "adri@example.com" })]
       : []),
 
-    // On Windows there is no Home Manager: drop the file directly
+    // On Windows there is no Home Manager: write the file directly
     ...(windows.isActive
-      ? [windows.file(gitconfigPath, gitconfigContent)]
+      ? [windows.file.text(gitconfigPath, gitconfigContent)]
       : []),
   ];
 });
@@ -393,9 +394,10 @@ export const baseline = feature("windows.baseline", () => [
   windows.path.add("%USERPROFILE%\\.local\\bin"),
 
   // Config file placement
-  windows.file("$env:APPDATA\\komorebi\\komorebi.json", {
-    source: "configs/komorebi.json",
-  }),
+  windows.file.symlink(
+    "%APPDATA%\\komorebi\\komorebi.json",
+    "%USERPROFILE%\\dotfiles\\komorebi\\komorebi.json",
+  ),
 
   // WSL host-side configuration
   windows.wsl({
@@ -722,7 +724,10 @@ import { feature, windows } from "@adrifer/winix";
 
 export const foo = feature("foo", (opts: FooOptions) => [
   windows.package({ id: "FooCo.Foo", version: opts.version }),
-  windows.file("%LOCALAPPDATA%\\Foo\\config.json", JSON.stringify(opts.config)),
+  windows.file.text(
+    "%LOCALAPPDATA%\\Foo\\config.json",
+    JSON.stringify(opts.config, null, 2) + "\n",
+  ),
 ]);
 ```
 

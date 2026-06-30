@@ -80,7 +80,7 @@ export interface WinRawCommand {
  *
  * Typed helpers (env/path) construct native DSC resources internally:
  * `Microsoft.Windows/Registry` for env and
- * `Microsoft.DSC.Transitional/WindowsPowerShellScript` for PATH.
+ * `Microsoft.DSC.Transitional/WindowsPowerShellScript` for PATH/files.
  */
 export interface WinDscResource {
   /**
@@ -100,17 +100,44 @@ export interface WinDscResource {
    */
   properties?: WinDscProperties;
   /**
+   * When true, the resource is applied in an elevated security context via
+   * `metadata.winget.securityContext: elevated`.
+   */
+  elevated?: boolean;
+  /**
    * Unique identity token so a handle returned by `windows.dsc(...)`,
    * `windows.env.*(...)`, or `windows.path.*(...)` can be referenced in another
    * resource's `dependsOn`. Non-enumerable in spirit; carried internally only.
    */
   token?: symbol;
   /**
+   * Internal metadata for typed helpers. The emitter uses this to perform
+   * host-level rewrites that require seeing multiple resources together (for
+   * example resolving Winix-managed env var references in PATH entries). This
+   * must never be serialized to the generated DSC YAML.
+   */
+  winix?: WinDscMetadata;
+  /**
    * Resources this resource must be applied after, as resolved references.
    * Emitted as DSC v3 `dependsOn`. References must belong to the same host.
    */
   dependsOn?: ResourceRef[];
 }
+
+export type WinDscMetadata =
+  | {
+      kind: "env";
+      action: "set" | "remove";
+      name: string;
+      value?: string;
+      scope: "user" | "machine";
+    }
+  | {
+      kind: "path";
+      action: "add" | "remove";
+      value: string;
+      scope: "user" | "machine";
+    };
 
 /** JSON-like value accepted in generic DSC `properties`. */
 export type WinDscPropertyValue =

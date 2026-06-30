@@ -339,7 +339,7 @@ describe("generateWindows() emitter", () => {
     expect(doc).toContain('name: "Foo Bar 2"');
   });
 
-  it("emits dependsOn referencing a package handle by resourceId", () => {
+  it("emits dependsOn referencing a package handle by resource name", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -358,11 +358,9 @@ describe("generateWindows() emitter", () => {
       "Git.Git": { source: "winget", version: "2.44.0" },
     })).hosts.desktop["configuration.winget"];
 
-    // The command resource depends on the package resource via resourceId.
+    // WinGet's dscv3 processor resolves dependencies by resource name.
     const cmdBlock = doc.slice(doc.indexOf('name: "clone repos"'));
-    expect(cmdBlock).toContain(
-      `dependsOn: ["[resourceId('Microsoft.WinGet/Package', 'Git Git')]"]`
-    );
+    expect(cmdBlock).toContain(`dependsOn: ["Git Git"]`);
   });
 
   it("emits dependsOn referencing a raw command handle", () => {
@@ -384,9 +382,7 @@ describe("generateWindows() emitter", () => {
     })).hosts.desktop["configuration.winget"];
 
     const pkgBlock = doc.slice(doc.indexOf('name: "Git Git"'));
-    expect(pkgBlock).toContain(
-      `dependsOn: ["[resourceId('Microsoft.DSC.Transitional/RunCommandOnSet', 'prep')]"]`
-    );
+    expect(pkgBlock).toContain(`dependsOn: ["prep"]`);
   });
 
   it("accepts a single handle (not an array) in dependsOn", () => {
@@ -410,9 +406,7 @@ describe("generateWindows() emitter", () => {
     })).hosts.desktop["configuration.winget"];
 
     const cmdBlock = doc.slice(doc.indexOf('name: "clone repos"'));
-    expect(cmdBlock).toContain(
-      `dependsOn: ["[resourceId('Microsoft.WinGet/Package', 'Git Git')]"]`
-    );
+    expect(cmdBlock).toContain(`dependsOn: ["Git Git"]`);
   });
 
   it("throws when dependsOn references a resource from another host", () => {
@@ -642,6 +636,61 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
   it("rejects an invalid scope", () => {
     expect(() => windows.env.set("X", "y", { scope: "process" as any })).toThrow(/invalid/);
   });
+
+  it("windows.file.text() emits an idempotent file-content script", () => {
+    const frag = windows.file.text("%USERPROFILE%\\.gitconfig", "[user]\n", {
+      encoding: "utf8bom",
+      force: true,
+    });
+    const resource = frag.windows?.dsc?.[0];
+    const props = resource?.properties as Record<string, string>;
+    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(resource?.name).toBe("Write file %USERPROFILE%\\.gitconfig");
+    expect(props.getScript).toContain("function Expand-WinixPath");
+    expect(props.testScript).toContain("Get-WinixTextBytes $content $encoding");
+    expect(props.testScript).toContain("$encoding = 'utf8bom'");
+    expect(props.setScript).toContain("Move-WinixExistingTarget $target $force $backup");
+    expect(props.setScript).toContain("[IO.File]::WriteAllBytes($target, $desired)");
+  });
+
+  it("windows.file.symlink() uses mklink instead of New-Item symlinks", () => {
+    const frag = windows.file.symlink(
+      "%LOCALAPPDATA%\\nvim",
+      "%USERPROFILE%\\dotfiles\\nvim",
+      { recursive: true }
+    );
+    const props = frag.windows?.dsc?.[0].properties as Record<string, string>;
+    expect(props.setScript).toContain("Assert-WinixCanCreateSymlink");
+    expect(props.setScript).toContain("Set-WinixRecursiveSymlink $source $target $force $backup");
+    expect(props.setScript).toContain("mklink $flag");
+    expect(props.setScript).not.toContain("New-Item -ItemType SymbolicLink");
+  });
+
+  it("windows.file.copy() and remove() emit safe script resources", () => {
+    const copy = windows.file.copy("%APPDATA%\\tool\\config.json", ".\\config.json", {
+      backup: true,
+    }).windows?.dsc?.[0];
+    const remove = windows.file.remove("%USERPROFILE%\\.oldrc").windows?.dsc?.[0];
+    const copyProps = copy?.properties as Record<string, string>;
+    const removeProps = remove?.properties as Record<string, string>;
+
+    expect(copy?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(copyProps.getScript).toContain("function Expand-WinixPath");
+    expect(copyProps.testScript).toContain("Test-WinixCopy $source $target");
+    expect(copyProps.setScript).toContain("Copy-Item");
+    expect(copyProps.setScript).toContain("$backup = $true");
+    expect(remove?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(removeProps.setScript).toContain("Refusing to remove real directory");
+    expect(removeProps.setScript).toContain("Remove-Item -LiteralPath $target -Force");
+  });
+
+  it("windows.file.* validates arguments and options", () => {
+    expect(() => windows.file.text("", "x")).toThrow(/target/);
+    expect(() => windows.file.text("x", "y", { encoding: "utf16" as any })).toThrow(/encoding/);
+    expect(() => windows.file.symlink("x", "")).toThrow(/source/);
+    expect(() => windows.file.copy("x", "", { force: "yes" as any })).toThrow(/force/);
+    expect(() => windows.file.remove("")).toThrow(/target/);
+  });
 });
 
 describe("generateWindows() emitter: dsc / env / path", () => {
@@ -709,7 +758,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(doc).toMatchSnapshot();
   });
 
-  it("emits dependsOn referencing a dsc handle by resourceId", () => {
+  it("emits dependsOn referencing a dsc handle by resource name", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -720,8 +769,82 @@ describe("generateWindows() emitter: dsc / env / path", () => {
       ],
     });
     const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
-    expect(doc).toContain(
-      `dependsOn: ["[resourceId('Microsoft.Windows/Registry', 'Set EDITOR')]"]`
+    expect(doc).toContain(`dependsOn: ["Set EDITOR"]`);
+  });
+
+  it("resolves Winix-managed env references in PATH entries", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          const cargoHome = windows.env.set("CARGO_HOME", "%USERPROFILE%\\.cargo");
+          windows.path.add("%CARGO_HOME%\\bin", { dependsOn: cargoHome });
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain("$dir = '%USERPROFILE%\\.cargo\\bin'");
+    expect(doc).not.toContain("$dir = '%CARGO_HOME%\\bin'");
+    expect(doc).toContain(`dependsOn: ["Set CARGO HOME"]`);
+  });
+
+  it("resolves managed env chains in env values and PATH entries", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          windows.env.set("ROOT", "%USERPROFILE%");
+          windows.env.set("LEVEL2", "%ROOT%\\.local");
+          windows.env.set("LEVEL3", "%LEVEL2%\\share");
+          windows.path.add("%LEVEL3%\\bin");
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain(`String: "%USERPROFILE%\\\\.local"`);
+    expect(doc).toContain(`String: "%USERPROFILE%\\\\.local\\\\share"`);
+    expect(doc).toContain("$dir = '%USERPROFILE%\\.local\\share\\bin'");
+  });
+
+  it("leaves system-only PATH variables untouched", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.path.add("%USERPROFILE%\\.local\\bin"),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain("$dir = '%USERPROFILE%\\.local\\bin'");
+  });
+
+  it("matches managed env names case-insensitively while preserving system vars", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          windows.env.set("CARGO_HOME", "%USERPROFILE%\\.cargo");
+          windows.path.add("%cargo_home%\\bin\\%USERNAME%");
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain("$dir = '%USERPROFILE%\\.cargo\\bin\\%USERNAME%'");
+  });
+
+  it("rejects circular managed env references", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.env.set("A", "%B%"),
+          windows.env.set("B", "%A%"),
+        ]),
+      ],
+    });
+    expect(() => generateWindows(evaluate(ws))).toThrow(
+      /Circular Windows environment variable reference: A -> B -> A/
     );
   });
 
@@ -738,9 +861,34 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     const doc = generateWindows(evaluate(ws), windowsLock({
       "Git.Git": { source: "winget", version: "2.44.0" },
     })).hosts.desktop["configuration.winget"];
-    expect(doc).toContain(
-      `dependsOn: ["[resourceId('Microsoft.Windows/Registry', 'Set EDITOR')]"]`
-    );
+    expect(doc).toContain(`dependsOn: ["Set EDITOR"]`);
+  });
+
+  it("emits file helpers as WindowsPowerShellScript resources with dependencies and elevation", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          const config = windows.file.text("%USERPROFILE%\\.gitconfig", "[user]\n");
+          windows.file.symlink(
+            "%LOCALAPPDATA%\\nvim",
+            "%USERPROFILE%\\dotfiles\\nvim",
+            { dependsOn: config, elevate: true }
+          );
+          windows.file.copy("%APPDATA%\\tool\\config.json", ".\\config.json");
+          windows.file.remove("%USERPROFILE%\\.oldrc");
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain(`name: "Write file USERPROFILE gitconfig"`);
+    expect(doc).toContain(`name: "Link file LOCALAPPDATA nvim"`);
+    expect(doc).toContain(`name: "Copy file APPDATA tool config json"`);
+    expect(doc).toContain(`name: "Remove file USERPROFILE oldrc"`);
+    expect(doc).toContain(`dependsOn: ["Write file USERPROFILE gitconfig"]`);
+    expect(doc).toContain("securityContext: elevated");
+    expect(doc).toContain("mklink $flag");
+    expect(doc).toMatchSnapshot();
   });
 });
 

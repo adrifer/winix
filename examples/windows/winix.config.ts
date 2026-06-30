@@ -13,6 +13,8 @@
  *     environment variables via the native Microsoft.Windows/Registry resource.
  *   - `windows.path.add/remove(...)` manages PATH entries surgically with an
  *     idempotent WindowsPowerShellScript resource.
+ *   - `windows.file.*(...)` manages files, copies, and dotfile symlinks with
+ *     idempotent WindowsPowerShellScript resources.
  *   - `windows.dsc(...)` is the escape hatch: declare any DSC v3 resource by
  *     type + properties when no typed helper exists.
  *   - `dependsOn` orders resources using the handle returned by each helper.
@@ -66,7 +68,7 @@ export default workspace({
 
       // --- PATH entries ---
       // Appends idempotently to the user PATH without normalizing other entries.
-      windows.path.add("%USERPROFILE%\\.local\\bin");
+      // windows.path.add("%USERPROFILE%\\.local\\bin");
 
       // Remove a PATH entry without touching the rest of PATH.
       // windows.path.remove("%USERPROFILE%\\.old-bin");
@@ -76,6 +78,30 @@ export default workspace({
       // `dependsOn` to force apply order within this host.
       const cargoHome = windows.env.set("CARGO_HOME", "%USERPROFILE%\\.cargo");
       windows.path.add("%CARGO_HOME%\\bin", { dependsOn: [cargoHome] });
+
+      // --- Files ---
+      // Writes a small managed file. Re-applying is a no-op unless content
+      // drifts; UTF-8 without BOM is the default.
+      windows.file.text(
+        "%USERPROFILE%\\.config\\winix-example\\hello.txt",
+        "managed by Winix\n",
+      );
+
+      // Reuse a real dotfile as a live symlink. Requires Developer Mode or an
+      // elevated apply; Winix uses mklink under DSC so Developer Mode works.
+      // windows.file.symlink(
+      //   "%LOCALAPPDATA%\\nvim",
+      //   "%USERPROFILE%\\dotfiles\\nvim",
+      // );
+
+      // Copy a source file/directory instead of linking it.
+      // windows.file.copy(
+      //   "%APPDATA%\\tool\\config.json",
+      //   "%USERPROFILE%\\dotfiles\\tool\\config.json",
+      // );
+
+      // Remove a managed file/link without deleting real populated directories.
+      // windows.file.remove("%USERPROFILE%\\.oldrc");
 
       // --- Escape hatch: any DSC v3 resource ---
       // When no typed helper exists, declare the resource directly. `properties`
