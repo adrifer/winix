@@ -68,6 +68,7 @@ const DSC_SCHEMA =
   "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json";
 const WINGET_PACKAGE_TYPE = "Microsoft.WinGet/Package";
 const RUN_COMMAND_ON_SET_TYPE = "Microsoft.DSC.Transitional/RunCommandOnSet";
+const WINDOWS_SETTINGS_MODULE_COMMAND_NAME = "Ensure Microsoft Windows Settings module";
 
 /**
  * Generate Windows bundles for every Windows host in the evaluated workspace.
@@ -102,8 +103,9 @@ function generateConfiguration(
   lock: WindowsLock
 ): string {
   const packages = sortedPackages(win.packages ?? {});
-  const commands = win.commands ?? [];
-  const dscResources = resolveManagedEnvironmentReferences(win.dsc ?? []);
+  const prepared = prepareWindowsDscResources(win.commands ?? [], win.dsc ?? []);
+  const commands = prepared.commands;
+  const dscResources = prepared.dscResources;
 
   const lines: string[] = [];
   lines.push(`# yaml-language-server: $schema=${DSC_SCHEMA}`);
@@ -138,6 +140,52 @@ function generateConfiguration(
   }
 
   return lines.join("\n") + "\n";
+}
+
+function prepareWindowsDscResources(
+  commands: readonly WinRawCommand[],
+  resources: readonly WinDscResource[]
+): { commands: WinRawCommand[]; dscResources: WinDscResource[] } {
+  const envResolvedResources = resolveManagedEnvironmentReferences(resources);
+  if (!envResolvedResources.some((resource) => resource.winix?.kind === "setting")) {
+    return { commands: [...commands], dscResources: envResolvedResources };
+  }
+
+  const ensureModule = createWindowsSettingsEnsureCommand();
+  const ensureRef: ResourceRef = { kind: "command", token: ensureModule.token! };
+  return {
+    commands: [...commands, ensureModule],
+    dscResources: envResolvedResources.map((resource) => {
+      if (resource.winix?.kind !== "setting") return resource;
+      return cloneDscResource(resource, resource.properties, [
+        ensureRef,
+        ...(resource.dependsOn ?? []),
+      ]);
+    }),
+  };
+}
+
+function createWindowsSettingsEnsureCommand(): WinRawCommand {
+  const command: WinRawCommand = {
+    name: WINDOWS_SETTINGS_MODULE_COMMAND_NAME,
+    executable: "pwsh",
+    arguments: [
+      "-NoProfile",
+      "-NoLogo",
+      "-Command",
+      [
+        "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {",
+        "  Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense",
+        "}",
+      ].join(" "),
+    ],
+  };
+  Object.defineProperty(command, "token", {
+    value: Symbol("winix.windows-settings-module"),
+    enumerable: false,
+    configurable: true,
+  });
+  return command;
 }
 
 interface ManagedEnvEntry {
@@ -280,9 +328,12 @@ function rewritePathPropertyValue(
 
 function cloneDscResource(
   resource: WinDscResource,
-  properties: WinDscProperties | undefined
+  properties: WinDscProperties | undefined,
+  dependsOn: ResourceRef[] | undefined = resource.dependsOn
 ): WinDscResource {
   const cloned: WinDscResource = { ...resource, properties };
+  if (dependsOn) cloned.dependsOn = dependsOn;
+  else delete cloned.dependsOn;
   if (resource.token) {
     Object.defineProperty(cloned, "token", {
       value: resource.token,

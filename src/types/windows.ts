@@ -137,7 +137,24 @@ export type WinDscMetadata =
       action: "add" | "remove";
       value: string;
       scope: "user" | "machine";
+    }
+  | {
+      kind: "setting";
     };
+
+export type WinColorMode = "Light" | "Dark";
+export type WinTaskbarAlignment = "Left" | "Center";
+
+/**
+ * Typed Windows OS settings exposed by
+ * `Microsoft.Windows.Settings/WindowsSettings`.
+ */
+export interface WinSettings {
+  DeveloperMode?: boolean;
+  AppColorMode?: WinColorMode;
+  SystemColorMode?: WinColorMode;
+  TaskbarAlignment?: WinTaskbarAlignment;
+}
 
 /** JSON-like value accepted in generic DSC `properties`. */
 export type WinDscPropertyValue =
