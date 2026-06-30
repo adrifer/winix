@@ -91,7 +91,7 @@ export function yamlEntry(key: string, value: YamlValue, depth: number): string[
     return out;
   }
 
-  if (typeof value === "string" && value.includes("\n")) {
+  if (typeof value === "string" && /[\r\n]/.test(value)) {
     const childPad = INDENT.repeat(depth + 1);
     return [
       `${pad}${k}: |-`,
