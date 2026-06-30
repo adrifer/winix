@@ -290,6 +290,7 @@ resources:
         function Set-WinixRecursiveSymlink([string]$Source, [string]$Target, [bool]$Force, [bool]$Backup) {
           if (-not (Test-Path -LiteralPath $Source -PathType Container)) { throw "Recursive symlink source must be a directory: $Source" }
           if (Test-WinixRecursiveSymlink $Source $Target) { return }
+          Move-WinixExistingTarget $Target $Force $Backup
           New-Item -ItemType Directory -Force -Path $Target | Out-Null
           $root = (Resolve-Path -LiteralPath $Source).ProviderPath
           foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {
@@ -368,6 +369,7 @@ resources:
         function Set-WinixRecursiveSymlink([string]$Source, [string]$Target, [bool]$Force, [bool]$Backup) {
           if (-not (Test-Path -LiteralPath $Source -PathType Container)) { throw "Recursive symlink source must be a directory: $Source" }
           if (Test-WinixRecursiveSymlink $Source $Target) { return }
+          Move-WinixExistingTarget $Target $Force $Backup
           New-Item -ItemType Directory -Force -Path $Target | Out-Null
           $root = (Resolve-Path -LiteralPath $Source).ProviderPath
           foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {
@@ -450,6 +452,7 @@ resources:
         function Set-WinixRecursiveSymlink([string]$Source, [string]$Target, [bool]$Force, [bool]$Backup) {
           if (-not (Test-Path -LiteralPath $Source -PathType Container)) { throw "Recursive symlink source must be a directory: $Source" }
           if (Test-WinixRecursiveSymlink $Source $Target) { return }
+          Move-WinixExistingTarget $Target $Force $Backup
           New-Item -ItemType Directory -Force -Path $Target | Out-Null
           $root = (Resolve-Path -LiteralPath $Source).ProviderPath
           foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {

@@ -664,6 +664,9 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
     expect(props.setScript).toContain("Set-WinixRecursiveSymlink $source $target $force $backup");
     expect(props.setScript).toContain("mklink $flag");
     expect(props.setScript).not.toContain("New-Item -ItemType SymbolicLink");
+    expect(props.setScript.indexOf("Move-WinixExistingTarget $Target $Force $Backup")).toBeLessThan(
+      props.setScript.indexOf("New-Item -ItemType Directory -Force -Path $Target")
+    );
   });
 
   it("windows.file.copy() and remove() emit safe script resources", () => {
