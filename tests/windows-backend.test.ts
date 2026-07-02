@@ -558,18 +558,56 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
 
   it("windows.setting() normalizes supported Windows settings", () => {
     const frag = windows.setting({
+      AppColorMode: "Dark",
+      AutoColorization: true,
+      DesktopTaskbarBadges: true,
+      DesktopTaskbarMultiMon: true,
+      DesktopTaskbarMultiMonMode: "WindowOnly",
       DeveloperMode: true,
+      EnableTransparency: false,
+      NotifyOnUsbErrors: true,
+      NotifyOnWeakCharger: false,
+      SetTimeZoneAutomatically: false,
+      ShowAccentColorOnStartAndTaskbar: true,
+      ShowAccentColorOnTitleBarsAndWindowBorders: true,
+      ShowRecentList: false,
+      ShowRecommendedList: true,
+      StartFolders: ["Documents", "Settings"],
       SystemColorMode: "Dark",
       TaskbarAlignment: "Left",
+      TaskbarBadges: false,
+      TaskbarGroupingMode: "Never",
+      TaskbarMultiMon: true,
+      TaskbarMultiMonMode: "PrimaryAndWindow",
+      TimeZone: "Pacific Standard Time",
     });
     expect(frag.windows?.dsc).toEqual([
       {
         resourceType: "Microsoft.Windows.Settings/WindowsSettings",
         name: "Windows Settings",
         properties: {
+          AppColorMode: "Dark",
+          AutoColorization: true,
+          DesktopTaskbarBadges: true,
+          DesktopTaskbarMultiMon: true,
+          DesktopTaskbarMultiMonMode: "WindowOnly",
           DeveloperMode: true,
+          EnableTransparency: false,
+          NotifyOnUsbErrors: true,
+          NotifyOnWeakCharger: false,
+          SetTimeZoneAutomatically: false,
+          ShowAccentColorOnStartAndTaskbar: true,
+          ShowAccentColorOnTitleBarsAndWindowBorders: true,
+          ShowRecentList: false,
+          ShowRecommendedList: true,
+          StartFolders: ["Documents", "Settings"],
           SystemColorMode: "Dark",
           TaskbarAlignment: "Left",
+          TaskbarBadges: false,
+          TaskbarGroupingMode: "Never",
+          TaskbarMultiMon: true,
+          TaskbarMultiMonMode: "PrimaryAndWindow",
+          TimeZone: "Pacific Standard Time",
         },
         elevated: true,
       },
@@ -579,6 +617,16 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
   it("windows.setting() rejects unknown settings", () => {
     expect(() => windows.setting({ LongPathsEnabled: true } as any)).toThrow(
       /does not support setting "LongPathsEnabled"/
+    );
+  });
+
+  it("windows.setting() validates setting value shapes", () => {
+    expect(() => windows.setting({ DeveloperMode: "yes" } as any)).toThrow(/boolean/);
+    expect(() => windows.setting({ TaskbarGroupingMode: "Sometimes" } as any)).toThrow(
+      /Always, WhenFull, Never/
+    );
+    expect(() => windows.setting({ StartFolders: ["Documents", "Invalid"] } as any)).toThrow(
+      /unsupported folder "Invalid"/
     );
   });
 
@@ -818,6 +866,68 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(doc).toContain("DeveloperMode: true");
     expect(doc).toContain(`dependsOn: ["Ensure Microsoft Windows Settings module"]`);
     expect(doc).toContain("securityContext: elevated");
+    expect(doc).toMatchSnapshot();
+  });
+
+  it("emits every supported WindowsSettings property", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.setting({
+            AppColorMode: "Dark",
+            AutoColorization: true,
+            DesktopTaskbarBadges: true,
+            DesktopTaskbarMultiMon: true,
+            DesktopTaskbarMultiMonMode: "WindowOnly",
+            DeveloperMode: true,
+            EnableTransparency: false,
+            NotifyOnUsbErrors: true,
+            NotifyOnWeakCharger: false,
+            SetTimeZoneAutomatically: false,
+            ShowAccentColorOnStartAndTaskbar: true,
+            ShowAccentColorOnTitleBarsAndWindowBorders: true,
+            ShowRecentList: false,
+            ShowRecommendedList: true,
+            StartFolders: ["Documents", "Downloads", "Settings"],
+            SystemColorMode: "Light",
+            TaskbarAlignment: "Center",
+            TaskbarBadges: false,
+            TaskbarGroupingMode: "WhenFull",
+            TaskbarMultiMon: true,
+            TaskbarMultiMonMode: "Duplicate",
+            TimeZone: "Pacific Standard Time",
+          }),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    for (const key of [
+      "AppColorMode",
+      "AutoColorization",
+      "DesktopTaskbarBadges",
+      "DesktopTaskbarMultiMon",
+      "DesktopTaskbarMultiMonMode",
+      "DeveloperMode",
+      "EnableTransparency",
+      "NotifyOnUsbErrors",
+      "NotifyOnWeakCharger",
+      "SetTimeZoneAutomatically",
+      "ShowAccentColorOnStartAndTaskbar",
+      "ShowAccentColorOnTitleBarsAndWindowBorders",
+      "ShowRecentList",
+      "ShowRecommendedList",
+      "StartFolders",
+      "SystemColorMode",
+      "TaskbarAlignment",
+      "TaskbarBadges",
+      "TaskbarGroupingMode",
+      "TaskbarMultiMon",
+      "TaskbarMultiMonMode",
+      "TimeZone",
+    ]) {
+      expect(doc).toContain(`${key}:`);
+    }
     expect(doc).toMatchSnapshot();
   });
 

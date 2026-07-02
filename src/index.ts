@@ -60,7 +60,10 @@ export type {
   WinRawCommand,
   WinSettings,
   WinColorMode,
+  WinStartFolder,
   WinTaskbarAlignment,
+  WinTaskbarGroupingMode,
+  WinTaskbarMultiMonMode,
 } from "./types/index.ts";
 export { platform, feature, profile, host, workspace, input, defineInputs, rawModule, withContext } from "./sdk/index.ts";
 export type { WinixContext } from "./sdk/context.ts";

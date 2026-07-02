@@ -144,16 +144,46 @@ export type WinDscMetadata =
 
 export type WinColorMode = "Light" | "Dark";
 export type WinTaskbarAlignment = "Left" | "Center";
+export type WinTaskbarGroupingMode = "Always" | "WhenFull" | "Never";
+export type WinTaskbarMultiMonMode = "Duplicate" | "PrimaryAndWindow" | "WindowOnly";
+export type WinStartFolder =
+  | "Documents"
+  | "Downloads"
+  | "Music"
+  | "Pictures"
+  | "Videos"
+  | "Network"
+  | "UserProfile"
+  | "Explorer"
+  | "Settings";
 
 /**
  * Typed Windows OS settings exposed by
  * `Microsoft.Windows.Settings/WindowsSettings`.
  */
 export interface WinSettings {
-  DeveloperMode?: boolean;
+  TaskbarAlignment?: WinTaskbarAlignment;
   AppColorMode?: WinColorMode;
   SystemColorMode?: WinColorMode;
-  TaskbarAlignment?: WinTaskbarAlignment;
+  DeveloperMode?: boolean;
+  SetTimeZoneAutomatically?: boolean;
+  TimeZone?: string;
+  EnableTransparency?: boolean;
+  ShowAccentColorOnStartAndTaskbar?: boolean;
+  ShowAccentColorOnTitleBarsAndWindowBorders?: boolean;
+  AutoColorization?: boolean;
+  StartFolders?: WinStartFolder[];
+  ShowRecentList?: boolean;
+  ShowRecommendedList?: boolean;
+  TaskbarBadges?: boolean;
+  DesktopTaskbarBadges?: boolean;
+  TaskbarGroupingMode?: WinTaskbarGroupingMode;
+  TaskbarMultiMon?: boolean;
+  DesktopTaskbarMultiMon?: boolean;
+  TaskbarMultiMonMode?: WinTaskbarMultiMonMode;
+  DesktopTaskbarMultiMonMode?: WinTaskbarMultiMonMode;
+  NotifyOnUsbErrors?: boolean;
+  NotifyOnWeakCharger?: boolean;
 }
 
 /** JSON-like value accepted in generic DSC `properties`. */

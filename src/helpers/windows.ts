@@ -264,12 +264,97 @@ function normalizeDsc(arg: WinDscSpec): WinDscResource {
   return withDscToken(resource);
 }
 
-const KNOWN_WINDOWS_SETTINGS = new Set([
+const BOOLEAN_WINDOWS_SETTINGS = new Set([
   "DeveloperMode",
-  "AppColorMode",
-  "SystemColorMode",
-  "TaskbarAlignment",
+  "SetTimeZoneAutomatically",
+  "EnableTransparency",
+  "ShowAccentColorOnStartAndTaskbar",
+  "ShowAccentColorOnTitleBarsAndWindowBorders",
+  "AutoColorization",
+  "ShowRecentList",
+  "ShowRecommendedList",
+  "TaskbarBadges",
+  "DesktopTaskbarBadges",
+  "TaskbarMultiMon",
+  "DesktopTaskbarMultiMon",
+  "NotifyOnUsbErrors",
+  "NotifyOnWeakCharger",
 ]);
+const COLOR_MODE_VALUES = ["Light", "Dark"] as const;
+const TASKBAR_ALIGNMENT_VALUES = ["Left", "Center"] as const;
+const TASKBAR_GROUPING_VALUES = ["Always", "WhenFull", "Never"] as const;
+const TASKBAR_MULTI_MON_MODE_VALUES = ["Duplicate", "PrimaryAndWindow", "WindowOnly"] as const;
+const START_FOLDER_VALUES = [
+  "Documents",
+  "Downloads",
+  "Music",
+  "Pictures",
+  "Videos",
+  "Network",
+  "UserProfile",
+  "Explorer",
+  "Settings",
+] as const;
+const WINDOWS_SETTING_VALIDATORS: Record<string, (value: unknown, key: string) => WinDscProperties[string]> = {
+  TaskbarAlignment: enumSettingValidator(TASKBAR_ALIGNMENT_VALUES),
+  AppColorMode: enumSettingValidator(COLOR_MODE_VALUES),
+  SystemColorMode: enumSettingValidator(COLOR_MODE_VALUES),
+  TimeZone: stringSettingValidator,
+  StartFolders: startFoldersSettingValidator,
+  TaskbarGroupingMode: enumSettingValidator(TASKBAR_GROUPING_VALUES),
+  TaskbarMultiMonMode: enumSettingValidator(TASKBAR_MULTI_MON_MODE_VALUES),
+  DesktopTaskbarMultiMonMode: enumSettingValidator(TASKBAR_MULTI_MON_MODE_VALUES),
+};
+for (const key of BOOLEAN_WINDOWS_SETTINGS) {
+  WINDOWS_SETTING_VALIDATORS[key] = booleanSettingValidator;
+}
+
+function supportedWindowsSettings(): string[] {
+  return Object.keys(WINDOWS_SETTING_VALIDATORS).sort();
+}
+
+function booleanSettingValidator(value: unknown, key: string): boolean {
+  if (typeof value !== "boolean") {
+    throw new Error(`windows.setting({ ${key} }) must be a boolean`);
+  }
+  return value;
+}
+
+function stringSettingValidator(value: unknown, key: string): string {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`windows.setting({ ${key} }) must be a non-empty string`);
+  }
+  return value;
+}
+
+function enumSettingValidator<T extends readonly string[]>(
+  allowed: T
+): (value: unknown, key: string) => T[number] {
+  return (value, key) => {
+    if (typeof value !== "string" || !allowed.includes(value)) {
+      throw new Error(
+        `windows.setting({ ${key} }) must be one of: ${allowed.join(", ")}`
+      );
+    }
+    return value as T[number];
+  };
+}
+
+function startFoldersSettingValidator(value: unknown, key: string): string[] {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    throw new Error(
+      `windows.setting({ ${key} }) must be an array of: ${START_FOLDER_VALUES.join(", ")}`
+    );
+  }
+  const invalid = value.find((entry) => !START_FOLDER_VALUES.includes(entry));
+  if (invalid) {
+    throw new Error(
+      `windows.setting({ ${key} }) contains unsupported folder "${invalid}". ` +
+        `Supported folders: ${START_FOLDER_VALUES.join(", ")}.`
+    );
+  }
+  return value;
+}
 
 function normalizeSetting(
   settings: WinSettings,
@@ -284,28 +369,14 @@ function normalizeSetting(
 
   const properties: WinDscProperties = {};
   for (const [key, value] of Object.entries(settings)) {
-    if (!KNOWN_WINDOWS_SETTINGS.has(key)) {
+    const validator = WINDOWS_SETTING_VALIDATORS[key];
+    if (!validator) {
       throw new Error(
         `windows.setting(...) does not support setting "${key}". ` +
-        `Supported settings: ${[...KNOWN_WINDOWS_SETTINGS].join(", ")}.`
+        `Supported settings: ${supportedWindowsSettings().join(", ")}.`
       );
     }
-    if (key === "DeveloperMode") {
-      if (typeof value !== "boolean") {
-        throw new Error("windows.setting({ DeveloperMode }) must be a boolean");
-      }
-      properties[key] = value;
-    } else if (key === "AppColorMode" || key === "SystemColorMode") {
-      if (value !== "Light" && value !== "Dark") {
-        throw new Error(`windows.setting({ ${key} }) must be "Light" or "Dark"`);
-      }
-      properties[key] = value;
-    } else if (key === "TaskbarAlignment") {
-      if (value !== "Left" && value !== "Center") {
-        throw new Error(`windows.setting({ ${key} }) must be "Left" or "Center"`);
-      }
-      properties[key] = value;
-    }
+    properties[key] = validator(value, key);
   }
 
   if (Object.keys(properties).length === 0) {
