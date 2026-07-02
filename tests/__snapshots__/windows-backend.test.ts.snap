@@ -69,21 +69,18 @@ resources:
   - name: "Ensure Microsoft Windows Settings module"
     type: Microsoft.DSC.Transitional/RunCommandOnSet
     properties:
-      executable: "C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe"
+      executable: pwsh
       arguments:
         "0": -NoProfile
         "1": -NoLogo
         "2": -Command
-        "3": "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense }"
+        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null }"
         treatAsArray: true
   - name: "Windows Settings"
     type: Microsoft.Windows.Settings/WindowsSettings
     dependsOn: ["Ensure Microsoft Windows Settings module"]
     properties:
       DeveloperMode: true
-    metadata:
-      winget:
-        securityContext: elevated
 "
 `;
 
@@ -163,12 +160,12 @@ resources:
   - name: "Ensure Microsoft Windows Settings module"
     type: Microsoft.DSC.Transitional/RunCommandOnSet
     properties:
-      executable: "C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe"
+      executable: pwsh
       arguments:
         "0": -NoProfile
         "1": -NoLogo
         "2": -Command
-        "3": "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense }"
+        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null }"
         treatAsArray: true
   - name: "Windows Settings"
     type: Microsoft.Windows.Settings/WindowsSettings
@@ -199,9 +196,6 @@ resources:
       TaskbarMultiMon: true
       TaskbarMultiMonMode: Duplicate
       TimeZone: "Pacific Standard Time"
-    metadata:
-      winget:
-        securityContext: elevated
 "
 `;
 
@@ -870,21 +864,18 @@ resources:
   - name: "Ensure Microsoft Windows Settings module"
     type: Microsoft.DSC.Transitional/RunCommandOnSet
     properties:
-      executable: "C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe"
+      executable: pwsh
       arguments:
         "0": -NoProfile
         "1": -NoLogo
         "2": -Command
-        "3": "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense }"
+        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null }"
         treatAsArray: true
   - name: "Windows Settings"
     type: Microsoft.Windows.Settings/WindowsSettings
     dependsOn: ["Ensure Microsoft Windows Settings module"]
     properties:
       DeveloperMode: true
-    metadata:
-      winget:
-        securityContext: elevated
 "
 `;
 

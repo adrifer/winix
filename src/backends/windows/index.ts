@@ -176,14 +176,15 @@ function createWindowsSettingsEnsureCommand(): WinDscResource {
     name: WINDOWS_SETTINGS_MODULE_COMMAND_NAME,
     resourceType: RUN_COMMAND_ON_SET_TYPE,
     properties: {
-      executable: "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      executable: "pwsh",
       arguments: {
         "0": "-NoProfile",
         "1": "-NoLogo",
         "2": "-Command",
         "3": [
+          "$ErrorActionPreference = 'Stop';",
           "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {",
-          "  Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense",
+          "  Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null",
           "}",
         ].join(" "),
         treatAsArray: true,

@@ -609,7 +609,6 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
           TaskbarMultiMonMode: "PrimaryAndWindow",
           TimeZone: "Pacific Standard Time",
         },
-        elevated: true,
       },
     ]);
   });
@@ -865,7 +864,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(doc).toContain(`type: Microsoft.Windows.Settings/WindowsSettings`);
     expect(doc).toContain("DeveloperMode: true");
     expect(doc).toContain(`dependsOn: ["Ensure Microsoft Windows Settings module"]`);
-    expect(doc).toContain("securityContext: elevated");
+    expect(doc).not.toContain("securityContext: elevated");
     expect(doc).toMatchSnapshot();
   });
 

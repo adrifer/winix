@@ -387,7 +387,6 @@ function normalizeSetting(
     resourceType: WINDOWS_SETTINGS_RESOURCE,
     name: "Windows Settings",
     properties,
-    elevated: true,
   };
   const deps = resolveDependsOn(opts?.dependsOn);
   if (deps) resource.dependsOn = deps;
