@@ -69,8 +69,13 @@ resources:
   - name: "Ensure Microsoft Windows Settings module"
     type: Microsoft.DSC.Transitional/RunCommandOnSet
     properties:
-      executable: pwsh
-      arguments: ["-NoProfile", "-NoLogo", "-Command", "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense }"]
+      executable: "C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe"
+      arguments:
+        "0": -NoProfile
+        "1": -NoLogo
+        "2": -Command
+        "3": "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense }"
+        treatAsArray: true
   - name: "Windows Settings"
     type: Microsoft.Windows.Settings/WindowsSettings
     dependsOn: ["Ensure Microsoft Windows Settings module"]
@@ -158,8 +163,13 @@ resources:
   - name: "Ensure Microsoft Windows Settings module"
     type: Microsoft.DSC.Transitional/RunCommandOnSet
     properties:
-      executable: pwsh
-      arguments: ["-NoProfile", "-NoLogo", "-Command", "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense }"]
+      executable: "C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe"
+      arguments:
+        "0": -NoProfile
+        "1": -NoLogo
+        "2": -Command
+        "3": "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense }"
+        treatAsArray: true
   - name: "Windows Settings"
     type: Microsoft.Windows.Settings/WindowsSettings
     dependsOn: ["Ensure Microsoft Windows Settings module"]
@@ -860,8 +870,13 @@ resources:
   - name: "Ensure Microsoft Windows Settings module"
     type: Microsoft.DSC.Transitional/RunCommandOnSet
     properties:
-      executable: pwsh
-      arguments: ["-NoProfile", "-NoLogo", "-Command", "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense }"]
+      executable: "C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe"
+      arguments:
+        "0": -NoProfile
+        "1": -NoLogo
+        "2": -Command
+        "3": "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense }"
+        treatAsArray: true
   - name: "Windows Settings"
     type: Microsoft.Windows.Settings/WindowsSettings
     dependsOn: ["Ensure Microsoft Windows Settings module"]

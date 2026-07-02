@@ -167,6 +167,7 @@ export interface WinSettings {
   SystemColorMode?: WinColorMode;
   DeveloperMode?: boolean;
   SetTimeZoneAutomatically?: boolean;
+  /** Windows time zone ID. Winix validates only that this is non-empty; the target validates the ID. */
   TimeZone?: string;
   EnableTransparency?: boolean;
   ShowAccentColorOnStartAndTaskbar?: boolean;

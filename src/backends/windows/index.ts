@@ -152,40 +152,50 @@ function prepareWindowsDscResources(
   }
 
   const ensureModule = createWindowsSettingsEnsureCommand();
-  const ensureRef: ResourceRef = { kind: "command", token: ensureModule.token! };
+  const ensureRef: ResourceRef = { kind: "dsc", token: ensureModule.token! };
   return {
-    commands: [...commands, ensureModule],
-    dscResources: envResolvedResources.map((resource) => {
-      if (resource.winix?.kind !== "setting") return resource;
-      return cloneDscResource(resource, resource.properties, [
-        ensureRef,
-        ...(resource.dependsOn ?? []),
-      ]);
-    }),
+    commands: [...commands],
+    dscResources: [
+      ensureModule,
+      ...envResolvedResources.map((resource) => {
+        if (resource.winix?.kind !== "setting") return resource;
+        return cloneDscResource(resource, resource.properties, [
+          ensureRef,
+          ...(resource.dependsOn ?? []),
+        ]);
+      }),
+    ],
   };
 }
 
-function createWindowsSettingsEnsureCommand(): WinRawCommand {
-  const command: WinRawCommand = {
+function createWindowsSettingsEnsureCommand(): WinDscResource {
+  // Microsoft.Windows.Settings currently publishes the WindowsSettings resource
+  // as a prerelease module (the upstream sample uses v0.1.0-alpha), so the
+  // ensure step must opt into prerelease discovery for now.
+  const resource: WinDscResource = {
     name: WINDOWS_SETTINGS_MODULE_COMMAND_NAME,
-    executable: "pwsh",
-    arguments: [
-      "-NoProfile",
-      "-NoLogo",
-      "-Command",
-      [
-        "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {",
-        "  Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense",
-        "}",
-      ].join(" "),
-    ],
+    resourceType: RUN_COMMAND_ON_SET_TYPE,
+    properties: {
+      executable: "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      arguments: {
+        "0": "-NoProfile",
+        "1": "-NoLogo",
+        "2": "-Command",
+        "3": [
+          "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {",
+          "  Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense",
+          "}",
+        ].join(" "),
+        treatAsArray: true,
+      },
+    },
   };
-  Object.defineProperty(command, "token", {
+  Object.defineProperty(resource, "token", {
     value: Symbol("winix.windows-settings-module"),
     enumerable: false,
     configurable: true,
   });
-  return command;
+  return resource;
 }
 
 interface ManagedEnvEntry {
