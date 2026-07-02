@@ -868,6 +868,19 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(doc).toMatchSnapshot();
   });
 
+  it("emits an elevated-shell warning for WindowsSettings resources", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.setting({ DeveloperMode: true }),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain("elevated shell");
+  });
+
   it("emits every supported WindowsSettings property", () => {
     const ws = workspace({
       inputs,

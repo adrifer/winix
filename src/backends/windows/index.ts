@@ -171,7 +171,8 @@ function prepareWindowsDscResources(
 function createWindowsSettingsEnsureCommand(): WinDscResource {
   // Microsoft.Windows.Settings currently publishes the WindowsSettings resource
   // as a prerelease module (the upstream sample uses v0.1.0-alpha), so the
-  // ensure step must opt into prerelease discovery for now.
+  // ensure step must opt into prerelease discovery for now. Revisit/remove
+  // -Prerelease once a stable module exists so future alphas are not preferred.
   const resource: WinDscResource = {
     name: WINDOWS_SETTINGS_MODULE_COMMAND_NAME,
     resourceType: RUN_COMMAND_ON_SET_TYPE,
