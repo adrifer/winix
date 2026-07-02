@@ -137,7 +137,55 @@ export type WinDscMetadata =
       action: "add" | "remove";
       value: string;
       scope: "user" | "machine";
+    }
+  | {
+      kind: "setting";
     };
+
+export type WinColorMode = "Light" | "Dark";
+export type WinTaskbarAlignment = "Left" | "Center";
+export type WinTaskbarGroupingMode = "Always" | "WhenFull" | "Never";
+export type WinTaskbarMultiMonMode = "Duplicate" | "PrimaryAndWindow" | "WindowOnly";
+export type WinStartFolder =
+  | "Documents"
+  | "Downloads"
+  | "Music"
+  | "Pictures"
+  | "Videos"
+  | "Network"
+  | "UserProfile"
+  | "Explorer"
+  | "Settings";
+
+/**
+ * Typed Windows OS settings exposed by
+ * `Microsoft.Windows.Settings/WindowsSettings`.
+ */
+export interface WinSettings {
+  TaskbarAlignment?: WinTaskbarAlignment;
+  AppColorMode?: WinColorMode;
+  SystemColorMode?: WinColorMode;
+  DeveloperMode?: boolean;
+  SetTimeZoneAutomatically?: boolean;
+  /** Windows time zone ID. Winix validates only that this is non-empty; the target validates the ID. */
+  TimeZone?: string;
+  EnableTransparency?: boolean;
+  ShowAccentColorOnStartAndTaskbar?: boolean;
+  ShowAccentColorOnTitleBarsAndWindowBorders?: boolean;
+  AutoColorization?: boolean;
+  StartFolders?: WinStartFolder[];
+  ShowRecentList?: boolean;
+  ShowRecommendedList?: boolean;
+  TaskbarBadges?: boolean;
+  DesktopTaskbarBadges?: boolean;
+  TaskbarGroupingMode?: WinTaskbarGroupingMode;
+  TaskbarMultiMon?: boolean;
+  DesktopTaskbarMultiMon?: boolean;
+  TaskbarMultiMonMode?: WinTaskbarMultiMonMode;
+  DesktopTaskbarMultiMonMode?: WinTaskbarMultiMonMode;
+  NotifyOnUsbErrors?: boolean;
+  NotifyOnWeakCharger?: boolean;
+}
 
 /** JSON-like value accepted in generic DSC `properties`. */
 export type WinDscPropertyValue =

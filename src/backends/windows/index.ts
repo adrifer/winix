@@ -68,6 +68,7 @@ const DSC_SCHEMA =
   "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json";
 const WINGET_PACKAGE_TYPE = "Microsoft.WinGet/Package";
 const RUN_COMMAND_ON_SET_TYPE = "Microsoft.DSC.Transitional/RunCommandOnSet";
+const WINDOWS_SETTINGS_MODULE_COMMAND_NAME = "Ensure Microsoft Windows Settings module";
 
 /**
  * Generate Windows bundles for every Windows host in the evaluated workspace.
@@ -102,8 +103,9 @@ function generateConfiguration(
   lock: WindowsLock
 ): string {
   const packages = sortedPackages(win.packages ?? {});
-  const commands = win.commands ?? [];
-  const dscResources = resolveManagedEnvironmentReferences(win.dsc ?? []);
+  const prepared = prepareWindowsDscResources(win.commands ?? [], win.dsc ?? []);
+  const commands = prepared.commands;
+  const dscResources = prepared.dscResources;
 
   const lines: string[] = [];
   lines.push(`# yaml-language-server: $schema=${DSC_SCHEMA}`);
@@ -138,6 +140,64 @@ function generateConfiguration(
   }
 
   return lines.join("\n") + "\n";
+}
+
+function prepareWindowsDscResources(
+  commands: readonly WinRawCommand[],
+  resources: readonly WinDscResource[]
+): { commands: WinRawCommand[]; dscResources: WinDscResource[] } {
+  const envResolvedResources = resolveManagedEnvironmentReferences(resources);
+  if (!envResolvedResources.some((resource) => resource.winix?.kind === "setting")) {
+    return { commands: [...commands], dscResources: envResolvedResources };
+  }
+
+  const ensureModule = createWindowsSettingsEnsureCommand();
+  const ensureRef: ResourceRef = { kind: "dsc", token: ensureModule.token! };
+  return {
+    commands: [...commands],
+    dscResources: [
+      ensureModule,
+      ...envResolvedResources.map((resource) => {
+        if (resource.winix?.kind !== "setting") return resource;
+        return cloneDscResource(resource, resource.properties, [
+          ensureRef,
+          ...(resource.dependsOn ?? []),
+        ]);
+      }),
+    ],
+  };
+}
+
+function createWindowsSettingsEnsureCommand(): WinDscResource {
+  // Microsoft.Windows.Settings currently publishes the WindowsSettings resource
+  // as a prerelease module (the upstream sample uses v0.1.0-alpha), so the
+  // ensure step must opt into prerelease discovery for now. Revisit/remove
+  // -Prerelease once a stable module exists so future alphas are not preferred.
+  const resource: WinDscResource = {
+    name: WINDOWS_SETTINGS_MODULE_COMMAND_NAME,
+    resourceType: RUN_COMMAND_ON_SET_TYPE,
+    properties: {
+      executable: "pwsh",
+      arguments: {
+        "0": "-NoProfile",
+        "1": "-NoLogo",
+        "2": "-Command",
+        "3": [
+          "$ErrorActionPreference = 'Stop';",
+          "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {",
+          "  Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null",
+          "}",
+        ].join(" "),
+        treatAsArray: true,
+      },
+    },
+  };
+  Object.defineProperty(resource, "token", {
+    value: Symbol("winix.windows-settings-module"),
+    enumerable: false,
+    configurable: true,
+  });
+  return resource;
 }
 
 interface ManagedEnvEntry {
@@ -280,9 +340,12 @@ function rewritePathPropertyValue(
 
 function cloneDscResource(
   resource: WinDscResource,
-  properties: WinDscProperties | undefined
+  properties: WinDscProperties | undefined,
+  dependsOn: ResourceRef[] | undefined = resource.dependsOn
 ): WinDscResource {
   const cloned: WinDscResource = { ...resource, properties };
+  if (dependsOn) cloned.dependsOn = dependsOn;
+  else delete cloned.dependsOn;
   if (resource.token) {
     Object.defineProperty(cloned, "token", {
       value: resource.token,
@@ -530,6 +593,10 @@ function renderDscResource(
   naming: NamingPlan
 ): string[] {
   const out: string[] = [];
+  if (resource.winix?.kind === "setting") {
+    out.push("  # Some Windows settings (including DeveloperMode) require");
+    out.push("  # running winget configure from an elevated shell to change.");
+  }
   out.push(`  - name: ${yamlScalar(plan.name)}`);
   out.push(`    type: ${yamlScalar(resource.resourceType)}`);
   const deps = resolveDependsOnRefs(resource.dependsOn, naming);

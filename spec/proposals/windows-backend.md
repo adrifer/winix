@@ -111,19 +111,19 @@ single high-level pointer here. Update this as PRs land.
       "update the lock if needed"), then writes them; already-locked entries
       are never re-resolved
 
-### Phase 3 — Resource ordering + ergonomics (PENDING)
+### Phase 3 — Resource ordering + ergonomics (IN PROGRESS)
 
-- [ ] **`dependsOn` + `name` on resources** *(settle DX first: string names vs handle refs)*
-- [ ] Cycle + dangling-reference validation at generation time
-- [ ] `windows.setting()` → `WindowsSettings` (Developer Mode), auto-emit ensure-module + `dependsOn`
+- [x] **`dependsOn` + resource handles** on packages, raw commands, DSC resources, and typed helpers
+- [x] Dangling-reference validation at generation time
+- [x] `windows.setting()` → `WindowsSettings` (Developer Mode), auto-emit ensure-module + `dependsOn`
 - [ ] `windows.requireOsVersion()` → `OsVersion` guardrail
 
 ### Phase 4 — Sugar helpers (PENDING)
 
 - [x] `windows.env.*` / `windows.path.*` (native Registry + idempotent script helpers)
-- [ ] `windows.dsc()` typed escape hatch to any DSC v3 resource
+- [x] `windows.dsc()` typed escape hatch to any DSC v3 resource
 - [ ] `windows.programs.<name>()` curated install+configure helpers
-- [ ] `windows.file.*` declarative files (see
+- [x] `windows.file.*` declarative files (see
       [`windows-file.md`](./windows-file.md))
 
 ### Phase 5 — Power features (LATER)
@@ -548,7 +548,7 @@ it before coding.
 
 ### `windows.setting(...)` — Windows / OS settings
 
-**Status: proposed (high priority).**
+**Status: implemented preview.**
 
 Maps to the native `Microsoft.Windows.Settings/WindowsSettings` DSC resource.
 The most common dev-box use is **enabling Developer Mode** in a single line:
@@ -559,16 +559,30 @@ windows.setting({ DeveloperMode: true });
 
 This is one of the highest-value, best-demoing helpers: one line of
 TypeScript flips an OS setting that normally requires digging through
-Settings or running elevated PowerShell. Other settings exposed by the
-resource (e.g. long-path support) ride the same helper.
+Settings or running elevated PowerShell. Other settings exposed by the resource ride the same helper:
 
-**Prerequisite the emitter must handle:** the `Microsoft.Windows.Settings`
-DSC module must be present before the resource can apply. Microsoft's configs
-ensure this by emitting a `RunCommandOnSet` that installs the module, then
-`dependsOn`-ing it. Winix should do the same automatically (emit the
-ensure-module step + wire the dependency) so the user just writes
-`windows.setting(...)` and it works. This makes `setting` depend on the
-`dependsOn` machinery above.
+```ts
+windows.setting({
+  SystemColorMode: "Dark",
+  AppColorMode: "Dark",
+  TaskbarAlignment: "Left",
+});
+```
+
+The emitter automatically handles the prerequisite: the
+`Microsoft.Windows.Settings` DSC module must be present before the resource can
+apply. When any `windows.setting(...)` resource is present, Winix emits one
+idempotent `Microsoft.DSC.Transitional/RunCommandOnSet` resource that installs
+the module with `Install-PSResource`, then wires every settings resource to
+depend on that ensure step. User-provided `dependsOn` handles are preserved.
+
+Hardware validation on Windows 11 with winget configure / DSC v3.2 shows that
+admin-gated settings such as `DeveloperMode` only mutate from an elevated shell.
+Winix does not emit `securityContext: elevated` for `WindowsSettings` by default:
+in noninteractive winget runs, that metadata prevented prerequisite
+`RunCommandOnSet` dependencies from executing instead of self-elevating the
+resource. Run `winget configure` from an elevated shell when changing settings
+that require Administrator.
 
 ### `windows.requireOsVersion(...)` — minimum OS guardrail
 

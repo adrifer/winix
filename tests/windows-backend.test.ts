@@ -556,6 +556,79 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
     ]);
   });
 
+  it("windows.setting() normalizes supported Windows settings", () => {
+    const frag = windows.setting({
+      AppColorMode: "Dark",
+      AutoColorization: true,
+      DesktopTaskbarBadges: true,
+      DesktopTaskbarMultiMon: true,
+      DesktopTaskbarMultiMonMode: "WindowOnly",
+      DeveloperMode: true,
+      EnableTransparency: false,
+      NotifyOnUsbErrors: true,
+      NotifyOnWeakCharger: false,
+      SetTimeZoneAutomatically: false,
+      ShowAccentColorOnStartAndTaskbar: true,
+      ShowAccentColorOnTitleBarsAndWindowBorders: true,
+      ShowRecentList: false,
+      ShowRecommendedList: true,
+      StartFolders: ["Documents", "Settings"],
+      SystemColorMode: "Dark",
+      TaskbarAlignment: "Left",
+      TaskbarBadges: false,
+      TaskbarGroupingMode: "Never",
+      TaskbarMultiMon: true,
+      TaskbarMultiMonMode: "PrimaryAndWindow",
+      TimeZone: "Pacific Standard Time",
+    });
+    expect(frag.windows?.dsc).toEqual([
+      {
+        resourceType: "Microsoft.Windows.Settings/WindowsSettings",
+        name: "Windows Settings",
+        properties: {
+          AppColorMode: "Dark",
+          AutoColorization: true,
+          DesktopTaskbarBadges: true,
+          DesktopTaskbarMultiMon: true,
+          DesktopTaskbarMultiMonMode: "WindowOnly",
+          DeveloperMode: true,
+          EnableTransparency: false,
+          NotifyOnUsbErrors: true,
+          NotifyOnWeakCharger: false,
+          SetTimeZoneAutomatically: false,
+          ShowAccentColorOnStartAndTaskbar: true,
+          ShowAccentColorOnTitleBarsAndWindowBorders: true,
+          ShowRecentList: false,
+          ShowRecommendedList: true,
+          StartFolders: ["Documents", "Settings"],
+          SystemColorMode: "Dark",
+          TaskbarAlignment: "Left",
+          TaskbarBadges: false,
+          TaskbarGroupingMode: "Never",
+          TaskbarMultiMon: true,
+          TaskbarMultiMonMode: "PrimaryAndWindow",
+          TimeZone: "Pacific Standard Time",
+        },
+      },
+    ]);
+  });
+
+  it("windows.setting() rejects unknown settings", () => {
+    expect(() => windows.setting({ LongPathsEnabled: true } as any)).toThrow(
+      /does not support setting "LongPathsEnabled"/
+    );
+  });
+
+  it("windows.setting() validates setting value shapes", () => {
+    expect(() => windows.setting({ DeveloperMode: "yes" } as any)).toThrow(/boolean/);
+    expect(() => windows.setting({ TaskbarGroupingMode: "Sometimes" } as any)).toThrow(
+      /Always, WhenFull, Never/
+    );
+    expect(() => windows.setting({ StartFolders: ["Documents", "Invalid"] } as any)).toThrow(
+      /unsupported folder "Invalid"/
+    );
+  });
+
   it("windows.env.set() builds a user-scope Registry resource by default", () => {
     const frag = windows.env.set("EDITOR", "nvim");
     expect(frag.windows?.dsc).toEqual([
@@ -773,6 +846,137 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     });
     const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
     expect(doc).toContain(`dependsOn: ["Set EDITOR"]`);
+  });
+
+  it("emits WindowsSettings with an auto ensure-module dependency", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.setting({ DeveloperMode: true }),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain(`name: "Ensure Microsoft Windows Settings module"`);
+    expect(doc).toContain("type: Microsoft.DSC.Transitional/RunCommandOnSet");
+    expect(doc).toContain("Install-PSResource -Name Microsoft.Windows.Settings");
+    expect(doc).toContain(`type: Microsoft.Windows.Settings/WindowsSettings`);
+    expect(doc).toContain("DeveloperMode: true");
+    expect(doc).toContain(`dependsOn: ["Ensure Microsoft Windows Settings module"]`);
+    expect(doc).not.toContain("securityContext: elevated");
+    expect(doc).toMatchSnapshot();
+  });
+
+  it("emits an elevated-shell warning for WindowsSettings resources", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.setting({ DeveloperMode: true }),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc).toContain("elevated shell");
+  });
+
+  it("emits every supported WindowsSettings property", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.setting({
+            AppColorMode: "Dark",
+            AutoColorization: true,
+            DesktopTaskbarBadges: true,
+            DesktopTaskbarMultiMon: true,
+            DesktopTaskbarMultiMonMode: "WindowOnly",
+            DeveloperMode: true,
+            EnableTransparency: false,
+            NotifyOnUsbErrors: true,
+            NotifyOnWeakCharger: false,
+            SetTimeZoneAutomatically: false,
+            ShowAccentColorOnStartAndTaskbar: true,
+            ShowAccentColorOnTitleBarsAndWindowBorders: true,
+            ShowRecentList: false,
+            ShowRecommendedList: true,
+            StartFolders: ["Documents", "Downloads", "Settings"],
+            SystemColorMode: "Light",
+            TaskbarAlignment: "Center",
+            TaskbarBadges: false,
+            TaskbarGroupingMode: "WhenFull",
+            TaskbarMultiMon: true,
+            TaskbarMultiMonMode: "Duplicate",
+            TimeZone: "Pacific Standard Time",
+          }),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    for (const key of [
+      "AppColorMode",
+      "AutoColorization",
+      "DesktopTaskbarBadges",
+      "DesktopTaskbarMultiMon",
+      "DesktopTaskbarMultiMonMode",
+      "DeveloperMode",
+      "EnableTransparency",
+      "NotifyOnUsbErrors",
+      "NotifyOnWeakCharger",
+      "SetTimeZoneAutomatically",
+      "ShowAccentColorOnStartAndTaskbar",
+      "ShowAccentColorOnTitleBarsAndWindowBorders",
+      "ShowRecentList",
+      "ShowRecommendedList",
+      "StartFolders",
+      "SystemColorMode",
+      "TaskbarAlignment",
+      "TaskbarBadges",
+      "TaskbarGroupingMode",
+      "TaskbarMultiMon",
+      "TaskbarMultiMonMode",
+      "TimeZone",
+    ]) {
+      expect(doc).toContain(`${key}:`);
+    }
+    expect(doc).toMatchSnapshot();
+  });
+
+  it("emits the WindowsSettings ensure-module step only once", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.setting({ DeveloperMode: true }),
+          windows.setting({ SystemColorMode: "Dark", AppColorMode: "Dark" }),
+        ]),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(doc.match(/Ensure Microsoft Windows Settings module/g)).toHaveLength(3);
+    expect(doc.match(/Install-PSResource -Name Microsoft\.Windows\.Settings/g)).toHaveLength(1);
+    expect(doc.match(/type: Microsoft\.Windows\.Settings\/WindowsSettings/g)).toHaveLength(2);
+  });
+
+  it("packages and raw commands can depend on a setting handle", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), ({ windows }) => {
+          const devMode = windows.setting({ DeveloperMode: true });
+          windows.package({ id: "Git.Git", dependsOn: devMode });
+          windows.raw({ name: "after-settings", executable: "pwsh", dependsOn: devMode });
+        }),
+      ],
+    });
+    const doc = generateWindows(evaluate(ws), windowsLock({
+      "Git.Git": { source: "winget", version: "2.44.0" },
+    })).hosts.desktop["configuration.winget"];
+    expect(doc).toContain(`name: "Git Git"`);
+    expect(doc).toContain(`name: "after settings"`);
+    expect(doc).toContain(`dependsOn: ["Windows Settings"]`);
+    expect(doc).toMatchSnapshot();
   });
 
   it("resolves Winix-managed env references in PATH entries", () => {

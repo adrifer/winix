@@ -12,6 +12,7 @@ import type {
   WinPackage,
   WinPackageSource,
   WinRawCommand,
+  WinSettings,
 } from "../types/index.ts";
 
 /**
@@ -59,6 +60,11 @@ export interface WinDscSpec {
   type: string;
   name?: string;
   properties?: WinDscProperties;
+  dependsOn?: ResourceHandle | ResourceHandle[];
+}
+
+/** Options for `windows.setting(...)`. */
+export interface WinSettingOpts {
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -225,6 +231,7 @@ function withDscMetadata(
 const REGISTRY_RESOURCE = "Microsoft.Windows/Registry";
 const WINDOWS_POWERSHELL_SCRIPT_RESOURCE =
   "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+const WINDOWS_SETTINGS_RESOURCE = "Microsoft.Windows.Settings/WindowsSettings";
 const USER_ENV_KEY_PATH = "HKCU\\Environment";
 const MACHINE_ENV_KEY_PATH =
   "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
@@ -255,6 +262,135 @@ function normalizeDsc(arg: WinDscSpec): WinDscResource {
   const deps = resolveDependsOn(arg.dependsOn);
   if (deps) resource.dependsOn = deps;
   return withDscToken(resource);
+}
+
+const BOOLEAN_WINDOWS_SETTINGS = new Set([
+  "DeveloperMode",
+  "SetTimeZoneAutomatically",
+  "EnableTransparency",
+  "ShowAccentColorOnStartAndTaskbar",
+  "ShowAccentColorOnTitleBarsAndWindowBorders",
+  "AutoColorization",
+  "ShowRecentList",
+  "ShowRecommendedList",
+  "TaskbarBadges",
+  "DesktopTaskbarBadges",
+  "TaskbarMultiMon",
+  "DesktopTaskbarMultiMon",
+  "NotifyOnUsbErrors",
+  "NotifyOnWeakCharger",
+]);
+const COLOR_MODE_VALUES = ["Light", "Dark"] as const;
+const TASKBAR_ALIGNMENT_VALUES = ["Left", "Center"] as const;
+const TASKBAR_GROUPING_VALUES = ["Always", "WhenFull", "Never"] as const;
+const TASKBAR_MULTI_MON_MODE_VALUES = ["Duplicate", "PrimaryAndWindow", "WindowOnly"] as const;
+const START_FOLDER_VALUES = [
+  "Documents",
+  "Downloads",
+  "Music",
+  "Pictures",
+  "Videos",
+  "Network",
+  "UserProfile",
+  "Explorer",
+  "Settings",
+] as const;
+const WINDOWS_SETTING_VALIDATORS: Record<string, (value: unknown, key: string) => WinDscProperties[string]> = {
+  TaskbarAlignment: enumSettingValidator(TASKBAR_ALIGNMENT_VALUES),
+  AppColorMode: enumSettingValidator(COLOR_MODE_VALUES),
+  SystemColorMode: enumSettingValidator(COLOR_MODE_VALUES),
+  TimeZone: stringSettingValidator,
+  StartFolders: startFoldersSettingValidator,
+  TaskbarGroupingMode: enumSettingValidator(TASKBAR_GROUPING_VALUES),
+  TaskbarMultiMonMode: enumSettingValidator(TASKBAR_MULTI_MON_MODE_VALUES),
+  DesktopTaskbarMultiMonMode: enumSettingValidator(TASKBAR_MULTI_MON_MODE_VALUES),
+};
+for (const key of BOOLEAN_WINDOWS_SETTINGS) {
+  WINDOWS_SETTING_VALIDATORS[key] = booleanSettingValidator;
+}
+
+function supportedWindowsSettings(): string[] {
+  return Object.keys(WINDOWS_SETTING_VALIDATORS).sort();
+}
+
+function booleanSettingValidator(value: unknown, key: string): boolean {
+  if (typeof value !== "boolean") {
+    throw new Error(`windows.setting({ ${key} }) must be a boolean`);
+  }
+  return value;
+}
+
+function stringSettingValidator(value: unknown, key: string): string {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`windows.setting({ ${key} }) must be a non-empty string`);
+  }
+  return value;
+}
+
+function enumSettingValidator<T extends readonly string[]>(
+  allowed: T
+): (value: unknown, key: string) => T[number] {
+  return (value, key) => {
+    if (typeof value !== "string" || !allowed.includes(value)) {
+      throw new Error(
+        `windows.setting({ ${key} }) must be one of: ${allowed.join(", ")}`
+      );
+    }
+    return value as T[number];
+  };
+}
+
+function startFoldersSettingValidator(value: unknown, key: string): string[] {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    throw new Error(
+      `windows.setting({ ${key} }) must be an array of: ${START_FOLDER_VALUES.join(", ")}`
+    );
+  }
+  const invalid = value.find((entry) => !START_FOLDER_VALUES.includes(entry));
+  if (invalid) {
+    throw new Error(
+      `windows.setting({ ${key} }) contains unsupported folder "${invalid}". ` +
+        `Supported folders: ${START_FOLDER_VALUES.join(", ")}.`
+    );
+  }
+  return value;
+}
+
+function normalizeSetting(
+  settings: WinSettings,
+  opts: WinSettingOpts | undefined
+): WinDscResource {
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
+    throw new Error("windows.setting(settings) requires a settings object");
+  }
+  if (opts !== undefined && (opts === null || typeof opts !== "object" || Array.isArray(opts))) {
+    throw new Error("windows.setting options must be an object when provided");
+  }
+
+  const properties: WinDscProperties = {};
+  for (const [key, value] of Object.entries(settings)) {
+    const validator = WINDOWS_SETTING_VALIDATORS[key];
+    if (!validator) {
+      throw new Error(
+        `windows.setting(...) does not support setting "${key}". ` +
+        `Supported settings: ${supportedWindowsSettings().join(", ")}.`
+      );
+    }
+    properties[key] = validator(value, key);
+  }
+
+  if (Object.keys(properties).length === 0) {
+    throw new Error("windows.setting(settings) requires at least one supported setting");
+  }
+
+  const resource: WinDscResource = {
+    resourceType: WINDOWS_SETTINGS_RESOURCE,
+    name: "Windows Settings",
+    properties,
+  };
+  const deps = resolveDependsOn(opts?.dependsOn);
+  if (deps) resource.dependsOn = deps;
+  return withDscMetadata(withDscToken(resource), { kind: "setting" });
 }
 
 function normalizeEnvOpts(opts: WinEnvOpts | undefined, helper: string): WinEnvOpts | undefined {
@@ -931,6 +1067,19 @@ export interface WindowsHelper {
   dsc(arg: WinDscSpec): ResourceHandle;
 
   /**
+   * Manage Windows OS settings through the native
+   * `Microsoft.Windows.Settings/WindowsSettings` DSC resource. The emitter
+   * automatically ensures the required `Microsoft.Windows.Settings` module is
+   * installed and wires settings resources to depend on it.
+   *
+   * ```ts
+   * windows.setting({ DeveloperMode: true });
+   * windows.setting({ SystemColorMode: "Dark", TaskbarAlignment: "Left" });
+   * ```
+   */
+  setting(settings: WinSettings, opts?: WinSettingOpts): ResourceHandle;
+
+  /**
    * Manage a user/machine environment variable declaratively via the native
    * `Microsoft.Windows/Registry` DSC resource.
    *
@@ -1001,6 +1150,8 @@ export const windows: WindowsHelper = {
     const fragment: Fragment = { windows: { dsc: [resource] } };
     return asHandle(fragment, { kind: "dsc", token: resource.token! });
   },
+  setting: (settings: WinSettings, opts?: WinSettingOpts): ResourceHandle =>
+    dscHandle(normalizeSetting(settings, opts)),
   env: {
     set: (name: string, value: string, opts?: WinEnvOpts): ResourceHandle =>
       dscHandle(normalizeEnv(name, "Present", value, opts)),

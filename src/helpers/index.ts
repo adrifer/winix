@@ -44,4 +44,5 @@ export type {
   WinPathNamespace,
   WinRawCommandArg,
   WinRawCommandSpec,
+  WinSettingOpts,
 } from "./windows.ts";
