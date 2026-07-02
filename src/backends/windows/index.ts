@@ -592,6 +592,10 @@ function renderDscResource(
   naming: NamingPlan
 ): string[] {
   const out: string[] = [];
+  if (resource.winix?.kind === "setting") {
+    out.push("  # Some Windows settings (including DeveloperMode) require");
+    out.push("  # running winget configure from an elevated shell to change.");
+  }
   out.push(`  - name: ${yamlScalar(plan.name)}`);
   out.push(`    type: ${yamlScalar(resource.resourceType)}`);
   const deps = resolveDependsOnRefs(resource.dependsOn, naming);

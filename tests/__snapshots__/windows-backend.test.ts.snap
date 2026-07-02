@@ -76,6 +76,8 @@ resources:
         "2": -Command
         "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null }"
         treatAsArray: true
+  # Some Windows settings (including DeveloperMode) require
+  # running winget configure from an elevated shell to change.
   - name: "Windows Settings"
     type: Microsoft.Windows.Settings/WindowsSettings
     dependsOn: ["Ensure Microsoft Windows Settings module"]
@@ -167,6 +169,8 @@ resources:
         "2": -Command
         "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null }"
         treatAsArray: true
+  # Some Windows settings (including DeveloperMode) require
+  # running winget configure from an elevated shell to change.
   - name: "Windows Settings"
     type: Microsoft.Windows.Settings/WindowsSettings
     dependsOn: ["Ensure Microsoft Windows Settings module"]
@@ -871,6 +875,8 @@ resources:
         "2": -Command
         "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null }"
         treatAsArray: true
+  # Some Windows settings (including DeveloperMode) require
+  # running winget configure from an elevated shell to change.
   - name: "Windows Settings"
     type: Microsoft.Windows.Settings/WindowsSettings
     dependsOn: ["Ensure Microsoft Windows Settings module"]

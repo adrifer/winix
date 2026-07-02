@@ -576,6 +576,14 @@ idempotent `Microsoft.DSC.Transitional/RunCommandOnSet` resource that installs
 the module with `Install-PSResource`, then wires every settings resource to
 depend on that ensure step. User-provided `dependsOn` handles are preserved.
 
+Hardware validation on Windows 11 with winget configure / DSC v3.2 shows that
+admin-gated settings such as `DeveloperMode` only mutate from an elevated shell.
+Winix does not emit `securityContext: elevated` for `WindowsSettings` by default:
+in noninteractive winget runs, that metadata prevented prerequisite
+`RunCommandOnSet` dependencies from executing instead of self-elevating the
+resource. Run `winget configure` from an elevated shell when changing settings
+that require Administrator.
+
 ### `windows.requireOsVersion(...)` — minimum OS guardrail
 
 **Status: proposed.**
