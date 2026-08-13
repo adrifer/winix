@@ -1,6 +1,7 @@
 import { normalizeArgs } from "./utils.ts";
 import type { ProgramOptions, ServiceOptions } from "./options.ts";
 import type { Fragment, NixExpr } from "../core/types.ts";
+import { escapeNixDoubleQuoted, nixStringLiteral } from "../nix/serialize.ts";
 import type { HomeFile, HomeOptions, PackageRef } from "../types/index.ts";
 
 /**
@@ -27,9 +28,9 @@ export interface HomeHelper {
     name: K,
     opts?: ServiceOptions<HomeServiceOptions, K>
   ): Fragment;
-  env(vars: Record<string, string>): Fragment;
-  path(paths: string[]): Fragment;
-  path(...paths: string[]): Fragment;
+  env(vars: Record<string, string | NixExpr>): Fragment;
+  path(paths: (string | NixExpr)[]): Fragment;
+  path(...paths: (string | NixExpr)[]): Fragment;
   packages(packages: PackageRef[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
   files(files: Record<string, HomeFile>): Fragment;
@@ -67,10 +68,10 @@ export const home: HomeHelper = Object.assign(
     ): Fragment => ({
       homeManager: { services: { [name]: { enable: true, ...opts } } },
     }),
-    env: (vars: Record<string, string>): Fragment => ({
+    env: (vars: Record<string, string | NixExpr>): Fragment => ({
       homeManager: { home: { sessionVariables: vars } },
     }),
-    path: (...args: string[] | [string[]]): Fragment => ({
+    path: (...args: (string | NixExpr)[] | [(string | NixExpr)[]]): Fragment => ({
       homeManager: { home: { sessionPath: normalizeArgs(args) } },
     }),
     packages: (...args: PackageRef[] | [PackageRef[]]): Fragment => ({
@@ -95,7 +96,7 @@ export const home: HomeHelper = Object.assign(
     raw: (config: string): Fragment => ({ homeManager: { __raw: [config] } }),
     activation: (name: string, opts: ActivationOpts): Fragment => {
       const after = opts.after ?? ["writeBoundary"];
-      const afterList = after.map((s) => JSON.stringify(s)).join(" ");
+      const afterList = after.map((s) => nixStringLiteral(s)).join(" ");
       return {
         homeManager: {
           home: {
@@ -114,11 +115,7 @@ export const home: HomeHelper = Object.assign(
 
 function homePathToNixString(path: string): string {
   if (path.startsWith("~/")) {
-    return `"${escapeNixString(`\${config.home.homeDirectory}/${path.slice(2)}`)}"`;
+    return '"${config.home.homeDirectory}/' + escapeNixDoubleQuoted(path.slice(2)) + '"';
   }
-  return JSON.stringify(path);
-}
-
-function escapeNixString(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return nixStringLiteral(path);
 }

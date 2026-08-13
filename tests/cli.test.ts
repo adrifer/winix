@@ -17,6 +17,7 @@ import {
 } from "../src/cli/activation.js";
 import { applyWorkspace } from "../src/cli/commands/apply.js";
 import { init, resolveWinixVersionRange } from "../src/cli/commands/init.js";
+import { validateGeneratedNixSyntax } from "../src/cli/commands/check.js";
 import {
   flakeRefForHost,
   selectHost,
@@ -52,6 +53,47 @@ describe("CLI analysis", () => {
         ]),
         host("wsl", nixos(), []),
       ],
+    });
+
+    describe("winix check generated syntax", () => {
+      const output = {
+        "flake.nix": "{ outputs = _: {}; }\n",
+        hosts: { "wsl.nix": "{ ... }: {}\n" },
+        rawModules: [],
+        warnings: [],
+      };
+
+      it("parses every generated Nix source", () => {
+        const parsed: string[] = [];
+        validateGeneratedNixSyntax(output, (source) => {
+          parsed.push(source);
+          return { error: undefined, status: 0, stderr: "" };
+        });
+
+        expect(parsed).toEqual([output["flake.nix"], output.hosts["wsl.nix"]]);
+      });
+
+      it("reports the generated file containing invalid Nix syntax", () => {
+        expect(() =>
+          validateGeneratedNixSyntax(output, (source) => ({
+            error: undefined,
+            status: source === output.hosts["wsl.nix"] ? 1 : 0,
+            stderr: source === output.hosts["wsl.nix"] ? "syntax error, unexpected '}'" : "",
+          }))
+        ).toThrow(
+          "Generated Nix syntax is invalid in hosts/wsl.nix:\nsyntax error, unexpected '}'"
+        );
+      });
+
+      it("skips syntax parsing when nix-instantiate is unavailable", () => {
+        expect(() =>
+          validateGeneratedNixSyntax(output, () => ({
+            error: Object.assign(new Error("not found"), { code: "ENOENT" }),
+            status: null,
+            stderr: "",
+          }))
+        ).not.toThrow();
+      });
     });
 
     expect(findDuplicateHosts(ws)).toEqual(["wsl"]);

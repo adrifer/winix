@@ -123,6 +123,50 @@ describe("curated helpers", () => {
     });
   });
 
+  it("serializes ordinary strings as behavior-preserving Nix literals", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          home.program("zsh", {
+            shellAliases: {
+              co: 'copilot --add-dir "$PWD" --yolo',
+              windowsPath: String.raw`C:\Users\me\bin`,
+              literalInterpolation: "echo ${config.home.homeDirectory}",
+              special: "first line\nsecond\tline\rlast\bline",
+            },
+          }),
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain(
+      'programs.zsh.shellAliases.co = "copilot --add-dir \\"$PWD\\" --yolo";'
+    );
+    expect(hostNix).toContain(
+      'programs.zsh.shellAliases.windowsPath = "C:\\\\Users\\\\me\\\\bin";'
+    );
+    expect(hostNix).toContain(
+      'programs.zsh.shellAliases.literalInterpolation = "echo \\${config.home.homeDirectory}";'
+    );
+    expect(hostNix).toContain(
+      'programs.zsh.shellAliases.special = "first line\\nsecond\\tline\\rlast\bline";'
+    );
+  });
+
+  it("rejects null bytes that Nix strings cannot represent", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [host("wsl-work", nixos(), [{ homeManager: { value: "before\0after" } }])],
+    });
+
+    expect(() => generateNix(ws, evaluate(ws))).toThrow(
+      "Nix strings cannot contain null bytes"
+    );
+  });
+
   it("home.activation() produces Home Manager activation fragments and output", () => {
     const fragment = home.activation("ensureWritableNpmrc", {
       script: "mkdir -p \"$HOME/.config/npm\"",

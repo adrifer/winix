@@ -1,8 +1,9 @@
 // winix check — validate configuration
 
+import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import { loadWorkspace } from "../loader.ts";
 import { evaluate } from "../../evaluator/index.ts";
-import { generateNix } from "../../backends/nix/index.ts";
+import { generateNix, type NixOutput } from "../../backends/nix/index.ts";
 import {
   analyzeWorkspace,
   collectEscapeReport,
@@ -21,6 +22,7 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
     const duplicateHosts = findDuplicateHosts(workspace);
     const evaluated = evaluate(workspace);
     const output = generateNix(workspace, evaluated);
+    validateGeneratedNixSyntax(output);
     const analyses = analyzeWorkspace(workspace);
     const conflicts = detectConflicts(analyses);
 
@@ -64,4 +66,39 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
     console.error(`  ${(err as Error).message}`);
     process.exit(1);
   }
+}
+
+interface NixParseResult {
+  error?: NodeJS.ErrnoException;
+  status: number | null;
+  stderr: string;
+}
+
+type NixParser = (source: string) => NixParseResult;
+
+export function validateGeneratedNixSyntax(
+  output: NixOutput,
+  parse: NixParser = parseNixSource
+): void {
+  const sources = [
+    ["flake.nix", output["flake.nix"]],
+    ...Object.entries(output.hosts).map(([name, source]) => [`hosts/${name}`, source]),
+  ] as const;
+
+  for (const [name, source] of sources) {
+    const result = parse(source);
+    if (result.error?.code === "ENOENT") return;
+    if (result.error) throw result.error;
+    if (result.status !== 0) {
+      const detail = result.stderr.trim() || `nix-instantiate exited with status ${result.status}`;
+      throw new Error(`Generated Nix syntax is invalid in ${name}:\n${detail}`);
+    }
+  }
+}
+
+function parseNixSource(source: string): NixParseResult {
+  return spawnSync("nix-instantiate", ["--parse", "-"], {
+    input: source,
+    encoding: "utf8",
+  }) as SpawnSyncReturns<string>;
 }

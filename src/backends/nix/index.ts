@@ -3,6 +3,7 @@
 import { posix as pathPosix } from "node:path";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
 import type { ImportRef, InputDef, InputWithOptions, NixExpr, RawModuleRef, WorkspaceDef } from "../../core/types.ts";
+import { nixStringLiteral } from "../../nix/serialize.ts";
 
 /**
  * Generated output for a workspace.
@@ -53,7 +54,7 @@ function generateFlake(
     .map(
       (h) =>
         `    nixosConfigurations.${h.name} = nixpkgs.lib.nixosSystem {\n` +
-        `      system = "${systemForHost(h, "nixos")}";\n` +
+        `      system = ${nixStringLiteral(systemForHost(h, "nixos"))};\n` +
         `      modules = [ ${nixRelativePath("hosts", `${h.name}.nix`)} ];\n` +
         `      specialArgs = { inherit inputs; };\n` +
         `    };`
@@ -65,7 +66,7 @@ function generateFlake(
     .map(
       (h) =>
         `    darwinConfigurations.${h.name} = inputs.nix-darwin.lib.darwinSystem {\n` +
-        `      system = "${systemForHost(h, "darwin")}";\n` +
+        `      system = ${nixStringLiteral(systemForHost(h, "darwin"))};\n` +
         `      modules = [ ${nixRelativePath("hosts", `${h.name}.nix`)} ];\n` +
         `      specialArgs = { inherit inputs; };\n` +
         `    };`
@@ -94,13 +95,13 @@ function formatInput(name: string, def: InputDef): string {
 
   if (typeof def === "string") {
     const url = def.startsWith("github:") ? def : `github:NixOS/nixpkgs/${def}`;
-    return `    ${nixName}.url = "${url}";`;
+    return `    ${nixName}.url = ${nixStringLiteral(url)};`;
   }
 
-  const lines = [`    ${nixName}.url = "${def.url}";`];
+  const lines = [`    ${nixName}.url = ${nixStringLiteral(def.url)};`];
   if (def.follows) {
     for (const [key, value] of Object.entries(def.follows)) {
-      lines.push(`    ${nixName}.inputs.${key}.follows = "${value}";`);
+      lines.push(`    ${nixName}.inputs.${key}.follows = ${nixStringLiteral(value)};`);
     }
   }
   return lines.join("\n");
@@ -363,7 +364,7 @@ function formatNixValue(value: unknown): string {
   }
   if (typeof value === "string") {
     if (isPkgsReference(value)) return value;
-    return `"${value}"`;
+    return nixStringLiteral(value);
   }
   if (typeof value === "number") return String(value);
   if (typeof value === "boolean") return value ? "true" : "false";
@@ -373,7 +374,7 @@ function formatNixValue(value: unknown): string {
   if (isPlainObject(value)) {
     return formatInlineAttrSet(value);
   }
-  return `"${String(value)}"`;
+  return nixStringLiteral(String(value));
 }
 
 function formatInlineAttrSet(obj: Record<string, unknown>): string {
@@ -398,7 +399,7 @@ function formatAttrPath(path: string[]): string {
 }
 
 function formatAttrKey(key: string): string {
-  return needsQuoting(key) ? JSON.stringify(key) : key;
+  return needsQuoting(key) ? nixStringLiteral(key) : key;
 }
 
 function needsQuoting(key: string): boolean {

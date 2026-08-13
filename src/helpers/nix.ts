@@ -1,4 +1,5 @@
 import type { Fragment, NixExpr } from "../core/types.ts";
+import { escapeNixDoubleQuoted, nixStringLiteral } from "../nix/serialize.ts";
 
 type NixValue = unknown;
 type NixCondition = boolean | string | NixExpr;
@@ -313,12 +314,18 @@ function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
   const sourcesAttrs = filtered
     .map(([arch, platform]) => {
       const parts = [
-        `file = ${JSON.stringify(platform.file)};`,
-        `hash = ${JSON.stringify(platform.hash)};`,
-        `binary = ${JSON.stringify(platform.binary ?? opts.binary)};`,
+        `file = ${nixStringLiteral(platform.file)};`,
+        `hash = ${nixStringLiteral(platform.hash)};`,
+        `binary = ${nixStringLiteral(platform.binary ?? opts.binary)};`,
       ];
       if (usesPlatformPlaceholder) {
-        parts.push(`platform = ${JSON.stringify(platform.platform)};`);
+        const platformName = platform.platform;
+        if (platformName === undefined) {
+          throw new Error(
+            `nix.binaryRelease: "${arch}" must define \`platform\` because \`urlTemplate\` uses \`{platform}\``
+          );
+        }
+        parts.push(`platform = ${nixStringLiteral(platformName)};`);
       }
       return `    ${arch} = { ${parts.join(" ")} };`;
     })
@@ -335,15 +342,15 @@ function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
         : `pkgs.lib.licenses.${license}`;
 
   const metaLines: string[] = [
-    `      description = ${JSON.stringify(opts.meta.description)};`,
+    `      description = ${nixStringLiteral(opts.meta.description)};`,
   ];
   if (opts.meta.homepage !== undefined) {
-    metaLines.push(`      homepage    = ${JSON.stringify(opts.meta.homepage)};`);
+    metaLines.push(`      homepage    = ${nixStringLiteral(opts.meta.homepage)};`);
   }
   if (licenseExpr !== undefined) {
     metaLines.push(`      license     = ${licenseExpr};`);
   }
-  metaLines.push(`      mainProgram = ${JSON.stringify(mainProgram)};`);
+  metaLines.push(`      mainProgram = ${nixStringLiteral(mainProgram)};`);
   metaLines.push(`      platforms   = builtins.attrNames sources;`);
 
   const extraInstallBlock = opts.extraInstall
@@ -385,13 +392,13 @@ function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
     : "";
 
   const text = `(let
-  version = ${JSON.stringify(opts.version)};
+  version = ${nixStringLiteral(opts.version)};
   sources = {
 ${sourcesAttrs}
   };
   source = sources.\${pkgs.stdenv.hostPlatform.system};
 in pkgs.stdenvNoCC.mkDerivation {
-  pname = ${JSON.stringify(opts.name)};
+  pname = ${nixStringLiteral(opts.name)};
   inherit version;
 
   src = pkgs.fetchurl {
@@ -502,7 +509,7 @@ function dedent(value: string): string {
 }
 
 function stringPartToNix(value: NixStringPart): string {
-  return isNixExpr(value) ? value.expr : JSON.stringify(value);
+  return isNixExpr(value) ? value.expr : nixStringLiteral(value);
 }
 
 function conditionToNix(condition: NixCondition): string {
@@ -513,7 +520,7 @@ function conditionToNix(condition: NixCondition): string {
 
 function nixLiteral(value: NixValue): string {
   if (isNixExpr(value)) return value.expr;
-  if (typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "string") return nixStringLiteral(value);
   if (typeof value === "number") return String(value);
   if (typeof value === "boolean") return value ? "true" : "false";
   if (value === null) return "null";
@@ -535,7 +542,7 @@ function formatAttrs(attrs: Record<string, unknown>): string {
 }
 
 function formatAttrKey(key: string): string {
-  return needsQuoting(key) ? JSON.stringify(key) : key;
+  return needsQuoting(key) ? nixStringLiteral(key) : key;
 }
 
 function needsQuoting(key: string): boolean {
@@ -575,13 +582,6 @@ function joinRawTemplate(
 
 function trimScript(body: string): string {
   return body.replace(/^\n/, "").replace(/\n\s*$/, "");
-}
-
-function escapeNixDoubleQuoted(value: string): string {
-  return value
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"')
-    .replace(/\$\{/g, "\\${");
 }
 
 function isNixExpr(value: unknown): value is NixExpr {

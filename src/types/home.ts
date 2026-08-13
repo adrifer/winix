@@ -9,8 +9,8 @@ export interface HomeConfig extends Record<string, unknown> {
   stateVersion?: string;
   packages?: PackageRef[];
   file?: Record<string, HomeFile> | NixExpr;
-  sessionVariables?: Record<string, string>;
-  sessionPath?: string[];
+  sessionVariables?: Record<string, string | NixExpr>;
+  sessionPath?: (string | NixExpr)[];
   activation?: Record<string, HomeActivation | Script>;
 }
 
@@ -38,8 +38,8 @@ export interface HomeOptions extends Record<string, unknown> {
   services?: Attrs;
   xdg?: XdgOptions;
   packages?: PackageRef[];
-  sessionVariables?: Record<string, string>;
-  sessionPath?: string[];
+  sessionVariables?: Record<string, string | NixExpr>;
+  sessionPath?: (string | NixExpr)[];
   activation?: Record<string, HomeActivation | Script>;
   manual?: {
     manpages?: { enable?: boolean } & Record<string, unknown>;

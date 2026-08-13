@@ -1,4 +1,6 @@
-import { feature, home } from "@adrifer/winix";
+import { feature, home, nix } from "@adrifer/winix";
+
+const homeDirectory = nix.expr("config.home.homeDirectory");
 
 /**
  * @description Node.js + pnpm + bun toolchain with per-user npm prefix
@@ -10,14 +12,14 @@ export const javascript = feature("javascript", () => [
   // Keep `npm i -g ...` out of /nix/store by pointing it at a
   // user-writable prefix. Same trick for pnpm's global bin.
   home.env({
-    NPM_CONFIG_PREFIX: "${config.home.homeDirectory}/.npm-global",
-    NPM_CONFIG_USERCONFIG: "${config.home.homeDirectory}/.config/npm/npmrc",
-    PNPM_HOME: "${config.home.homeDirectory}/.local/share/pnpm",
+    NPM_CONFIG_PREFIX: nix.str`${homeDirectory}/.npm-global`,
+    NPM_CONFIG_USERCONFIG: nix.str`${homeDirectory}/.config/npm/npmrc`,
+    PNPM_HOME: nix.str`${homeDirectory}/.local/share/pnpm`,
   }),
 
   home.path(
-    "${config.home.homeDirectory}/.npm-global/bin",
-    "${config.home.homeDirectory}/.local/share/pnpm"
+    nix.str`${homeDirectory}/.npm-global/bin`,
+    nix.str`${homeDirectory}/.local/share/pnpm`
   ),
 
   // Make sure the npmrc is writable before any other activation step
