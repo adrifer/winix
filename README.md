@@ -281,12 +281,21 @@ Use `nix.*` when a value needs to be a Nix expression:
 ```ts
 nix.pkg("zsh")
 nix.bin("git", "git")
+nix.homePath(".config/nvim/init.lua")
+nix.pkgPath("git", "share/git-core/templates")
 nix.str`${nix.pkg("neovim")}/bin/nvim`
 nix.script`
   echo "hello from activation"
 `
 nix.lib.mkForce(["https://cache.nixos.org/"])
 ```
+
+`nix.homePath(relativePath)` builds a path below
+`config.home.homeDirectory`, while `nix.pkgPath(packageName, relativePath)`
+builds one below `pkgs.<packageName>`. Both return a typed `NixExpr`, safely
+quote string content, ignore leading `/` characters in the relative path,
+preserve all other characters, and omit the trailing slash for an empty path.
+Use POSIX `/` separators; backslashes are preserved as literal characters.
 
 For prebuilt single-binary CLI releases (the `azd`, `gh`, `kubectl`,
 `1password` family), use `nix.binaryRelease()` instead of hand-rolling

@@ -9,6 +9,16 @@ export interface NixNamespace {
   expr(expr: string): NixExpr;
   pkg: PkgHelper;
   bin(packageName: string, executable: string): NixExpr;
+  /**
+   * Build a safely quoted path below `config.home.homeDirectory`.
+   * Leading `/` characters are ignored; other characters are preserved.
+   */
+  homePath(relativePath: string): NixExpr;
+  /**
+   * Build a safely quoted path below `pkgs.<packageName>`.
+   * Leading `/` characters are ignored; other characters are preserved.
+   */
+  pkgPath(packageName: string, relativePath: string): NixExpr;
   str(strings: TemplateStringsArray, ...values: NixStringPart[]): NixExpr;
   script: ScriptHelper;
   concat(...parts: NixStringPart[]): NixExpr;
@@ -165,6 +175,11 @@ const pkg: PkgHelper = Object.assign(
   }
 );
 
+function pathUnder(base: NixExpr, relativePath: string): NixExpr {
+  const normalized = relativePath.replace(/^\/+/, "");
+  return normalized === "" ? nix.str`${base}` : nix.str`${base}/${normalized}`;
+}
+
 const script: ScriptHelper = Object.assign(
   (first: string | TemplateStringsArray, ...values: NixStringPart[]): NixExpr => {
     const body =
@@ -198,6 +213,10 @@ export const nix: NixNamespace = {
   pkg,
   bin: (packageName: string, executable: string): NixExpr =>
     nix.str`${pkg(packageName)}/bin/${executable}`,
+  homePath: (relativePath: string): NixExpr =>
+    pathUnder(expr("config.home.homeDirectory"), relativePath),
+  pkgPath: (packageName: string, relativePath: string): NixExpr =>
+    pathUnder(pkg(packageName), relativePath),
   str: (strings: TemplateStringsArray, ...values: NixStringPart[]): NixExpr => {
     const parts: string[] = [];
     const rawStrings = strings.raw;

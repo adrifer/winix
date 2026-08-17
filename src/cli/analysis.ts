@@ -40,6 +40,15 @@ export interface EscapeReportItem {
   kind: "escape" | "raw" | "rawModule";
 }
 
+export interface SuspiciousNixReference {
+  host: string;
+  fragment: string;
+  scope: string;
+  path: string;
+  reference: string;
+  recommendation: string;
+}
+
 export function analyzeWorkspace(workspace: WorkspaceDef): HostAnalysis[] {
   return workspace.hosts.map((host) => analyzeHost(host));
 }
@@ -100,6 +109,31 @@ export function collectEscapeReport(analyses: HostAnalysis[]): EscapeReportItem[
         const data = record.fragment[scope];
         if (!data) continue;
         collectEscapeItems(analysis.name, record.label, scope, [], data, items);
+      }
+    }
+  }
+
+  return items;
+}
+
+export function collectSuspiciousNixReferences(
+  analyses: HostAnalysis[]
+): SuspiciousNixReference[] {
+  const items: SuspiciousNixReference[] = [];
+
+  for (const analysis of analyses) {
+    for (const record of analysis.fragments) {
+      for (const scope of ["nixos", "homeManager", "darwin"] as const) {
+        const data = record.fragment[scope];
+        if (!data) continue;
+        collectSuspiciousReferenceItems(
+          analysis.name,
+          record.label,
+          scope,
+          [],
+          data,
+          items
+        );
       }
     }
   }
@@ -203,6 +237,79 @@ function collectEscapeItems(
     if (key === "__raw") continue;
     collectEscapeItems(host, fragment, scope, [...path, key], child, out);
   }
+}
+
+function collectSuspiciousReferenceItems(
+  host: string,
+  fragment: string,
+  scope: string,
+  path: string[],
+  value: unknown,
+  out: SuspiciousNixReference[]
+): void {
+  if (isNixExpr(value) || isRawModuleRef(value)) return;
+
+  if (typeof value === "string") {
+    const references = [...value.matchAll(/\$\{((?:config|pkgs|lib)\.[A-Za-z_][A-Za-z0-9_'.-]*)\}/g)];
+    for (const match of references) {
+      const reference = match[1];
+      out.push({
+        host,
+        fragment,
+        scope,
+        path: path.join(".") || "<root>",
+        reference,
+        recommendation: recommendNixHelper(value, match[0], reference),
+      });
+    }
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      collectSuspiciousReferenceItems(
+        host,
+        fragment,
+        scope,
+        [...path, String(index)],
+        item,
+        out
+      )
+    );
+    return;
+  }
+
+  if (!isPlainObject(value)) return;
+
+  for (const [key, child] of Object.entries(value)) {
+    if (key === "__raw") continue;
+    collectSuspiciousReferenceItems(
+      host,
+      fragment,
+      scope,
+      [...path, key],
+      child,
+      out
+    );
+  }
+}
+
+function recommendNixHelper(value: string, interpolation: string, reference: string): string {
+  const homePath = /^\$\{config\.home\.homeDirectory\}\/(.*)$/.exec(value);
+  if (homePath) {
+    return `Use nix.homePath(${JSON.stringify(homePath[1])}).`;
+  }
+
+  const packagePath = /^\$\{pkgs\.([A-Za-z_][A-Za-z0-9_'.-]*)\}\/(.*)$/.exec(value);
+  if (packagePath) {
+    return `Use nix.pkgPath(${JSON.stringify(packagePath[1])}, ${JSON.stringify(packagePath[2])}).`;
+  }
+
+  if (value === interpolation) {
+    return `Use nix.expr(${JSON.stringify(reference)}).`;
+  }
+
+  return "Use nix.str with nix.expr() interpolation, or nix.expr() for a complete Nix expression.";
 }
 
 function formatValue(value: unknown): string {

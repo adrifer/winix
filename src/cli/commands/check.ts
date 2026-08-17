@@ -7,6 +7,7 @@ import { generateNix, type NixOutput } from "../../backends/nix/index.ts";
 import {
   analyzeWorkspace,
   collectEscapeReport,
+  collectSuspiciousNixReferences,
   detectConflicts,
   findDuplicateHosts,
 } from "../analysis.ts";
@@ -25,6 +26,7 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
     validateGeneratedNixSyntax(output);
     const analyses = analyzeWorkspace(workspace);
     const conflicts = detectConflicts(analyses);
+    const suspiciousReferences = collectSuspiciousNixReferences(analyses);
 
     console.log(`✓ Configuration valid`);
     console.log(`  Hosts: ${evaluated.map((h) => h.name).join(", ")}`);
@@ -45,6 +47,19 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
           `${conflict.firstFragment} (${conflict.firstValue}) -> ` +
           `${conflict.secondFragment} (${conflict.secondValue})`
         );
+      }
+    }
+
+    if (suspiciousReferences.length > 0) {
+      console.warn(
+        `Warning: ${suspiciousReferences.length} suspicious literal Nix reference(s):`
+      );
+      for (const item of suspiciousReferences) {
+        console.warn(
+          `  ${item.host} ${item.fragment} ${item.scope}.${item.path}: ` +
+          `plain string contains \${${item.reference}}`
+        );
+        console.warn(`    ${item.recommendation}`);
       }
     }
 

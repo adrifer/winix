@@ -123,6 +123,29 @@ describe("curated helpers", () => {
     });
   });
 
+  it("builds safely quoted home and package paths with consistent slashes", () => {
+    expect(nix.homePath(".config/nvim/init.lua")).toEqual({
+      __winixNixExpr: true,
+      expr: '"${config.home.homeDirectory}/.config/nvim/init.lua"',
+    });
+    expect(nix.homePath("///Documents/${literal}/\"notes\"")).toEqual({
+      __winixNixExpr: true,
+      expr: '"${config.home.homeDirectory}/Documents/\\${literal}/\\"notes\\""',
+    });
+    expect(nix.homePath("")).toEqual({
+      __winixNixExpr: true,
+      expr: '"${config.home.homeDirectory}"',
+    });
+    expect(nix.pkgPath("python3Packages.black", "/bin/black")).toEqual({
+      __winixNixExpr: true,
+      expr: '"${pkgs.python3Packages.black}/bin/black"',
+    });
+    expect(nix.pkgPath("tool", "share\\tool")).toEqual({
+      __winixNixExpr: true,
+      expr: '"${pkgs.tool}/share\\\\tool"',
+    });
+  });
+
   it("serializes ordinary strings as behavior-preserving Nix literals", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },

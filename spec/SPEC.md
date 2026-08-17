@@ -643,8 +643,15 @@ export function wsl(opts?: WslOpts): Fragment {
 ```
 
 `nix.expr()` marks a value as a Nix literal. The compiler emits it verbatim
-without quoting. Narrower helpers (`nix.pkg()`, `nix.str()`, `nix.script()`,
-`nix.lib.*`, `nix.binaryRelease()`) are preferred when they fit.
+without quoting. Narrower helpers (`nix.pkg()`, `nix.homePath()`,
+`nix.pkgPath()`, `nix.str()`, `nix.script()`, `nix.lib.*`,
+`nix.binaryRelease()`) are preferred when they fit.
+
+`nix.homePath(relativePath)` safely builds a string path rooted at
+`config.home.homeDirectory`; `nix.pkgPath(packageName, relativePath)` does the
+same under `pkgs.<packageName>`. Leading `/` characters are ignored so both
+helpers produce exactly one joining slash. An empty path emits only the base,
+and backslashes remain literal rather than acting as separators.
 
 ### Resource handles and `dependsOn` (Windows backend)
 
@@ -750,6 +757,12 @@ winix check
 winix check --strict          # scalar conflicts become errors, not warnings
 winix check --escape-report   # also report escape-hatch usage (raw, rawModule)
 ```
+
+The check also warns when a plain string contains a likely unescaped Nix
+interpolation such as `${config.*}`, `${pkgs.*}`, or `${lib.*}`. Diagnostics
+recommend `nix.homePath()`, `nix.pkgPath()`, `nix.str()`, or `nix.expr()` based
+on the value shape; typed `NixExpr` values and ordinary shell references such
+as `${HOME}` are not reported.
 
 #### `winix apply`
 

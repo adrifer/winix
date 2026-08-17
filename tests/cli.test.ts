@@ -8,6 +8,7 @@ import {
   detectConflicts,
   analyzeWorkspace,
   collectEscapeReport,
+  collectSuspiciousNixReferences,
   findDuplicateHosts,
 } from "../src/cli/analysis.js";
 import {
@@ -127,6 +128,54 @@ describe("CLI analysis", () => {
         expect.objectContaining({ kind: "raw", path: "__raw.0" }),
       ])
     );
+  });
+
+  it("recommends typed helpers for suspicious literal Nix references", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl", nixos(), [
+          {
+            homeManager: {
+              home: {
+                sessionVariables: {
+                  CONFIG: "${config.home.homeDirectory}/.config/app",
+                  TOOL: "${pkgs.hello}/bin/hello",
+                  MIXED: "prefix ${lib.escapeShellArg} suffix",
+                  DIRECT: "${pkgs.hello}",
+                  SAFE: nix.str`${nix.pkg("hello")}/bin/hello`,
+                  ORDINARY: "${HOME}/bin",
+                },
+              },
+            },
+          },
+        ]),
+      ],
+    });
+
+    const diagnostics = collectSuspiciousNixReferences(analyzeWorkspace(ws));
+    expect(diagnostics).toEqual([
+      expect.objectContaining({
+        path: "home.sessionVariables.CONFIG",
+        reference: "config.home.homeDirectory",
+        recommendation: 'Use nix.homePath(".config/app").',
+      }),
+      expect.objectContaining({
+        path: "home.sessionVariables.TOOL",
+        reference: "pkgs.hello",
+        recommendation: 'Use nix.pkgPath("hello", "bin/hello").',
+      }),
+      expect.objectContaining({
+        path: "home.sessionVariables.MIXED",
+        reference: "lib.escapeShellArg",
+        recommendation: expect.stringContaining("nix.str"),
+      }),
+      expect.objectContaining({
+        path: "home.sessionVariables.DIRECT",
+        reference: "pkgs.hello",
+        recommendation: 'Use nix.expr("pkgs.hello").',
+      }),
+    ]);
   });
 });
 
