@@ -33,8 +33,9 @@ export interface NixNamespace {
    *
    * Picks the right `(file, hash)` per `pkgs.stdenv.hostPlatform.system`,
    * substitutes `{version}`, `{file}`, and (optionally) `{platform}` into
-   * `urlTemplate`, fetches with `pkgs.fetchurl`, unpacks tarballs/zips,
-   * and `install -Dm755`s the binary into `$out/bin/<binary>`.
+   * `urlTemplate`, fetches with `pkgs.fetchurl`, unpacks tarballs/zips (or
+   * directly installs raw executables), and `install -Dm755`s the binary
+   * into `$out/bin/<binary>`.
    *
    * Optional extensions:
    * - `completions` — emits `installShellCompletion` for `bash`/`fish`/`zsh`.
@@ -88,11 +89,16 @@ export type BinaryReleaseArch =
   | "x86_64-darwin"
   | "aarch64-darwin";
 
+export type BinaryReleaseFormat = "raw" | "zip" | "tar.gz" | "tgz";
+
 export interface BinaryReleasePlatform {
   /** Filename to download (substituted into `urlTemplate`'s `{file}`). */
   file: string;
-  /** SRI hash (`sha256-...`) of the downloaded archive. */
+  /** SRI hash (`sha256-...`) of the downloaded file. */
   hash: string;
+  /** Download format. When omitted, archive format is inferred from `file`.
+   *  Raw executables must explicitly set `"raw"`. */
+  format?: BinaryReleaseFormat;
   /** Optional: name of the extracted binary, if it differs from the outer `binary`. */
   binary?: string;
   /** Optional: vendor-specific platform tag substituted into `urlTemplate`'s `{platform}`
@@ -264,6 +270,12 @@ const KNOWN_BINARY_RELEASE_ARCHES: BinaryReleaseArch[] = [
   "x86_64-darwin",
   "aarch64-darwin",
 ];
+const KNOWN_BINARY_RELEASE_FORMATS: BinaryReleaseFormat[] = [
+  "raw",
+  "zip",
+  "tar.gz",
+  "tgz",
+];
 
 function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
   if (!opts || typeof opts !== "object") {
@@ -317,6 +329,7 @@ function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
     if (!platform.hash) {
       throw new Error(`nix.binaryRelease: platforms.${arch}.hash is required`);
     }
+    resolveBinaryReleaseFormat(arch, platform);
   }
 
   const usesPlatformPlaceholder = opts.urlTemplate.includes("{platform}");
@@ -336,6 +349,7 @@ function binaryRelease(opts: BinaryReleaseOpts): NixExpr {
         `file = ${nixStringLiteral(platform.file)};`,
         `hash = ${nixStringLiteral(platform.hash)};`,
         `binary = ${nixStringLiteral(platform.binary ?? opts.binary)};`,
+        `format = ${nixStringLiteral(resolveBinaryReleaseFormat(arch, platform))};`,
       ];
       if (usesPlatformPlaceholder) {
         const platformName = platform.platform;
@@ -427,14 +441,16 @@ in pkgs.stdenvNoCC.mkDerivation {
 
   nativeBuildInputs = ${nativeBuildInputsExpr};${linuxBuildInputs}${dontStripLine}
 
+  dontUnpack = source.format == "raw";
+
   unpackPhase = ''
     runHook preUnpack
     mkdir source
-    case "$src" in
-      *.zip)    unzip -q "$src" -d source ;;
-      *.tar.gz) tar -xzf "$src" -C source ;;
-      *.tgz)    tar -xzf "$src" -C source ;;
-      *) echo "nix.binaryRelease: unsupported archive extension for $src" >&2; exit 1 ;;
+    case "\${source.format}" in
+      zip)    unzip -q "$src" -d source ;;
+      tar.gz) tar -xzf "$src" -C source ;;
+      tgz)    tar -xzf "$src" -C source ;;
+      *) echo "nix.binaryRelease: unsupported archive format \${source.format}" >&2; exit 1 ;;
     esac
     sourceRoot=source
     runHook postUnpack
@@ -442,7 +458,11 @@ in pkgs.stdenvNoCC.mkDerivation {
 
   installPhase = ''
     runHook preInstall
-    install -Dm755 "\${source.binary}" "$out/bin/${opts.binary}"${extraInstallBlock}
+    installSource="$src"
+    if [ "\${source.format}" != raw ]; then
+      installSource="\${source.binary}"
+    fi
+    install -Dm755 "$installSource" "$out/bin/${opts.binary}"${extraInstallBlock}
     runHook postInstall
   '';${completionsBlock}
 
@@ -452,6 +472,28 @@ ${metaLines.join("\n")}
 })`;
 
   return expr(text);
+}
+
+function resolveBinaryReleaseFormat(
+  arch: BinaryReleaseArch,
+  platform: BinaryReleasePlatform
+): BinaryReleaseFormat {
+  if (platform.format !== undefined) {
+    if (!KNOWN_BINARY_RELEASE_FORMATS.includes(platform.format)) {
+      throw new Error(
+        `nix.binaryRelease: platforms.${arch}.format must be one of "raw", "zip", "tar.gz", or "tgz"`
+      );
+    }
+    return platform.format;
+  }
+
+  if (platform.file.endsWith(".tar.gz")) return "tar.gz";
+  if (platform.file.endsWith(".tgz")) return "tgz";
+  if (platform.file.endsWith(".zip")) return "zip";
+
+  throw new Error(
+    `nix.binaryRelease: platforms.${arch}.file has an unsupported archive extension; set \`format\` explicitly`
+  );
 }
 
 function renderBuildInput(value: string | NixExpr): string {

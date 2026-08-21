@@ -333,6 +333,53 @@ licenses that aren't a simple `pkgs.lib.licenses.<id>` lookup. See
 [`spec/proposals/binary-release.md`](spec/proposals/binary-release.md)
 for the full reference.
 
+Release assets can also be raw executables. Set `format: "raw"` explicitly;
+Winix never guesses that an extensionless file is executable. The format is
+per-platform, so raw and archive assets can be mixed in one release:
+
+```ts
+home.packages(
+  nix.binaryRelease({
+    name: "herdr",
+    version: "0.8.2",
+    binary: "herdr",
+    urlTemplate:
+      "https://github.com/herdrdev/herdr/releases/download/v{version}/{file}",
+    platforms: {
+      "x86_64-linux": {
+        file: "herdr-linux-x86_64",
+        hash: "sha256-...",
+        format: "raw",
+      },
+      "aarch64-linux": {
+        file: "herdr-linux-aarch64",
+        hash: "sha256-...",
+        format: "raw",
+      },
+      "x86_64-darwin": {
+        file: "herdr-macos-x86_64",
+        hash: "sha256-...",
+        format: "raw",
+      },
+      "aarch64-darwin": {
+        file: "herdr-macos-aarch64",
+        hash: "sha256-...",
+        format: "raw",
+      },
+    },
+    meta: {
+      description: "The runtime your coding agents live on",
+      homepage: "https://github.com/herdrdev/herdr",
+      license: "asl20",
+    },
+  }),
+);
+```
+
+When `format` is omitted, `.zip`, `.tar.gz`, and `.tgz` filenames retain the
+legacy extension-based archive behavior. Other extensions are rejected unless
+a supported format (`"raw"`, `"zip"`, `"tar.gz"`, or `"tgz"`) is explicit.
+
 For bigger migrations, import existing Nix modules:
 
 ```ts

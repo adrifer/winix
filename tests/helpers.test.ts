@@ -956,10 +956,10 @@ describe("nix.binaryRelease", () => {
     expect(result.expr).toContain(`pname = "azure-dev-cli";`);
     expect(result.expr).toContain(`version = "1.25.5";`);
     expect(result.expr).toContain(
-      `x86_64-linux = { file = "azd-linux-amd64.tar.gz"; hash = "sha256-aaaa"; binary = "azd-linux-amd64"; };`
+      `x86_64-linux = { file = "azd-linux-amd64.tar.gz"; hash = "sha256-aaaa"; binary = "azd-linux-amd64"; format = "tar.gz"; };`
     );
     expect(result.expr).toContain(
-      `aarch64-darwin = { file = "azd-darwin-arm64.zip"; hash = "sha256-bbbb"; binary = "azd-darwin-arm64"; };`
+      `aarch64-darwin = { file = "azd-darwin-arm64.zip"; hash = "sha256-bbbb"; binary = "azd-darwin-arm64"; format = "zip"; };`
     );
     expect(result.expr).toContain(
       `source = sources.\${pkgs.stdenv.hostPlatform.system};`
@@ -971,11 +971,114 @@ describe("nix.binaryRelease", () => {
       `nativeBuildInputs = [ pkgs.unzip ];`
     );
     expect(result.expr).toContain(
-      `install -Dm755 "\${source.binary}" "$out/bin/azd"`
+      `install -Dm755 "$installSource" "$out/bin/azd"`
     );
     expect(result.expr).toContain(`license     = pkgs.lib.licenses.mit;`);
     expect(result.expr).toContain(`mainProgram = "azd";`);
     expect(result.expr).toContain(`platforms   = builtins.attrNames sources;`);
+  });
+
+  it("installs an explicitly raw executable without unpacking", () => {
+    const result = nix.binaryRelease({
+      name: "herdr",
+      version: "0.9.0",
+      binary: "herdr",
+      urlTemplate: "https://example.com/{version}/{file}",
+      platforms: {
+        "x86_64-linux": {
+          file: "herdr-linux-x64",
+          hash: "sha256-raw",
+          format: "raw",
+        },
+      },
+      meta: { description: "Terminal multiplexer for coding agents" },
+    });
+
+    expect(result.expr).toContain(
+      `x86_64-linux = { file = "herdr-linux-x64"; hash = "sha256-raw"; binary = "herdr"; format = "raw"; };`
+    );
+    expect(result.expr).toContain(`dontUnpack = source.format == "raw";`);
+    expect(result.expr).toContain(`installSource="$src"`);
+    expect(result.expr).toContain(`if [ "\${source.format}" != raw ]; then`);
+    expect(result.expr).toContain(`install -Dm755 "$installSource" "$out/bin/herdr"`);
+  });
+
+  it("supports mixed raw and archive formats with per-platform binary overrides", () => {
+    const result = nix.binaryRelease({
+      name: "mixed-tool",
+      version: "1",
+      binary: "tool",
+      urlTemplate: "https://example.com/{file}",
+      platforms: {
+        "x86_64-linux": {
+          file: "tool-linux",
+          hash: "sha256-linux",
+          format: "raw",
+        },
+        "aarch64-darwin": {
+          file: "tool-darwin.zip",
+          hash: "sha256-darwin",
+          binary: "dist/tool",
+        },
+      },
+      meta: { description: "Mixed release tool" },
+    });
+
+    expect(result.expr).toContain(`format = "raw";`);
+    expect(result.expr).toContain(
+      `aarch64-darwin = { file = "tool-darwin.zip"; hash = "sha256-darwin"; binary = "dist/tool"; format = "zip"; };`
+    );
+  });
+
+  it("honors explicit archive formats independently of filename extensions", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1",
+      binary: "tool",
+      urlTemplate: "https://example.com/{file}",
+      platforms: {
+        "x86_64-linux": {
+          file: "linux-download",
+          hash: "sha256-zip",
+          format: "zip",
+        },
+        "aarch64-linux": {
+          file: "arm64-download",
+          hash: "sha256-tar",
+          format: "tar.gz",
+        },
+        "x86_64-darwin": {
+          file: "darwin-download",
+          hash: "sha256-tgz",
+          format: "tgz",
+        },
+      },
+      meta: { description: "Explicit archive formats" },
+    });
+
+    expect(result.expr).toContain(`file = "linux-download"; hash = "sha256-zip"; binary = "tool"; format = "zip";`);
+    expect(result.expr).toContain(`file = "arm64-download"; hash = "sha256-tar"; binary = "tool"; format = "tar.gz";`);
+    expect(result.expr).toContain(`file = "darwin-download"; hash = "sha256-tgz"; binary = "tool"; format = "tgz";`);
+    expect(result.expr).toContain(`case "\${source.format}" in`);
+  });
+
+  it("preserves omitted legacy archive inference", () => {
+    const result = nix.binaryRelease({
+      name: "tool",
+      version: "1",
+      binary: "tool",
+      urlTemplate: "https://example.com/{file}",
+      platforms: {
+        "x86_64-linux": { file: "tool.zip", hash: "sha256-zip" },
+        "aarch64-linux": { file: "tool.tar.gz", hash: "sha256-tar" },
+        "x86_64-darwin": { file: "tool.tgz", hash: "sha256-tgz" },
+      },
+      meta: { description: "Legacy archives" },
+    });
+
+    expect(result.expr).toContain(`file = "tool.zip"; hash = "sha256-zip"; binary = "tool"; format = "zip";`);
+    expect(result.expr).toContain(`file = "tool.tar.gz"; hash = "sha256-tar"; binary = "tool"; format = "tar.gz";`);
+    expect(result.expr).toContain(`file = "tool.tgz"; hash = "sha256-tgz"; binary = "tool"; format = "tgz";`);
   });
 
   it("emits `dontStrip = isDarwin` by default and omits it on opt-out", () => {
@@ -1011,9 +1114,9 @@ describe("nix.binaryRelease", () => {
     });
 
     expect(result.expr).toContain(
-      `x86_64-linux = { file = "gh.tar.gz"; hash = "sha256-xxxx"; binary = "gh"; };`
+      `x86_64-linux = { file = "gh.tar.gz"; hash = "sha256-xxxx"; binary = "gh"; format = "tar.gz"; };`
     );
-    expect(result.expr).toContain(`install -Dm755 "\${source.binary}" "$out/bin/gh"`);
+    expect(result.expr).toContain(`install -Dm755 "$installSource" "$out/bin/gh"`);
   });
 
   it("appends extraInstall lines inside the install phase", () => {
@@ -1030,7 +1133,7 @@ describe("nix.binaryRelease", () => {
     });
 
     expect(result.expr).toContain(
-      `install -Dm755 "\${source.binary}" "$out/bin/tool"\n    install -Dm644 LICENSE "$out/share/doc/$pname/LICENSE"\n    install -Dm644 README.md "$out/share/doc/$pname/README.md"\n    runHook postInstall`
+      `install -Dm755 "$installSource" "$out/bin/tool"\n    install -Dm644 LICENSE "$out/share/doc/$pname/LICENSE"\n    install -Dm644 README.md "$out/share/doc/$pname/README.md"\n    runHook postInstall`
     );
   });
 
@@ -1102,7 +1205,7 @@ describe("nix.binaryRelease", () => {
     });
 
     expect(result.expr).toContain(
-      `x86_64-linux = { file = "op_linux_amd64_v2.34.1.zip"; hash = "sha256-aaaa"; binary = "op"; platform = "linux_amd64"; };`
+      `x86_64-linux = { file = "op_linux_amd64_v2.34.1.zip"; hash = "sha256-aaaa"; binary = "op"; format = "zip"; platform = "linux_amd64"; };`
     );
     expect(result.expr).toContain(
       `url  = "https://cache.agilebits.com/dist/1P/op2/pkg/v\${version}/op_\${source.platform}_v\${version}.zip";`
@@ -1291,6 +1394,39 @@ describe("nix.binaryRelease", () => {
     ).toThrow(/platforms\.x86_64-linux\.hash is required/);
   });
 
+  it("throws on invalid explicit formats and unknown omitted extensions", () => {
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{file}",
+        platforms: {
+          "x86_64-linux": {
+            file: "tool.bin",
+            hash: "sha256-x",
+            // @ts-expect-error testing runtime validation
+            format: "tar",
+          },
+        },
+        meta: { description: "x" },
+      })
+    ).toThrow(/format must be one of "raw", "zip", "tar\.gz", or "tgz"/);
+
+    expect(() =>
+      nix.binaryRelease({
+        name: "tool",
+        version: "1",
+        binary: "tool",
+        urlTemplate: "https://e.com/{file}",
+        platforms: {
+          "x86_64-linux": { file: "tool.bin", hash: "sha256-x" },
+        },
+        meta: { description: "x" },
+      })
+    ).toThrow(/unsupported archive extension; set `format` explicitly/);
+  });
+
   it("throws if meta.license string is not a valid nixpkgs attribute name", () => {
     expect(() =>
       nix.binaryRelease({
@@ -1350,8 +1486,38 @@ describe("nix.binaryRelease", () => {
     });
 
     expect(result.expr).toContain(
-      `*) echo "nix.binaryRelease: unsupported archive extension for $src" >&2; exit 1 ;;`
+      `*) echo "nix.binaryRelease: unsupported archive format \${source.format}" >&2; exit 1 ;;`
     );
+  });
+
+  it("serializes a raw binary release through workspace generation", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("raw-host", platforms.nixos({ stateVersion: "25.05" }), [
+          home.packages(
+            nix.binaryRelease({
+              name: "herdr",
+              version: "0.9.0",
+              binary: "herdr",
+              urlTemplate: "https://example.com/{file}",
+              platforms: {
+                "x86_64-linux": {
+                  file: "herdr-linux-x64",
+                  hash: "sha256-raw",
+                  format: "raw",
+                },
+              },
+              meta: { description: "Terminal multiplexer for coding agents" },
+            })
+          ),
+        ]),
+      ],
+    });
+
+    const hostNix = generateNix(ws, evaluate(ws)).hosts["raw-host.nix"];
+    expect(hostNix).toContain(`dontUnpack = source.format == "raw";`);
+    expect(hostNix).toContain(`install -Dm755 "$installSource" "$out/bin/herdr"`);
   });
 
   it("throws on missing required fields", () => {

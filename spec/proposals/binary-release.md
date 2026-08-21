@@ -82,8 +82,11 @@ type Arch = "x86_64-linux" | "aarch64-linux" | "x86_64-darwin" | "aarch64-darwin
 interface BinaryReleasePlatform {
   /** Filename to download (substituted into `urlTemplate`'s `{file}`). */
   file: string;
-  /** SRI hash (`sha256-...`) of the downloaded archive. */
+  /** SRI hash (`sha256-...`) of the downloaded file. */
   hash: string;
+  /** Download format. When omitted, `.zip`, `.tar.gz`, and `.tgz` are
+   *  inferred from `file`. Raw executables must explicitly set `"raw"`. */
+  format?: "raw" | "zip" | "tar.gz" | "tgz";
   /** Optional: name of the extracted binary, if it differs from `binary`.
    *  Defaults to `binary`. */
   binary?: string;
@@ -157,7 +160,7 @@ shaped like:
 (let
   version = "1.25.5";
   sources = {
-    x86_64-linux  = { file = "..."; hash = "..."; binary = "..."; };
+    x86_64-linux  = { file = "..."; hash = "..."; binary = "..."; format = "tar.gz"; };
     aarch64-linux = { ... };
     x86_64-darwin = { ... };
     aarch64-darwin = { ... };
@@ -174,13 +177,15 @@ in pkgs.stdenvNoCC.mkDerivation {
 
   nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.unzip ];
 
+  dontUnpack = source.format == "raw";
+
   unpackPhase = ''
     runHook preUnpack
     mkdir source
-    case "$src" in
-      *.zip)    unzip -q "$src" -d source ;;
-      *.tar.gz) tar -xzf "$src" -C source ;;
-      *.tgz)    tar -xzf "$src" -C source ;;
+    case "${source.format}" in
+      zip)    unzip -q "$src" -d source ;;
+      tar.gz) tar -xzf "$src" -C source ;;
+      tgz)    tar -xzf "$src" -C source ;;
     esac
     sourceRoot=source
     runHook postUnpack
@@ -188,7 +193,11 @@ in pkgs.stdenvNoCC.mkDerivation {
 
   installPhase = ''
     runHook preInstall
-    install -Dm755 "${source.binary}" "$out/bin/azd"
+    installSource="$src"
+    if [ "${source.format}" != raw ]; then
+      installSource="${source.binary}"
+    fi
+    install -Dm755 "$installSource" "$out/bin/azd"
     <extraInstall>
     runHook postInstall
   '';
@@ -208,6 +217,55 @@ adoption is a 1:1 replacement and there is no risk of behavior drift on
 migration.
 
 ## Extended capabilities
+
+### Raw executables and mixed formats
+
+Format selection belongs to each platform entry because vendors can publish
+different formats for different targets. Archive entries may omit `format` to
+retain the original filename-extension behavior. Raw assets are never inferred:
+set `format: "raw"` to skip unpacking and install the fetched source directly.
+Explicit `"zip"`, `"tar.gz"`, and `"tgz"` values also support archive URLs whose
+filenames do not carry a useful extension. Unsupported explicit values and
+unknown omitted extensions fail during TypeScript evaluation.
+
+Herdr's release assets are extensionless executables on Linux and macOS:
+
+```ts
+nix.binaryRelease({
+  name: "herdr",
+  version: "0.8.2",
+  binary: "herdr",
+  urlTemplate:
+    "https://github.com/herdrdev/herdr/releases/download/v{version}/{file}",
+  platforms: {
+    "x86_64-linux": {
+      file: "herdr-linux-x86_64",
+      hash: "sha256-...",
+      format: "raw",
+    },
+    "aarch64-linux": {
+      file: "herdr-linux-aarch64",
+      hash: "sha256-...",
+      format: "raw",
+    },
+    "x86_64-darwin": {
+      file: "herdr-macos-x86_64",
+      hash: "sha256-...",
+      format: "raw",
+    },
+    "aarch64-darwin": {
+      file: "herdr-macos-aarch64",
+      hash: "sha256-...",
+      format: "raw",
+    },
+  },
+  meta: {
+    description: "The runtime your coding agents live on",
+    homepage: "https://github.com/herdrdev/herdr",
+    license: "asl20",
+  },
+});
+```
 
 Three real-world patterns surfaced from a survey of similar nixpkgs
 recipes (`ngrok`, `1password-cli`, `direnv`, `aws-vault`, `kubelogin`,

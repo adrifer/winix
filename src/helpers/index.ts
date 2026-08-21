@@ -14,6 +14,7 @@ export { nix } from "./nix.ts";
 export type {
   BinaryReleaseArch,
   BinaryReleaseCompletions,
+  BinaryReleaseFormat,
   BinaryReleaseMeta,
   BinaryReleaseOpts,
   BinaryReleasePlatform,

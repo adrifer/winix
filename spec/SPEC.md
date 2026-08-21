@@ -653,6 +653,13 @@ same under `pkgs.<packageName>`. Leading `/` characters are ignored so both
 helpers produce exactly one joining slash. An empty path emits only the base,
 and backslashes remain literal rather than acting as separators.
 
+`nix.binaryRelease()` accepts an optional per-platform `format` of `"raw"`,
+`"zip"`, `"tar.gz"`, or `"tgz"`. Raw assets are installed directly and must be
+declared explicitly; an omitted format preserves extension-based archive
+detection and rejects unknown extensions rather than inferring raw. Keeping
+the field per-platform supports vendors that publish different formats for
+different targets.
+
 ### Resource handles and `dependsOn` (Windows backend)
 
 > **Scope:** This applies to the Windows backend only. `windows.package(...)`
