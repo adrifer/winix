@@ -1,6 +1,6 @@
 {
   "name": "@adrifer/winix",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "TypeScript-first system configuration for NixOS, nix-darwin, and Home Manager",
   "license": "MIT",
   "author": "Adrian Fernandez",
