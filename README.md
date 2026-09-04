@@ -111,6 +111,15 @@ npm install @adrifer/winix
 
 The `init` command creates a starter `winix.config.ts`, `tsconfig.json`, `.gitignore`, and package scripts. After `npm install`, the `winix` binary comes from your local `node_modules`, so commands are reproducible through `package-lock.json`.
 
+It also installs `.agents/skills/winix/SKILL.md`, a small agent skill wrapper.
+The wrapper tells agents to run `winix --skill`, so the full instructions always
+come from the same installed package version as the executable. Existing
+projects can install it with:
+
+```bash
+winix install skill
+```
+
 You can also install it globally, but local project installs are recommended:
 
 ```bash
@@ -129,6 +138,7 @@ npx @adrifer/winix apply --diff           # show changes against current .winix/
 npx @adrifer/winix switch --host my-host  # generate and run nixos-rebuild/darwin-rebuild
 npx @adrifer/winix update                 # update generated flake.lock and copy it back
 npx @adrifer/winix inspect                # inspect host composition and fragments
+npx @adrifer/winix --skill                # print version-matched agent instructions
 ```
 
 If you add scripts to your `package.json`, you can use shorter commands:

@@ -4,7 +4,6 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Next
 
-- **Winix Skill** — installable Skill for AI agents (Claude, etc.) to write Winix configs correctly. Available via `winix install skill` in any Winix project, or `winix init` when scaffolding.
 - **`winix scaffold feature <name>`** — generate a typed feature template ready for an LLM (or human) to fill in.
 - **Interactive `winix init` wizard** — guide users through platform, channel, Home Manager, example features, and Skill install with prompts (or skip with `--platform`, `--channel`, `--features`, `--skill` flags for power users).
 - **Starlight docs site** — replace the long README with a proper documentation site at [starlight.astro.build](https://starlight.astro.build).
@@ -13,6 +12,12 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 ## Later
 
 - **Init presets beyond the wizard** — first-class `--preset minimal`, `--preset wsl`, etc. once we see what real users actually pick.
+
+## Done
+
+- **Winix Skill** — `winix --skill` prints version-matched instructions from
+  the installed executable. `winix init` and `winix install skill` install a
+  project-local wrapper that loads them.
 
 ## Maybe / exploratory
 

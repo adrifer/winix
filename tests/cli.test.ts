@@ -18,6 +18,11 @@ import {
 } from "../src/cli/activation.js";
 import { applyWorkspace } from "../src/cli/commands/apply.js";
 import { init, resolveWinixVersionRange } from "../src/cli/commands/init.js";
+import {
+  installSkill,
+  SKILL_WRAPPER,
+  SKILL_WRAPPER_PATH,
+} from "../src/cli/commands/install.js";
 import { validateGeneratedNixSyntax } from "../src/cli/commands/check.js";
 import {
   flakeRefForHost,
@@ -36,6 +41,7 @@ import {
   windows,
   workspace,
 } from "../src/index.js";
+import { authoringApiPaths, renderSkill } from "../src/skill.js";
 
 const nixos = platform("linux", () => ({
   nixos: {
@@ -185,6 +191,9 @@ describe("winix init", () => {
     try {
       await init(dir, { force: false });
       expect(existsSync(join(dir, "winix.config.ts"))).toBe(true);
+      expect(await readFile(join(dir, SKILL_WRAPPER_PATH), "utf-8")).toBe(
+        SKILL_WRAPPER
+      );
 
       const packageJson = await readFile(join(dir, "package.json"), "utf-8");
       expect(packageJson).toContain('"@adrifer/winix"');
@@ -211,6 +220,43 @@ describe("winix init", () => {
       const expected = await resolveWinixVersionRange();
       expect(expected).toMatch(/^\^\d+\.\d+\.\d+/);
       expect(packageJson.dependencies?.["@adrifer/winix"]).toBe(expected);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("winix skill", () => {
+  it("documents every current public authoring helper", () => {
+    const skill = renderSkill();
+    for (const api of authoringApiPaths()) {
+      expect(skill, `missing ${api}`).toContain(api);
+    }
+  });
+
+  it("prints instructions without wrapper frontmatter", () => {
+    const skill = renderSkill();
+    expect(skill.startsWith("# Winix\n")).toBe(true);
+    expect(skill).toContain("winix.config.ts");
+    expect(skill).toContain("winix check");
+    expect(skill).toContain("windows.file.symlink()");
+    expect(skill).not.toContain("name: winix");
+  });
+
+  it("installs, preserves, and force-refreshes the wrapper", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-skill-"));
+    try {
+      await expect(installSkill(dir, { force: false })).resolves.toBe("installed");
+      const path = join(dir, SKILL_WRAPPER_PATH);
+      expect(await readFile(path, "utf-8")).toBe(SKILL_WRAPPER);
+      await expect(installSkill(dir, { force: false })).resolves.toBe("current");
+
+      await writeFile(path, "custom");
+      await expect(installSkill(dir, { force: false })).rejects.toThrow(
+        "already exists"
+      );
+      await expect(installSkill(dir, { force: true })).resolves.toBe("installed");
+      expect(await readFile(path, "utf-8")).toBe(SKILL_WRAPPER);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

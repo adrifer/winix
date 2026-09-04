@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { installSkill } from "./install.ts";
 
 interface InitOptions {
   force: boolean;
@@ -15,6 +16,7 @@ export async function init(cwd: string, opts: InitOptions): Promise<void> {
   await writeIfAllowed(join(cwd, "tsconfig.json"), TSCONFIG, opts.force);
   await writeIfAllowed(join(cwd, "package.json"), packageJson, opts.force);
   await writeIfAllowed(join(cwd, ".gitignore"), GITIGNORE, opts.force);
+  await installSkill(cwd, { force: opts.force });
   console.log("✓ Initialized Winix project");
   console.log("");
   console.log("Next steps:");

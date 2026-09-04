@@ -5,9 +5,11 @@ import { parseArgs } from "node:util";
 import { apply } from "./commands/apply.ts";
 import { check } from "./commands/check.ts";
 import { init } from "./commands/init.ts";
+import { installSkill } from "./commands/install.ts";
 import { inspect } from "./commands/inspect.ts";
 import { switchCommand } from "./commands/switch.ts";
 import { update } from "./commands/update.ts";
+import { renderSkill } from "../skill.ts";
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -18,6 +20,7 @@ const { positionals, values } = parseArgs({
     windows: { type: "boolean", default: false },
     strict: { type: "boolean", default: false },
     force: { type: "boolean", default: false },
+    skill: { type: "boolean", default: false },
     "escape-report": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
@@ -25,12 +28,22 @@ const { positionals, values } = parseArgs({
 
 const command = positionals[0];
 
+if (values.skill) {
+  if (command) {
+    console.error("The --skill option does not accept a command.");
+    process.exit(2);
+  }
+  process.stdout.write(renderSkill());
+  process.exit(0);
+}
+
 if (values.help || !command) {
   console.log(`
 winix - TypeScript-first system configuration
 
 Commands:
   init         Scaffold a Winix project
+  install skill Install the agent skill wrapper
   apply        Generate backend output in .winix/out/
   check        Validate configuration
   switch       Generate output and run the host activation command
@@ -44,11 +57,14 @@ Options:
   --windows       Resolve Windows package lockfile (update)
   --strict        Treat conflicts as errors (check)
   --escape-report Show escape hatch usage (check)
-  --force         Overwrite files (init)
+  --force         Overwrite files (init, install skill)
+  --skill         Print version-matched agent instructions
   -h, --help      Show this help
 
 Examples:
   winix init
+  winix install skill
+  winix --skill
   winix apply
   winix apply --dry
   winix apply --host wsl-work
@@ -66,6 +82,23 @@ switch (command) {
   case "init":
     try {
       await init(cwd, { force: values.force as boolean });
+    } catch (err) {
+      console.error(`\u2717 Error: ${(err as Error).message}`);
+      process.exit(1);
+    }
+    break;
+  case "install":
+    if (positionals[1] !== "skill" || positionals.length !== 2) {
+      console.error("Usage: winix install skill [--force]");
+      process.exit(2);
+    }
+    try {
+      const result = await installSkill(cwd, { force: values.force as boolean });
+      console.log(
+        result === "current"
+          ? "✓ Winix skill wrapper is already current"
+          : "✓ Installed Winix skill wrapper"
+      );
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
       process.exit(1);

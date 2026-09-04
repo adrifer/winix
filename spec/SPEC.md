@@ -749,11 +749,25 @@ diagnostics. For internal command implementation, see
 
 Scaffold a new Winix project. Creates `winix.config.ts`, `tsconfig.json`,
 `package.json` (with `@adrifer/winix` pinned to the current installed
-version), and `.gitignore`.
+version), `.gitignore`, and the Winix agent skill wrapper.
 
 ```bash
 npx @adrifer/winix init
 ```
+
+#### `winix --skill`
+
+Print the complete agent instructions for the installed Winix version. The
+output covers commands, the authoring model, helpers, project structure,
+platform behavior, validation, and safe editing rules. This command only
+writes to stdout.
+
+#### `winix install skill`
+
+Install `.agents/skills/winix/SKILL.md` in an existing project. The installed
+file contains skill metadata and tells the agent to run `winix --skill`.
+Keeping the full instructions in the executable prevents the wrapper from
+drifting away from the installed Winix API.
 
 #### `winix check`
 
@@ -913,6 +927,22 @@ Remote, unpinned modules are out of scope for v1.
 
 Winix should be easy for coding agents to inspect, modify, and validate.
 This is a first-class design goal, not an afterthought.
+
+### Version-matched skill
+
+The installed binary is the source of truth for agent instructions:
+
+```bash
+winix --skill
+```
+
+`winix init` and `winix install skill` write a small project-local wrapper at
+`.agents/skills/winix/SKILL.md`. The wrapper contains discovery metadata and
+directs the agent to the binary instead of copying version-sensitive
+instructions into the project.
+
+Tests compare the emitted skill with the public authoring helper objects.
+Adding a helper without documenting it must fail the test suite.
 
 ### Repository conventions
 
