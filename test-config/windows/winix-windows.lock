@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-11T00:00:00.000Z",
+  "packages": {
+    "Microsoft.WSL": {
+      "source": "winget",
+      "version": "2.6.1",
+      "resolvedAt": "2026-11-11T00:00:00.000Z"
+    }
+  },
+  "modules": {
+    "terminal-icons": {
+      "repository": "PSGallery",
+      "version": "0.11.0",
+      "resolvedAt": "2026-11-11T00:00:00.000Z"
+    }
+  },
+  "wslImages": {
+    "nixos-wsl/arm64": {
+      "source": "nixos-wsl",
+      "architecture": "arm64",
+      "version": "2605.7.2",
+      "url": "https://github.com/nix-community/NixOS-WSL/releases/download/2605.7.2/nixos.aarch64.wsl",
+      "sha256": "5453e74110f8b0ae4ee4fd2b2bb7a1a0e01f0682cca655715081438bdf8d91e7",
+      "resolvedAt": "2026-11-11T00:00:00.000Z"
+    },
+    "nixos-wsl/x64": {
+      "source": "nixos-wsl",
+      "architecture": "x64",
+      "version": "2605.7.2",
+      "url": "https://github.com/nix-community/NixOS-WSL/releases/download/2605.7.2/nixos.wsl",
+      "sha256": "e7180ad555fdcb8e1e057e2ef056de467603a5e502ff8531053738371be3f6b9",
+      "resolvedAt": "2026-11-11T00:00:00.000Z"
+    }
+  }
+}

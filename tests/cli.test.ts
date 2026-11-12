@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it, vi } from "vitest";
+import { readWindowsLock } from "../src/backends/windows/lockfile.ts";
+import { windowsSourcePath } from "../src/backends/windows/paths.ts";
 import {
   detectConflicts,
   analyzeWorkspace,
@@ -42,6 +44,8 @@ import {
   workspace,
 } from "../src/index.js";
 import { authoringApiPaths, renderSkill } from "../src/skill.js";
+import * as commandRunner from "../src/cli/run.ts";
+import { loadWorkspace } from "../src/cli/loader.ts";
 
 const nixos = platform("linux", () => ({
   nixos: {
@@ -724,6 +728,77 @@ describe("winix apply Windows output", () => {
   });
 });
 
+describe("PowerShell module CLI locking", () => {
+  it("pins on first apply, reuses pins offline, and updates only a named module", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-module-cli-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package({ id: "Git.Git", version: "2.44.0" }),
+          windows.powershell.module("Terminal-Icons"),
+          windows.powershell.module("posh-git"),
+          windows.file.copy("%USERPROFILE%\\\\profile.ps1", "../windows/profile.ps1"),
+        ])
+      `);
+      const resolve = vi.fn(() => "0.11.0");
+      await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsModuleVersion: resolve });
+      expect(resolve).toHaveBeenCalledTimes(2);
+      const original = readWindowsLock(dir)!;
+      expect(original.modules?.["terminal-icons"].version).toBe("0.11.0");
+      expect(original.packages["Git.Git"].version).toBe("2.44.0");
+      const output = await readFile(join(dir, ".winix", "out", "desktop", "configuration.winget"), "utf8");
+      expect(output).toContain(windowsSourcePath(join(dir, "..", "windows", "profile.ps1")));
+      await applyWorkspace(dir, {
+        dry: false, diff: false,
+        resolveWindowsModuleVersion: () => { throw new Error("offline"); },
+      });
+      expect(readWindowsLock(dir)).toEqual(original);
+      await update(dir, {
+        inputs: ["terminal-icons"], dry: false, windows: true,
+        resolveWindowsPackageVersion: () => { throw new Error("must not resolve packages"); },
+        resolveWindowsModuleVersion: (name) => {
+          expect(name).toBe("Terminal-Icons");
+          return "0.12.0";
+        },
+      });
+      const updated = readWindowsLock(dir)!;
+      expect(updated.modules?.["terminal-icons"].version).toBe("0.12.0");
+      expect(updated.modules?.["posh-git"]).toEqual(original.modules?.["posh-git"]);
+      expect(updated.packages).toEqual(original.packages);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not write dry-run or failed module resolutions", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-module-cli-dry-"));
+    try {
+      await writeConfig(dir, `host("desktop", platforms.windows(), [
+        windows.powershell.module("Terminal-Icons"),
+      ])`);
+      await applyWorkspace(dir, {
+        dry: true, diff: false, resolveWindowsModuleVersion: () => "0.11.0",
+      });
+      expect(readWindowsLock(dir)).toBeNull();
+      await update(dir, {
+        inputs: [], windows: true, dry: true, resolveWindowsModuleVersion: () => "0.11.0",
+      });
+      expect(readWindowsLock(dir)).toBeNull();
+      await applyWorkspace(dir, {
+        dry: false, diff: false, resolveWindowsModuleVersion: () => "0.11.0",
+      });
+      const before = await readFile(join(dir, "winix-windows.lock"), "utf8");
+      await expect(update(dir, {
+        inputs: [], windows: true, dry: false,
+        resolveWindowsModuleVersion: () => { throw new Error("repository unavailable"); },
+      })).rejects.toThrow("repository unavailable");
+      expect(await readFile(join(dir, "winix-windows.lock"), "utf8")).toBe(before);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("winix switch Windows dry run", () => {
   it("runs winget configure for a Windows host", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-switch-windows-"));
@@ -739,7 +814,13 @@ describe("winix switch Windows dry run", () => {
         ])
       `);
 
-      await switchCommand(dir, { host: "desktop", dry: true });
+      await switchCommand(dir, {
+        host: "desktop", dry: true,
+        windowsState: {
+          path: join(dir, "applied.json"),
+          adapter: { inspect: async () => null, remove: async () => { throw new Error("Dry run must not remove"); } },
+        },
+      });
       const configPath = join(dir, ".winix", "out", "desktop", "configuration.winget");
       expect(logs).toContain(
         [
@@ -756,6 +837,49 @@ describe("winix switch Windows dry run", () => {
       await rm(dir, { recursive: true, force: true });
     }
 
+  });
+});
+
+describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", () => {
+  it.each(["startup", "package"] as const)("records successful %s activation and automatically removes a deleted declaration only on a real switch", async (kind) => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-switch-state-"));
+    let present = false;
+    const snapshot = kind === "startup" ? { fingerprint: "a".repeat(64) } : { version: "1.0" };
+    const key = kind === "startup" ? '["startup","probe"]' : '["package","winget","example.app"]';
+    const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async (_command, _args, opts) => {
+      if (!opts?.dry) present = true;
+    });
+    const logs = vi.spyOn(console, "log").mockImplementation(() => {});
+    const remove = vi.fn(async () => { present = false; });
+    const windowsState = {
+      path: join(dir, "inventory.json"),
+      adapter: { inspect: async () => present ? snapshot : null, remove },
+    };
+    try {
+      const declaration = kind === "startup"
+        ? 'windows.startup.command("probe", { executable: "pwsh.exe" })'
+        : 'windows.package({ id: "Example.App", version: "1.0" })';
+      await writeConfig(dir, `host("desktop", platforms.windows(), [${declaration}])`);
+      await switchCommand(dir, { dry: false, windowsState });
+      expect(present).toBe(true);
+      expect(JSON.parse(await readFile(windowsState.path, "utf8")).entries[key].owned).toBe(true);
+      const loaded = await loadWorkspace(dir);
+      loaded.workspace.hosts[0] = host("desktop", platforms.windows(), []);
+      await switchCommand(dir, { dry: true, windowsState });
+      expect(remove).not.toHaveBeenCalled();
+      vi.stubGlobal("process", { ...process, stdin: { isTTY: false }, stdout: { isTTY: false } });
+      try {
+        await expect(switchCommand(dir, { dry: false, windowsState })).rejects.toThrow("use --yes");
+      } finally { vi.unstubAllGlobals(); }
+      expect(remove).not.toHaveBeenCalled();
+      await switchCommand(dir, { dry: false, yes: true, windowsState });
+      expect(remove).toHaveBeenCalledTimes(1);
+      expect(present).toBe(false);
+    } finally {
+      runner.mockRestore();
+      logs.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
 

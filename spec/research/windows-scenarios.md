@@ -89,7 +89,7 @@ These are ranked by (value × how-clean-the-DSC-primitive-is × demo appeal).
 6. **`windows.env.*` / `windows.path.*`** — implemented as typed helpers over
    the best native resources for each job. Env vars use `Microsoft.Windows/Registry`
    against `HKCU\Environment` / `HKLM\...\Environment`; PATH uses
-   `Microsoft.DSC.Transitional/WindowsPowerShellScript` so add/remove operations
+   `Microsoft.DSC.Transitional/PowerShellScript` so add/remove operations
    are idempotent and do not clobber unrelated PATH entries.
 
 7. **`windows.programs.*`** (curated helpers like `windows.programs.git`) — nice demo

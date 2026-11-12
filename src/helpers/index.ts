@@ -46,4 +46,11 @@ export type {
   WinRawCommandArg,
   WinRawCommandSpec,
   WinSettingOpts,
+  WinPowerShellModuleOpts,
+  WinStartupCommandSpec,
+  WinStartupNamespace,
+  WinOptionalFeatureOpts,
+  WinWslDistroSpec,
+  WinWslOpts,
+  WinWslNamespace,
 } from "./windows.ts";

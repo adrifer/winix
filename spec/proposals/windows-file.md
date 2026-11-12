@@ -116,12 +116,12 @@ built-in catalogue is registry, process, runcommandonset, windows_service,
 windows_firewall, sshdconfig, etc. There is no `Microsoft.Windows/File`.
 
 Therefore `file`, like `path`, is emitted via the built-in
-`Microsoft.DSC.Transitional/WindowsPowerShellScript` resource with idempotent
+`Microsoft.DSC.Transitional/PowerShellScript` resource with idempotent
 `getScript`/`testScript`/`setScript`. This keeps the zero-runtime-deps
 property (no PSDSC module install) and reuses the exact mechanism already
 validated for `path` on hardware.
 
-This is the **MVP backing**, not a claim that inline Windows PowerShell is the
+This is the **current backing**, using PowerShell 7, not a claim that inline scripts are the
 ideal long-term primitive. The modern platform direction is DSC v3 resources
 orchestrated by `winget configure`; if Microsoft adds a native file resource,
 or if Winix grows a small first-party DSC resource for files, this helper
@@ -129,9 +129,10 @@ should switch to that. Until then, the transitional script resource is the only
 inbox DSC resource found that gives us declarative `get`/`test`/`set` without
 shipping another runtime component.
 
-For symlink mode, do not use PowerShell's `New-Item -ItemType SymbolicLink` in
-the generated `setScript`; use `mklink` through `cmd.exe` so Developer Mode
-works under the Windows PowerShell 5.1 host used by DSC.
+For symlink mode, retain `mklink` through `cmd.exe`, the path already validated
+with Developer Mode. PowerShell 7 supports `New-Item -ItemType SymbolicLink`,
+but changing the shell does not require replacing the established link logic.
+PowerShell 7 must be on PATH before DSC resource discovery.
 
 Two emission modes, picked by the helper from its arguments:
 
@@ -342,9 +343,13 @@ Findings:
 6. `cmd /c mklink /D` succeeds non-elevated with Developer Mode enabled through
    `winget configure`, for directory symlinks.
 
-Design adjustment from the probe: symlink scripts should be implemented with
+Historical design adjustment from the probe: symlink scripts should be implemented with
 `mklink`, not `New-Item`, and tests should include the Windows PowerShell 5.1
 case so we do not regress to a command that only works in PowerShell 7.
+
+Current implementation: file/PATH/module scripts now run directly in
+`Microsoft.DSC.Transitional/PowerShellScript` (PowerShell 7). The 5.1 findings
+above explain the original implementation, not a current runtime dependency.
 
 Modernity check:
 

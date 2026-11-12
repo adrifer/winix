@@ -49,7 +49,7 @@ resources:
       valueData:
         String: "%USERPROFILE%\\\\.cargo"
   - name: "Add CARGO HOME bin to PATH"
-    type: Microsoft.DSC.Transitional/WindowsPowerShellScript
+    type: Microsoft.DSC.Transitional/PowerShellScript
     dependsOn: ["Set CARGO HOME"]
     properties:
       getScript: |-
@@ -80,7 +80,7 @@ resources:
           Set-ItemProperty -Path $registryPath -Name 'Path' -Value $afterValue -Type ExpandString
         }
   - name: "Write file USERPROFILE config winix example hello txt"
-    type: Microsoft.DSC.Transitional/WindowsPowerShellScript
+    type: Microsoft.DSC.Transitional/PowerShellScript
     properties:
       getScript: |-
         function Expand-WinixPath([string]$Path) { [Environment]::ExpandEnvironmentVariables($Path) }

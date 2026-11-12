@@ -69,7 +69,7 @@ host("desktop", platforms.windows(), ({ windows }) => {
 `windows.env.*(...)` and `windows.path.*(...)` manage environment state
 declaratively using built-in Windows DSC resources. Environment variables use
 `Microsoft.Windows/Registry`; PATH entries use an idempotent
-`Microsoft.DSC.Transitional/WindowsPowerShellScript` so PATH can be appended to
+`Microsoft.DSC.Transitional/PowerShellScript` so PATH can be appended to
 or pruned without clobbering unrelated entries.
 
 ```ts

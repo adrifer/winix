@@ -4,6 +4,8 @@ import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import { loadWorkspace } from "../loader.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { generateNix, type NixOutput } from "../../backends/nix/index.ts";
+import { validateWindowsWslResources } from "../../backends/windows/index.ts";
+import type { WindowsOptions } from "../../types/index.ts";
 import {
   analyzeWorkspace,
   collectEscapeReport,
@@ -22,6 +24,7 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
     const { workspace } = await loadWorkspace(cwd);
     const duplicateHosts = findDuplicateHosts(workspace);
     const evaluated = evaluate(workspace);
+    for (const host of evaluated) validateWindowsWslResources(host.windows as WindowsOptions);
     const output = generateNix(workspace, evaluated);
     validateGeneratedNixSyntax(output);
     const analyses = analyzeWorkspace(workspace);

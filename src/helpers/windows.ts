@@ -5,6 +5,9 @@
 // (env, path, file, dsc, wsl, programs) land in follow-up milestones.
 
 import type { Fragment, ResourceHandle, ResourceRef } from "../core/types.ts";
+import { resolve, win32, posix } from "node:path";
+import { fileURLToPath } from "node:url";
+import { powerShellLiteral as psSingleQuoted } from "./utils.ts";
 import type {
   WinDscProperties,
   WinDscMetadata,
@@ -13,6 +16,13 @@ import type {
   WinPackageSource,
   WinRawCommand,
   WinSettings,
+  WinFilePath,
+  WinKnownFolder,
+  WinKnownFolderName,
+  WinStartupCommand,
+  WinWslConfig,
+  WinWslDistro,
+  WinWslSetup,
 } from "../types/index.ts";
 
 /**
@@ -66,6 +76,79 @@ export interface WinDscSpec {
 /** Options for `windows.setting(...)`. */
 export interface WinSettingOpts {
   dependsOn?: ResourceHandle | ResourceHandle[];
+}
+
+export interface WinPowerShellModuleOpts {
+  /** Registered PowerShell repository on the target. Defaults to PSGallery. */
+  repository?: string;
+  dependsOn?: ResourceHandle | ResourceHandle[];
+}
+
+export interface WinStartupCommandSpec extends WinStartupCommand {
+  backup?: boolean;
+  force?: boolean;
+  dependsOn?: ResourceHandle | ResourceHandle[];
+}
+
+export interface WinStartupNamespace {
+  command(name: string, spec: WinStartupCommandSpec): ResourceHandle;
+}
+
+export interface WinOptionalFeatureOpts {
+  enabled?: boolean;
+  dependsOn?: ResourceHandle | ResourceHandle[];
+}
+
+export interface WinWslDistroSpec extends Omit<WinWslDistro, "name" | "default"> {
+  default?: boolean;
+  dependsOn?: ResourceHandle | ResourceHandle[];
+}
+
+export interface WinWslOpts extends Pick<WinFileOpts, "backup" | "force" | "dependsOn"> {
+  config?: WinWslConfig;
+}
+
+export interface WinWslNamespace {
+  (opts?: WinWslOpts): ResourceHandle;
+  distro(name: string, spec: WinWslDistroSpec): ResourceHandle;
+}
+
+const KNOWN_FOLDERS = {
+  documents: "MyDocuments",
+  desktop: "Desktop",
+  localAppData: "LocalApplicationData",
+  appData: "ApplicationData",
+  userProfile: "UserProfile",
+} as const;
+
+function knownFolder(folder: WinKnownFolderName, path = ""): WinKnownFolder {
+  if (!Object.hasOwn(KNOWN_FOLDERS, folder)) {
+    throw new Error(`Unknown Windows known folder "${folder}"`);
+  }
+  if (typeof path !== "string" || win32.isAbsolute(path) || /^[a-z]:/i.test(path) ||
+      path.split(/[\\/]/).includes("..")) {
+    throw new Error("windows.knownFolder path must be relative and cannot contain '..'");
+  }
+  return { kind: "knownFolder", folder, path };
+}
+
+function validFilePath(value: WinFilePath): boolean {
+  if (typeof value === "string") return value.length > 0;
+  if (!value || value.kind !== "knownFolder") return false;
+  knownFolder(value.folder, value.path);
+  return true;
+}
+
+function filePathLabel(value: WinFilePath): string {
+  return typeof value === "string" ? value : `${value.folder}\\${value.path}`;
+}
+
+export function filePathExpression(value: WinFilePath): string {
+  if (typeof value === "string") return `Expand-WinixPath ${psSingleQuoted(value)}`;
+  const folder = psSingleQuoted(KNOWN_FOLDERS[value.folder]);
+  return `& { $root = [Environment]::GetFolderPath(${folder}); ` +
+    `if ([string]::IsNullOrWhiteSpace($root)) { throw 'Windows known folder is unavailable: ${value.folder}' }; ` +
+    (value.path ? `Join-Path $root ${psSingleQuoted(value.path)}` : "$root") + " }";
 }
 
 /** Scope for Windows environment and PATH writes. */
@@ -155,8 +238,8 @@ function normalizeRawCommand(arg: WinRawCommandArg): WinRawCommand {
       throw new Error("windows.raw(command) requires a non-empty command string");
     }
     return withToken({
-      executable: "powershell",
-      arguments: ["-Command", arg],
+      executable: "pwsh",
+      arguments: ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", arg],
     });
   }
 
@@ -229,8 +312,8 @@ function withDscMetadata(
 }
 
 const REGISTRY_RESOURCE = "Microsoft.Windows/Registry";
-const WINDOWS_POWERSHELL_SCRIPT_RESOURCE =
-  "Microsoft.DSC.Transitional/WindowsPowerShellScript";
+const POWERSHELL_SCRIPT_RESOURCE =
+  "Microsoft.DSC.Transitional/PowerShellScript";
 const WINDOWS_SETTINGS_RESOURCE = "Microsoft.Windows.Settings/WindowsSettings";
 const USER_ENV_KEY_PATH = "HKCU\\Environment";
 const MACHINE_ENV_KEY_PATH =
@@ -494,7 +577,7 @@ function normalizePath(
   }
   const scope = envScope(normalizedOpts);
   const resource: WinDscResource = {
-    resourceType: WINDOWS_POWERSHELL_SCRIPT_RESOURCE,
+    resourceType: POWERSHELL_SCRIPT_RESOURCE,
     name: `${ensure === "Present" ? "Add" : "Remove"} ${value} ${
       ensure === "Present" ? "to" : "from"
     } PATH`,
@@ -537,13 +620,13 @@ function normalizeFileOpts(opts: WinFileOpts | undefined, helper: string): WinFi
   return opts;
 }
 
-function fileDsc(
+function scriptDsc(
   name: string,
   properties: WinDscProperties,
   opts: WinFileOpts
 ): WinDscResource {
   const resource: WinDscResource = {
-    resourceType: WINDOWS_POWERSHELL_SCRIPT_RESOURCE,
+    resourceType: POWERSHELL_SCRIPT_RESOURCE,
     name,
     properties,
   };
@@ -554,20 +637,20 @@ function fileDsc(
 }
 
 function normalizeFileText(
-  target: string,
+  target: WinFilePath,
   content: string,
   opts: WinFileOpts | undefined
 ): WinDscResource {
   const normalizedOpts = normalizeFileOpts(opts, "windows.file.text");
-  if (!target || typeof target !== "string") {
+  if (!validFilePath(target)) {
     throw new Error("windows.file.text(target) requires a non-empty target path");
   }
   if (typeof content !== "string") {
     throw new Error("windows.file.text(target, content) requires string content");
   }
   const encoding = normalizedOpts.encoding ?? "utf8";
-  return fileDsc(
-    `Write file ${target}`,
+  return withFileMetadata(scriptDsc(
+    `Write file ${filePathLabel(target)}`,
     buildFileTextScriptProperties({
       target,
       content,
@@ -576,23 +659,24 @@ function normalizeFileText(
       backup: normalizedOpts.backup ?? false,
     }),
     normalizedOpts
-  );
+  ), "text", target, normalizedOpts, undefined, content);
 }
 
 function normalizeFileSymlink(
-  target: string,
-  source: string,
+  target: WinFilePath,
+  source: string | URL,
   opts: WinFileOpts | undefined
 ): WinDscResource {
   const normalizedOpts = normalizeFileOpts(opts, "windows.file.symlink");
-  if (!target || typeof target !== "string") {
+  if (!validFilePath(target)) {
     throw new Error("windows.file.symlink(target) requires a non-empty target path");
   }
+  source = source instanceof URL ? fileURLToPath(source) : source;
   if (!source || typeof source !== "string") {
     throw new Error("windows.file.symlink(target, source) requires a non-empty source path");
   }
-  return fileDsc(
-    `Link file ${target}`,
+  return withFileMetadata(scriptDsc(
+    `Link file ${filePathLabel(target)}`,
     buildFileSymlinkScriptProperties({
       target,
       source,
@@ -601,23 +685,24 @@ function normalizeFileSymlink(
       backup: normalizedOpts.backup ?? false,
     }),
     normalizedOpts
-  );
+  ), "symlink", target, normalizedOpts, source);
 }
 
 function normalizeFileCopy(
-  target: string,
-  source: string,
+  target: WinFilePath,
+  source: string | URL,
   opts: WinFileOpts | undefined
 ): WinDscResource {
   const normalizedOpts = normalizeFileOpts(opts, "windows.file.copy");
-  if (!target || typeof target !== "string") {
+  if (!validFilePath(target)) {
     throw new Error("windows.file.copy(target) requires a non-empty target path");
   }
+  source = source instanceof URL ? fileURLToPath(source) : source;
   if (!source || typeof source !== "string") {
     throw new Error("windows.file.copy(target, source) requires a non-empty source path");
   }
-  return fileDsc(
-    `Copy file ${target}`,
+  return withFileMetadata(scriptDsc(
+    `Copy file ${filePathLabel(target)}`,
     buildFileCopyScriptProperties({
       target,
       source,
@@ -625,22 +710,67 @@ function normalizeFileCopy(
       backup: normalizedOpts.backup ?? false,
     }),
     normalizedOpts
-  );
+  ), "copy", target, normalizedOpts, source);
 }
 
 function normalizeFileRemove(
-  target: string,
+  target: WinFilePath,
   opts: WinFileOpts | undefined
 ): WinDscResource {
   const normalizedOpts = normalizeFileOpts(opts, "windows.file.remove");
-  if (!target || typeof target !== "string") {
+  if (!validFilePath(target)) {
     throw new Error("windows.file.remove(target) requires a non-empty target path");
   }
-  return fileDsc(
-    `Remove file ${target}`,
+  return withFileMetadata(scriptDsc(
+    `Remove file ${filePathLabel(target)}`,
     buildFileRemoveScriptProperties({ target }),
     normalizedOpts
-  );
+  ), "remove", target, normalizedOpts);
+}
+
+function withFileMetadata(
+  resource: WinDscResource,
+  action: "text" | "symlink" | "copy" | "remove",
+  target: WinFilePath,
+  opts: WinFileOpts,
+  source?: string,
+  content?: string
+): WinDscResource {
+  return withDscMetadata(resource, {
+    kind: "file", action, target, source, content,
+    encoding: opts.encoding ?? "utf8",
+    force: opts.force ?? false,
+    backup: opts.backup ?? false,
+    recursive: opts.recursive ?? false,
+  });
+}
+
+/** Rebuild scripts after the emitter supplies the config directory. */
+export function resolveWindowsFileProperties(
+  resource: WinDscResource,
+  configDir?: string,
+  sourcePath: (path: string) => string = (path) => path
+): WinDscProperties | undefined {
+  const file = resource.winix;
+  if (file?.kind !== "file") return resource.properties;
+  let source = file.source;
+  if (source !== undefined && !/%[^%]+%/.test(source) &&
+      !win32.isAbsolute(source) && !posix.isAbsolute(source)) {
+    if (!configDir) throw new Error("Relative Windows file sources require a configDir when calling generateWindows.");
+    if (/^[a-z]:/i.test(source)) throw new Error(`Drive-relative Windows source is ambiguous: ${source}`);
+    source = /^[a-z]:[\\/]|^[\\/]{2}/i.test(configDir)
+      ? win32.resolve(configDir, source)
+      : posix.isAbsolute(configDir)
+        ? posix.resolve(configDir, source.replaceAll("\\", "/"))
+        : resolve(configDir, source);
+  }
+  if (source !== undefined && !/%[^%]+%/.test(source)) source = sourcePath(source);
+  switch (file.action) {
+    case "text": return buildFileTextScriptProperties({ ...file, content: file.content! });
+    case "remove": return buildFileRemoveScriptProperties(file);
+    case "symlink": return buildFileSymlinkScriptProperties({ ...file, source: source! });
+    case "copy": return buildFileCopyScriptProperties({ ...file, source: source! });
+  }
 }
 
 function buildPathScriptProperties(opts: {
@@ -702,14 +832,14 @@ function buildPathScriptProperties(opts: {
 }
 
 function buildFileTextScriptProperties(opts: {
-  target: string;
+  target: WinFilePath;
   content: string;
   encoding: WinFileEncoding;
   force: boolean;
   backup: boolean;
 }): WinDscProperties {
   const vars = [
-    `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+    `$target = ${filePathExpression(opts.target)}`,
     `$content = ${psSingleQuoted(opts.content)}`,
     `$encoding = ${psSingleQuoted(opts.encoding)}`,
     `$force = ${psBoolean(opts.force)}`,
@@ -718,7 +848,7 @@ function buildFileTextScriptProperties(opts: {
   return {
     getScript: [
       ...filePathPrelude(),
-      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      `$target = ${filePathExpression(opts.target)}`,
       "if (Test-Path -LiteralPath $target -PathType Leaf) { [IO.File]::ReadAllText($target) } else { '' }",
     ].join("\n"),
     testScript: [
@@ -745,7 +875,7 @@ function buildFileTextScriptProperties(opts: {
 }
 
 function buildFileSymlinkScriptProperties(opts: {
-  target: string;
+  target: WinFilePath;
   source: string;
   recursive: boolean;
   force: boolean;
@@ -761,7 +891,7 @@ function buildFileSymlinkScriptProperties(opts: {
   return {
     getScript: [
       ...fileSymlinkPrelude(),
-      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      `$target = ${filePathExpression(opts.target)}`,
       "if (Test-Path -LiteralPath $target) { (Get-Item -LiteralPath $target -Force).LinkType } else { '' }",
     ].join("\n"),
     testScript: [
@@ -784,7 +914,7 @@ function buildFileSymlinkScriptProperties(opts: {
 }
 
 function buildFileCopyScriptProperties(opts: {
-  target: string;
+  target: WinFilePath;
   source: string;
   force: boolean;
   backup: boolean;
@@ -798,7 +928,7 @@ function buildFileCopyScriptProperties(opts: {
   return {
     getScript: [
       ...filePathPrelude(),
-      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      `$target = ${filePathExpression(opts.target)}`,
       "if (Test-Path -LiteralPath $target) { $target } else { '' }",
     ].join("\n"),
     testScript: [
@@ -823,21 +953,21 @@ function buildFileCopyScriptProperties(opts: {
   };
 }
 
-function buildFileRemoveScriptProperties(opts: { target: string }): WinDscProperties {
+function buildFileRemoveScriptProperties(opts: { target: WinFilePath }): WinDscProperties {
   return {
     getScript: [
       ...filePathPrelude(),
-      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      `$target = ${filePathExpression(opts.target)}`,
       "if (Test-Path -LiteralPath $target) { $target } else { '' }",
     ].join("\n"),
     testScript: [
       ...filePathPrelude(),
-      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      `$target = ${filePathExpression(opts.target)}`,
       "-not (Test-Path -LiteralPath $target)",
     ].join("\n"),
     setScript: [
       ...filePathPrelude(),
-      `$target = Expand-WinixPath ${psSingleQuoted(opts.target)}`,
+      `$target = ${filePathExpression(opts.target)}`,
       "if (-not (Test-Path -LiteralPath $target)) { return }",
       "$item = Get-Item -LiteralPath $target -Force",
       "if ($item.PSIsContainer -and $null -eq $item.LinkType) {",
@@ -848,15 +978,15 @@ function buildFileRemoveScriptProperties(opts: { target: string }): WinDscProper
   };
 }
 
-function fileScriptVars(values: Record<string, string | boolean>): string[] {
+function fileScriptVars(values: Record<string, WinFilePath | boolean>): string[] {
   return Object.entries(values).map(([name, value]) =>
     typeof value === "boolean"
       ? `$${name} = ${psBoolean(value)}`
-      : `$${name} = Expand-WinixPath ${psSingleQuoted(value)}`
+      : `$${name} = ${filePathExpression(value)}`
   );
 }
 
-function filePathPrelude(): string[] {
+export function filePathPrelude(): string[] {
   return [
     "function Expand-WinixPath([string]$Path) { [Environment]::ExpandEnvironmentVariables($Path) }",
   ];
@@ -1002,8 +1132,106 @@ function psBoolean(value: boolean): string {
   return value ? "$true" : "$false";
 }
 
-function psSingleQuoted(value: string): string {
-  return `'${value.replace(/'/g, "''")}'`;
+function normalizeStartupCommand(name: string, spec: WinStartupCommandSpec): WinDscResource {
+  const helper = "windows.startup.command";
+  if (typeof name !== "string" || !name.trim() || /[<>:"/\\|?*\x00-\x1f]|[. ]$/.test(name) ||
+      /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name) || name.length > 251) {
+    throw new Error(`${helper} requires a valid shortcut name without path separators or reserved Windows names`);
+  }
+  if (!spec || typeof spec !== "object" || Array.isArray(spec)) {
+    throw new Error(`${helper} requires a command specification`);
+  }
+  normalizeFileOpts(spec, helper);
+  for (const [key, value] of [
+    ["executable", spec.executable],
+    ["workingDirectory", spec.workingDirectory ?? knownFolder("userProfile")],
+  ] as const) {
+    if (!validFilePath(value) || /\0/.test(filePathLabel(value))) {
+      throw new Error(`${helper} ${key} requires a non-empty path or application name`);
+    }
+  }
+  if (spec.arguments !== undefined && (!Array.isArray(spec.arguments) || spec.arguments.some(
+    (value) => (typeof value !== "string" && !validFilePath(value)) || /\0/.test(filePathLabel(value))
+  ))) {
+    throw new Error(`${helper} arguments must be strings or known-folder paths without null characters`);
+  }
+  const styles = { normal: 1, minimized: 7, maximized: 3 } as const;
+  const style = spec.windowStyle ?? "normal";
+  if (!Object.hasOwn(styles, style)) {
+    throw new Error(`${helper} windowStyle must be normal, minimized, or maximized`);
+  }
+  const args = (spec.arguments ?? []).map((value) =>
+    typeof value === "string" ? psSingleQuoted(value) : `(${filePathExpression(value)})`
+  );
+  const prelude = [
+    "$ErrorActionPreference = 'Stop'",
+    ...filePathPrelude(),
+    ...fileMoveTargetPrelude(),
+    String.raw`function ConvertTo-WinixArgument([string]$Value) {
+  if ($Value.Length -gt 0 -and $Value -notmatch '[\s"]') { return $Value }
+  $escaped = [regex]::Replace($Value, '(\\*)"', '$1$1\"')
+  $escaped = [regex]::Replace($escaped, '(\\+)$', '$1$1')
+  return '"' + $escaped + '"'
+}`,
+    "$startup = [Environment]::GetFolderPath('Startup')",
+    "if ([string]::IsNullOrWhiteSpace($startup)) { throw 'Windows Startup folder is unavailable' }",
+    `$target = Join-Path $startup ${psSingleQuoted(`${name}.lnk`)}`,
+    `$executable = ${filePathExpression(spec.executable)}`,
+    String.raw`if ($executable -notmatch '[/\\:]') {`,
+    "  $commands = @(Get-Command -Name $executable -CommandType Application -ErrorAction Stop)",
+    "  if ($commands.Count -ne 1) { throw \"Startup application name is ambiguous: $executable\" }",
+    "  $executable = $commands[0].Source",
+    "}",
+    "if (-not [IO.Path]::IsPathFullyQualified($executable)) { throw \"Startup executable must be an absolute path or application name: $executable\" }",
+    "if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) { throw \"Startup executable is missing: $executable\" }",
+    "$executable = (Resolve-Path -LiteralPath $executable).ProviderPath",
+    `$workingDirectory = ${filePathExpression(spec.workingDirectory ?? knownFolder("userProfile"))}`,
+    "if (-not [IO.Path]::IsPathFullyQualified($workingDirectory) -or -not (Test-Path -LiteralPath $workingDirectory -PathType Container)) { throw \"Startup working directory must be an existing absolute directory: $workingDirectory\" }",
+    "$workingDirectory = (Resolve-Path -LiteralPath $workingDirectory).ProviderPath",
+    `$arguments = (@(${args.join(", ")}) | ForEach-Object { ConvertTo-WinixArgument $_ }) -join ' '`,
+    `$windowStyle = ${styles[style]}`,
+    // WScript.Shell uses ANSI for shortcut arguments; Shell.Application preserves Unicode.
+    "$shell = New-Object -ComObject Shell.Application",
+    "function Get-WinixStartupLink([string]$Path) {",
+    "  $folder = $shell.NameSpace((Split-Path -Parent $Path))",
+    "  if ($null -eq $folder) { throw \"Unable to read shortcut directory: $Path\" }",
+    "  $item = $folder.ParseName((Split-Path -Leaf $Path))",
+    "  if ($null -eq $item) { throw \"Unable to read shortcut: $Path\" }",
+    "  return $item.GetLink()",
+    "}",
+    "function Test-WinixStartup([string]$Path = $target) {",
+    "  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }",
+    "  $link = Get-WinixStartupLink $Path",
+    "  return $link.Path -ieq $executable -and $link.Arguments -ceq $arguments -and $link.WorkingDirectory -ieq $workingDirectory -and $link.ShowCommand -eq $windowStyle",
+    "}",
+  ];
+  return withDscMetadata(scriptDsc(`Startup ${name}`, {
+    getScript: [...prelude, "@{ Path = $target; InDesiredState = (Test-WinixStartup) }"].join("\n"),
+    testScript: [...prelude, "Test-WinixStartup"].join("\n"),
+    setScript: [
+      ...prelude,
+      "if (Test-WinixStartup) { return }",
+      "$stagingDirectory = Join-Path ([IO.Path]::GetTempPath()) ('winix-startup-' + [guid]::NewGuid().ToString('N'))",
+      "[IO.Directory]::CreateDirectory($stagingDirectory) | Out-Null",
+      "try {",
+      "  $stagingPath = Join-Path $stagingDirectory 'shortcut.lnk'",
+      "  $seed = (New-Object -ComObject WScript.Shell).CreateShortcut($stagingPath)",
+      "  $seed.TargetPath = $env:ComSpec",
+      "  $seed.Save()",
+      "  $link = Get-WinixStartupLink $stagingPath",
+      "  $link.Path = $executable",
+      "  $link.Arguments = $arguments",
+      "  $link.WorkingDirectory = $workingDirectory",
+      "  $link.ShowCommand = $windowStyle",
+      "  $link.Save()",
+      "  if (-not (Test-WinixStartup $stagingPath)) { throw \"Startup shortcut verification failed: $stagingPath\" }",
+      "  [IO.Directory]::CreateDirectory($startup) | Out-Null",
+      `  Move-WinixExistingTarget $target ${psBoolean(spec.force ?? false)} ${psBoolean(spec.backup ?? false)}`,
+      "  Move-Item -LiteralPath $stagingPath -Destination $target",
+      "} finally { Remove-Item -LiteralPath $stagingDirectory -Recurse -Force }",
+      "if (-not (Test-WinixStartup)) { throw \"Startup shortcut verification failed: $target\" }",
+    ].join("\n"),
+  }, spec), { kind: "startup", name });
 }
 
 export interface WinEnvNamespace {
@@ -1017,13 +1245,25 @@ export interface WinPathNamespace {
 }
 
 export interface WinFileNamespace {
-  text(target: string, content: string, opts?: WinFileOpts): ResourceHandle;
-  symlink(target: string, source: string, opts?: WinFileOpts): ResourceHandle;
-  copy(target: string, source: string, opts?: WinFileOpts): ResourceHandle;
-  remove(target: string, opts?: WinFileOpts): ResourceHandle;
+  text(target: WinFilePath, content: string, opts?: WinFileOpts): ResourceHandle;
+  symlink(target: WinFilePath, source: string | URL, opts?: WinFileOpts): ResourceHandle;
+  copy(target: WinFilePath, source: string | URL, opts?: WinFileOpts): ResourceHandle;
+  remove(target: WinFilePath, opts?: WinFileOpts): ResourceHandle;
 }
 
 export interface WindowsHelper {
+  optionalFeature(name: string, opts?: WinOptionalFeatureOpts): ResourceHandle;
+  wsl: WinWslNamespace;
+  /** Manage named current-user Startup shortcuts without running the commands during apply. */
+  startup: WinStartupNamespace;
+  /** Resolve a user folder on the target machine during activation. */
+  knownFolder: {
+    [Folder in WinKnownFolderName]: (path?: string) => WinKnownFolder;
+  };
+  powershell: {
+    /** Install a current-user PowerShell 7 module using winix-windows.lock. */
+    module(name: string, opts?: WinPowerShellModuleOpts): ResourceHandle;
+  };
   /**
    * Declare a winget/msstore package.
    *
@@ -1042,6 +1282,7 @@ export interface WindowsHelper {
    * This is an escape hatch, not a declarative/idempotent helper:
    * `RunCommandOnSet` has no real test phase, so the command runs on every
    * `winget configure` apply. Prefer typed helpers when available.
+   * Command strings run in PowerShell 7 (`pwsh`); explicit executables are preserved.
    *
    * ```ts
    * windows.raw("New-Item -ItemType Directory -Force -Path $env:USERPROFILE\\.local\\bin")
@@ -1092,7 +1333,7 @@ export interface WindowsHelper {
 
   /**
    * Ensure a directory is on the PATH, appending/removing surgically via an
-   * idempotent `Microsoft.DSC.Transitional/WindowsPowerShellScript` resource.
+   * idempotent `Microsoft.DSC.Transitional/PowerShellScript` resource.
    *
    * ```ts
    * windows.path.add("%USERPROFILE%\\.local\\bin");
@@ -1103,7 +1344,7 @@ export interface WindowsHelper {
 
   /**
    * Manage files, copies, and dotfile symlinks declaratively via an idempotent
-   * `Microsoft.DSC.Transitional/WindowsPowerShellScript` resource.
+   * `Microsoft.DSC.Transitional/PowerShellScript` resource.
    *
    * ```ts
    * windows.file.text("%USERPROFILE%\\.gitconfig", "[user]\n");
@@ -1135,6 +1376,77 @@ function dscHandle(resource: WinDscResource): ResourceHandle {
 }
 
 export const windows: WindowsHelper = {
+  optionalFeature: (name, opts = {}) => optionalFeatures([name], opts),
+  wsl: Object.assign(
+    (opts: WinWslOpts = {}): ResourceHandle => {
+      normalizeFileOpts(opts, "windows.wsl");
+      const content = opts.config === undefined ? undefined : serializeWslConfig(opts.config);
+      const enabled = optionalFeatures(
+        ["Microsoft-Windows-Subsystem-Linux", "VirtualMachinePlatform"], { dependsOn: opts.dependsOn }
+      );
+      if (content === undefined) return enabled;
+      const resource = normalizeFileText(knownFolder("userProfile", ".wslconfig"), content, {
+        backup: opts.backup, force: opts.force, dependsOn: opts.dependsOn,
+      });
+      if (resource.winix?.kind === "file") resource.winix.wslConfig = true;
+      resource.name = "WSL configuration";
+      resource.dependsOn = [enabled.__winixHandle, ...(resource.dependsOn ?? [])];
+      const configured = dscHandle(resource);
+      configured.windows!.dsc!.unshift(...enabled.windows!.dsc!);
+      return configured;
+    },
+    {
+      distro: (name: string, spec: WinWslDistroSpec): ResourceHandle => {
+        if (typeof name !== "string" || !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(name)) {
+          throw new Error("windows.wsl.distro requires a distro name containing only letters, numbers, '.', '_' or '-'");
+        }
+        if (!spec || spec.source !== "nixos-wsl" || !validFilePath(spec.installLocation) ||
+            (typeof spec.installLocation === "string" &&
+              (!win32.isAbsolute(spec.installLocation) && !spec.installLocation.startsWith("%"))) ||
+            (spec.default !== undefined && typeof spec.default !== "boolean")) {
+          throw new Error("windows.wsl.distro requires source 'nixos-wsl', an absolute/environment/known-folder installLocation, and an optional boolean default");
+        }
+        return dscHandle(withDscMetadata(withDscToken({
+          resourceType: POWERSHELL_SCRIPT_RESOURCE,
+          name: `WSL distro ${name}`,
+          dependsOn: resolveDependsOn(spec.dependsOn),
+        }), { kind: "wsl-distro", distro: {
+          name, source: spec.source, installLocation: spec.installLocation, default: spec.default ?? false,
+          ...(spec.setup === undefined ? {} : { setup: normalizeWslSetup(spec.setup) }),
+        } }));
+      },
+    },
+  ),
+  startup: {
+    command: (name, spec) => dscHandle(normalizeStartupCommand(name, spec)),
+  },
+  knownFolder: {
+    documents: (path) => knownFolder("documents", path),
+    desktop: (path) => knownFolder("desktop", path),
+    localAppData: (path) => knownFolder("localAppData", path),
+    appData: (path) => knownFolder("appData", path),
+    userProfile: (path) => knownFolder("userProfile", path),
+  },
+  powershell: {
+    module: (name, opts = {}) => {
+      if (typeof name !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(name)) {
+        throw new Error("windows.powershell.module requires a module name without wildcards or paths");
+      }
+      if (!opts || typeof opts !== "object" || Array.isArray(opts)) {
+        throw new Error("windows.powershell.module options must be an object");
+      }
+      const repository = opts.repository ?? "PSGallery";
+      if (typeof repository !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(repository)) {
+        throw new Error("windows.powershell.module repository must be a registered repository name");
+      }
+      const resource = withDscMetadata(withDscToken({
+        resourceType: POWERSHELL_SCRIPT_RESOURCE,
+        name: `PowerShell module ${name}`,
+        dependsOn: resolveDependsOn(opts.dependsOn),
+      }), { kind: "powershell-module", module: { name, repository } });
+      return dscHandle(resource);
+    },
+  },
   package: (arg: WinPackageArg): ResourceHandle => {
     const pkg = normalizePackage(arg);
     const fragment: Fragment = { windows: { packages: { [pkg.id]: pkg } } };
@@ -1165,13 +1477,88 @@ export const windows: WindowsHelper = {
       dscHandle(normalizePath(value, "Absent", opts)),
   },
   file: {
-    text: (target: string, content: string, opts?: WinFileOpts): ResourceHandle =>
+    text: (target, content, opts): ResourceHandle =>
       dscHandle(normalizeFileText(target, content, opts)),
-    symlink: (target: string, source: string, opts?: WinFileOpts): ResourceHandle =>
+    symlink: (target, source, opts): ResourceHandle =>
       dscHandle(normalizeFileSymlink(target, source, opts)),
-    copy: (target: string, source: string, opts?: WinFileOpts): ResourceHandle =>
+    copy: (target, source, opts): ResourceHandle =>
       dscHandle(normalizeFileCopy(target, source, opts)),
-    remove: (target: string, opts?: WinFileOpts): ResourceHandle =>
+    remove: (target, opts): ResourceHandle =>
       dscHandle(normalizeFileRemove(target, opts)),
   },
 };
+
+export function normalizeWslSetup(setup: WinWslSetup): WinWslSetup {
+  if (!setup || typeof setup !== "object" || Array.isArray(setup)) {
+    throw new Error("windows.wsl.distro setup must be an object");
+  }
+  let url: URL;
+  try { url = new URL(setup.repository); } catch { throw new Error("WSL setup repository must be an HTTPS Git URL"); }
+  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
+    throw new Error("WSL setup repository must be HTTPS without credentials, query, or fragment");
+  }
+  const ref = setup.ref ?? "HEAD";
+  if (typeof ref !== "string" || !/^[a-z0-9][a-z0-9._/-]*$/i.test(ref) || ref.includes("..") ||
+      ref.endsWith("/") || ref.includes("//")) throw new Error("Invalid WSL setup Git ref");
+  if (typeof setup.configDirectory !== "string" || !setup.configDirectory ||
+      setup.configDirectory.startsWith("/") || /^[a-z]:/i.test(setup.configDirectory) || /[\\\x00-\x1f\x7f]/.test(setup.configDirectory) ||
+      setup.configDirectory.split("/").includes("..")) throw new Error("WSL setup configDirectory must stay inside the repository");
+  if (typeof setup.host !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(setup.host)) throw new Error("Invalid WSL setup host");
+  if (setup.user !== undefined && (typeof setup.user !== "string" ||
+      !/^[a-z_][a-z0-9_-]*$/.test(setup.user) || setup.user === "root")) throw new Error("WSL setup user must be a non-root Linux account");
+  if (setup.checkout !== undefined && (typeof setup.checkout !== "string" || !setup.checkout.startsWith("/") ||
+      /^\/+$/.test(setup.checkout) || /[\\\x00-\x1f\x7f]/.test(setup.checkout) ||
+      setup.checkout.split("/").some((part) => part === ".." || part === "."))) throw new Error("WSL setup checkout must be an absolute Linux directory");
+  return {
+    repository: url.href, ref, configDirectory: posix.normalize(setup.configDirectory), host: setup.host,
+    ...(setup.checkout === undefined ? {} : { checkout: posix.normalize(setup.checkout).replace(/\/+$/, "") }),
+    ...(setup.user === undefined ? {} : { user: setup.user }),
+  };
+}
+
+function optionalFeatures(names: string[], opts: WinOptionalFeatureOpts): ResourceHandle {
+  if (!opts || typeof opts !== "object" || Array.isArray(opts) ||
+      (opts.enabled !== undefined && typeof opts.enabled !== "boolean") ||
+      names.some((name) => typeof name !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(name))) {
+    throw new Error("windows.optionalFeature requires a Windows feature name and boolean enabled option");
+  }
+  return dscHandle(withDscMetadata(withDscToken({
+    resourceType: POWERSHELL_SCRIPT_RESOURCE,
+    name: `Windows features ${names.join(" ")}`,
+    elevated: true,
+    dependsOn: resolveDependsOn(opts.dependsOn),
+  }), { kind: "optional-features", names, enabled: opts.enabled ?? true }));
+}
+
+function serializeWslConfig(config: WinWslConfig): string {
+  const allowed: Record<string, Record<string, string | readonly string[]>> = {
+    wsl2: {
+      memory: "positive-size", swap: "size", processors: "integer",
+      localhostForwarding: "boolean", dnsTunneling: "boolean", firewall: "boolean",
+      autoProxy: "boolean", guiApplications: "boolean",
+      networkingMode: ["nat", "mirrored", "none", "virtioproxy"],
+    },
+    experimental: { autoMemoryReclaim: ["disabled", "gradual", "dropCache"], sparseVhd: "boolean" },
+  };
+  if (!config || typeof config !== "object" || Array.isArray(config) || !Object.keys(config).length) {
+    throw new Error("windows.wsl config must be a non-empty configuration object");
+  }
+  const lines: string[] = [];
+  for (const [section, entries] of Object.entries(config)) {
+    if (!Object.hasOwn(allowed, section) || !entries || typeof entries !== "object" ||
+        Array.isArray(entries) || !Object.keys(entries).length) throw new Error(`Invalid .wslconfig section: ${section}`);
+    lines.push(`[${section}]`);
+    for (const [key, value] of Object.entries(entries)) {
+      const rule = allowed[section][key];
+      const valid = Array.isArray(rule) ? rule.includes(value) :
+        rule === "boolean" ? typeof value === "boolean" :
+        rule === "integer" ? typeof value === "number" && Number.isSafeInteger(value) && value > 0 :
+        rule === "positive-size" ? typeof value === "string" && /^[1-9]\d*(?:MB|GB)$/i.test(value) :
+        rule === "size" ? typeof value === "string" && /^(?:0|(?:0|[1-9]\d*)(?:MB|GB))$/i.test(value) : false;
+      if (!valid) throw new Error(`Invalid .wslconfig option: ${section}.${key}`);
+      lines.push(`${key}=${String(value)}`);
+    }
+    lines.push("");
+  }
+  return lines.join("\n");
+}

@@ -26,6 +26,7 @@
 // `winget configure -f configuration.winget` runs this directly; the dscv3
 // processor is selected by the metadata block.
 
+import { win32 } from "node:path";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
 import type { ResourceRef } from "../../core/types.ts";
 import type {
@@ -43,6 +44,11 @@ import {
   type WindowsLock,
 } from "./lockfile.ts";
 import { isWindowsHost } from "./host.ts";
+import { resolveWindowsFileProperties } from "../../helpers/windows.ts";
+import { powerShellModuleProperties } from "./powershell.ts";
+import { powerShellLiteral as psSingleQuoted } from "../../helpers/utils.ts";
+import { windowsSourcePath } from "./paths.ts";
+import { optionalFeatureProperties, wslDistroProperties } from "./wsl.ts";
 
 export { isWindowsHost } from "./host.ts";
 
@@ -76,7 +82,8 @@ const WINDOWS_SETTINGS_MODULE_COMMAND_NAME = "Ensure Microsoft Windows Settings 
  */
 export function generateWindows(
   evaluatedHosts: EvaluatedHost[],
-  lock: WindowsLock = emptyWindowsLock()
+  lock: WindowsLock = emptyWindowsLock(),
+  configDir?: string
 ): WindowsOutput {
   const hosts: Record<string, WindowsHostOutput> = {};
   const warnings: string[] = [];
@@ -86,7 +93,7 @@ export function generateWindows(
   for (const host of windowsHosts) {
     const win = host.windows as WindowsOptions;
     hosts[host.name] = {
-      "configuration.winget": generateConfiguration(host.name, win, resolvedLock),
+      "configuration.winget": generateConfiguration(host.name, win, resolvedLock, configDir),
       "apply.ps1": generateApplyScript(),
     };
   }
@@ -100,10 +107,50 @@ export function generateWindows(
 function generateConfiguration(
   hostName: string,
   win: WindowsOptions,
-  lock: WindowsLock
+  lock: WindowsLock,
+  configDir?: string
 ): string {
+  validateWindowsWslResources(win);
   const packages = sortedPackages(win.packages ?? {});
-  const prepared = prepareWindowsDscResources(win.commands ?? [], win.dsc ?? []);
+  const resources = (win.dsc ?? []).map((resource) => {
+    const metadata = resource.winix;
+    if (metadata?.kind === "file") {
+      const properties = resolveWindowsFileProperties(resource, configDir, windowsSourcePath);
+      if (metadata.wslConfig && properties) {
+        properties.setScript += "\nWrite-Warning 'WSL configuration changed. Restart WSL manually when safe; Winix will not stop running distros.'";
+      }
+      return cloneDscResource(resource, properties);
+    }
+    if (metadata?.kind === "optional-features") {
+      return cloneDscResource(resource, optionalFeatureProperties(metadata.names, metadata.enabled));
+    }
+    if (metadata?.kind === "wsl-distro") {
+      const setupRefs: ResourceRef[] = (win.dsc ?? [])
+        .filter((entry) => (entry.winix?.kind === "optional-features" && entry.winix.enabled &&
+          entry.winix.names.some((name) => WSL_FEATURES.includes(name.toLowerCase()))) ||
+          (entry.winix?.kind === "file" && entry.winix.wslConfig))
+        .map((entry) => ({ kind: "dsc", token: entry.token! }));
+      const runtime = packages.find((pkg) => pkg.id.toLowerCase() === "microsoft.wsl")!;
+      return cloneDscResource(resource, wslDistroProperties(metadata.distro, lock.wslImages ?? {}, lock.wslRepositories ?? {}), [
+        ...setupRefs, { kind: "package", id: runtime.id }, ...(resource.dependsOn ?? []),
+      ]);
+    }
+    if (metadata?.kind === "powershell-module") {
+      const module = metadata.module;
+      const pin = lock.modules?.[module.name.toLowerCase()];
+      if (!pin || pin.repository.toLowerCase() !== module.repository.toLowerCase()) {
+        throw new Error(`PowerShell module "${module.name}" has no matching pin in winix-windows.lock. Run winix update --windows.`);
+      }
+      const dependencies = [...(resource.dependsOn ?? [])];
+      if (packages.some((pkg) => pkg.id === "Microsoft.PowerShell") &&
+          !dependencies.some((ref) => ref.kind === "package" && ref.id === "Microsoft.PowerShell")) {
+        dependencies.push({ kind: "package", id: "Microsoft.PowerShell" });
+      }
+      return cloneDscResource(resource, powerShellModuleProperties(module, pin), dependencies);
+    }
+    return resource;
+  });
+  const prepared = prepareWindowsDscResources(win.commands ?? [], resources);
   const commands = prepared.commands;
   const dscResources = prepared.dscResources;
 
@@ -140,6 +187,51 @@ function generateConfiguration(
   }
 
   return lines.join("\n") + "\n";
+}
+
+const WSL_FEATURES = ["microsoft-windows-subsystem-linux", "virtualmachineplatform"];
+
+export function validateWindowsWslResources(win: WindowsOptions): void {
+  const features = new Map<string, boolean>();
+  const names = new Set<string>();
+  const locations = new Set<string>();
+  let defaults = 0;
+  let configs = 0;
+  let distros = 0;
+  for (const resource of win.dsc ?? []) {
+    const metadata = resource.winix;
+    if (metadata?.kind === "optional-features") {
+      for (const name of metadata.names) {
+        const key = name.toLowerCase();
+        if (features.has(key) && features.get(key) !== metadata.enabled) {
+          throw new Error(`Conflicting desired state for Windows optional feature: ${name}`);
+        }
+        features.set(key, metadata.enabled);
+      }
+    } else if (metadata?.kind === "wsl-distro") {
+      distros++;
+      const { distro } = metadata;
+      const name = distro.name.toLowerCase();
+      const location = (typeof distro.installLocation === "string"
+        ? win32.normalize(distro.installLocation)
+        : JSON.stringify({ ...distro.installLocation, path: win32.normalize(distro.installLocation.path ?? "") })).toLowerCase();
+      if (names.has(name)) throw new Error(`Duplicate WSL distro: ${distro.name}`);
+      if (locations.has(location)) throw new Error("WSL distros cannot share an installLocation");
+      names.add(name);
+      locations.add(location);
+      if (distro.default) defaults++;
+    } else if (metadata?.kind === "file" && metadata.wslConfig) {
+      configs++;
+    }
+  }
+  if (defaults > 1) throw new Error("Only one WSL distro can be declared default per Windows host");
+  if (configs > 1) throw new Error("Declare only one windows.wsl({ config }) per Windows host");
+  if (distros && !WSL_FEATURES.every((name) => features.get(name) === true)) {
+    throw new Error("WSL distro provisioning requires windows.wsl() or both required optional features enabled");
+  }
+  if (distros && !Object.values(win.packages ?? {}).some((pkg) => pkg.id.toLowerCase() === "microsoft.wsl")) {
+    throw new Error('WSL distro provisioning requires windows.package("Microsoft.WSL")');
+  }
 }
 
 function prepareWindowsDscResources(
@@ -682,8 +774,4 @@ function yamlQuoted(value: string): string {
 
 function yamlStringArray(values: string[]): string {
   return `[${values.map((value) => yamlQuoted(value)).join(", ")}]`;
-}
-
-function psSingleQuoted(value: string): string {
-  return `'${value.replace(/'/g, "''")}'`;
 }

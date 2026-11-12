@@ -712,8 +712,173 @@ resources:
     properties: { /* ... */ }
 ```
 
-The Windows backend is an MVP: only `windows.package(...)` and
-`windows.raw(...)` exist publicly today. See
+The Windows backend also exposes typed environment, PATH, file, settings, and
+PowerShell module helpers, plus `windows.dsc(...)` for generic resources.
+`windows.knownFolder.documents(childPath?)` produces a file target resolved at
+activation time, including redirected Documents. Sibling methods are `desktop`,
+`localAppData`, `appData`, and `userProfile`. File copy/symlink source
+strings resolve relative to the config directory; absolute paths, environment
+paths, and file URL objects are supported. Direct emitter callers supply that
+directory as `generateWindows(hosts, lock, configDir)`.
+In WSL, filesystem sources are translated with `wslpath` to Windows drive or
+WSL UNC paths; environment-variable sources remain activation-time expressions.
+Other non-Windows generators do not translate local paths.
+
+`windows.powershell.module(name, { repository?, dependsOn? })` declares a
+current-user PowerShell 7 module without an inline version. The default repository
+is PSGallery; named custom repositories must already be registered. Missing
+stable version pins are resolved on first apply and recorded in the optional
+`modules` section of `winix-windows.lock`, alongside unchanged `packages`.
+Module keys are lowercase because PowerShell names are case-insensitive.
+`winix update --windows [names...]` refreshes all or selected package/module
+entries; `--dry` resolves without writing. Existing pins require no discovery
+query during apply, but installation may still need the network. Repository
+changes require an explicit update; conflicting repositories across hosts fail.
+
+Module resources install only the locked version, retain other versions, and
+run get/test/set directly through `Microsoft.DSC.Transitional/PowerShellScript`.
+They depend on `Microsoft.PowerShell` when that
+package is declared. PowerShell 7 with PSResourceGet is a resolution prerequisite.
+Profile imports are separate from installation: an unversioned import still
+selects PowerShell's normal installed version, not necessarily the locked one.
+
+Windows-side WSL provisioning uses `windows.optionalFeature(name,
+{ enabled?, dependsOn? })`, `windows.wsl({ config?, backup?, force?, dependsOn? })`, and
+`windows.wsl.distro(name, { source: "nixos-wsl", installLocation, default?,
+dependsOn?, setup? })`. The grouped enable resource handles WSL and Virtual Machine
+Platform together, with elevation and no automatic restart. Pending changes
+stop dependent provisioning with instructions to restart Windows and rerun.
+Distro resources require enabled feature declarations and a `Microsoft.WSL`
+package in the same host; the features, optional configuration file, and package
+become automatic dependencies. The callable setup returns one handle covering
+the features and optional configuration, ordered after feature enablement.
+Omitting `config` leaves the existing `.wslconfig` untouched. Registration
+and default selection run for the current Windows account, never SYSTEM.
+
+`.wslconfig` is a complete current-user file with normal overwrite protections;
+changes warn about manually restarting WSL, never stop running distributions.
+NixOS-WSL image URLs, SHA256 hashes, release versions, and architectures are
+pinned in optional `wslImages` entries `nixos-wsl/x64` and `nixos-wsl/arm64`,
+backward-compatible with version-1 locks. First apply resolves missing pins;
+explicit Windows update refreshes all images, or `nixos-wsl` alone. Resolution
+failures preserve existing locks. Dry generation does not write pins or
+download images; activation verifies the target-architecture image before import.
+Image updates only affect future registrations, never existing Linux systems.
+
+Names and locations must be unique per Windows host, with at most one default.
+Install locations must be new absolute local-drive directories (including
+resolved environment/known-folder paths). Existing registrations must match
+location, WSL version 2, and a Winix registration marker `.winix-wsl.json`;
+unrecorded/conflicting distros are never adopted or repaired automatically.
+Failed or interrupted imports never trigger unregister rollback. Removing a
+declaration never unregisters a distro, deletes its filesystem, or disables
+features implicitly. Explicit feature disable remains supported. The separately
+declared WSL package retains ordinary package ownership rules.
+
+Optional distro `setup` explicitly links a trusted HTTPS Git `repository`,
+optional `ref` (default HEAD), relative `configDirectory`, and Linux `host`;
+optional `user` selects its declared normal account and `checkout` defaults to
+that account's home/dotfiles. Checkout must stay inside that home; Home Manager
+identity/home must agree. The Linux host must explicitly enable/import NixOS-WSL,
+declare system.stateVersion and match the distro architecture. The config
+directory requires committed package.json, package-lock.json and flake.lock.
+Repository/npm/config code is trusted; embedded credentials are refused and
+private authentication must already work inside Linux.
+
+Optional version-1 lock section `wslRepositories` maps a SHA256 key of
+`[repository, ref]` to repository/ref/revision/resolvedAt. First apply resolves
+missing commits, explicit Windows updates refresh them (`wsl-setup` selects
+repositories alone), and dry generation never writes pins or executes the repo.
+Pins are first-run only; incomplete setup retains its original commit.
+The root Linux coordinator prepares Git/npm/config as the initial nixos user,
+activates a minimal declarative account/WSL configuration without Home Manager,
+assigns checkout ownership, generates the full host as the target user and
+activates it as root. Its actual wsl.defaultUser must match. Password creation
+and sudo policy remain outside setup; required external account secrets must
+already exist.
+
+Root-owned staged state under /var/lib/winix/wsl-setup makes failures resumable.
+Conflicting settings, dirty or occupied checkouts are refused, never reset or
+adopted. Completed setup is not repeated or updated. A killed coordinator's
+run.lock requires manual inspection/PID verification before removal; other
+conflicts require manual recovery or a new distro. No WSL shutdown/reboot occurs.
+Without setup, Linux repository installation and activation remain manual.
+Fresh-image end-to-end activation remains unverified.
+
+File and PATH scripts use the same PowerShell 7 resource; raw command strings
+default to `pwsh` (explicit executable selections are preserved). PowerShell 7
+must be on PATH before resource discovery; package ordering alone is not a
+fresh-machine bootstrap. Script set operations must check their own desired
+state, independently of test operations. Environment variables remain native
+Registry resources, with their existing user/machine permission boundaries.
+
+`scripts/bootstrap-windows.ps1` provides an out-of-band Windows PowerShell
+5.1/PowerShell 7 prerequisite layer, requiring App Installer/WinGet but not Git,
+Node, or Winix. `-Check` only inspects versions and capabilities, failing when
+not ready. Install mode confirms the prerequisite plan (`-Yes` for automation),
+installs/upgrades missing/outdated Git, Node LTS, PowerShell 7, and DSC via exact
+WinGet IDs/source, enables WinGet configuration support, then verifies npm,
+Node TypeScript support, PSResourceGet/PSGallery, and required DSC resources.
+`-UseNvm` selects NVM for Windows instead of standalone Node, with manager
+conflict protection. Existing supported versions are kept. No host activation,
+WSL provisioning, persistent execution-policy changes, or automatic reboot is
+performed. Prerequisites remain outside host lock/ownership tracking. Missing
+WinGet requires explicit App Installer installation/registration; config/Winix
+installation and restore orchestration remain separate.
+
+`windows.startup.command(name, spec)` declares a named, current-user Startup
+shortcut (`<name>.lnk`), backed by the same PowerShell 7 resource. It registers
+sign-in startup only and never launches commands during apply. It is not a
+service, scheduler, elevation mechanism, or all-users startup facility.
+`spec` contains `executable`, optional argv `arguments`, `workingDirectory`,
+`windowStyle` (`normal`, `minimized`, or `maximized`), `dependsOn`, `backup`,
+and `force`. Executable paths may use environment variables/known folders or
+an application name on PATH. Working directories must be absolute or resolved
+known-folder/environment paths; the default is the user profile. Both must
+exist during activation. Argument strings are literal; known-folder arguments
+resolve on the target. Windows argv quoting preserves empty/Unicode arguments,
+spaces, quotes, and backslashes without implicitly invoking a shell.
+
+Shortcut names must be valid Windows filenames without paths or reserved names.
+Desired shortcuts are unchanged on repeat applies. Replacements require
+`backup: true` (preserving `.lnk.bak`, failing on collision) or `force: true`.
+New shortcuts are staged and verified before replacement, using Unicode-capable
+Shell APIs. Names must be unique per host.
+
+Native Windows `switch` reconciles startup/package ownership using a versioned,
+machine-local per-user inventory in `%LOCALAPPDATA%\Winix`, separate from
+version locks. Owners are canonical config-directory/host identities. After
+successful activation, new packages and created/replaced shortcuts gain removal
+ownership; pre-existing packages and unchanged shortcuts do not. Requirements
+recorded by other owners prevent removal, and conflicting shared definitions
+fail before activation.
+
+Removed owned shortcut declarations are automatically cleaned up after successful
+activation, without terminating programs. Unused owned packages are automatically
+uninstalled after successful activation. `switch --dry` previews all cleanup;
+exact package ID/source/version selection is used. External resources
+are untouched. Shortcut hash or package-version drift blocks reconciliation.
+`state forget startup <name>` or `state forget package <source> <id>` releases
+removal ownership without deleting resources or other owners' requirements;
+`--dry` previews ownership release.
+
+If existing owned resources would be removed, `switch` lists them and requires
+confirmation (`Continue with switch? [y/N]`) before activation. Declining or
+closing the prompt cancels the entire switch. `--yes`/`-y` accepts removals for
+automation and is required for noninteractive switches with removals. Dry runs,
+switches without removals, and cleanup of already absent resources do not prompt.
+
+Inventory writes are serialized and atomic. Failed activation grants no new
+ownership; partially installed resources can remain unowned. Each successful
+removal is checkpointed. Stale locks/temporary writes after crashes require
+inspection and explicit recovery. Losing state never infers deletion rights.
+Moving workspaces/removing hosts does not automatically release their recorded
+requirements. Coordination is limited to recorded activations by one user on
+one machine; simultaneous external installers/other Windows accounts are not
+coordinated. Direct generated-script/DSC activation bypasses ownership tracking.
+Other resource kinds are not yet tracked.
+
+See
 [`proposals/windows-backend.md`](./proposals/windows-backend.md) for the
 forward-looking design.
 
@@ -742,6 +907,21 @@ The compiler warns (not errors) on escape hatch use, to encourage migration:
 The CLI owns evaluation orchestration, validation, generation, activation, and
 diagnostics. For internal command implementation, see
 [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+
+### Prerequisite bootstrap on NixOS
+
+`scripts/bootstrap-nixos.sh` requires a running NixOS system (including
+NixOS-WSL) with Nix on PATH. It opens an interactive Bash environment containing
+Git and Node.js 24/npm from a single immutable nixpkgs revision embedded in the
+script. It preserves the working directory, adds `nix-command`/flakes only to
+the child session's `NIX_CONFIG`, skips user Bash startup files, and writes no
+flake lock, profile, or system configuration. Normal Nix store downloads and
+trust/permission checks still apply. Errors from Nix propagate to the caller.
+
+The script does not install NixOS/Winix, clone configs, install npm dependencies,
+select hosts, or activate systems. Users perform those steps themselves and
+declare permanent prerequisites in their configs. Stable/preview GitHub
+releases include the script and SHA256 checksum, as with Windows bootstrap.
 
 ### Commands
 

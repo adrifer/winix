@@ -86,11 +86,17 @@ jobs:
 
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             echo "GitHub release $GITHUB_REF_NAME already exists."
-            exit 0
-          fi
-
-          if [[ "${{ steps.release.outputs.prerelease }}" == "true" ]]; then
+          elif [[ "${{ steps.release.outputs.prerelease }}" == "true" ]]; then
             gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --prerelease
           else
             gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
           fi
+
+          (cd scripts && sha256sum bootstrap-windows.ps1 > bootstrap-windows.ps1.sha256)
+          (cd scripts && sha256sum bootstrap-nixos.sh > bootstrap-nixos.sh.sha256)
+          gh release upload "$GITHUB_REF_NAME" \
+            scripts/bootstrap-windows.ps1 \
+            scripts/bootstrap-windows.ps1.sha256 \
+            scripts/bootstrap-nixos.sh \
+            scripts/bootstrap-nixos.sh.sha256 \
+            --clobber

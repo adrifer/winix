@@ -7,11 +7,20 @@ import {
   readWindowsLock,
   reconcileInlinePins,
   resolveWindowsLockEntries,
+  collectWindowsModules,
+  resolveWindowsModuleLockEntries,
+  hasWindowsWslDistros,
+  resolveWindowsWslImages,
+  resolveWindowsWslRepositories,
   windowsLockChanged,
   writeWindowsLock,
   type WindowsLock,
   type WindowsPackageVersionResolver,
+  type WindowsModuleVersionResolver,
 } from "../../backends/windows/lockfile.ts";
+import { resolvePowerShellModuleVersion } from "../../backends/windows/powershell.ts";
+import { resolveNixosWslImage, type WindowsWslImageResolver } from "../../backends/windows/wsl.ts";
+import { resolveWslRepository, type WindowsWslRepositoryResolver } from "../../backends/windows/wsl-setup.ts";
 import { isWindowsHost } from "../../backends/windows/index.ts";
 import {
   assertWingetResolutionSupported,
@@ -28,6 +37,9 @@ interface UpdateOptions {
   dry: boolean;
   windows?: boolean;
   resolveWindowsPackageVersion?: WindowsPackageVersionResolver;
+  resolveWindowsModuleVersion?: WindowsModuleVersionResolver;
+  resolveWindowsWslImage?: WindowsWslImageResolver;
+  resolveWindowsWslRepository?: WindowsWslRepositoryResolver;
 }
 
 export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
@@ -49,9 +61,8 @@ export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
   if (!hasNixHost) {
     throw new Error(
       "`winix update` updates the Nix flake lock, but this workspace has no " +
-      "NixOS or nix-darwin hosts (Windows packages are pinned via " +
-      "`winix-windows.lock`, resolved by a future `winix` milestone). " +
-      "Nothing to update."
+      "NixOS or nix-darwin hosts. Windows packages and PowerShell modules " +
+      "are pinned via `winix-windows.lock`; run `winix update --windows` instead."
     );
   }
 
@@ -92,10 +103,6 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
   if (windowsHosts.length === 0) {
     throw new Error("`winix update --windows` found no Windows hosts in this workspace.");
   }
-  if (!opts.resolveWindowsPackageVersion) {
-    assertWingetResolutionSupported();
-  }
-
   const now = new Date();
   const originalLock = readWindowsLock(configDir) ?? emptyWindowsLock(now);
   const reconciled = reconcileInlinePins(originalLock, windowsHosts, now);
@@ -105,7 +112,24 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
   };
   const pinned = collectInlinePinnedPackages(windowsHosts);
   const floating = collectFloatingPackages(windowsHosts, pinned);
-  const selected = selectPackagesForUpdate(floating, pinned, opts.inputs);
+  const modules = collectWindowsModules(windowsHosts);
+  const wslImages = hasWindowsWslDistros(windowsHosts);
+  const wslSetup = windowsHosts.some((host) => (host.windows as WindowsOptions).dsc?.some(
+    (resource) => resource.winix?.kind === "wsl-distro" && resource.winix.distro.setup
+  ));
+  for (const id of opts.inputs) {
+    if (!floating.has(id) && !pinned.has(id) && !modules.has(id.toLowerCase()) &&
+        !(id === "nixos-wsl" && wslImages) && !(id === "wsl-setup" && wslSetup)) {
+      throw new Error(`Windows package, PowerShell module, WSL image or setup repository "${id}" is not declared in this workspace.`);
+    }
+  }
+  const selected = selectPackagesForUpdate(floating, pinned, opts.inputs.filter(
+    (id) => floating.has(id) || pinned.has(id)
+  ), opts.inputs.length === 0);
+  const selectedModules = [...modules.values()].filter(
+    (module) => opts.inputs.length === 0 || opts.inputs.some((id) => id.toLowerCase() === module.name.toLowerCase())
+  );
+  if (selected.size > 0 && !opts.resolveWindowsPackageVersion) assertWingetResolutionSupported();
   const resolveVersion = opts.resolveWindowsPackageVersion ?? resolveWingetVersion;
   let changed = windowsLockChanged(originalLock, reconciled);
 
@@ -123,6 +147,24 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
   const resolved = resolveWindowsLockEntries(lock, selected.values(), resolveVersion, now);
   lock = resolved.lock;
   changed = changed || resolved.changed;
+  const resolvedModules = resolveWindowsModuleLockEntries(
+    lock, selectedModules, opts.resolveWindowsModuleVersion ?? resolvePowerShellModuleVersion, now
+  );
+  lock = resolvedModules.lock;
+  changed = changed || resolvedModules.changed;
+  if (wslImages && (opts.inputs.length === 0 || opts.inputs.includes("nixos-wsl"))) {
+    const images = resolveWindowsWslImages(lock, opts.resolveWindowsWslImage ?? resolveNixosWslImage, now);
+    lock = images.lock;
+    changed = changed || images.changed;
+    console.log(`  ${images.changed ? "resolved" : "up to date"}  NixOS-WSL images (existing distros will not be reinstalled)`);
+  }
+
+  if (wslSetup && (opts.inputs.length === 0 || opts.inputs.includes("wsl-setup"))) {
+    const repositories = resolveWindowsWslRepositories(lock, windowsHosts, opts.resolveWindowsWslRepository ?? resolveWslRepository, now);
+    lock = repositories.lock;
+    changed = changed || repositories.changed;
+    console.log(`  ${repositories.changed ? "resolved" : "up to date"}  WSL setup repository commits (first-run only)`);
+  }
 
   for (const resolution of resolved.resolutions) {
     if (resolution.status === "up-to-date") {
@@ -137,6 +179,12 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
         `  resolved  ${resolution.id} ${resolution.source} ${resolution.version} (new)`
       );
     }
+  }
+
+  for (const resolution of resolvedModules.resolutions) {
+    const change = resolution.status === "updated"
+      ? `${resolution.previousVersion} -> ${resolution.version}` : resolution.version;
+    console.log(`  ${resolution.status === "up-to-date" ? "up to date" : "resolved"}  PowerShell module ${resolution.id} ${change}`);
   }
 
   if (!changed) {
@@ -207,9 +255,10 @@ function collectFloatingPackages(
 function selectPackagesForUpdate(
   floating: Map<string, WinPackage>,
   pinned: Map<string, WinPackage>,
-  inputs: string[]
+  inputs: string[],
+  all = inputs.length === 0
 ): Map<string, WinPackage> {
-  if (inputs.length === 0) return floating;
+  if (all) return floating;
 
   const selected = new Map<string, WinPackage>();
   for (const id of inputs) {

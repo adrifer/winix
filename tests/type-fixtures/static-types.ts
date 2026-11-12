@@ -1,5 +1,54 @@
-import { account, darwin, home, nix, nixos, feature, profile, host, platforms, type Fragment, type ZshOptions } from "@adrifer/winix";
+import { account, darwin, home, nix, nixos, windows, feature, profile, host, platforms, type Fragment, type ResourceHandle, type ZshOptions } from "@adrifer/winix";
 import type { GitOptions } from "@adrifer/winix/types";
+
+const icons: ResourceHandle = windows.powershell.module("Terminal-Icons");
+const wslFeatures: ResourceHandle = windows.wsl({
+  config: { wsl2: { memory: "16GB", processors: 8, networkingMode: "mirrored" } }, backup: true,
+});
+windows.wsl();
+windows.optionalFeature("VirtualMachinePlatform", { enabled: true });
+windows.wsl.distro("NixOS", {
+  source: "nixos-wsl", installLocation: windows.knownFolder.localAppData("WSL/NixOS"),
+  default: true, dependsOn: wslFeatures,
+  setup: {
+    repository: "https://github.com/example/dotfiles.git", ref: "main",
+    configDirectory: "winix", host: "wsl-work", user: "alice", checkout: "/home/alice/dotfiles",
+  },
+});
+// @ts-expect-error First-run setup requires a Linux host selection.
+windows.wsl.distro("NixOS", { source: "nixos-wsl", installLocation: "D:/WSL/NixOS", setup: { repository: "https://example.com/repo", configDirectory: "winix" } });
+// @ts-expect-error WSL image versions belong in the Windows lockfile.
+windows.wsl.distro("NixOS", { source: "nixos-wsl", installLocation: "D:/WSL/NixOS", version: "latest" });
+// @ts-expect-error Only implemented distro image sources are supported.
+windows.wsl.distro("Ubuntu", { source: "ubuntu", installLocation: "D:/WSL/Ubuntu" });
+// @ts-expect-error WSL networking modes use the supported enum.
+windows.wsl({ config: { wsl2: { networkingMode: "custom" } } });
+// @ts-expect-error WSL setup is callable, not a separate enable method.
+windows.wsl.enable();
+// @ts-expect-error WSL config belongs in the setup options.
+windows.wsl.config({ wsl2: { memory: "16GB" } });
+windows.file.symlink(
+  windows.knownFolder.documents("PowerShell\\profile.ps1"),
+  "../windows/profile.ps1",
+  { dependsOn: icons, backup: true },
+);
+windows.file.copy(windows.knownFolder.localAppData("Winix\\config"), new URL("./config", import.meta.url));
+// @ts-expect-error Module versions belong in the Windows lockfile.
+windows.powershell.module("Terminal-Icons", { version: "0.11.0" });
+// @ts-expect-error Only supported known-folder names are accepted.
+windows.knownFolder.unknown();
+const startup: ResourceHandle = windows.startup.command("terminal", {
+  executable: "pwsh.exe",
+  arguments: ["-File", windows.knownFolder.userProfile("start.ps1")],
+  windowStyle: "minimized",
+  dependsOn: icons,
+});
+// @ts-expect-error Startup commands require an executable.
+windows.startup.command("missing", { dependsOn: startup });
+// @ts-expect-error Startup window styles use named values, not arbitrary numbers.
+windows.startup.command("invalid", { executable: "app.exe", windowStyle: 7 });
+// @ts-expect-error Startup arguments must be strings or known-folder paths.
+windows.startup.command("invalid", { executable: "app.exe", arguments: [42] });
 
 home.program("zsh", {
   enable: true,

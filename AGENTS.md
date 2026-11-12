@@ -62,7 +62,7 @@ Platforms are built through `platforms.*` (`platforms.nixos({...})`, `platforms.
 
 ## Windows/WSL Compatibility
 
-Winix development is supported from native Windows and WSL. A native Windows backend MVP now exists: `windows.package(...)` and `windows.raw(...)` (both return a `ResourceHandle` and accept `dependsOn`), declared on a `platforms.windows()` host. The emitter generates a DSC v3 configuration (`winget configure`). Only `windows.package`/`windows.raw` are public today; `windows.env/path/file/setting/dsc/wsl/programs` are not yet implemented. See `spec/proposals/windows-backend.md` for the full plan.
+Winix development is supported from native Windows and WSL. Windows hosts emit DSC v3 configurations (`winget configure`) with package, raw, env, path, file, setting, dsc, startup, PowerShell module, optional-feature, and WSL helpers. Resource helpers return handles and accept `dependsOn`. `windows.knownFolder.documents()` and sibling methods resolve file targets during activation; copy/symlink sources are config-directory-relative (or absolute/environment paths/file URLs). `windows.startup.command()` manages current-user sign-in shortcuts without launching them during apply. PowerShell modules, NixOS-WSL x64/ARM64 images, and optional distro setup repository commits use separate pins in `winix-windows.lock`, alongside packages. WSL provisioning never restarts Windows, shuts down WSL, adopts unrecorded distros, or deletes distro data. Distro `setup` opts into trusted first-run Linux repository/npm preparation and account/full-host activation; omitting it keeps Linux activation manual. Setup selects an already-declared Linux account, resumes recorded stages, and never resets dirty checkouts or updates completed setups. Fresh-image activation remains unverified; curated program helpers remain pending. See `spec/proposals/windows-backend.md` for the full plan.
 
 - **Separate filesystem paths from generated Nix paths.**
   - Use `node:path` for real filesystem paths (`.winix/out`, copying raw modules, loading configs).
@@ -105,6 +105,12 @@ Use these rules when adding or reviewing Winix SDK helpers:
 npx vitest run                    # Unit tests
 cd test-config && node --experimental-transform-types ../src/cli/index.ts apply --dry   # Integration
 ```
+
+Native DSC integration tests are opt-in and require `dsc`, `winget`, and PowerShell 7
+on PATH. In PowerShell, run
+`$env:WINIX_DSC_INTEGRATION = '1'; npx vitest run tests\windows-shell.test.ts`.
+They exercise temporary files/symlinks and uniquely named user environment values,
+cleaned up afterward; symlink creation requires Developer Mode or elevation.
 
 When touching CLI paths, activation, output layout, or npm scripts, also verify from native Windows and WSL when possible:
 

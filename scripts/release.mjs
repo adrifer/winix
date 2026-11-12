@@ -198,7 +198,14 @@ function readPackageVersion() {
 
 function run(command, args) {
   console.log(`$ ${command} ${args.join(" ")}`);
-  execFileSync(command, args, { stdio: "inherit" });
+  if (command === "npm") {
+    if (!process.env.npm_execpath) {
+      fail("Run releases through npm run release:stable or npm run release:preview.");
+    }
+    execFileSync(process.execPath, [process.env.npm_execpath, ...args], { stdio: "inherit" });
+  } else {
+    execFileSync(command, args, { stdio: "inherit" });
+  }
 }
 
 function fail(message) {

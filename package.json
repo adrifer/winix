@@ -43,6 +43,8 @@
     "winix": "dist/cli/index.js"
   },
   "files": [
+    "scripts/bootstrap-windows.ps1",
+    "scripts/bootstrap-nixos.sh",
     "dist",
     "types",
     "index.d.ts",

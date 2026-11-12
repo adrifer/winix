@@ -68,9 +68,21 @@ The **package vertical slice is implemented and validated end-to-end**
   switch` auto-resolve missing floating package lock entries on demand, while
   `winix update --windows` refreshes floating package versions via
   `winget show`; both skip inline-pinned packages and support `--dry`.
+- Windows shell primitives are implemented: `windows.knownFolder.documents()` and sibling targets
+  resolve during activation, file sources are config-relative (or absolute,
+  environment-based, or file URLs), and `windows.powershell.module()` installs
+  exact stable versions from the lockfile's separate `modules` section.
+  `winix update --windows [names...]` updates packages and modules together.
 - Covered by `tests/windows-backend.test.ts` (helper, platform, evaluator,
   emitter + snapshot) and **confirmed to install a package via
   `winget configure` on Windows 11 25H2**.
+
+- Windows-side WSL provisioning is implemented: optional features, full
+  `.wslconfig`, and verified NixOS-WSL image imports with locked x64/ARM64 pins.
+  `tests/windows-wsl.test.ts` executes generated scripts with mocked DISM,
+  registry, download, and WSL operations; fresh-machine activation remains
+  unverified. Optional distro `setup` now links a trusted, commit-locked repository
+  and Linux host for resumable first-run account creation and Linux activation.
 
 See "Worked example (validated end-to-end)" under Backend strategy for the
 exact emitted document and the contract notes learned from real-machine
@@ -125,13 +137,15 @@ single high-level pointer here. Update this as PRs land.
 - [ ] `windows.programs.<name>()` curated install+configure helpers
 - [x] `windows.file.*` declarative files (see
       [`windows-file.md`](./windows-file.md))
+- [x] Known-folder file targets and config-relative copy/symlink sources
+- [x] PowerShell 7 module installation and version/repository locking
 
 ### Phase 5 — Power features (LATER)
 
 - [ ] Drift detection via `dsc resource get` → `winix check`
 - [ ] Full DSC v3 resource catalogue (registry, services, scheduled tasks, features, fonts)
 - [ ] DSC v3 type generation (typed `windows.dsc()` like the ~24k NixOS options)
-- [ ] Extended lockfile metadata (schema rev, PS module versions, checksums)
+- [ ] Extended lockfile metadata (schema rev, checksums)
 - [ ] Chocolatey / Scoop sources for `windows.package()`
 
 ## DSC v3 resource ecosystem
@@ -162,7 +176,7 @@ labels are scoping commitments, not implementation status:
 | `Microsoft.Windows/Registry` | Read/write/delete registry keys and values | 🛠️ [Future helper] `windows.registry(...)` |
 | `Microsoft.Windows/Service` | Start/stop/configure Windows services | 🛠️ [Future helper] `windows.service(...)` |
 | `Microsoft.Windows/FirewallRuleList` | Manage Windows Firewall rules | 🛠️ [Future helper] `windows.firewall(...)` |
-| `Microsoft.Windows/OptionalFeatureList` | Enable/disable Windows optional features (WSL, Hyper-V, .NET) | 🛠️ [Future helper] `windows.optionalFeature(...)` |
+| `Microsoft.Windows/OptionalFeatureList` | Enable/disable Windows optional features (WSL, Hyper-V, .NET) | Implemented as `windows.optionalFeature(...)` using PowerShell/DISM, with explicit reboot boundaries |
 | `Microsoft.Windows/FeatureOnDemandList` | Install/remove Features on Demand (RSAT, language packs) | ⬛ [Escape hatch only] via `windows.dsc(...)` |
 | `Microsoft.Windows/WindowsPowerShell` | Adapter for the entire PSDSC v1/v2 module catalogue (IIS, AD, SQL Server, BitLocker, certificates, Hyper-V, etc.) | ⬛ [Escape hatch only] via `windows.dsc(...)` |
 | `Microsoft.OpenSSH.SSHD/sshd_config` | Manage `sshd_config` declaratively | 🛠️ [Future helper] `windows.ssh(...)` |
@@ -400,13 +414,12 @@ export const baseline = feature("windows.baseline", () => [
   ),
 
   // WSL host-side configuration
-  windows.wsl({
-    distro: "NixOS",
+  windows.package("Microsoft.WSL"),
+  windows.wsl({ config: { wsl2: { memory: "16GB", processors: 8 } }, backup: true }),
+  windows.wsl.distro("NixOS", {
+    source: "nixos-wsl",
+    installLocation: "D:/WSL/NixOS",
     default: true,
-    config: {
-      memory: "16GB",
-      processors: 8,
-    },
   }),
 
   // Escape hatch: re-runs every apply
@@ -605,7 +618,7 @@ check) or simply emitted first. Clean native resource, low risk.
 These are **important conveniences** backed by different native Windows DSC
 primitives because env vars and PATH need different behavior. Environment
 variables use the native `Microsoft.Windows/Registry` resource. PATH uses
-`Microsoft.DSC.Transitional/WindowsPowerShellScript` because the registry
+`Microsoft.DSC.Transitional/PowerShellScript` because the registry
 resource has no append/remove semantics and would otherwise clobber PATH.
 
 ```ts
@@ -1202,8 +1215,33 @@ responsible for `.wslconfig`, registering the distro, and choosing the
 default. Its declared NixOS sibling host (e.g. `wsl-work` on
 `platforms.nixos()`) is responsible for everything inside the distro
 (packages, dotfiles, shell, Home Manager). The two hosts coexist in the
-same workspace and are configured by the same `winix switch`, each through
-its own backend.
+same workspace. Without distro `setup`, activate them separately: run Windows
+`winix switch`, then prepare dotfiles/npm dependencies and switch inside Linux.
+With `setup: { repository, ref?, configDirectory, host, user?, checkout? }`,
+Windows activation coordinates that first-run bridge. The Linux host remains the
+source of account settings; user selects a declared normal account and checkout
+must remain inside its declared home. HTTPS repositories and their npm/config
+code are explicitly trusted, with package-lock.json/flake.lock committed.
+Repository commits use optional `wslRepositories` lock entries and
+`winix update --windows wsl-setup`; refreshed pins never update completed setups.
+Git/npm/config preparation runs unprivileged, followed by root account-only
+activation, target-user generation, and root full activation. Resumable root-owned
+state never resets dirty repos or overwrites occupied checkouts; abrupt stale
+run.lock files require manual inspection. Authentication, external account
+secrets, passwords, reboot and shutdown remain manual. Fresh-image activation
+has not been verified.
+
+Windows-side provisioning is implemented with callable
+`windows.wsl({ config?, backup?, force?, dependsOn? })` and
+`windows.wsl.distro()` for the `nixos-wsl` source. The setup always enables
+the required features and optionally manages the global `.wslconfig`.
+The explicit `Microsoft.WSL` package and enabled feature resources become
+automatic distro dependencies. Official x64/ARM64 image URLs and SHA256 digests
+are pinned in `winix-windows.lock` (`wslImages`); updates affect future imports
+only. Reboots require manual restart and rerun; `.wslconfig` changes never shut
+down WSL. Existing unrecorded/conflicting distros are refused, not adopted.
+Successful imports record `.winix-wsl.json`; neither removing a declaration nor
+failed import recovery automatically unregisters or deletes a distro.
 
 ## Open questions
 

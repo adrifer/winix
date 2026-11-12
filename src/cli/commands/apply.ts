@@ -6,18 +6,27 @@ import { existsSync } from "node:fs";
 import { loadWorkspace } from "../loader.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { generateNix, type NixOutput, type RawModuleCopy } from "../../backends/nix/index.ts";
-import { generateWindows, type WindowsOutput } from "../../backends/windows/index.ts";
+import { generateWindows, validateWindowsWslResources, type WindowsOutput } from "../../backends/windows/index.ts";
 import {
   emptyWindowsLock,
   readWindowsLock,
   reconcileInlinePins,
   resolveMissingWindowsLockEntries,
+  collectWindowsModules,
+  resolveWindowsModuleLockEntries,
+  hasWindowsWslDistros,
+  resolveWindowsWslImages,
+  resolveWindowsWslRepositories,
   windowsLockChanged,
   writeWindowsLock,
   type WindowsLock,
   type WindowsPackageVersionResolver,
+  type WindowsModuleVersionResolver,
 } from "../../backends/windows/lockfile.ts";
 import { resolveWingetVersion } from "../../backends/windows/resolver.ts";
+import { resolvePowerShellModuleVersion } from "../../backends/windows/powershell.ts";
+import { resolveNixosWslImage, type WindowsWslImageResolver } from "../../backends/windows/wsl.ts";
+import { resolveWslRepository, type WindowsWslRepositoryResolver } from "../../backends/windows/wsl-setup.ts";
 import { platformForEvaluatedHost, type ActivationPlatform } from "../activation.ts";
 
 interface ApplyOptions {
@@ -26,6 +35,9 @@ interface ApplyOptions {
   diff: boolean;
   windowsLockDry?: boolean;
   resolveWindowsPackageVersion?: WindowsPackageVersionResolver;
+  resolveWindowsModuleVersion?: WindowsModuleVersionResolver;
+  resolveWindowsWslImage?: WindowsWslImageResolver;
+  resolveWindowsWslRepository?: WindowsWslRepositoryResolver;
 }
 
 export interface ApplyResult {
@@ -33,6 +45,7 @@ export interface ApplyResult {
   outDir: string;
   hostNames: string[];
   hostPlatforms: Map<string, ActivationPlatform>;
+  windowsLock?: WindowsLock;
 }
 
 export async function applyWorkspace(
@@ -56,17 +69,21 @@ export async function applyWorkspace(
   const hostPlatforms = platformsForHosts(evaluated);
   const nixHosts = evaluated.filter((host) => hostPlatforms.get(host.name) !== "windows");
   const windowsHosts = evaluated.filter((host) => hostPlatforms.get(host.name) === "windows");
+  for (const host of windowsHosts) validateWindowsWslResources(host.windows);
   const windowsLock = windowsHosts.length > 0
     ? prepareWindowsLock(
       configDir,
       windowsHosts,
       opts.dry || opts.windowsLockDry === true,
-      opts.resolveWindowsPackageVersion ?? resolveWingetVersion
+      opts.resolveWindowsPackageVersion ?? resolveWingetVersion,
+      opts.resolveWindowsModuleVersion ?? resolvePowerShellModuleVersion,
+      opts.resolveWindowsWslImage ?? resolveNixosWslImage,
+      opts.resolveWindowsWslRepository ?? resolveWslRepository
     )
     : undefined;
   const nixOutput = nixHosts.length > 0 ? generateNix(workspace, nixHosts) : undefined;
   const windowsOutput = windowsHosts.length > 0
-    ? generateWindows(windowsHosts, windowsLock)
+    ? generateWindows(windowsHosts, windowsLock, configDir)
     : undefined;
   printWarnings(nixOutput?.warnings ?? []);
   printWarnings(windowsOutput?.warnings ?? []);
@@ -74,12 +91,12 @@ export async function applyWorkspace(
 
   if (opts.dry) {
     printDryOutput(nixOutput, windowsOutput);
-    return resultFor(configDir, outDir, evaluated);
+    return { ...resultFor(configDir, outDir, evaluated), windowsLock };
   }
 
   if (opts.diff) {
     await showDiff(configDir, outDir, nixOutput, windowsOutput);
-    return resultFor(configDir, outDir, evaluated);
+    return { ...resultFor(configDir, outDir, evaluated), windowsLock };
   }
 
   if (nixOutput) {
@@ -121,7 +138,7 @@ export async function applyWorkspace(
     }
   }
   printNextSteps(cwd, outDir, evaluated);
-  return resultFor(configDir, outDir, evaluated);
+  return { ...resultFor(configDir, outDir, evaluated), windowsLock };
 }
 
 export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
@@ -132,7 +149,10 @@ function prepareWindowsLock(
   configDir: string,
   windowsHosts: ReturnType<typeof evaluate>,
   dry: boolean,
-  resolveVersion: WindowsPackageVersionResolver
+  resolveVersion: WindowsPackageVersionResolver,
+  resolveModuleVersion: WindowsModuleVersionResolver,
+  resolveWslImage: WindowsWslImageResolver,
+  resolveRepository: WindowsWslRepositoryResolver
 ): WindowsLock {
   const now = new Date();
   const lock = readWindowsLock(configDir) ?? emptyWindowsLock(now);
@@ -143,17 +163,30 @@ function prepareWindowsLock(
     resolveVersion,
     now
   );
-  const changed = windowsLockChanged(lock, resolved.lock);
-  if (!changed) return resolved.lock;
+  const modules = resolveWindowsModuleLockEntries(
+    resolved.lock, collectWindowsModules(windowsHosts).values(), resolveModuleVersion, now, true
+  );
+  const images = hasWindowsWslDistros(windowsHosts)
+    ? resolveWindowsWslImages(modules.lock, resolveWslImage, now, true)
+    : { lock: modules.lock, changed: false };
+  const repositories = resolveWindowsWslRepositories(images.lock, windowsHosts, resolveRepository, now, true);
+  const changed = windowsLockChanged(lock, repositories.lock);
+  if (!changed) return repositories.lock;
 
   if (dry) {
-    printWindowsLockDryRun(resolved.resolutions);
-    return resolved.lock;
+    if (windowsLockChanged(lock, resolved.lock)) printWindowsLockDryRun(resolved.resolutions);
+    for (const entry of modules.resolutions) console.warn(`Would pin PowerShell module ${entry.id} ${entry.version} in winix-windows.lock`);
+    if (images.changed) console.warn("Would pin verified NixOS-WSL images for x64/arm64 in winix-windows.lock");
+    if (repositories.changed) console.warn("Would pin WSL setup repository commits in winix-windows.lock");
+    return repositories.lock;
   }
 
-  writeWindowsLock(configDir, resolved.lock);
-  printWindowsLockUpdate(resolved.resolutions);
-  return resolved.lock;
+  writeWindowsLock(configDir, repositories.lock);
+  if (windowsLockChanged(lock, resolved.lock)) printWindowsLockUpdate(resolved.resolutions);
+  for (const entry of modules.resolutions) console.log(`✓ Pinned PowerShell module ${entry.id} ${entry.version} in winix-windows.lock`);
+  if (images.changed) console.log("✓ Pinned verified NixOS-WSL images for x64/arm64 in winix-windows.lock");
+  if (repositories.changed) console.log("✓ Pinned WSL setup repository commits in winix-windows.lock");
+  return repositories.lock;
 }
 
 function printWindowsLockDryRun(resolutions: { id: string; source: string; version: string }[]): void {

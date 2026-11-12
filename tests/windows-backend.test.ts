@@ -64,7 +64,7 @@ describe("windows.package() helper", () => {
 });
 
 describe("windows.raw() helper", () => {
-  it("normalizes a command string to a powershell RunCommandOnSet command", () => {
+  it("normalizes a command string to a pwsh RunCommandOnSet command", () => {
     const frag = windows.raw(
       "New-Item -ItemType Directory -Force -Path $env:USERPROFILE\\.local\\bin"
     );
@@ -72,8 +72,11 @@ describe("windows.raw() helper", () => {
       windows: {
         commands: [
           {
-            executable: "powershell",
+            executable: "pwsh",
             arguments: [
+              "-NoLogo",
+              "-NoProfile",
+              "-NonInteractive",
               "-Command",
               "New-Item -ItemType Directory -Force -Path $env:USERPROFILE\\.local\\bin",
             ],
@@ -670,10 +673,10 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
     expect(() => windows.env.set("X", undefined as any)).toThrow(/value/);
   });
 
-  it("windows.path.add() emits an idempotent user-scope WindowsPowerShellScript", () => {
+  it("windows.path.add() emits an idempotent user-scope PowerShellScript", () => {
     const frag = windows.path.add("%USERPROFILE%\\.local\\bin");
     const resource = frag.windows?.dsc?.[0];
-    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/PowerShellScript");
     const props = resource?.properties as Record<string, string>;
     expect(props.getScript).toContain("$registryPath = 'HKCU:\\Environment'");
     expect(props.testScript).toContain("$entries -contains $dir");
@@ -687,7 +690,7 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
   it("windows.path.add() supports machine scope via HKLM", () => {
     const resource = windows.path.add("C:\\tools\\bin", { scope: "machine" }).windows?.dsc?.[0];
     const props = resource?.properties as Record<string, string>;
-    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/PowerShellScript");
     expect(props.getScript).toContain(
       "$registryPath = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment'"
     );
@@ -697,7 +700,7 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
   it("windows.path.remove() removes only the target entry and is idempotent", () => {
     const frag = windows.path.remove("%USERPROFILE%\\.old-bin");
     const resource = frag.windows?.dsc?.[0];
-    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/PowerShellScript");
     const props = resource?.properties as Record<string, string>;
     expect(props.testScript).toContain("-not ($entries -contains $dir)");
     expect(props.setScript).toContain("if ($entries -contains $dir) {");
@@ -717,7 +720,7 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
     });
     const resource = frag.windows?.dsc?.[0];
     const props = resource?.properties as Record<string, string>;
-    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(resource?.resourceType).toBe("Microsoft.DSC.Transitional/PowerShellScript");
     expect(resource?.name).toBe("Write file %USERPROFILE%\\.gitconfig");
     expect(props.getScript).toContain("function Expand-WinixPath");
     expect(props.testScript).toContain("Get-WinixTextBytes $content $encoding");
@@ -750,12 +753,12 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
     const copyProps = copy?.properties as Record<string, string>;
     const removeProps = remove?.properties as Record<string, string>;
 
-    expect(copy?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(copy?.resourceType).toBe("Microsoft.DSC.Transitional/PowerShellScript");
     expect(copyProps.getScript).toContain("function Expand-WinixPath");
     expect(copyProps.testScript).toContain("Test-WinixCopy $source $target");
     expect(copyProps.setScript).toContain("Copy-Item");
     expect(copyProps.setScript).toContain("$backup = $true");
-    expect(remove?.resourceType).toBe("Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(remove?.resourceType).toBe("Microsoft.DSC.Transitional/PowerShellScript");
     expect(removeProps.setScript).toContain("Refusing to remove real directory");
     expect(removeProps.setScript).toContain("Remove-Item -LiteralPath $target -Force");
   });
@@ -789,7 +792,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(doc).toMatchSnapshot();
   });
 
-  it("emits env as Registry and path as WindowsPowerShellScript resources", () => {
+  it("emits env as Registry and path as PowerShellScript resources", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -801,7 +804,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     });
     const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
     expect(doc).toContain("type: Microsoft.Windows/Registry");
-    expect(doc).toContain("type: Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(doc).toContain("type: Microsoft.DSC.Transitional/PowerShellScript");
     expect(doc).not.toContain("type: PSDscResources/Environment");
     expect(doc).not.toContain("type: Microsoft.DSC/PowerShell");
     expect(doc).toContain("keyPath: \"HKCU\\\\Environment\"");
@@ -826,7 +829,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     });
     const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
     expect(doc).toContain("type: Microsoft.Windows/Registry");
-    expect(doc).toContain("type: Microsoft.DSC.Transitional/WindowsPowerShellScript");
+    expect(doc).toContain("type: Microsoft.DSC.Transitional/PowerShellScript");
     expect(doc).toContain("keyPath: \"HKLM\\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\Session Manager\\\\Environment\"");
     expect(doc).toContain("_exist: false");
     expect(doc).toContain("$target = 'Machine'");
@@ -1071,7 +1074,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(doc).toContain(`dependsOn: ["Set EDITOR"]`);
   });
 
-  it("emits file helpers as WindowsPowerShellScript resources with dependencies and elevation", () => {
+  it("emits file helpers as PowerShellScript resources with dependencies and elevation", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -1087,7 +1090,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    const doc = generateWindows(evaluate(ws), undefined, "C:\\config").hosts.desktop["configuration.winget"];
     expect(doc).toContain(`name: "Write file USERPROFILE gitconfig"`);
     expect(doc).toContain(`name: "Link file LOCALAPPDATA nvim"`);
     expect(doc).toContain(`name: "Copy file APPDATA tool config json"`);

@@ -1,7 +1,12 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
-import type { WinPackage, WinPackageSource, WindowsOptions } from "../../types/index.ts";
+import type { WinPackage, WinPackageSource, WinPowerShellModule, WindowsOptions } from "../../types/index.ts";
+import { validWslImage, type WslArchitecture, type WindowsWslImageResolver } from "./wsl.ts";
+import {
+  validWslRepository, wslRepositoryKey,
+  type WindowsLockWslRepository, type WindowsWslRepositoryResolver,
+} from "./wsl-setup.ts";
 
 export const WINDOWS_LOCKFILE_NAME = "winix-windows.lock";
 export const WINDOWS_LOCK_VERSION = 1;
@@ -16,7 +21,28 @@ export interface WindowsLock {
   version: typeof WINDOWS_LOCK_VERSION;
   generatedAt: string;
   packages: Record<string, WindowsLockPackage>;
+  /** PowerShell module names are case-insensitive, stored as lowercase keys. */
+  modules?: Record<string, WindowsLockModule>;
+  wslImages?: Record<string, WindowsLockWslImage>;
+  wslRepositories?: Record<string, WindowsLockWslRepository>;
 }
+
+export interface WindowsLockWslImage {
+  source: "nixos-wsl";
+  architecture: WslArchitecture;
+  version: string;
+  url: string;
+  sha256: string;
+  resolvedAt: string;
+}
+
+export interface WindowsLockModule {
+  repository: string;
+  version: string;
+  resolvedAt: string;
+}
+
+export type WindowsModuleVersionResolver = (name: string, repository: string) => string;
 
 export type WindowsPackageVersionResolver = (
   id: string,
@@ -103,6 +129,7 @@ export function reconcileInlinePins(
   }
 
   return {
+    ...lock,
     version: WINDOWS_LOCK_VERSION,
     generatedAt: changed ? resolvedAt : lock.generatedAt,
     packages,
@@ -152,6 +179,7 @@ export function resolveWindowsLockEntries(
 ): WindowsLockResolutionResult {
   const resolvedAt = now.toISOString();
   const next: WindowsLock = {
+    ...lock,
     version: WINDOWS_LOCK_VERSION,
     generatedAt: lock.generatedAt,
     packages: cloneLockPackages(lock.packages),
@@ -211,7 +239,136 @@ export function serializeWindowsLock(lock: WindowsLock): string {
     };
   }
 
+  if (lock.modules !== undefined) {
+    sorted.modules = {};
+    for (const name of Object.keys(lock.modules).sort(comparePackageIds)) {
+      sorted.modules[name] = { ...lock.modules[name] };
+    }
+  }
+  if (lock.wslImages !== undefined) {
+    sorted.wslImages = {};
+    for (const key of Object.keys(lock.wslImages).sort(comparePackageIds)) {
+      sorted.wslImages[key] = { ...lock.wslImages[key] };
+    }
+  }
+  if (lock.wslRepositories !== undefined) {
+    sorted.wslRepositories = {};
+    for (const key of Object.keys(lock.wslRepositories).sort(comparePackageIds)) {
+      sorted.wslRepositories[key] = { ...lock.wslRepositories[key] };
+    }
+  }
   return JSON.stringify(sorted, null, 2) + "\n";
+}
+
+export function collectWindowsModules(hosts: EvaluatedHost[]): Map<string, WinPowerShellModule> {
+  const modules = new Map<string, WinPowerShellModule>();
+  for (const host of hosts) {
+    for (const resource of (host.windows as WindowsOptions).dsc ?? []) {
+      if (resource.winix?.kind !== "powershell-module") continue;
+      const module = resource.winix.module;
+      const key = module.name.toLowerCase();
+      const existing = modules.get(key);
+      if (existing && existing.repository.toLowerCase() !== module.repository.toLowerCase()) {
+        throw new Error(`PowerShell module "${module.name}" is declared with conflicting repositories.`);
+      }
+      modules.set(key, module);
+    }
+  }
+  return modules;
+}
+
+export function hasWindowsWslDistros(hosts: EvaluatedHost[]): boolean {
+  return hosts.some((host) => (host.windows as WindowsOptions).dsc?.some(
+    (resource) => resource.winix?.kind === "wsl-distro"
+  ));
+}
+
+export function resolveWindowsWslImages(
+  lock: WindowsLock, resolve: WindowsWslImageResolver, now = new Date(), missingOnly = false
+): { lock: WindowsLock; changed: boolean } {
+  const images = { ...lock.wslImages };
+  let changed = false;
+  for (const architecture of ["x64", "arm64"] as const) {
+    const key = `nixos-wsl/${architecture}`;
+    if (missingOnly && images[key]) continue;
+    const image = { ...resolve(architecture), resolvedAt: now.toISOString() };
+    if (!validWslImage(image) || image.architecture !== architecture) {
+      throw new Error(`Invalid NixOS-WSL image resolution for ${architecture}`);
+    }
+    const previous = images[key];
+    if (previous?.version === image.version && previous.url === image.url && previous.sha256 === image.sha256) continue;
+    images[key] = image;
+    changed = true;
+  }
+  return {
+    lock: changed ? { ...lock, generatedAt: now.toISOString(), wslImages: images } : lock,
+    changed,
+  };
+}
+
+export function resolveWindowsWslRepositories(
+  lock: WindowsLock, hosts: EvaluatedHost[], resolve: WindowsWslRepositoryResolver, now = new Date(), missingOnly = false
+): { lock: WindowsLock; changed: boolean } {
+  const repositories = { ...lock.wslRepositories };
+  const visited = new Set<string>();
+  let changed = false;
+  for (const host of hosts) {
+    for (const resource of (host.windows as WindowsOptions).dsc ?? []) {
+      if (resource.winix?.kind !== "wsl-distro" || !resource.winix.distro.setup) continue;
+      const setup = resource.winix.distro.setup;
+      const key = wslRepositoryKey(setup);
+      if (visited.has(key)) continue;
+      visited.add(key);
+      if (missingOnly && repositories[key]) continue;
+      const pin = {
+        repository: setup.repository, ref: setup.ref ?? "HEAD",
+        revision: resolve(setup.repository, setup.ref ?? "HEAD"), resolvedAt: now.toISOString(),
+      };
+      if (!validWslRepository(pin)) throw new Error("Invalid WSL setup repository revision");
+      if (repositories[key]?.revision === pin.revision) continue;
+      repositories[key] = pin;
+      changed = true;
+    }
+  }
+  return { lock: changed ? { ...lock, generatedAt: now.toISOString(), wslRepositories: repositories } : lock, changed };
+}
+
+export function resolveWindowsModuleLockEntries(
+  lock: WindowsLock,
+  modules: Iterable<WinPowerShellModule>,
+  resolveVersion: WindowsModuleVersionResolver,
+  now = new Date(),
+  missingOnly = false
+): { lock: WindowsLock; resolutions: Omit<WindowsLockResolution, "source">[]; changed: boolean } {
+  const next = { ...lock, modules: { ...lock.modules } };
+  const resolutions: Omit<WindowsLockResolution, "source">[] = [];
+  let changed = false;
+  for (const module of modules) {
+    const key = module.name.toLowerCase();
+    const previous = next.modules[key];
+    if (previous && previous.repository.toLowerCase() !== module.repository.toLowerCase()) {
+      if (missingOnly) {
+        throw new Error(`PowerShell module "${module.name}" changed repository. Run winix update --windows ${module.name}.`);
+      }
+    } else if (missingOnly && previous) {
+      continue;
+    }
+    const version = resolveVersion(module.name, module.repository);
+    if (!/^\d+\.\d+\.\d+(?:\.\d+)?$/.test(version)) {
+      throw new Error(`PowerShell module "${module.name}" resolver did not return a stable version: ${version}`);
+    }
+    const unchanged = previous?.version === version &&
+      previous.repository.toLowerCase() === module.repository.toLowerCase();
+    resolutions.push({
+      id: module.name, version, previousVersion: previous?.version,
+      status: unchanged ? "up-to-date" : previous ? "updated" : "new",
+    });
+    if (unchanged) continue;
+    next.modules[key] = { repository: module.repository, version, resolvedAt: now.toISOString() };
+    next.generatedAt = now.toISOString();
+    changed = true;
+  }
+  return { lock: changed ? next : lock, resolutions, changed };
 }
 
 function cloneLockPackages(
@@ -269,10 +426,49 @@ function validateWindowsLock(value: unknown): WindowsLock {
     };
   }
 
+  const modules: Record<string, WindowsLockModule> = {};
+  if (value.modules !== undefined) {
+    if (!isObject(value.modules)) throw new Error(`${WINDOWS_LOCKFILE_NAME} modules must be an object.`);
+    for (const [name, entry] of Object.entries(value.modules)) {
+      if (!/^[a-z0-9][a-z0-9._-]*$/i.test(name) || !isObject(entry) ||
+          typeof entry.repository !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(entry.repository) ||
+          typeof entry.version !== "string" || !/^\d+\.\d+\.\d+(?:\.\d+)?$/.test(entry.version) ||
+          typeof entry.resolvedAt !== "string") {
+        throw new Error(`${WINDOWS_LOCKFILE_NAME} module "${name}" has an invalid repository, stable version, or resolvedAt.`);
+      }
+      const key = name.toLowerCase();
+      if (modules[key]) throw new Error(`${WINDOWS_LOCKFILE_NAME} has duplicate module "${name}".`);
+      modules[key] = { repository: entry.repository, version: entry.version, resolvedAt: entry.resolvedAt };
+    }
+  }
+
+  const wslImages: Record<string, WindowsLockWslImage> = {};
+  if (value.wslImages !== undefined) {
+    if (!isObject(value.wslImages)) throw new Error(`${WINDOWS_LOCKFILE_NAME} wslImages must be an object.`);
+    for (const [key, image] of Object.entries(value.wslImages)) {
+      if (!validWslImage(image) || key !== `nixos-wsl/${image.architecture}`) {
+        throw new Error(`${WINDOWS_LOCKFILE_NAME} WSL image "${key}" is invalid or is not an immutable official release asset.`);
+      }
+      wslImages[key] = { ...image };
+    }
+  }
+  const wslRepositories: Record<string, WindowsLockWslRepository> = {};
+  if (value.wslRepositories !== undefined) {
+    if (!isObject(value.wslRepositories)) throw new Error(`${WINDOWS_LOCKFILE_NAME} wslRepositories must be an object`);
+    for (const [key, pin] of Object.entries(value.wslRepositories)) {
+      if (!validWslRepository(pin) || key !== wslRepositoryKey({ repository: pin.repository, ref: pin.ref, host: "validate", configDirectory: "." })) {
+        throw new Error(`${WINDOWS_LOCKFILE_NAME} WSL repository pin "${key}" is invalid`);
+      }
+      wslRepositories[key] = { ...pin };
+    }
+  }
   return {
     version: WINDOWS_LOCK_VERSION,
     generatedAt: value.generatedAt,
     packages,
+    ...(value.modules === undefined ? {} : { modules }),
+    ...(value.wslImages === undefined ? {} : { wslImages }),
+    ...(value.wslRepositories === undefined ? {} : { wslRepositories }),
   };
 }
 

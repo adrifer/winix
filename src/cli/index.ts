@@ -10,12 +10,14 @@ import { inspect } from "./commands/inspect.ts";
 import { switchCommand } from "./commands/switch.ts";
 import { update } from "./commands/update.ts";
 import { renderSkill } from "../skill.ts";
+import { forgetWindowsResource, windowsStatePath, type ManagedResource } from "./windows-state.ts";
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
     host: { type: "string" },
     dry: { type: "boolean", default: false },
+    yes: { type: "boolean", short: "y", default: false },
     diff: { type: "boolean", default: false },
     windows: { type: "boolean", default: false },
     strict: { type: "boolean", default: false },
@@ -49,12 +51,14 @@ Commands:
   switch       Generate output and run the host activation command
   update       Update generated flake.lock and copy it to project root
   inspect      Print host composition and fragment graph
+  state forget Release Windows removal ownership without deleting a resource
 
 Options:
   --host <name>   Target a specific host
-  --dry           Show what would be generated (apply)
+  --dry           Preview generation (apply) or activation and managed cleanup (switch)
+  -y, --yes       Confirm managed Windows removals without prompting (switch)
   --diff          Show diff against current output (apply)
-  --windows       Resolve Windows package lockfile (update)
+  --windows       Resolve Windows package/module/WSL image lockfile (update)
   --strict        Treat conflicts as errors (check)
   --escape-report Show escape hatch usage (check)
   --force         Overwrite files (init, install skill)
@@ -77,6 +81,10 @@ Examples:
 }
 
 const cwd = process.cwd();
+if (values.yes && command !== "switch") {
+  console.error("--yes is only supported by winix switch.");
+  process.exit(2);
+}
 
 switch (command) {
   case "init":
@@ -127,6 +135,7 @@ switch (command) {
       await switchCommand(cwd, {
         host: values.host as string | undefined,
         dry: values.dry as boolean,
+        yes: values.yes as boolean,
       });
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
@@ -148,6 +157,24 @@ switch (command) {
   case "inspect":
     try {
       await inspect(cwd);
+    } catch (err) {
+      console.error(`\u2717 Error: ${(err as Error).message}`);
+      process.exit(1);
+    }
+    break;
+  case "state":
+    try {
+      if (process.platform !== "win32") throw new Error("Windows applied state is only available on native Windows.");
+      let resource: ManagedResource;
+      if (positionals[1] === "forget" && positionals[2] === "startup" && positionals.length === 4) {
+        resource = { kind: "startup", name: positionals[3] };
+      } else if (positionals[1] === "forget" && positionals[2] === "package" &&
+                 positionals.length === 5 && ["winget", "msstore"].includes(positionals[3])) {
+        resource = { kind: "package", source: positionals[3], id: positionals[4] };
+      } else {
+        throw new Error("Usage: winix state forget startup <name> [--dry] OR winix state forget package <winget|msstore> <id> [--dry]");
+      }
+      await forgetWindowsResource(windowsStatePath(), resource, values.dry);
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
       process.exit(1);

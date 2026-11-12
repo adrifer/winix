@@ -8,6 +8,72 @@
 
 import type { ResourceRef } from "../core/types.ts";
 
+export type WinKnownFolderName = "documents" | "desktop" | "localAppData" | "appData" | "userProfile";
+
+export interface WinKnownFolder {
+  kind: "knownFolder";
+  folder: WinKnownFolderName;
+  path: string;
+}
+
+export type WinFilePath = string | WinKnownFolder;
+
+export type WinStartupWindowStyle = "normal" | "minimized" | "maximized";
+
+export interface WinStartupCommand {
+  /** Absolute/environment-variable path, known-folder path, or application name on PATH. */
+  executable: WinFilePath;
+  /** Literal arguments; known-folder arguments are resolved during activation. */
+  arguments?: WinFilePath[];
+  /** Defaults to the current user's home directory. Must exist during activation. */
+  workingDirectory?: WinFilePath;
+  windowStyle?: WinStartupWindowStyle;
+}
+
+export interface WinPowerShellModule {
+  name: string;
+  repository: string;
+}
+
+export interface WinWslDistro {
+  name: string;
+  source: "nixos-wsl";
+  installLocation: WinFilePath;
+  default: boolean;
+  setup?: WinWslSetup;
+}
+
+export interface WinWslSetup {
+  /** Opts into executing trusted repository/npm code inside the distro. HTTPS only; never embed credentials. */
+  repository: string;
+  /** Branch, tag, full ref, or immutable commit; resolved into winix-windows.lock. Defaults to HEAD. */
+  ref?: string;
+  configDirectory: string;
+  host: string;
+  /** Absolute path inside the selected account's home. Defaults to <home>/dotfiles. */
+  checkout?: string;
+  /** Selects a normal account declared by the Linux host; inferred when unambiguous. */
+  user?: string;
+}
+
+export interface WinWslConfig {
+  wsl2?: {
+    memory?: string;
+    processors?: number;
+    swap?: string;
+    localhostForwarding?: boolean;
+    networkingMode?: "nat" | "mirrored" | "none" | "virtioproxy";
+    dnsTunneling?: boolean;
+    firewall?: boolean;
+    autoProxy?: boolean;
+    guiApplications?: boolean;
+  };
+  experimental?: {
+    autoMemoryReclaim?: "disabled" | "gradual" | "dropCache";
+    sparseVhd?: boolean;
+  };
+}
+
 /**
  * A winget package source. MVP supports the two first-party catalogues.
  * Additional sources (chocolatey, scoop) can plug in later without changing
@@ -80,7 +146,7 @@ export interface WinRawCommand {
  *
  * Typed helpers (env/path) construct native DSC resources internally:
  * `Microsoft.Windows/Registry` for env and
- * `Microsoft.DSC.Transitional/WindowsPowerShellScript` for PATH/files.
+ * `Microsoft.DSC.Transitional/PowerShellScript` for PATH/files/modules.
  */
 export interface WinDscResource {
   /**
@@ -126,6 +192,19 @@ export interface WinDscResource {
 
 export type WinDscMetadata =
   | {
+      kind: "optional-features";
+      names: string[];
+      enabled: boolean;
+    }
+  | {
+      kind: "wsl-distro";
+      distro: WinWslDistro;
+    }
+  | {
+      kind: "startup";
+      name: string;
+    }
+  | {
       kind: "env";
       action: "set" | "remove";
       name: string;
@@ -140,6 +219,22 @@ export type WinDscMetadata =
     }
   | {
       kind: "setting";
+    }
+  | {
+      kind: "powershell-module";
+      module: WinPowerShellModule;
+    }
+  | {
+      kind: "file";
+      action: "text" | "symlink" | "copy" | "remove";
+      target: WinFilePath;
+      source?: string;
+      content?: string;
+      encoding: "utf8" | "utf8bom" | "ascii";
+      force: boolean;
+      backup: boolean;
+      recursive: boolean;
+      wslConfig?: boolean;
     };
 
 export type WinColorMode = "Light" | "Dark";

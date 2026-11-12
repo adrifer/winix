@@ -277,12 +277,118 @@ Resources return handles that can be passed through \`dependsOn\`.
 - \`windows.path.add()\` and \`windows.path.remove()\` manage PATH entries.
 - \`windows.file.text()\`, \`windows.file.symlink()\`,
   \`windows.file.copy()\`, and \`windows.file.remove()\` manage files.
+- \`windows.startup.command(name, spec)\` manages a named current-user Startup
+  shortcut, without running it during apply. Supply executable and optional argv
+  arguments, workingDirectory, windowStyle (normal/minimized/maximized),
+  dependsOn, backup, and force. Executables may be application names on PATH or
+  absolute/environment/known-folder paths. Arguments are literal strings or
+  known-folder paths; the default working directory is the user profile.
+  Executable and working directory must exist during activation. Replacement
+  requires backup or force; backup collisions fail. This is sign-in startup,
+  not a service, scheduled task, elevated launch, or all-users startup.
+  Native Windows switch tracks created/replaced shortcut ownership and removes
+  unchanged owned entries when declarations disappear. Matching pre-existing
+  shortcuts remain externally owned.
+- \`windows.knownFolder.documents()\`, \`windows.knownFolder.desktop()\`,
+  \`windows.knownFolder.localAppData()\`, \`windows.knownFolder.appData()\`, and
+  \`windows.knownFolder.userProfile()\` build typed file targets resolved during
+  activation. Each accepts an optional relative child path. File copy/symlink
+  sources resolve relative to the directory containing winix.config.ts;
+  absolute paths, environment-variable paths, and file URLs are also supported.
+- \`windows.powershell.module()\` declares a current-user PowerShell 7 module
+  by name, with optional repository (default PSGallery) and dependsOn.
+  Versions are recorded in the modules section of winix-windows.lock, not
+  handwritten declarations. PowerShell 7 with PSResourceGet is required for
+  resolution and installation.
 - \`windows.dsc()\` declares an arbitrary DSC resource.
+- \`windows.optionalFeature()\` enables/disables a named Windows optional feature;
+  enabled defaults to true. Changes require elevation, never reboot automatically.
+- \`windows.wsl()\` enables the WSL and Virtual Machine Platform features.
+  Options are config, backup, force, and dependsOn. The optional config manages
+  the full current-user .wslconfig with file overwrite protections; omitting it
+  leaves the file untouched. The returned handle covers the complete setup.
+  If a reboot is needed, restart Windows manually and rerun switch.
+  It never shuts down WSL; restart WSL manually when configuration changes.
+- \`windows.wsl.distro()\` registers a named distro with source "nixos-wsl",
+  installLocation, optional default and dependsOn. Declare windows.wsl() and the
+  Microsoft.WSL package in the same host; features, config, and runtime become
+  automatic dependencies.
+  Images for x64/ARM64 are verified against winix-windows.lock wslImages pins.
+  Update with winix update --windows nixos-wsl. Updates never reinstall an
+  existing distro. Conflicting/unrecorded distros are refused, not adopted.
+  Removing a declaration never unregisters a distro or deletes its data.
+  Optional setup opts into trusted first-run Linux provisioning:
+  { repository: "https://github.com/example/dotfiles.git", ref: "main",
+    configDirectory: "winix", host: "wsl-work", user: "alice",
+    checkout: "/home/alice/dotfiles" }.
+  Repository URLs must be HTTPS without credentials; authentication must already
+  work inside Linux. Commit package.json, package-lock.json and flake.lock in
+  configDirectory and use a released SDK supporting setup. The Linux host must
+  explicitly enable/import NixOS-WSL, declare system.stateVersion, and match the
+  distro architecture. user selects a declared normal account (inferred from
+  Home Manager or the sole normal account when omitted); checkout defaults to
+  its home/dotfiles and must remain inside that home. Home Manager identity/home
+  must agree. Git/npm/config evaluation run unprivileged; root activates the
+  account-only bootstrap, assigns checkout ownership, then activates the full
+  Linux host, which must set wsl.defaultUser to that account. No password or
+  sudo policy is supplied. Missing external account secrets fail explicitly.
+  wslRepositories locks repository commits; refresh with
+  winix update --windows wsl-setup. Completed setup is never reapplied or updated;
+  in-progress setup retains its original commit. Failures are resumable; dirty
+  or occupied checkouts/changed settings are refused, never reset or adopted.
+  State lives at /var/lib/winix/wsl-setup. Inspect stale run.lock and its PID
+  before manual recovery; never remove a live coordinator's lock.
+  No shutdown/reboot is automatic. Fresh-image activation remains unverified.
+  Omit setup to retain separate manual Linux activation.
 - \`windows.raw()\` runs a command on every apply. It is not idempotent, so use
-  a typed helper or \`windows.dsc()\` when possible.
+  a typed helper or \`windows.dsc()\` when possible. String commands default to
+  PowerShell 7 (\`pwsh\`); explicit executables are preserved.
 
-Floating Windows packages are resolved into \`winix-windows.lock\`. Keep that
-file in version control for deterministic, offline applies.
+File, PATH, startup, and module scripts use Microsoft.DSC.Transitional/PowerShellScript,
+not Windows PowerShell 5.1. Install PowerShell 7 and put pwsh on PATH before DSC
+resource discovery; declaring its package dependency is not sufficient for
+bootstrap. Set scripts guard their own changes independently of test scripts.
+
+Floating Windows packages, PowerShell modules, NixOS-WSL images and setup commits are resolved into
+\`winix-windows.lock\` on first apply; existing pins are reused without a
+resolution query. \`winix update --windows [names...]\` refreshes selected
+package/module/image/repository pins (all when omitted, nixos-wsl for images,
+wsl-setup for setup commits); --dry reports without writing.
+Keep the lock in version control. Installation still requires network access
+when the locked package/module is not installed.
+
+Native Windows \`winix switch\` keeps a separate per-user/machine applied-state
+inventory in LocalAppData/Winix, shared across recorded workspace/host activations.
+Only packages absent before a successful activation become uninstall-owned.
+Pre-existing packages are never automatically adopted. Unused owned packages
+are automatically uninstalled after successful activation; always preview
+with \`winix switch --dry\`. Other recorded owners prevent removal.
+Switches with package/startup removals prompt before activation; declining cancels
+the entire switch. Use \`--yes\`/\`-y\` for automation; noninteractive runs with
+removals require it. Dry runs and switches without removals do not prompt.
+External shortcut edits/package-version drift block reconciliation.
+\`winix state forget startup <name>\` or
+\`winix state forget package <winget|msstore> <id>\` releases removal ownership
+without deleting the resource; --dry previews. Do not copy applied state to a
+new machine or infer ownership from version locks. Direct DSC/script activation
+bypasses this tracking. Files, modules, env and PATH cleanup are not tracked.
+
+For fresh Windows prerequisites, \`scripts/bootstrap-windows.ps1\` runs in built-in
+Windows PowerShell 5.1 or PowerShell 7. App Installer/WinGet is the initial
+prerequisite. \`-Check\` is read-only; install mode confirms missing/outdated
+Git/Node/PowerShell/DSC installation and enables WinGet configuration support.
+\`-UseNvm\` chooses NVM for Windows instead of standalone Node; \`-Yes\` accepts
+bootstrap changes. It never installs Winix globally, activates a host, provisions
+WSL, reboots, or changes execution policy persistently. Prepare the config and
+compatible SDK separately, then review \`switch --dry\` before activation.
+
+On existing NixOS/NixOS-WSL, \`bash bootstrap-nixos.sh\` (from
+\`scripts/bootstrap-nixos.sh\` or a reviewed release asset) opens a temporary
+Git/Node.js 24/npm/Bash environment using pinned nixpkgs. Nix must already be
+available. Flakes are enabled only in the child session; the script never edits
+profiles/system configuration, clones repos, installs npm dependencies/Winix,
+or activates hosts. Nix may download store paths. Users handle their configs
+and declare permanent tools/settings themselves; \`exit\` leaves the environment.
 
 ## Nix values and escape hatches
 
@@ -345,7 +451,10 @@ callers may need arguments or \`.isActive\`.
   effects.
 - \`winix check [--strict] [--escape-report]\` validates the project.
 - \`winix apply [--host NAME] [--dry] [--diff]\` generates backend output.
-- \`winix switch [--host NAME] [--dry]\` generates and activates one host.
+- \`winix switch [--host NAME] [--dry] [--yes]\` generates and activates one host, automatically cleaning up unused owned Windows packages and startup commands.
+  Prune is Windows-only and uninstalls unused Winix-owned packages.
+- \`winix state forget startup <name>\` / \`winix state forget package <source> <id>\`
+  releases Windows removal ownership without deleting anything; accepts --dry.
 - \`winix update [INPUTS...] [--dry] [--windows]\` updates Nix inputs or
   Windows package locks.
 - \`winix inspect\` prints host composition and fragment information.
