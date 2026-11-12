@@ -798,6 +798,10 @@ activates it as root. Its actual wsl.defaultUser must match. Password creation
 and sudo policy remain outside setup; required external account secrets must
 already exist.
 
+Non-interactive WSL probes and setup prepend the NixOS system executable and
+wrapper directories to their process PATH before running any Linux commands.
+They do not depend on, or source, root/user shell profiles.
+
 Root-owned staged state under /var/lib/winix/wsl-setup makes failures resumable.
 Conflicting settings, dirty or occupied checkouts are refused, never reset or
 adopted. Completed setup is not repeated or updated. A killed coordinator's

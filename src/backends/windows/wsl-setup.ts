@@ -108,6 +108,7 @@ export function wslSetupPrelude(setup: WinWslSetup, pin: WindowsLockWslRepositor
   }
   const probe = [
     "set -euo pipefail",
+    'export PATH="/run/current-system/sw/bin:/run/wrappers/bin${PATH:+:$PATH}"',
     "state=/var/lib/winix/wsl-setup",
     "[[ ! -L \"$state\" && ! -L \"$state/complete\" ]] || { echo 'Unsafe WSL setup completion record' >&2; exit 2; }",
     "if [[ ! -f \"$state/complete\" ]]; then exit 3; fi",

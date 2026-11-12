@@ -19,6 +19,8 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   Windows and glibc Linux x64/ARM64, SHA256 release manifest, registry-free
   configuration loading, optional Node-free Windows prerequisite checks, and
   matching checksum-verified Linux executables for first-run WSL setup.
+  Non-login WSL probes/setup initialize the NixOS system PATH explicitly,
+  without sourcing user/root shell profiles.
   Windows/Linux x64 smoke checks gate publication. ARM64 execution and
   fresh-image activation remain unverified; binaries are not yet code-signed.
 - **WSL first-run Linux setup** — opt-in distro repository/config/host linkage,

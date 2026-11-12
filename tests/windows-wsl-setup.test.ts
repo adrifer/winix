@@ -228,6 +228,72 @@ console.log(JSON.stringify(await prepareWslAccount(${JSON.stringify(config)},${J
     } finally { metadata.mockRestore(); }
   });
 
+  it.skipIf(!linuxAvailable).each([false, true])("initializes NixOS tools for probes and setup with an empty inherited PATH (standalone: %s)", (standalone) => {
+    const metadata = vi.spyOn(runtime, "standaloneRuntime").mockReturnValue(standalone ? {
+      version: "0.2.4-preview.1",
+      linuxAssets: {
+        x64: { name: "winix-linux-x64", sha256: "1".repeat(64) },
+        arm64: { name: "winix-linux-arm64", sha256: "2".repeat(64) },
+      },
+    } : undefined);
+    try {
+      const script = wslSetupPrelude(setup, pin).join("\n");
+      const encoded = /\$script = if \(\$TestOnly\) \{ '((?:[^']|'')*)' \} else \{ '((?:[^']|'')*)' \}/s.exec(script)!;
+      const probe = encoded[1].replaceAll("''", "'");
+      const activate = encoded[2].replaceAll("''", "'");
+      const request = JSON.parse(Buffer.from(/export WINIX_WSL_SETUP_REQUEST='([^']+)'/.exec(activate)![1], "base64").toString("utf8"));
+      const test = `
+import * as fs from "node:fs/promises";
+import {execFileSync, spawnSync} from "node:child_process";
+import {join} from "node:path";
+import {tmpdir} from "node:os";
+import assert from "node:assert/strict";
+const root = await fs.mkdtemp(join(tmpdir(), "winix-setup-path-"));
+try {
+  const bash = execFileSync("bash", ["-c", 'printf %s "$BASH"'], {encoding:"utf8"});
+  const bin = join(root, "system-bin");
+  const state = join(root, "state");
+  const checkout = join(root, "checkout");
+  await fs.mkdir(bin);
+  await fs.mkdir(state);
+  await fs.mkdir(join(checkout, ".git"), {recursive:true});
+  await fs.writeFile(join(root, ".bash_profile"), "exit 99\\n");
+  await fs.writeFile(join(root, ".bashrc"), "exit 99\\n");
+  for (const name of ["mktemp", "rm", "base64"]) {
+    const target = execFileSync("bash", ["-c", 'command -v "$1"', "test", name], {encoding:"utf8"}).trim();
+    await fs.symlink(target, join(bin, name));
+  }
+  for (const [name, body] of [
+    ["uname", "printf 'x86_64\\\\n'"],
+    ["getent", 'printf "getent\\\\n" >> "$WINIX_TEST_TRACE"'],
+    ["awk", 'printf "awk\\\\n" >> "$WINIX_TEST_TRACE"'],
+    ["nix", "printf 'NIX_REACHED\\\\n'; exit 71"],
+  ]) await fs.writeFile(join(bin,name), "#!"+bash+"\\n"+body+"\\n", {mode:0o755});
+  const env = {PATH:"", HOME:root, TMPDIR:root, WINIX_TEST_TRACE:join(root,"trace")};
+  const adapt = (script) => script.replaceAll("/run/current-system/sw/bin", bin)
+    .replace("state=/var/lib/winix/wsl-setup", "state="+state);
+  const probe = adapt(${JSON.stringify(probe)});
+  const activate = adapt(${JSON.stringify(activate)});
+  let result = spawnSync(bash, ["-s"], {input:probe, env, encoding:"utf8"});
+  assert.equal(result.status, 3, result.stderr);
+  result = spawnSync(bash, ["-s"], {input:activate, env, encoding:"utf8"});
+  assert.equal(result.status, 71, result.stderr);
+  assert.match(result.stdout, /NIX_REACHED/);
+  assert.doesNotMatch(result.stderr, /command not found/);
+  await fs.writeFile(join(state,"complete"), ${JSON.stringify(request.fingerprint + "\nalice\n")}+checkout+"\\n");
+  result = spawnSync(bash, ["-s"], {input:probe, env, encoding:"utf8"});
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(await fs.readFile(join(root,"trace"),"utf8"), "getent\\nawk\\n");
+  console.log("WINIX_PATH_SUCCESS");
+} finally { await fs.rm(root, {recursive:true, force:true}); }
+`;
+      const output = execFileSync(process.platform === "win32" ? "wsl.exe" : process.execPath,
+        process.platform === "win32" ? ["--", "node", "--input-type=module", "-"] : ["--input-type=module", "-"],
+        { input: test, encoding: "utf8", timeout: 30000 });
+      expect(output).toContain("WINIX_PATH_SUCCESS");
+    } finally { metadata.mockRestore(); }
+  });
+
   it("previews missing commits without writing and refreshes only selected setup pins", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-setup-cli-"));
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
