@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { stripTypeScriptTypes } from "node:module";
+import { createRequire } from "node:module";
 import type { WinWslSetup } from "../../types/index.ts";
 import { normalizeWslSetup } from "../../helpers/windows.ts";
 import { powerShellLiteral as ps } from "../../helpers/utils.ts";
+import { standaloneRuntime } from "../../runtime.ts";
 
 export interface WindowsLockWslRepository {
   repository: string;
@@ -59,11 +60,52 @@ export function wslSetupPrelude(setup: WinWslSetup, pin: WindowsLockWslRepositor
     throw new Error("Missing/mismatched WSL repository pin. Run winix update --windows wsl-setup.");
   }
   const fingerprint = createHash("sha256").update(JSON.stringify(setup)).digest("hex");
-  const extension = import.meta.url.endsWith(".ts") ? "ts" : "js";
-  const source = readFileSync(new URL(`./wsl-setup-runtime.${extension}`, import.meta.url), "utf8");
-  const runtime = extension === "ts" ? stripTypeScriptTypes(source, { mode: "transform" }) : source;
-  const encodedRuntime = Buffer.from(runtime).toString("base64");
   const request = Buffer.from(JSON.stringify({ setup, revision: pin.revision, fingerprint })).toString("base64");
+  const standalone = standaloneRuntime();
+  let launch: string[];
+  if (standalone) {
+    const cases = (["x64", "arm64"] as const).map((architecture) => {
+      const asset = standalone.linuxAssets[architecture];
+      if (!asset || !/^[a-f0-9]{64}$/.test(asset.sha256) || asset.name !== `winix-linux-${architecture}`) {
+        throw new Error("This standalone build lacks Linux release checksums; use the official Windows release binary for WSL provisioning.");
+      }
+      return `  ${architecture === "x64" ? "x86_64" : "aarch64"}) asset='${asset.name}'; checksum='${asset.sha256}'; linker='${architecture === "x64" ? "ld-linux-x86-64.so.2" : "ld-linux-aarch64.so.1"}' ;;`;
+    });
+    launch = [
+      'case "$(uname -m)" in', ...cases,
+      "  *) echo 'Unsupported Linux architecture for standalone WSL setup' >&2; exit 2 ;;", "esac",
+      "temporary=$(mktemp -d)",
+      "trap 'rm -rf -- \"$temporary\"' EXIT",
+      `nix shell --no-write-lock-file github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#curl --command curl --fail --location --proto '=https' --proto-redir '=https' --output "$temporary/winix" "https://github.com/adrifer/winix/releases/download/v${standalone.version}/$asset"`,
+      "printf '%s  %s\\n' \"$checksum\" \"$temporary/winix\" | sha256sum --check --status || { echo 'Standalone Linux executable checksum mismatch' >&2; exit 2; }",
+      `directory=/var/lib/winix/runtime/${standalone.version}`,
+      'for parent in /var/lib/winix /var/lib/winix/runtime "$directory"; do',
+      '  [[ ! -L "$parent" ]] || { echo "Unsafe standalone runtime directory: $parent" >&2; exit 2; }',
+      '  mkdir -p -- "$parent"; [[ $(stat -c %u "$parent") == 0 ]] && (( (8#$(stat -c %a "$parent") & 0022) == 0 )) || { echo "Unsafe runtime directory permissions: $parent" >&2; exit 2; }; chmod 755 -- "$parent"',
+      "done",
+      '[[ ! -L "$directory/winix" && ! -L "$directory/winix.bin" ]] || { echo "Unsafe standalone runtime path" >&2; exit 2; }',
+      'destination=$(mktemp "$directory/winix.XXXXXX")',
+      'trap \'rm -f -- "$destination"; rm -rf -- "$temporary"\' EXIT',
+      'install -T -m 755 -- "$temporary/winix" "$destination"',
+      'nix build --no-write-lock-file --out-link "$directory/libc" github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#glibc.out',
+      'nix build --no-write-lock-file --out-link "$directory/compiler" github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#stdenv.cc.cc.lib',
+      'mv -fT -- "$destination" "$directory/winix.bin"',
+      'destination=$(mktemp "$directory/launch.XXXXXX")',
+      'printf \'#!/usr/bin/env bash\\nset -euo pipefail\\nexport WINIX_STANDALONE_EXECUTABLE=%q\\nexec %q --argv0 %q --library-path %q %q "$@"\\n\' "$directory/winix" "$directory/libc/lib/$linker" "$directory/winix.bin" "$directory/libc/lib:$directory/compiler/lib" "$directory/winix.bin" > "$destination"',
+      'chmod 755 -- "$destination"; mv -fT -- "$destination" "$directory/winix"',
+      'nix shell --no-write-lock-file github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#git --command "$directory/winix"',
+    ];
+  } else {
+    const extension = import.meta.url.endsWith(".ts") ? "ts" : "js";
+    const source = readFileSync(new URL(`./wsl-setup-runtime.${extension}`, import.meta.url), "utf8");
+    const runtime = extension === "ts"
+      ? (createRequire(import.meta.url)("node:module") as typeof import("node:module")).stripTypeScriptTypes(source, { mode: "transform" })
+      : source;
+    launch = [
+      `export WINIX_WSL_SETUP_RUNTIME='${Buffer.from(runtime + "\nawait dispatchWslSetup();\n").toString("base64")}'`,
+      "exec nix shell --no-write-lock-file github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#git github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#nodejs_24 --command node --input-type=module --eval \"$(printf '%s' \"$WINIX_WSL_SETUP_RUNTIME\" | base64 --decode)\"",
+    ];
+  }
   const probe = [
     "set -euo pipefail",
     "state=/var/lib/winix/wsl-setup",
@@ -79,9 +121,8 @@ export function wslSetupPrelude(setup: WinWslSetup, pin: WindowsLockWslRepositor
   const activate = [
     probe.replace("if [[ ! -f \"$state/complete\" ]]; then exit 3; fi", "if [[ -f \"$state/complete\" ]]; then") + "\nexit 0\nfi",
     `export WINIX_WSL_SETUP_REQUEST='${request}'`,
-    `export WINIX_WSL_SETUP_RUNTIME='${encodedRuntime}'`,
     'export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG$\'\\n\'}extra-experimental-features = nix-command flakes"',
-    "exec nix shell --no-write-lock-file github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#git github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#nodejs_24 --command node --input-type=module --eval \"$(printf '%s' \"$WINIX_WSL_SETUP_RUNTIME\" | base64 --decode)\"",
+    ...launch,
   ].join("\n");
   return [
     "function Invoke-WinixWslSetup([bool]$TestOnly) {",

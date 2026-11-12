@@ -101,6 +101,16 @@ Use these rules when adding or reviewing Winix SDK helpers:
 
 ## Testing
 
+Standalone builds use Bun 1.4.0 (`npm run build:standalone`), producing Windows
+and glibc Linux x64/ARM64 assets in `artifacts/`. The Windows build embeds the
+Linux hashes, so release builds must build all targets in order. Runtime SDK
+imports are virtual modules sharing the bundled evaluator's context; do not
+load an independent SDK copy. Automatic npm installation is disabled.
+Set `WINIX_STANDALONE_TEST_BINARY` to run `tests/standalone.test.ts` against a
+compiled binary. WSL standalone setup verifies the release binary before
+launching it through a private, pinned Nix runtime linker/library environment;
+never test it by activating the shared machine.
+
 ```bash
 npx vitest run                    # Unit tests
 cd test-config && node --experimental-transform-types ../src/cli/index.ts apply --dry   # Integration

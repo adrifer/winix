@@ -8,12 +8,15 @@ Only inspect prerequisites. No installation or configuration enablement is perfo
 Accept prerequisite installation and WinGet configuration enablement without prompting.
 .PARAMETER UseNvm
 Install/select Node LTS through NVM for Windows instead of standalone Node.js.
+.PARAMETER Standalone
+Check/install only native prerequisites for the Winix executable; Node.js/npm are not needed.
 #>
 [CmdletBinding()]
 param(
     [switch]$Check,
     [switch]$Yes,
-    [switch]$UseNvm
+    [switch]$UseNvm,
+    [switch]$Standalone
 )
 
 function Get-WinixBootstrapApplication {
@@ -55,6 +58,7 @@ function Update-WinixBootstrapPath {
 }
 
 function Get-WinixBootstrapTools {
+    param([switch]$Standalone)
     $tools = @(
         @{ Id = 'Git.Git'; Command = 'git.exe'; Minimum = '2.0.0' }
         @{ Id = 'OpenJS.NodeJS.LTS'; Command = 'node.exe'; Minimum = '22.13.0' }
@@ -62,6 +66,7 @@ function Get-WinixBootstrapTools {
         @{ Id = 'Microsoft.DSC'; Command = 'dsc.exe'; Minimum = '3.2.0' }
     )
     foreach ($tool in $tools) {
+        if ($Standalone -and $tool.Command -eq 'node.exe') { continue }
         $path = Get-WinixBootstrapApplication $tool.Command
         $version = $null
         if ($path) {
@@ -86,19 +91,21 @@ function Get-WinixBootstrapTools {
 }
 
 function Test-WinixBootstrapCapabilities {
-    param([string]$WinGet)
+    param([string]$WinGet, [switch]$Standalone)
     $help = (Invoke-WinixBootstrapNative $WinGet @('configure', '--help')) -join "`n"
     if ($help -notmatch '--enable\b') {
         throw 'Update App Installer from Microsoft Store: this WinGet lacks configuration enablement support.'
     }
-    $npm = Get-WinixBootstrapApplication 'npm.cmd'
-    if (-not $npm) { throw 'npm.cmd is unavailable. Repair the Node.js installation or open a new terminal, then rerun.' }
-    Invoke-WinixBootstrapNative $npm @('--version') | Out-Null
-    $node = Get-WinixBootstrapApplication 'node.exe'
-    Invoke-WinixBootstrapNative $node @(
-        '--experimental-transform-types', '--no-warnings', '--input-type=module', '--eval',
-        "import { stripTypeScriptTypes } from 'node:module'; stripTypeScriptTypes('const x: number = 1');"
-    ) | Out-Null
+    if (-not $Standalone) {
+        $npm = Get-WinixBootstrapApplication 'npm.cmd'
+        if (-not $npm) { throw 'npm.cmd is unavailable. Repair the Node.js installation or open a new terminal, then rerun.' }
+        Invoke-WinixBootstrapNative $npm @('--version') | Out-Null
+        $node = Get-WinixBootstrapApplication 'node.exe'
+        Invoke-WinixBootstrapNative $node @(
+            '--experimental-transform-types', '--no-warnings', '--input-type=module', '--eval',
+            "import { stripTypeScriptTypes } from 'node:module'; stripTypeScriptTypes('const x: number = 1');"
+        ) | Out-Null
+    }
     $pwsh = Get-WinixBootstrapApplication 'pwsh.exe'
     $script = @'
 $ErrorActionPreference = 'Stop'
@@ -120,12 +127,14 @@ Get-PSResourceRepository -Name PSGallery -ErrorAction Stop | Out-Null
             throw "Required DSC resource is unavailable: $name. Update App Installer/DSC, open a new terminal, and rerun."
         }
     }
-    Write-Host 'OK: npm, Node TypeScript support, PSResourceGet/PSGallery, and required DSC resources.'
+    if (-not $Standalone) { Write-Host 'OK: npm and Node TypeScript support.' }
+    Write-Host 'OK: PSResourceGet/PSGallery and required DSC resources.'
 }
 
 function Invoke-WinixWindowsBootstrap {
-    param([switch]$Check, [switch]$Yes, [switch]$UseNvm)
+    param([switch]$Check, [switch]$Yes, [switch]$UseNvm, [switch]$Standalone)
     $ErrorActionPreference = 'Stop'
+    if ($Standalone -and $UseNvm) { throw '-Standalone and -UseNvm cannot be combined.' }
     if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
         throw 'This bootstrap is for native Windows, not WSL. Run it from Windows PowerShell or PowerShell 7.'
     }
@@ -140,7 +149,7 @@ Then rerun this bootstrap. No prerequisites have been installed.
 '@
     }
     Write-Host ("WinGet: " + ((Invoke-WinixBootstrapNative $winget @('--version')) -join ' '))
-    $tools = @(Get-WinixBootstrapTools)
+    $tools = @(Get-WinixBootstrapTools -Standalone:$Standalone)
     foreach ($tool in $tools) {
         $installed = if ($tool.Version) { $tool.Version.ToString() } else { 'missing' }
         $status = if ($tool.Ready) { 'OK' } else { 'NEEDED' }
@@ -192,23 +201,23 @@ Then rerun this bootstrap. No prerequisites have been installed.
                 ) | ForEach-Object { Write-Host $_ }
             }
             Update-WinixBootstrapPath
-            $updated = @(Get-WinixBootstrapTools | Where-Object { $_.Id -eq $tool.Id })
+            $updated = @(Get-WinixBootstrapTools -Standalone:$Standalone | Where-Object { $_.Id -eq $tool.Id })
             if ($updated.Count -ne 1 -or -not $updated[0].Ready) {
                 throw "Installation did not make $($tool.Command) ready. Open a new terminal or restart if requested, then rerun."
             }
         }
-        Invoke-WinixBootstrapNative $winget @('configure', '--enable', '--disable-interactivity') |
+        Invoke-WinixBootstrapNative $winget @('configure', '--enable') |
             ForEach-Object { Write-Host $_ }
         Update-WinixBootstrapPath
     }
-    Test-WinixBootstrapCapabilities $winget
+    Test-WinixBootstrapCapabilities $winget -Standalone:$Standalone
     Write-Host 'Prerequisite checks passed. No Winix host was activated.'
     Write-Host 'Open a new PowerShell 7 terminal before preparing the Winix/config checkout and running winix check or switch --dry.'
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
     try {
-        Invoke-WinixWindowsBootstrap -Check:$Check -Yes:$Yes -UseNvm:$UseNvm
+        Invoke-WinixWindowsBootstrap -Check:$Check -Yes:$Yes -UseNvm:$UseNvm -Standalone:$Standalone
     } catch {
         Write-Error $_ -ErrorAction Continue
         exit 1

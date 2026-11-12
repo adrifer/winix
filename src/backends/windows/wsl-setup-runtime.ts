@@ -81,16 +81,18 @@ export function createWslAccountPlan(
   };
 }
 
-export async function prepareWslAccount(configDirectory: string, accountDirectory: string, setup: WinWslSetup): Promise<Plan> {
+export async function prepareWslAccount(
+  configDirectory: string, accountDirectory: string, setup: WinWslSetup,
+  embeddedSdk?: typeof import("../../index.ts")
+): Promise<Plan> {
   const configName = [];
   for (const name of ["winix.config.ts", "winix.config.js", "winix.config.mjs"]) {
     if (await exists(join(configDirectory, name))) configName.push(name);
   }
   if (configName.length !== 1) throw new Error("WSL setup configDirectory must contain exactly one Winix config file");
-  const sdkUrl = nativeRun(process.execPath, [
+  const sdk = embeddedSdk ?? await import(nativeRun(process.execPath, [
     "--input-type=module", "--eval", 'console.log(import.meta.resolve("@adrifer/winix"))',
-  ], { cwd: configDirectory });
-  const sdk = await import(sdkUrl) as typeof import("../../index.ts");
+  ], { cwd: configDirectory })) as typeof import("../../index.ts");
   const workspace = (await import(pathToFileURL(join(configDirectory, configName[0])).href)).default as WorkspaceDef;
   if (!workspace || !Array.isArray(workspace.hosts)) throw new Error("Invalid Winix workspace");
   const targets = workspace.hosts.filter((host) => host.name === setup.host && host.platform.__id === "nixos");
@@ -151,12 +153,13 @@ async function atomicJson(path: string, value: unknown): Promise<void> {
 
 export async function runWslSetup(
   request: Request,
-  options: { stateDirectory?: string; run?: SetupRunner; isRoot?: () => boolean; readWslConfig?: () => Promise<string> } = {}
+  options: { stateDirectory?: string; run?: SetupRunner; isRoot?: () => boolean; readWslConfig?: () => Promise<string>; standalone?: boolean; executable?: string } = {}
 ): Promise<void> {
   if (process.platform !== "linux" || !(options.isRoot ?? (() => process.getuid?.() === 0))()) {
     throw new Error("WSL setup coordinator requires Linux root; repository/npm commands run unprivileged");
   }
   const run = options.run ?? nativeRun;
+  const executable = options.executable ?? process.execPath;
   const stateDirectory = options.stateDirectory ?? "/var/lib/winix/wsl-setup";
   await safeDirectory(stateDirectory);
   await fs.mkdir(stateDirectory, { recursive: true, mode: 0o711 });
@@ -186,10 +189,12 @@ export async function runWslSetup(
     }
     await atomicJson(statePath, state);
     const runtimePath = join(stateDirectory, "runtime.mjs");
-    if (!process.env.WINIX_WSL_SETUP_RUNTIME && !options.run) throw new Error("Missing WSL setup runtime payload");
-    const runtimeTemporary = `${runtimePath}.${randomUUID()}.tmp`;
-    await fs.writeFile(runtimeTemporary, Buffer.from(process.env.WINIX_WSL_SETUP_RUNTIME ?? "", "base64"), { flag: "wx", mode: 0o444 });
-    await fs.rename(runtimeTemporary, runtimePath);
+    if (!options.standalone) {
+      if (!process.env.WINIX_WSL_SETUP_RUNTIME && !options.run) throw new Error("Missing WSL setup runtime payload");
+      const runtimeTemporary = `${runtimePath}.${randomUUID()}.tmp`;
+      await fs.writeFile(runtimeTemporary, Buffer.from(process.env.WINIX_WSL_SETUP_RUNTIME ?? "", "base64"), { flag: "wx", mode: 0o444 });
+      await fs.rename(runtimeTemporary, runtimePath);
+    }
     const work = join(stateDirectory, "work");
     const repository = join(work, "repository");
     const accountDirectory = join(work, "account");
@@ -211,7 +216,7 @@ export async function runWslSetup(
       if (git(["status", "--porcelain", "--untracked-files=normal"])) throw new Error("WSL setup checkout is dirty; refusing reset");
     };
     const prepare = (config: string, user: string, home: string): Plan => {
-      const prepared = run(process.execPath, ["--experimental-transform-types", "--no-warnings", runtimePath], {
+      const prepared = run(executable, options.standalone ? [] : ["--experimental-transform-types", "--no-warnings", runtimePath], {
         user, home, cwd: config,
         env: { WINIX_WSL_SETUP_PREPARE: JSON.stringify({ config, accountDirectory, setup: request.setup }) },
       });
@@ -247,10 +252,10 @@ export async function runWslSetup(
       const config = await fs.realpath(join(repository, request.setup.configDirectory));
       const inside = relative(await fs.realpath(repository), config);
       if (inside.startsWith("..") || isAbsolute(inside)) throw new Error("configDirectory escapes the checkout");
-      for (const name of ["package-lock.json", "package.json", "flake.lock"]) {
+      for (const name of options.standalone ? ["flake.lock"] : ["package-lock.json", "package.json", "flake.lock"]) {
         if (!await exists(join(config, name))) throw new Error(`WSL setup requires committed ${name} in configDirectory`);
       }
-      run("npm", ["ci", "--no-audit", "--no-fund"], { ...asInitial, cwd: config });
+      if (!options.standalone) run("npm", ["ci", "--no-audit", "--no-fund"], { ...asInitial, cwd: config });
       verify(repository, "nixos", initial.home);
       state.plan = prepare(config, "nixos", initial.home);
       await save("prepared");
@@ -310,7 +315,8 @@ export async function runWslSetup(
     verify(plan.checkout, plan.user, plan.home);
     if (state.step === "account") {
       console.log("WSL setup: generating and activating the full Linux host");
-      run("npm", ["exec", "--offline", "--", "winix", "apply", "--host", plan.host], asUser);
+      if (options.standalone) run(executable, ["apply", "--host", plan.host], asUser);
+      else run("npm", ["exec", "--offline", "--", "winix", "apply", "--host", plan.host], asUser);
       const flake = `path:${join(asUser.cwd!, ".winix", "out")}`;
       const defaultUser = run("nix", ["eval", "--raw", "--no-write-lock-file", `${flake}#nixosConfigurations.${JSON.stringify(plan.host)}.config.wsl.defaultUser`], asUser);
       if (defaultUser !== plan.user) throw new Error("Full Linux host must select the setup account as wsl.defaultUser");
@@ -338,9 +344,16 @@ export async function runWslSetup(
   }
 }
 
-if (process.env.WINIX_WSL_SETUP_PREPARE) {
-  const { config, accountDirectory, setup } = JSON.parse(process.env.WINIX_WSL_SETUP_PREPARE);
-  console.log("WINIX_PLAN:" + JSON.stringify(await prepareWslAccount(config, accountDirectory, setup)));
-} else if (process.env.WINIX_WSL_SETUP_REQUEST) {
-  await runWslSetup(JSON.parse(Buffer.from(process.env.WINIX_WSL_SETUP_REQUEST, "base64").toString("utf8")));
+export async function dispatchWslSetup(embeddedSdk?: typeof import("../../index.ts")): Promise<void> {
+  if (process.env.WINIX_WSL_SETUP_PREPARE) {
+    const { config, accountDirectory, setup } = JSON.parse(process.env.WINIX_WSL_SETUP_PREPARE);
+    console.log("WINIX_PLAN:" + JSON.stringify(await prepareWslAccount(config, accountDirectory, setup, embeddedSdk)));
+  } else if (process.env.WINIX_WSL_SETUP_REQUEST) {
+    await runWslSetup(JSON.parse(Buffer.from(process.env.WINIX_WSL_SETUP_REQUEST, "base64").toString("utf8")), {
+      standalone: embeddedSdk !== undefined,
+      executable: embeddedSdk ? process.env.WINIX_STANDALONE_EXECUTABLE : undefined,
+    });
+  } else {
+    throw new Error("Missing WSL setup request");
+  }
 }

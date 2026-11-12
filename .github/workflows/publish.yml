@@ -14,7 +14,62 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  standalone:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - run: npm ci
+      - name: Build standalone release executables
+        run: WINIX_BUILD_VERSION="${GITHUB_REF_NAME#v}" npm run build:standalone
+      - name: Include upstream runtime license information
+        run: |
+          curl --fail --location --proto '=https' --proto-redir '=https' \
+            https://raw.githubusercontent.com/oven-sh/bun/bun-v1.4.0/LICENSE.md \
+            --output artifacts/BUN-LICENSE.md
+          (cd artifacts && sha256sum BUN-LICENSE.md >> SHA256SUMS)
+      - name: Smoke-test Linux executable
+        run: npm test -- --run tests/standalone.test.ts
+        env:
+          WINIX_STANDALONE_TEST_BINARY: ${{ github.workspace }}/artifacts/winix-linux-x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: standalone
+          path: |
+            artifacts/winix-*
+            artifacts/SHA256SUMS
+            artifacts/LICENSE
+            artifacts/NOTICE.txt
+            artifacts/BUN-LICENSE.md
+          compression-level: 0
+
+  standalone-windows:
+    needs: standalone
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/download-artifact@v4
+        with:
+          name: standalone
+          path: artifacts
+      - run: npm ci
+      - name: Smoke-test Windows executable
+        run: npm test -- --run tests/standalone.test.ts
+        env:
+          WINIX_STANDALONE_TEST_BINARY: ${{ github.workspace }}\artifacts\winix-windows-x64.exe
+
   publish:
+    needs: [standalone, standalone-windows]
     runs-on: ubuntu-latest
 
     steps:
@@ -71,6 +126,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Download verified standalone executables
+        uses: actions/download-artifact@v4
+        with:
+          name: standalone
+          path: artifacts
+
       - name: Pack
         run: npm pack --dry-run
 
@@ -99,4 +160,12 @@ jobs:
             scripts/bootstrap-windows.ps1.sha256 \
             scripts/bootstrap-nixos.sh \
             scripts/bootstrap-nixos.sh.sha256 \
+            artifacts/winix-windows-x64.exe \
+            artifacts/winix-windows-arm64.exe \
+            artifacts/winix-linux-x64 \
+            artifacts/winix-linux-arm64 \
+            artifacts/SHA256SUMS \
+            artifacts/LICENSE \
+            artifacts/NOTICE.txt \
+            artifacts/BUN-LICENSE.md \
             --clobber

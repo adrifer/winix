@@ -1,0 +1,21 @@
+Winix standalone executables include the unmodified Bun 1.4.0 runtime.
+
+Bun is MIT-licensed and includes third-party components under other licenses,
+including LGPL-licensed JavaScriptCore/WebKit. The release includes Bun's
+upstream LICENSE.md as BUN-LICENSE.md, with component licenses and instructions
+for rebuilding its JavaScriptCore bindings.
+
+Bun source and component/build references for this runtime:
+https://github.com/oven-sh/bun/tree/bun-v1.4.0
+https://github.com/oven-sh/bun/blob/bun-v1.4.0/LICENSE.md
+
+Winix is MIT-licensed; see LICENSE. Complete Winix application sources are
+available at the matching release tag:
+https://github.com/adrifer/winix
+
+To rebuild/relink an executable with a modified runtime, build Bun following
+its upstream instructions, then run npm run build:standalone from the matching
+Winix source checkout using that Bun build. WINIX_BUN_RUNTIME_DIRECTORY can
+select replacement runtime files under linux-x64/bun, linux-arm64/bun,
+windows-x64/bun.exe and windows-arm64/bun.exe. No proprietary Winix objects or
+signing keys are required.

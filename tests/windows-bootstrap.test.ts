@@ -41,6 +41,9 @@ function Invoke-WinixBootstrapNative {
         if ($Arguments[0] -eq '--version') { return 'v1.30.0' }
         if ($Arguments[0] -eq 'configure') {
             if ($Arguments[1] -eq '--help') { return '--enable' }
+            if ($Arguments -contains '--enable' -and $Arguments.Count -ne 2) {
+                throw "Option '--enable' cannot be used with other arguments."
+            }
             return
         }
         if ($script:failInstall) { throw 'Synthetic installer failure' }
@@ -116,6 +119,17 @@ try {
     expect(result.calls.some((call) => ["install", "upgrade"].includes(call.args[0]))).toBe(false);
   });
 
+  it("checks standalone prerequisites without inspecting or installing Node/npm", () => {
+    const result = run(shell, "$script:versions.Remove('node.exe'); $script:nvm = $true", "-Check -Standalone");
+    expect(result.ok).toBe(true);
+    expect(result.calls.some((call) => ["node.exe", "npm.cmd", "nvm.exe"].includes(call.file))).toBe(false);
+    expect(result.calls.filter((call) => call.file === "dsc.exe" && call.args[0] === "resource")).toHaveLength(4);
+    const install = run(shell, "$script:versions.Remove('node.exe'); $script:versions.Remove('dsc.exe')", "-Yes -Standalone");
+    expect(install.ok).toBe(true);
+    expect(install.calls.filter((call) => call.args[0] === "install").map((call) => call.args[2])).toEqual(["Microsoft.DSC"]);
+    expect(run(shell, "", "-Standalone -UseNvm").error).toContain("cannot be combined");
+  });
+
   it("installs only missing tools, upgrades outdated ones, then enables configuration", () => {
     const result = run(shell, "$script:versions.Remove('dsc.exe'); $script:versions['node.exe'] = '22.0.0'");
     expect(result.ok).toBe(true);
@@ -125,7 +139,7 @@ try {
     ]);
     expect(installations.every((call) => call.args.includes("--exact") && call.args.includes("--source") &&
       call.args.includes("winget") && call.args.includes("--disable-interactivity"))).toBe(true);
-    expect(result.calls.some((call) => call.args.join(" ") === "configure --enable --disable-interactivity")).toBe(true);
+    expect(result.calls.some((call) => call.args.join(" ") === "configure --enable")).toBe(true);
     expect(result.calls.some((call) => call.args.includes("--file"))).toBe(false);
   });
 

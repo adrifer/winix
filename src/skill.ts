@@ -322,13 +322,15 @@ Resources return handles that can be passed through \`dependsOn\`.
     configDirectory: "winix", host: "wsl-work", user: "alice",
     checkout: "/home/alice/dotfiles" }.
   Repository URLs must be HTTPS without credentials; authentication must already
-  work inside Linux. Commit package.json, package-lock.json and flake.lock in
-  configDirectory and use a released SDK supporting setup. The Linux host must
+  work inside Linux. Commit flake.lock in configDirectory; npm-based Winix also
+  requires package.json/package-lock.json and a released SDK supporting setup.
+  Official standalone Windows binaries use a matching, checksum-verified Linux
+  binary and pinned Nix runtime libraries instead of Node/npm. The Linux host must
   explicitly enable/import NixOS-WSL, declare system.stateVersion, and match the
   distro architecture. user selects a declared normal account (inferred from
   Home Manager or the sole normal account when omitted); checkout defaults to
   its home/dotfiles and must remain inside that home. Home Manager identity/home
-  must agree. Git/npm/config evaluation run unprivileged; root activates the
+  must agree. Git/config evaluation (and npm when used) run unprivileged; root activates the
   account-only bootstrap, assigns checkout ownership, then activates the full
   Linux host, which must set wsl.defaultUser to that account. No password or
   sudo policy is supplied. Missing external account secrets fail explicitly.
@@ -377,6 +379,16 @@ For fresh Windows prerequisites, \`scripts/bootstrap-windows.ps1\` runs in built
 Windows PowerShell 5.1 or PowerShell 7. App Installer/WinGet is the initial
 prerequisite. \`-Check\` is read-only; install mode confirms missing/outdated
 Git/Node/PowerShell/DSC installation and enables WinGet configuration support.
+\`-Standalone\` skips all Node/npm checks and installations for executable users;
+it cannot be combined with \`-UseNvm\`. Release executables embed the SDK/runtime,
+load local TS/JS imports and Node builtins without node_modules, and never
+automatically download third-party npm imports. The executable version determines
+the SDK, not package-lock.json; editor TypeScript dependencies remain optional.
+Choose versioned GitHub release assets, verify SHA256SUMS, and respect execution
+policies (binaries are not code-signed). Windows WSL setup embeds matching Linux
+hashes; custom single-target builds cannot provision WSL. Linux assets use glibc;
+automatic WSL setup prepares NixOS's linker explicitly. No ARM64 execution or
+fresh-image activation is claimed.
 \`-UseNvm\` chooses NVM for Windows instead of standalone Node; \`-Yes\` accepts
 bootstrap changes. It never installs Winix globally, activates a host, provisions
 WSL, reboots, or changes execution policy persistently. Prepare the config and

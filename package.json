@@ -54,6 +54,7 @@
   "scripts": {
     "clean": "node scripts/clean-dist.mjs",
     "build": "npm run clean && tsc -p tsconfig.build.json && node scripts/fix-dts-imports.mjs",
+    "build:standalone": "node scripts/build-standalone.mjs",
     "dev": "tsc --watch",
     "test": "vitest",
     "lint": "eslint src/",

@@ -13,6 +13,7 @@ import { resolveWslRepository, wslRepositoryKey, wslSetupPrelude } from "../src/
 import { applyWorkspace } from "../src/cli/commands/apply.ts";
 import { update } from "../src/cli/commands/update.ts";
 import { pathToFileURL } from "node:url";
+import * as runtime from "../src/runtime.ts";
 
 vi.mock("node:child_process", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:child_process")>();
@@ -201,6 +202,32 @@ console.log(JSON.stringify(await prepareWslAccount(${JSON.stringify(config)},${J
     }
   });
 
+  it.skipIf(!linuxAvailable)("pins and verifies standalone Linux executables without generating any npm/Node setup", () => {
+    const metadata = vi.spyOn(runtime, "standaloneRuntime").mockReturnValue({
+      version: "0.2.4-preview.1",
+      linuxAssets: {
+        x64: { name: "winix-linux-x64", sha256: "1".repeat(64) },
+        arm64: { name: "winix-linux-arm64", sha256: "2".repeat(64) },
+      },
+    });
+    try {
+      const script = wslSetupPrelude(setup, pin).join("\n");
+      const encoded = /\$script = if \(\$TestOnly\) \{ '((?:[^']|'')*)' \} else \{ '((?:[^']|'')*)' \}/s.exec(script)!;
+      const activate = encoded[2].replaceAll("''", "'");
+      expect(activate).toContain("releases/download/v0.2.4-preview.1/$asset");
+      expect(activate).toContain("sha256sum --check --status");
+      expect(activate.indexOf("sha256sum")).toBeLessThan(activate.indexOf("install -T"));
+      expect(activate).toContain("WINIX_STANDALONE_EXECUTABLE");
+      expect(activate).toContain("ld-linux-aarch64.so.1");
+      expect(activate).not.toMatch(/nodejs|npm|WINIX_WSL_SETUP_RUNTIME/);
+      execFileSync(process.platform === "win32" ? "wsl.exe" : "bash", process.platform === "win32" ? ["--", "bash", "-n"] : ["-n"], {
+        input: activate, encoding: "utf8", timeout: 15000,
+      });
+      metadata.mockReturnValue({ version: "0.2.4-preview.1", linuxAssets: {} });
+      expect(() => wslSetupPrelude(setup, pin)).toThrow("lacks Linux release checksums");
+    } finally { metadata.mockRestore(); }
+  });
+
   it("previews missing commits without writing and refreshes only selected setup pins", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-setup-cli-"));
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -231,7 +258,7 @@ export default workspace({inputs:{},hosts:[host("desktop",platforms.windows(),({
 });
 
 describe.skipIf(!linuxAvailable)("Linux WSL setup state machine with mocked system commands", () => {
-  it("resumes failed activations, protects dirty/colliding checkouts, and never repeats completed builds", () => {
+  it.each([false, true])("resumes failed activations and protects checkouts (standalone: %s)", (standalone) => {
     const source = stripTypeScriptTypes(readFileSync(join(process.cwd(), "src", "backends", "windows", "wsl-setup-runtime.ts"), "utf8"), { mode: "transform" });
     const test = `
 const assert = (await import('node:assert/strict')).default;
@@ -262,7 +289,7 @@ try {
           const target=args.at(-1);
           syncfs.mkdirSync(join(target,'.git'),{recursive:true});
           syncfs.mkdirSync(join(target,'winix'),{recursive:true});
-          for(const name of ['package.json','package-lock.json','flake.lock']) syncfs.writeFileSync(join(target,'winix',name),'{}');
+          for(const name of ${JSON.stringify(standalone ? ["flake.lock"] : ["package.json", "package-lock.json", "flake.lock"])}) syncfs.writeFileSync(join(target,'winix',name),'{}');
         }
         if(args[0]==='remote' && args.length===1) return 'origin';
         if(args[0]==='remote' && args[1]==='get-url') return config.repository;
@@ -275,7 +302,11 @@ try {
         if(args[0]==='checkout') checkoutCalls++;
         return '';
       }
-      if(command===process.execPath) { preparedAt=options.cwd;return 'WINIX_PLAN:'+JSON.stringify({user:'alice',home,checkout,host:'linux'}); }
+      if(command===process.execPath) {
+        if(args[0]==='apply') { assert.equal(${standalone},true); assert.ok(options.user); return ''; }
+        if(${standalone}) assert.deepEqual(args,[]);
+        preparedAt=options.cwd;return 'WINIX_PLAN:'+JSON.stringify({user:'alice',home,checkout,host:'linux'});
+      }
       if(command==='npm') { assert.notEqual(options.user,undefined); return ''; }
       if(command==='nix') return 'alice';
       if(command==='nixos-rebuild') {
@@ -293,7 +324,7 @@ try {
       }
       throw new Error('Unexpected real command: '+command);
     };
-    const options = {stateDirectory:join(directory,'state'),run:runner,isRoot:()=>true,
+    const options = {standalone:${standalone},stateDirectory:join(directory,'state'),run:runner,isRoot:()=>true,
       readWslConfig:async()=>scenario==='wrong-section'&&wslReads++===0?'[network]\\ndefault=alice\\n':'[user]\\ndefault=alice\\n'};
     if(scenario!=='normal') {
       await assert.rejects(runWslSetup(request,options));
@@ -315,6 +346,7 @@ try {
     assert.equal(accountCalls+fullCalls,builds);
     assert.equal(await fs.readFile(join(directory,'state','complete'),'utf8'),'test-fingerprint\\nalice\\n'+checkout+'\\n');
     for(const call of calls.filter(call=>['git','npm',process.execPath].includes(call.command))) assert.ok(call.options.user);
+    if(${standalone}) assert.equal(calls.some(call=>call.command==='npm'),false);
     await assert.rejects(runWslSetup({...request,fingerprint:'changed'},options),/Conflicting/);
   }
   const locked = join(root,'locked');

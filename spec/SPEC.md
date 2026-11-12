@@ -781,8 +781,9 @@ optional `user` selects its declared normal account and `checkout` defaults to
 that account's home/dotfiles. Checkout must stay inside that home; Home Manager
 identity/home must agree. The Linux host must explicitly enable/import NixOS-WSL,
 declare system.stateVersion and match the distro architecture. The config
-directory requires committed package.json, package-lock.json and flake.lock.
-Repository/npm/config code is trusted; embedded credentials are refused and
+directory requires committed flake.lock (also package.json/package-lock.json
+for npm-based Winix). Repository/config code and npm lifecycle scripts, when
+used, are trusted; embedded credentials are refused and
 private authentication must already work inside Linux.
 
 Optional version-1 lock section `wslRepositories` maps a SHA256 key of
@@ -790,7 +791,7 @@ Optional version-1 lock section `wslRepositories` maps a SHA256 key of
 missing commits, explicit Windows updates refresh them (`wsl-setup` selects
 repositories alone), and dry generation never writes pins or executes the repo.
 Pins are first-run only; incomplete setup retains its original commit.
-The root Linux coordinator prepares Git/npm/config as the initial nixos user,
+The root Linux coordinator prepares Git/config (and npm when used) as the initial nixos user,
 activates a minimal declarative account/WSL configuration without Home Manager,
 assigns checkout ownership, generates the full host as the target user and
 activates it as root. Its actual wsl.defaultUser must match. Password creation
@@ -825,6 +826,25 @@ WSL provisioning, persistent execution-policy changes, or automatic reboot is
 performed. Prerequisites remain outside host lock/ownership tracking. Missing
 WinGet requires explicit App Installer installation/registration; config/Winix
 installation and restore orchestration remain separate.
+
+GitHub releases also provide standalone Windows and glibc Linux executables
+for x64/ARM64 with SHA256SUMS. They embed a Bun runtime and one SDK/evaluator
+instance, resolve `@adrifer/winix` imports without node_modules, support local
+TypeScript/JavaScript and Node builtins, and disable automatic npm installation.
+Their version selects the SDK regardless of config package manifests. Editor
+type dependencies and arbitrary third-party imports are not embedded.
+`bootstrap-windows.ps1 -Standalone` skips Node/npm checks/installations, without
+changing native Git/PowerShell/WinGet/DSC requirements or activating any host.
+Standalone WSL setup downloads its exact release's Linux executable, verifies
+the build-embedded SHA256, then launches a private installed copy through a
+wrapper using pinned, GC-rooted Nix libc/compiler libraries. No global Linux
+linker, host configuration or npm environment is changed. Preparation and full
+generation execute that binary as the appropriate unprivileged user; only
+activation/ownership operations run as root. The npm path remains supported.
+Standalone setup requires committed flake.lock, not npm manifests/locks.
+Linux binaries need a compatible glibc/libstdc++ environment for direct use;
+automatic WSL setup supplies it on NixOS. Binaries are unsigned. Fresh-image
+activation and ARM64 execution remain unverified.
 
 `windows.startup.command(name, spec)` declares a named, current-user Startup
 shortcut (`<name>.lnk`), backed by the same PowerShell 7 resource. It registers

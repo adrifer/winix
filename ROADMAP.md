@@ -15,6 +15,12 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Standalone release executables** — embedded Bun runtime/shared SDK for
+  Windows and glibc Linux x64/ARM64, SHA256 release manifest, registry-free
+  configuration loading, optional Node-free Windows prerequisite checks, and
+  matching checksum-verified Linux executables for first-run WSL setup.
+  Windows/Linux x64 smoke checks gate publication. ARM64 execution and
+  fresh-image activation remain unverified; binaries are not yet code-signed.
 - **WSL first-run Linux setup** — opt-in distro repository/config/host linkage,
   commit pins, declarative account bootstrap, unprivileged repository/npm/config
   preparation, and staged full Linux activation. Failures resume without resetting

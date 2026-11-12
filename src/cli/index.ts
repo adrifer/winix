@@ -4,7 +4,7 @@
 import { parseArgs } from "node:util";
 import { apply } from "./commands/apply.ts";
 import { check } from "./commands/check.ts";
-import { init } from "./commands/init.ts";
+import { init, resolveWinixVersionRange } from "./commands/init.ts";
 import { installSkill } from "./commands/install.ts";
 import { inspect } from "./commands/inspect.ts";
 import { switchCommand } from "./commands/switch.ts";
@@ -25,10 +25,16 @@ const { positionals, values } = parseArgs({
     skill: { type: "boolean", default: false },
     "escape-report": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
+    version: { type: "boolean", short: "v", default: false },
   },
 });
 
 const command = positionals[0];
+
+if (values.version) {
+  console.log((await resolveWinixVersionRange()).replace(/^\^/, ""));
+  process.exit(0);
+}
 
 if (values.skill) {
   if (command) {
@@ -64,6 +70,7 @@ Options:
   --force         Overwrite files (init, install skill)
   --skill         Print version-matched agent instructions
   -h, --help      Show this help
+  -v, --version   Show this binary/package version
 
 Examples:
   winix init

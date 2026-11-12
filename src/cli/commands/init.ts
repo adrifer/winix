@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { installSkill } from "./install.ts";
+import { standaloneRuntime } from "../../runtime.ts";
 
 interface InitOptions {
   force: boolean;
@@ -20,7 +21,7 @@ export async function init(cwd: string, opts: InitOptions): Promise<void> {
   console.log("✓ Initialized Winix project");
   console.log("");
   console.log("Next steps:");
-  console.log("  npm install");
+  console.log(standaloneRuntime() ? "  winix check" : "  npm install");
 }
 
 async function writeIfAllowed(path: string, content: string, force: boolean): Promise<void> {
@@ -33,6 +34,8 @@ async function writeIfAllowed(path: string, content: string, force: boolean): Pr
 const FALLBACK_VERSION_RANGE = "^0.1.0";
 
 export async function resolveWinixVersionRange(): Promise<string> {
+  const standalone = standaloneRuntime();
+  if (standalone) return `^${standalone.version}`;
   try {
     const here = currentDir();
     // Compiled layout: dist/cli/commands/init.js → ../../../package.json

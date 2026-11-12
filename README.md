@@ -94,6 +94,58 @@ For what it's worth: Winix today works just as well on macOS and native NixOS as
 
 ## Install and create a config
 
+### Standalone executable (no Node.js or npm)
+
+[GitHub releases](https://github.com/adrifer/winix/releases) include
+`winix-windows-x64.exe`, `winix-windows-arm64.exe`, `winix-linux-x64`,
+`winix-linux-arm64`, and `SHA256SUMS`. Choose a versioned release and the native
+architecture, compare its SHA256 with `SHA256SUMS`, and keep the executable
+outside the config checkout. Windows binaries are not yet code-signed:
+checksums detect corruption, not publisher identity. Respect organizational
+execution/network policies; do not disable TLS verification.
+Redistribution notices and runtime source/rebuild references accompany the
+assets as `LICENSE`, `NOTICE.txt`, and `BUN-LICENSE.md`.
+
+On Windows, rename the verified executable to `winix.exe` and either add its
+directory to PATH or invoke it by full path:
+
+```powershell
+& "$HOME\winix-bootstrap\winix.exe" --version
+cd "$HOME\dotfiles\winix"
+& "$HOME\winix-bootstrap\winix.exe" check
+& "$HOME\winix-bootstrap\winix.exe" switch --host windows-devbox --dry
+```
+
+No `npm ci` is needed for normal configs. The executable contains its runtime
+and SDK, supports local TypeScript/JavaScript imports and Node builtins, and
+shares SDK evaluation context across all config files. Its version, not an
+installed npm SDK or the config's package lock, determines the SDK used.
+`winix init` works without npm too; its package/TypeScript files are optional
+editor/development tooling. Type-only `@adrifer/winix/types` imports work;
+runtime SDK imports must use `@adrifer/winix`. Other npm dependencies must
+already be installed: Winix never downloads them automatically.
+
+Native prerequisites remain Git, PowerShell 7, WinGet, DSC and the required DSC
+resources on Windows, or Nix/activation tools for Linux targets. Use
+`bootstrap-windows.ps1 -Standalone -Check` to inspect native prerequisites or
+`-Standalone` to install missing ones; this mode never installs/checks Node/npm.
+Standalone Windows WSL setup downloads the matching release's Linux executable,
+verifies a checksum embedded in the Windows binary, and prepares its NixOS
+runtime linker with pinned Nix dependencies. Account/config generation remains
+unprivileged and does not run npm. Keep `flake.lock` committed; package manifests
+are required only by the npm-based setup path. These downloads still need
+approved access to GitHub and Nix caches.
+
+Linux release binaries target glibc systems (with libstdc++); use `chmod +x`
+before running. NixOS does not provide an FHS runtime linker by default:
+automatic WSL setup handles this explicitly, while direct manual use needs a
+compatible linker/library environment. Windows binaries used for WSL setup
+must come from a complete official release; developer single-target builds
+lack the Linux checksums. ARM64 assets are cross-compiled; fresh-machine
+activation and ARM64 execution are not yet verified.
+
+### npm installation (optional)
+
 ```bash
 mkdir my-winix-config
 cd my-winix-config
@@ -101,7 +153,9 @@ npx @adrifer/winix@latest init
 npm install
 ```
 
-Winix expects Node.js with native TypeScript stripping support for `winix.config.ts` files. Node 22+ is recommended.
+The npm CLI requires Node.js with native TypeScript transformation and the
+`--experimental-transform-types` flag (Node 22.13+ or 24; use Node 24).
+The standalone executable has no installed Node version requirement.
 
 If you prefer to set up files yourself instead of using `init`, add the package to your own `package.json`:
 
@@ -578,9 +632,10 @@ windows.wsl.distro("NixOS", {
 });
 ```
 
-This explicitly trusts the repository, its npm lifecycle scripts, and its Winix
-configuration. Use a committed `package.json`, `package-lock.json`, and `flake.lock`
-in `configDirectory`, with a released Winix dependency supporting this API.
+This explicitly trusts the repository and its Winix configuration (including
+npm lifecycle scripts when using the npm SDK). Commit `flake.lock` in
+`configDirectory`; the npm path additionally requires `package.json`,
+`package-lock.json`, and a released Winix dependency supporting this API.
 Only HTTPS Git URLs without embedded credentials are accepted. Private repository
 and dependency authentication must already be available inside Linux; credentials
 are never provisioned by this helper.
@@ -598,7 +653,7 @@ an update without names includes them too. Dry generation never clones or execut
 repository code. Pins affect **first-run setup only**, not subsequent dotfiles
 updates; an interrupted setup retains its original commit.
 
-During activation, Git/npm/config preparation runs as the image's initial `nixos`
+During activation, Git/config preparation (and npm on the npm path) runs as the image's initial `nixos`
 user. A root coordinator first activates only the selected declarative account
 and required WSL/shell settings, moves checkout ownership to it, then generates
 the full host as that user and activates it as root. No password is invented and
@@ -639,6 +694,9 @@ Store policy. Run from a normal Windows account, not WSL or another admin accoun
 ```powershell
 # Read-only: reports missing/old prerequisites and exits unsuccessfully if not ready.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1 -Check
+# Executable workflow: omit all Node/npm checks and installations.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1 -Standalone -Check
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1 -Standalone
 # Review and confirm installation/upgrade of missing or outdated prerequisites.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1
 # Choose NVM for Windows rather than standalone Node on NVM-based setups.

@@ -1220,11 +1220,14 @@ same workspace. Without distro `setup`, activate them separately: run Windows
 With `setup: { repository, ref?, configDirectory, host, user?, checkout? }`,
 Windows activation coordinates that first-run bridge. The Linux host remains the
 source of account settings; user selects a declared normal account and checkout
-must remain inside its declared home. HTTPS repositories and their npm/config
-code are explicitly trusted, with package-lock.json/flake.lock committed.
+must remain inside its declared home. HTTPS repositories/config code are
+explicitly trusted, with flake.lock committed. The npm path additionally trusts
+lifecycle scripts and requires package.json/package-lock.json. Official standalone
+Windows releases use checksum-verified matching Linux executables and private,
+pinned Nix runtime libraries, without Node/npm or npm registry access.
 Repository commits use optional `wslRepositories` lock entries and
 `winix update --windows wsl-setup`; refreshed pins never update completed setups.
-Git/npm/config preparation runs unprivileged, followed by root account-only
+Git/config preparation (and npm when used) runs unprivileged, followed by root account-only
 activation, target-user generation, and root full activation. Resumable root-owned
 state never resets dirty repos or overwrites occupied checkouts; abrupt stale
 run.lock files require manual inspection. Authentication, external account
