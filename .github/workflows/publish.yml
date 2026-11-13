@@ -133,10 +133,12 @@ jobs:
           path: artifacts
 
       - name: Pack
-        run: npm pack --dry-run
+        run: |
+          npm pack
+          sha256sum "adrifer-winix-${{ steps.release.outputs.version }}.tgz" > "adrifer-winix-${{ steps.release.outputs.version }}.tgz.sha256"
 
       - name: Publish to npm
-        run: npm publish --access public --tag "${{ steps.release.outputs.npm_tag }}"
+        run: npm publish "./adrifer-winix-${{ steps.release.outputs.version }}.tgz" --access public --tag "${{ steps.release.outputs.npm_tag }}"
 
       - name: Create GitHub release
         env:
@@ -155,11 +157,16 @@ jobs:
 
           (cd scripts && sha256sum bootstrap-windows.ps1 > bootstrap-windows.ps1.sha256)
           (cd scripts && sha256sum bootstrap-nixos.sh > bootstrap-nixos.sh.sha256)
+          (cd scripts && sha256sum bootstrap-linux.sh > bootstrap-linux.sh.sha256)
           gh release upload "$GITHUB_REF_NAME" \
+            "adrifer-winix-${{ steps.release.outputs.version }}.tgz" \
+            "adrifer-winix-${{ steps.release.outputs.version }}.tgz.sha256" \
             scripts/bootstrap-windows.ps1 \
             scripts/bootstrap-windows.ps1.sha256 \
             scripts/bootstrap-nixos.sh \
             scripts/bootstrap-nixos.sh.sha256 \
+            scripts/bootstrap-linux.sh \
+            scripts/bootstrap-linux.sh.sha256 \
             artifacts/winix-windows-x64.exe \
             artifacts/winix-windows-arm64.exe \
             artifacts/winix-linux-x64 \

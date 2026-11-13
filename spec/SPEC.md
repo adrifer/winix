@@ -838,13 +838,13 @@ Node, or Winix. `-Check` only inspects versions and capabilities, failing when
 not ready. Install mode confirms the prerequisite plan (`-Yes` for automation),
 installs/upgrades missing/outdated Git, Node LTS, PowerShell 7, and DSC via exact
 WinGet IDs/source, enables WinGet configuration support, then verifies npm,
-Node TypeScript support, PSResourceGet/PSGallery, and required DSC resources.
+Node TypeScript support, PSResourceGet commands, and required DSC resources.
 `-UseNvm` selects NVM for Windows instead of standalone Node, with manager
 conflict protection. Existing supported versions are kept. No host activation,
 WSL provisioning, persistent execution-policy changes, or automatic reboot is
 performed. Prerequisites remain outside host lock/ownership tracking. Missing
 WinGet requires explicit App Installer installation/registration; config/Winix
-installation and restore orchestration remain separate.
+installation and restore orchestration are opt-in through repository mode below.
 
 GitHub releases also provide standalone Windows and glibc Linux executables
 for x64/ARM64 with SHA256SUMS. They embed a Bun runtime and one SDK/evaluator
@@ -963,6 +963,51 @@ declare permanent prerequisites in their configs. Stable/preview GitHub
 releases include the script and SHA256 checksum, as with Windows bootstrap.
 
 ### Commands
+
+#### Repository bootstrap and `winix run`
+
+`bootstrap-windows.ps1 -Repository <https-url> -Ref <ref> -Destination <path>
+-ConfigDirectory <relative-path> -HostName <host>` extends the prerequisite-only
+script with explicit repository orchestration. `bootstrap-linux.sh` provides
+the corresponding `--repository`, `--ref`, `--destination`, `--config-directory`,
+and `--host` options on glibc Linux x64/ARM64. Linux uses existing Nix for
+temporary Git/Python tooling or requires those tools already installed;
+it never silently installs Nix or converts a distribution into NixOS.
+NixOS binaries use private pinned libc/compiler dependencies.
+
+Repositories must be credential-free HTTPS URLs. A new clone retains normal Git
+history; an existing checkout must be clean, have the exact expected origin,
+and already match its requested local ref. No automatic pull/reset/cleanup or
+branch switching occurs for existing repositories. Directory links and config
+path escapes are refused. Host selection is not a machine rename.
+
+The entrypoints read package.json without importing config. The SDK dependency
+must be an exact release or matching official release SDK tarball URL; this is
+the sole runtime pin. Executables are architecture-specific, SHA256-verified
+against the versioned release manifest before execution. Windows additionally
+verifies that release's prerequisite-only script. TLS and execution policies
+remain enforced; release hashes are not publisher signatures.
+
+`-DryRun`/`--dry-run` makes no changes, downloads, clone or evaluation.
+`-PrepareOnly`/`--prepare-only` prepares prerequisites/runtime, then delegates to
+`winix bootstrap --host <host> --prepare-only` for check and activation preview.
+Without prepare-only, bootstrap confirms activation after preview. Trust consent
+precedes all config evaluation, including check. `-Yes`/`--yes` explicitly accepts
+these operations and switch's managed removals. Failures propagate; no automatic
+restart, WSL shutdown, npm installation or global Winix installation occurs.
+
+Bootstrap creates an ignored checkout launcher, `.winix/bin/winix.ps1` or
+`.winix/bin/winix`. `winix run <command> [options]` rereads the manifest and prefers
+the installed matching node_modules SDK's CLI under supported Node, otherwise
+uses the matching standalone executable. A stale/corrupt local SDK fails instead
+of falling back silently; a stale standalone requires bootstrap rerun. The user
+opts into npm with `npm ci` and their approved source. Local npm scripts remain
+the standard npm workflow. New init manifests use exact version pins.
+
+Fresh WSL setup branch refs (including resolved default HEAD) fetch full remote
+branch history and create upstream-tracking local branches at the locked
+activation commit, not the current upstream tip. Tags/commit pins remain detached.
+Completed setups are never retroactively migrated, pulled or reapplied.
 
 #### `winix init`
 

@@ -100,7 +100,8 @@ For what it's worth: Winix today works just as well on macOS and native NixOS as
 `winix-windows-x64.exe`, `winix-windows-arm64.exe`, `winix-linux-x64`,
 `winix-linux-arm64`, and `SHA256SUMS`. Choose a versioned release and the native
 architecture, compare its SHA256 with `SHA256SUMS`, and keep the executable
-outside the config checkout. Windows binaries are not yet code-signed:
+outside tracked files (repository bootstrap uses the ignored `.winix` directory).
+Windows binaries are not yet code-signed:
 checksums detect corruption, not publisher identity. Respect organizational
 execution/network policies; do not disable TLS verification.
 Redistribution notices and runtime source/rebuild references accompany the
@@ -143,6 +144,87 @@ compatible linker/library environment. Windows binaries used for WSL setup
 must come from a complete official release; developer single-target builds
 lack the Linux checksums. ARM64 assets are cross-compiled; fresh-machine
 activation and ARM64 execution are not yet verified.
+
+### Bootstrap an existing repository
+
+The Winix-owned `bootstrap-windows.ps1` and `bootstrap-linux.sh` release assets
+prepare a trusted config repository without Node/npm. Download the script and
+its `.sha256` from a **versioned release supporting repository bootstrap**,
+verify the checksum, and review the script before running it. Do not pipe
+unreviewed internet code into a shell. Checksums share the release's trust
+boundary; they are not signatures.
+
+```powershell
+.\bootstrap-windows.ps1 -Repository https://github.com/example/dotfiles.git `
+  -Ref main -Destination "$HOME\dotfiles" -ConfigDirectory winix `
+  -HostName windows-devbox -PrepareOnly
+```
+
+```bash
+bash bootstrap-linux.sh --repository https://github.com/example/dotfiles.git \
+  --ref main --destination "$HOME/dotfiles" --config-directory winix \
+  --host linux-desktop --prepare-only
+```
+
+Windows needs App Installer/WinGet initially. It ensures Git, makes a regular
+clone, reads `config-directory/package.json` **without importing the config**,
+then verifies and installs that exact release's native executable and
+prerequisite-only script. Native PowerShell/DSC prerequisites are installed
+without Node or PSGallery registration: feeds belong to the selected host.
+Linux uses existing Nix to obtain temporary Git/Python tools, or requires
+Git and Python 3 installed through your approved package manager. It does not
+install Nix or turn another distribution into NixOS. Generic glibc Linux needs
+libstdc++; NixOS gets a private, GC-rooted pinned libc/compiler launcher.
+Real activation still requires the target's existing Nix/activation tools.
+
+Pin `@adrifer/winix` in dependencies/devDependencies to an exact release version
+or its matching official GitHub release SDK tarball URL. Floating ranges,
+local SDK links, third-party URLs, and mismatched asset versions are refused.
+`winix init` now generates an exact pin. No independent runtime version is
+stored in dotfiles, and no global Winix/npm installation is performed.
+
+`-DryRun` / `--dry-run` makes **no changes**, including no clone, tool downloads,
+prerequisite installation, or config evaluation. `-PrepareOnly` / `--prepare-only`
+allows those preparation steps, then runs `check` and `switch --dry` but stops
+before activation. Config evaluation can itself run arbitrary code, so it
+requires consent **before** `check`. Omit prepare-only to review the preview
+and confirm activation separately. `-Yes` / `--yes` explicitly accepts trust,
+prerequisite changes, activation (unless prepare-only), and managed removals.
+Host selection does not rename the machine. Reboot/WSL shutdown are manual.
+
+Existing checkouts must have the expected origin, local ref/HEAD and clean
+working tree. Bootstrap never pulls, resets, stashes, changes branches in an
+existing checkout, or overwrites an unrelated directory; links/path escapes
+are rejected. Rerun after resolving a reported prerequisite/reboot boundary.
+Updating an existing checkout is an explicit Git operation, not a bootstrap side effect.
+
+For ongoing use, bootstrap writes `.winix/bin/winix.ps1` (Windows) or
+`.winix/bin/winix` (Linux). These call `winix run <args>` from the config directory:
+
+```powershell
+.\.winix\bin\winix.ps1 check
+.\.winix\bin\winix.ps1 switch --host windows-devbox
+```
+
+```bash
+./.winix/bin/winix check
+./.winix/bin/winix switch --host linux-desktop
+```
+
+The launcher rereads the manifest on every invocation. If an optional
+`node_modules/@adrifer/winix` is installed, its version must match the pin and
+the launcher uses its own CLI/SDK under Node >=22.13. Install dependencies
+explicitly with `npm ci` using an approved npm source; bootstrap never does it.
+Existing `npm run` scripts also use that local CLI, without a global installation.
+Without the npm SDK, the verified standalone executable must match the pin;
+after changing the pin, rerun bootstrap to download the matching executable.
+A stale/corrupt local installation is an error, never a silent standalone fallback.
+
+Fresh Windows-driven WSL setups using a branch now fetch full history and
+create a local tracking branch **at the locked first-run commit**, even if
+upstream has advanced. `HEAD` resolves the default branch; commit/tag refs stay
+detached intentionally. Completed setups and their existing detached checkouts
+are not migrated or updated automatically.
 
 ### npm installation (optional)
 

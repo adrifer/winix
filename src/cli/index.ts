@@ -10,7 +10,14 @@ import { inspect } from "./commands/inspect.ts";
 import { switchCommand } from "./commands/switch.ts";
 import { update } from "./commands/update.ts";
 import { renderSkill } from "../skill.ts";
+import { bootstrapCheckout, runCheckout } from "./commands/bootstrap.ts";
 import { forgetWindowsResource, windowsStatePath, type ManagedResource } from "./windows-state.ts";
+
+if (process.argv[2] === "run") {
+  try { await runCheckout(process.cwd(), process.argv.slice(3)); }
+  catch (error) { console.error(`Error: ${(error as Error).message}`); process.exit(1); }
+  process.exit(0);
+}
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -26,6 +33,7 @@ const { positionals, values } = parseArgs({
     "escape-report": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
     version: { type: "boolean", short: "v", default: false },
+    "prepare-only": { type: "boolean", default: false },
   },
 });
 
@@ -50,6 +58,8 @@ if (values.help || !command) {
 winix - TypeScript-first system configuration
 
 Commands:
+  bootstrap    Validate/preview a trusted checkout, then confirm activation
+  run <args>   Prefer checkout-local SDK, enforcing the checkout's exact Winix pin
   init         Scaffold a Winix project
   install skill Install the agent skill wrapper
   apply        Generate backend output in .winix/out/
@@ -61,6 +71,7 @@ Commands:
 
 Options:
   --host <name>   Target a specific host
+  --prepare-only Stop bootstrap after validation/preview; no activation
   --dry           Preview generation (apply) or activation and managed cleanup (switch)
   -y, --yes       Confirm managed Windows removals without prompting (switch)
   --diff          Show diff against current output (apply)
@@ -88,12 +99,23 @@ Examples:
 }
 
 const cwd = process.cwd();
-if (values.yes && command !== "switch") {
-  console.error("--yes is only supported by winix switch.");
+if (values["prepare-only"] && command !== "bootstrap") {
+  console.error("--prepare-only is only supported by winix bootstrap.");
+  process.exit(2);
+}
+if (values.yes && command !== "switch" && command !== "bootstrap") {
+  console.error("--yes is only supported by winix switch or bootstrap.");
   process.exit(2);
 }
 
 switch (command) {
+  case "bootstrap":
+    try {
+      await bootstrapCheckout(cwd, {
+        host: values.host ?? "", yes: values.yes, prepareOnly: values["prepare-only"], dry: values.dry,
+      });
+    } catch (error) { console.error(`Error: ${(error as Error).message}`); process.exit(1); }
+    break;
   case "init":
     try {
       await init(cwd, { force: values.force as boolean });

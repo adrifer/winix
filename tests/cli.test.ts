@@ -223,7 +223,7 @@ describe("winix init", () => {
       ) as { dependencies?: Record<string, string> };
       const expected = await resolveWinixVersionRange();
       expect(expected).toMatch(/^\^\d+\.\d+\.\d+/);
-      expect(packageJson.dependencies?.["@adrifer/winix"]).toBe(expected);
+      expect(packageJson.dependencies?.["@adrifer/winix"]).toBe(expected.replace(/^\^/, ""));
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

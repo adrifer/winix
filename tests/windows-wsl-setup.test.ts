@@ -350,7 +350,11 @@ try {
       }
       if (command==='chown') return '';
       if (command==='git') {
-        assert.ok(['init','remote','status','rev-parse','fetch','checkout'].includes(args[0]), 'Unexpected Git mutation');
+        assert.ok(['init','remote','status','rev-parse','fetch','checkout','config','show-ref','check-ref-format','symbolic-ref','branch'].includes(args[0]), 'Unexpected Git mutation');
+        if(args[0]==='fetch') assert.ok(!args.some(arg=>arg.startsWith('--depth')), 'Checkout must retain normal Git history');
+        if(args[0]==='symbolic-ref') return checkoutCalls ? 'main' : '';
+        if(args[0]==='branch') assert.deepEqual(args,['branch','--set-upstream-to','origin/main','main']);
+        if(args[0]==='checkout') assert.deepEqual(args,['checkout','-B','main',request.revision]);
         if(args[0]==='init') {
           const target=args.at(-1);
           syncfs.mkdirSync(join(target,'.git'),{recursive:true});

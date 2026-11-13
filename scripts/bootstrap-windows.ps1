@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-Checks or installs the Windows prerequisites for Winix, without activating a host.
+Checks/installs Winix prerequisites, or prepares a trusted repository and confirms host activation.
 .PARAMETER Check
 Only inspect prerequisites. No installation or configuration enablement is performed.
 .PARAMETER Yes
@@ -10,13 +10,28 @@ Accept prerequisite installation and WinGet configuration enablement without pro
 Install/select Node LTS through NVM for Windows instead of standalone Node.js.
 .PARAMETER Standalone
 Check/install only native prerequisites for the Winix executable; Node.js/npm are not needed.
+.PARAMETER Repository
+Opt into HTTPS repository bootstrap. The checkout's exact SDK pin selects the executable.
+.PARAMETER HostName
+Declared Winix target for repository mode; does not rename Windows.
+.PARAMETER PrepareOnly
+Prepare prerequisites/runtime and validate/preview the repository without activating a host.
+.PARAMETER DryRun
+Describe repository bootstrap without downloads, installation, cloning or config evaluation.
 #>
 [CmdletBinding()]
 param(
     [switch]$Check,
     [switch]$Yes,
     [switch]$UseNvm,
-    [switch]$Standalone
+    [switch]$Standalone,
+    [string]$Repository,
+    [string]$Ref = 'main',
+    [string]$Destination = (Join-Path $HOME 'dotfiles'),
+    [string]$ConfigDirectory = 'winix',
+    [string]$HostName,
+    [switch]$PrepareOnly,
+    [switch]$DryRun
 )
 
 function Get-WinixBootstrapApplication {
@@ -110,7 +125,7 @@ function Test-WinixBootstrapCapabilities {
     $script = @'
 $ErrorActionPreference = 'Stop'
 Get-Command Find-PSResource, Install-PSResource -ErrorAction Stop | Out-Null
-Get-PSResourceRepository -Name PSGallery -ErrorAction Stop | Out-Null
+Get-Command Get-PSResourceRepository, Register-PSResourceRepository -ErrorAction Stop | Out-Null
 '@
     $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
     Invoke-WinixBootstrapNative $pwsh @('-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', $encoded) | Out-Null
@@ -128,7 +143,7 @@ Get-PSResourceRepository -Name PSGallery -ErrorAction Stop | Out-Null
         }
     }
     if (-not $Standalone) { Write-Host 'OK: npm and Node TypeScript support.' }
-    Write-Host 'OK: PSResourceGet/PSGallery and required DSC resources.'
+    Write-Host 'OK: PSResourceGet and required DSC resources (repository selection belongs to the host config).'
 }
 
 function Invoke-WinixWindowsBootstrap {
@@ -215,9 +230,174 @@ Then rerun this bootstrap. No prerequisites have been installed.
     Write-Host 'Open a new PowerShell 7 terminal before preparing the Winix/config checkout and running winix check or switch --dry.'
 }
 
+function Assert-WinixBootstrapDirectory {
+    param([string]$Path)
+    $current = [IO.Path]::GetFullPath($Path)
+    while ($current) {
+        if (Test-Path -LiteralPath $current) {
+            $item = Get-Item -LiteralPath $current -Force
+            if (-not $item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                throw "Unsafe bootstrap directory (not a directory or is a link): $current"
+            }
+        }
+        $parent = Split-Path $current -Parent
+        if ($parent -eq $current) { break }
+        $current = $parent
+    }
+}
+
+function Get-WinixCheckoutVersion {
+    param([string]$Directory)
+    $package = Get-Content -LiteralPath (Join-Path $Directory 'package.json') -Raw | ConvertFrom-Json
+    $spec = $package.dependencies.'@adrifer/winix'
+    if (-not $spec) { $spec = $package.devDependencies.'@adrifer/winix' }
+    if ($spec -isnot [string]) { throw 'Checkout must declare a string-valued exact @adrifer/winix dependency.' }
+    if ($spec -match '^\d+\.\d+\.\d+(?:-preview\.\d+)?$') { return $spec }
+    if ($spec -match '^https://github\.com/adrifer/winix/releases/download/v(\d+\.\d+\.\d+(?:-preview\.\d+)?)/adrifer-winix-\1\.tgz$') {
+        return $Matches[1]
+    }
+    throw 'Checkout must pin an exact @adrifer/winix version or matching official GitHub release SDK URL.'
+}
+
+function Invoke-WinixBootstrapHost {
+    param([string]$Binary, [string[]]$Arguments)
+    & $Binary @Arguments
+    if ($LASTEXITCODE -ne 0) { throw "Winix bootstrap failed (exit $LASTEXITCODE). Resolve the error and rerun; no checkout reset/reboot is performed." }
+}
+
+function Get-WinixBootstrapSha256 {
+    param([string]$Path)
+    $stream = [IO.File]::OpenRead($Path)
+    $algorithm = [Security.Cryptography.SHA256]::Create()
+    try { return [BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-', '') }
+    finally { $algorithm.Dispose(); $stream.Dispose() }
+}
+
+function Save-WinixVerifiedDownload {
+    param([string]$Url, [string]$ChecksumUrl, [string]$Asset, [string]$Destination)
+    if (Test-Path -LiteralPath $Destination) {
+        if ((Get-Item -LiteralPath $Destination -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            throw "Refusing linked download destination: $Destination"
+        }
+    }
+    $temporary = "$Destination.$([guid]::NewGuid().ToString('N')).download"
+    try {
+        $sums = (Invoke-WebRequest -UseBasicParsing -Uri $ChecksumUrl -TimeoutSec 90).Content
+        if ($sums -is [byte[]]) { $sums = [Text.Encoding]::UTF8.GetString($sums) }
+        $entries = @($sums -split '\r?\n' | Where-Object { $_ -match ('^[a-fA-F0-9]{64}\s+\*?' + [regex]::Escape($Asset) + '$') })
+        if ($entries.Count -ne 1) { throw "Release checksum missing or duplicated for $Asset" }
+        $expected = ($entries[0] -split '\s+')[0]
+        if ((Test-Path -LiteralPath $Destination) -and (Get-WinixBootstrapSha256 $Destination) -eq $expected) {
+            return
+        }
+        Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile $temporary -TimeoutSec 90
+        if ((Get-WinixBootstrapSha256 $temporary) -ne $expected) {
+            throw "Release checksum mismatch for $Asset; nothing was executed"
+        }
+        Move-Item -LiteralPath $temporary -Destination $Destination -Force
+    } finally {
+        if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
+    }
+}
+
+function Invoke-WinixRepositoryBootstrap {
+    param(
+        [string]$Repository, [string]$Ref = 'main', [string]$Destination = (Join-Path $HOME 'dotfiles'), [string]$ConfigDirectory = 'winix',
+        [string]$HostName, [switch]$Yes, [switch]$PrepareOnly, [switch]$DryRun
+    )
+    $ErrorActionPreference = 'Stop'
+    $uri = $null
+    if (-not [uri]::TryCreate($Repository, [UriKind]::Absolute, [ref]$uri) -or
+        $uri.Scheme -ne 'https' -or $uri.UserInfo -or $uri.Query -or $uri.Fragment) {
+        throw 'Repository must be HTTPS without credentials, query, or fragment.'
+    }
+    if (-not $HostName -or $HostName.StartsWith('-') -or $HostName -match '[\x00\r\n]') { throw '-HostName requires a declared host name, not a Windows rename.' }
+    if (-not $Ref -or $Ref.StartsWith('-') -or $Ref -match '[\x00\r\n]') { throw 'Invalid repository ref.' }
+    if ([IO.Path]::IsPathRooted($ConfigDirectory) -or $ConfigDirectory -match '(^|[\\/])\.\.([\\/]|$)' -or $ConfigDirectory -match '[:\x00\r\n]') {
+        throw 'ConfigDirectory must be inside the checkout.'
+    }
+    $Destination = [IO.Path]::GetFullPath($Destination)
+    Assert-WinixBootstrapDirectory $Destination
+    $config = [IO.Path]::GetFullPath((Join-Path $Destination $ConfigDirectory))
+    if ($DryRun) {
+        Write-Host "Would ensure Git, clone/validate $Repository ($Ref) at $Destination, read its Winix pin, verify downloads, prepare prerequisites and preview host $HostName. No changes or config evaluation performed."
+        return
+    }
+    Write-Host "Repository: $Repository ($Ref), checkout: $Destination, config: $config, host: $HostName"
+    if (-not $Yes) {
+        if ([Console]::IsInputRedirected) { throw 'Noninteractive repository bootstrap requires -Yes.' }
+        if ((Read-Host 'Trust this repository and allow bootstrap downloads/prerequisite installation? [y/N]').Trim() -notmatch '^(?i:y|yes)$') {
+            throw 'Bootstrap cancelled.'
+        }
+    }
+    Update-WinixBootstrapPath
+    $git = Get-WinixBootstrapApplication 'git.exe'
+    if (-not $git) {
+        $winget = Get-WinixBootstrapApplication 'winget.exe'
+        if (-not $winget) { throw 'WinGet is unavailable. Install App Installer, open a new terminal, and rerun.' }
+        Invoke-WinixBootstrapNative $winget @('install', '--id', 'Git.Git', '--exact', '--source', 'winget',
+            '--silent', '--accept-package-agreements', '--accept-source-agreements', '--disable-interactivity') | ForEach-Object { Write-Host $_ }
+        Update-WinixBootstrapPath
+        $git = Get-WinixBootstrapApplication 'git.exe'
+        if (-not $git) { throw 'Git is not ready. Open a new terminal or restart if requested, then rerun the same bootstrap.' }
+    }
+    if (-not (Test-Path -LiteralPath $Destination)) {
+        Invoke-WinixBootstrapNative $git @('clone', '--origin', 'origin', '--', $Repository, $Destination) | ForEach-Object { Write-Host $_ }
+        # A normal clone retains history; branch selection never advances on a later bootstrap.
+        if ($Ref -ne 'main' -or (Invoke-WinixBootstrapNative $git @('-C', $Destination, 'branch', '--show-current')) -ne 'main') {
+            Invoke-WinixBootstrapNative $git @('-C', $Destination, 'checkout', $Ref) | ForEach-Object { Write-Host $_ }
+        }
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $Destination '.git') -PathType Container)) { throw 'Existing destination is not a regular Git checkout; refusing adoption.' }
+    Assert-WinixBootstrapDirectory (Join-Path $Destination '.git')
+    if (((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'remote', 'get-url', 'origin')) -join '').Trim() -ne $Repository) {
+        throw 'Existing checkout has a different origin; refusing to change it.'
+    }
+    if ((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'status', '--porcelain', '--untracked-files=normal'))) {
+        throw 'Checkout has local changes. Commit/stash them explicitly; bootstrap never resets or cleans files.'
+    }
+    $head = ((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'rev-parse', 'HEAD')) -join '').Trim()
+    $wanted = ((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'rev-parse', '--verify', "$Ref^{commit}")) -join '').Trim()
+    if ($head -ne $wanted) { throw 'Existing checkout is not at the requested local ref; switch it explicitly. Bootstrap never pulls or resets.' }
+    Assert-WinixBootstrapDirectory $config
+    $version = Get-WinixCheckoutVersion $config
+    $architecture = [Environment]::GetEnvironmentVariable('PROCESSOR_ARCHITEW6432')
+    if (-not $architecture) { $architecture = $env:PROCESSOR_ARCHITECTURE }
+    switch ($architecture.ToUpperInvariant()) {
+        'AMD64' { $asset = 'winix-windows-x64.exe' }
+        'ARM64' { $asset = 'winix-windows-arm64.exe' }
+        default { throw "Unsupported Windows architecture: $architecture" }
+    }
+    $runtime = Join-Path $config ".winix\runtime\$version"
+    Assert-WinixBootstrapDirectory $runtime
+    New-Item -ItemType Directory -Path $runtime -Force | Out-Null
+    $release = "https://github.com/adrifer/winix/releases/download/v$version"
+    $binary = Join-Path $runtime 'winix.exe'
+    Save-WinixVerifiedDownload "$release/$asset" "$release/SHA256SUMS" $asset $binary
+    $prerequisites = Join-Path $runtime 'bootstrap-windows.ps1'
+    Save-WinixVerifiedDownload "$release/bootstrap-windows.ps1" "$release/bootstrap-windows.ps1.sha256" 'bootstrap-windows.ps1' $prerequisites
+    if (((Invoke-WinixBootstrapNative $binary @('--version')) -join '').Trim() -ne $version) { throw 'Downloaded executable version does not match the checkout.' }
+    & $prerequisites -Standalone -Yes
+    if (-not $?) { throw 'Prerequisites failed; resolve the error/reboot manually, then rerun the same bootstrap.' }
+    $arguments = @('bootstrap', '--host', $HostName)
+    if ($PrepareOnly) { $arguments += '--prepare-only' }
+    if ($Yes) { $arguments += '--yes' }
+    Push-Location -LiteralPath $config
+    try { Invoke-WinixBootstrapHost $binary $arguments }
+    finally { Pop-Location }
+}
+
 if ($MyInvocation.InvocationName -ne '.') {
     try {
-        Invoke-WinixWindowsBootstrap -Check:$Check -Yes:$Yes -UseNvm:$UseNvm -Standalone:$Standalone
+        if ($Repository) {
+            if ($Check -or $UseNvm) { throw 'Repository mode cannot be combined with -Check or -UseNvm; it always uses standalone prerequisites.' }
+            Invoke-WinixRepositoryBootstrap -Repository $Repository -Ref $Ref -Destination $Destination `
+                -ConfigDirectory $ConfigDirectory -HostName $HostName -Yes:$Yes -PrepareOnly:$PrepareOnly -DryRun:$DryRun
+        } elseif ($DryRun -or $PrepareOnly -or $HostName) {
+            throw '-DryRun, -PrepareOnly and -HostName require -Repository. Use -Check for prerequisite-only inspection.'
+        } else {
+            Invoke-WinixWindowsBootstrap -Check:$Check -Yes:$Yes -UseNvm:$UseNvm -Standalone:$Standalone
+        }
     } catch {
         Write-Error $_ -ErrorAction Continue
         exit 1

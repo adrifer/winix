@@ -12,7 +12,7 @@ interface InitOptions {
 export async function init(cwd: string, opts: InitOptions): Promise<void> {
   await mkdir(cwd, { recursive: true });
   const versionRange = await resolveWinixVersionRange();
-  const packageJson = renderPackageJson(versionRange);
+  const packageJson = renderPackageJson(versionRange.replace(/^\^/, ""));
   await writeIfAllowed(join(cwd, "winix.config.ts"), CONFIG, opts.force);
   await writeIfAllowed(join(cwd, "tsconfig.json"), TSCONFIG, opts.force);
   await writeIfAllowed(join(cwd, "package.json"), packageJson, opts.force);

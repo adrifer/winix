@@ -347,6 +347,9 @@ Resources return handles that can be passed through \`dependsOn\`.
   or occupied checkouts/changed settings are refused, never reset or adopted.
   State lives at /var/lib/winix/wsl-setup. Inspect stale run.lock and its PID
   before manual recovery; never remove a live coordinator's lock.
+  Fresh branch-based clones retain full history and an upstream-tracking branch
+  at the locked commit, even if upstream is newer. Tags/commits stay detached.
+  Completed checkouts are never switched or migrated automatically.
   No shutdown/reboot is automatic. Fresh-image activation remains unverified.
   Omit setup to retain separate manual Linux activation.
 - \`windows.raw()\` runs a command on every apply. It is not idempotent, so use
@@ -397,9 +400,33 @@ hashes; custom single-target builds cannot provision WSL. Linux assets use glibc
 automatic WSL setup prepares NixOS's linker explicitly. No ARM64 execution or
 fresh-image activation is claimed.
 \`-UseNvm\` chooses NVM for Windows instead of standalone Node; \`-Yes\` accepts
-bootstrap changes. It never installs Winix globally, activates a host, provisions
+bootstrap changes. Prerequisite-only mode never installs Winix globally, activates a host, provisions
 WSL, reboots, or changes execution policy persistently. Prepare the config and
 compatible SDK separately, then review \`switch --dry\` before activation.
+
+Repository mode adds \`-Repository HTTPS_URL -Ref main -Destination PATH
+-ConfigDirectory winix -HostName HOST\`. Linux's \`bootstrap-linux.sh\` uses
+\`--repository\`, \`--ref\`, \`--destination\`, \`--config-directory\`, \`--host\`.
+It uses existing Nix for temporary Git/Python tools, or requires installed
+Git/Python; it never installs Nix or converts other Linux distributions.
+Both clone or validate a clean existing checkout without pulling/resetting,
+read its exact SDK dependency (version or official release SDK tarball URL),
+and verify matching release executables before running them. Windows additionally
+verifies that release's prerequisite-only script. Review scripts and release
+checksums first; hashes are not signatures. No Node/npm installation is automatic.
+\`-DryRun\`/\`--dry-run\` performs no changes/evaluation; \`-PrepareOnly\`/
+\`--prepare-only\` allows setup plus check/switch preview but no activation.
+Trust confirmation occurs before config evaluation. Omit prepare-only to
+confirm activation separately; \`-Yes\`/\`--yes\` accepts trust/activation/removals.
+Do not run real bootstrap/activation as a development check on a shared machine.
+
+\`winix bootstrap --host HOST\` performs the checkout validation/preview/confirmation
+phase. Its generated \`.winix/bin/winix.ps1\` or \`.winix/bin/winix\` launcher invokes
+\`winix run <args>\`, rereading the exact pin on every invocation. A matching
+optional node_modules SDK uses its own CLI under Node >=22.13; stale/corrupt
+local packages fail, never silently fall back. Otherwise the standalone must
+match the manifest; rerun bootstrap after changing the pin. The user may run
+\`npm ci\` explicitly using an approved source, then use normal local npm scripts.
 
 On existing NixOS/NixOS-WSL, \`bash bootstrap-nixos.sh\` (from
 \`scripts/bootstrap-nixos.sh\` or a reviewed release asset) opens a temporary

@@ -45,6 +45,7 @@
   "files": [
     "scripts/bootstrap-windows.ps1",
     "scripts/bootstrap-nixos.sh",
+    "scripts/bootstrap-linux.sh",
     "dist",
     "types",
     "index.d.ts",

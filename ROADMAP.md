@@ -15,6 +15,14 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Repository bootstrap and local SDK handoff** — Windows and Linux entrypoints
+  clone/validate trusted HTTPS repositories, read exact SDK pins without evaluating
+  config, verify matching standalone downloads, and separate no-change dry runs,
+  preparation-only validation and confirmed activation. Node/npm stay optional;
+  checkout launchers prefer a matching installed SDK and reject stale versions.
+  Linux supports existing Nix tools and private NixOS runtime libraries. Fresh
+  branch-based WSL setups retain full history/upstream tracking while activating
+  only the locked commit; completed setups remain untouched.
 - **Standalone release executables** — embedded Bun runtime/shared SDK for
   Windows and glibc Linux x64/ARM64, SHA256 release manifest, registry-free
   configuration loading, optional Node-free Windows prerequisite checks, and

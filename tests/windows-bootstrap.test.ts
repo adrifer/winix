@@ -1,6 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 interface BootstrapResult {
   ok: boolean;
@@ -14,7 +16,7 @@ const shells = [
   "pwsh",
 ];
 
-function run(shell: string, setup: string, options = "-Yes"): BootstrapResult {
+function run(shell: string, setup: string, options = "-Yes", action = "Invoke-WinixWindowsBootstrap"): BootstrapResult {
   const harness = `
 $ErrorActionPreference = 'Stop'
 . '${script}'
@@ -72,7 +74,7 @@ function Invoke-WinixBootstrapNative {
 ${setup}
 $ok = $false
 $failure = $null
-try { Invoke-WinixWindowsBootstrap ${options}; $ok = $true }
+try { ${action} ${options}; $ok = $true }
 catch { $failure = $_.Exception.Message }
 'WINIX_RESULT:' + (@{ ok = $ok; error = $failure; calls = @($script:calls) } | ConvertTo-Json -Depth 8 -Compress)
 `;
@@ -86,6 +88,94 @@ catch { $failure = $_.Exception.Message }
 }
 
 describe.skipIf(process.platform !== "win32").each(shells)("Windows bootstrap using %s (mocked installations)", (shell) => {
+  it("prepares a pinned checkout without npm and preserves it on rerun", () => {
+    const root = mkdtempSync(join(tmpdir(), "winix-repository-"));
+    try {
+      mkdirSync(join(root, ".git"));
+      mkdirSync(join(root, "winix"));
+      writeFileSync(join(root, "winix", "package.json"), '{"dependencies":{"@adrifer/winix":"0.3.0-preview.1"}}');
+      const setup = `
+function Invoke-WinixBootstrapNative {
+    param($FilePath, [string[]]$Arguments)
+    $script:calls += @{ file=$FilePath; args=@($Arguments) }
+    if ($FilePath -eq 'git.exe') {
+        switch ($Arguments[2]) {
+            'remote' { return 'https://example.com/dotfiles.git' }
+            'status' { return '' }
+            'rev-parse' { return ('a' * 40) }
+            default { throw "Unexpected Git mutation: $Arguments" }
+        }
+    }
+    if ($Arguments[0] -eq '--version') { return '0.3.0-preview.1' }
+    throw "Unexpected command: $FilePath $Arguments"
+}
+function Save-WinixVerifiedDownload {
+    param($Url,$ChecksumUrl,$Asset,$Destination)
+    $script:calls += @{ file='download';args=@($Url,$ChecksumUrl,$Asset) }
+    if ($Asset -eq 'bootstrap-windows.ps1') {
+        Set-Content -LiteralPath $Destination -Value '# verified prerequisite-only script fixture'
+    } else { Set-Content -LiteralPath $Destination -Value 'verified executable fixture' }
+}
+function Invoke-WinixBootstrapHost {
+    param($Binary,[string[]]$Arguments)
+    $script:calls += @{file='bootstrap';args=@($Arguments)}
+}
+`;
+      for (let index = 0; index < 2; index++) {
+        const result = run(shell, setup,
+          `-Repository 'https://example.com/dotfiles.git' -Ref main -Destination '${root.replaceAll("'", "''")}' -HostName desktop -PrepareOnly -Yes`,
+          "Invoke-WinixRepositoryBootstrap");
+        expect(result.ok, result.error ?? "").toBe(true);
+        expect(result.calls.find((call) => call.file === "bootstrap")?.args).toEqual(["bootstrap", "--host", "desktop", "--prepare-only", "--yes"]);
+        expect(result.calls.some((call) => call.file === "download" && call.args[0].includes("/v0.3.0-preview.1/"))).toBe(true);
+        expect(result.calls.some((call) => call.file === "node.exe" || call.file === "npm.cmd")).toBe(false);
+      }
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it("does not discover/install tools or create files for repository dry-run", () => {
+    const root = join(tmpdir(), `winix-nonexistent-${process.pid}`);
+    const result = run(shell, "function Get-WinixBootstrapApplication { throw 'Tools must not run' }",
+      `-Repository 'https://example.com/dotfiles.git' -Ref main -Destination '${root.replaceAll("'", "''")}' -HostName desktop -DryRun`,
+      "Invoke-WinixRepositoryBootstrap");
+    expect(result.ok, result.error ?? "").toBe(true);
+    expect(result.calls).toEqual([]);
+  });
+
+  it("rejects checksum mismatches without replacing a previous executable or leaving temporary downloads", () => {
+    const root = mkdtempSync(join(tmpdir(), "winix-checksum-"));
+    const binary = join(root, "winix.exe");
+    writeFileSync(binary, "old verified executable");
+    try {
+      const result = run(shell, `
+function Invoke-WebRequest {
+    param($Uri,$OutFile,[switch]$UseBasicParsing,$TimeoutSec)
+    if ($OutFile) { [IO.File]::WriteAllText($OutFile,'corrupt download'); return }
+    return @{Content=[Text.Encoding]::UTF8.GetBytes(('a' * 64) + '  winix-windows-x64.exe')}
+}
+`, `-Url 'https://example.com/winix.exe' -ChecksumUrl 'https://example.com/SHA256SUMS' -Asset 'winix-windows-x64.exe' -Destination '${binary.replaceAll("'", "''")}'`,
+      "Save-WinixVerifiedDownload");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("checksum mismatch");
+      expect(readFileSync(binary, "utf8")).toBe("old verified executable");
+      expect(readdirSync(root)).toEqual(["winix.exe"]);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it("rejects untrusted repository shapes and config path escapes before tools run", () => {
+    for (const options of [
+      "-Repository 'http://example.com/dotfiles.git' -HostName desktop",
+      "-Repository 'https://user:secret@example.com/dotfiles.git' -HostName desktop",
+      "-Repository 'https://example.com/dotfiles.git' -HostName desktop -ConfigDirectory '..\\escape'",
+    ]) {
+      const result = run(shell, "function Get-WinixBootstrapApplication { throw 'Tools must not run' }",
+        options + " -Yes", "Invoke-WinixRepositoryBootstrap");
+      expect(result.ok).toBe(false);
+      expect(result.error).not.toContain("Tools must not run");
+      expect(result.calls).toEqual([]);
+    }
+  });
+
   it.each([7, 3010])("reports actual native command exit %i instead of continuing", (code) => {
     const child = Buffer.from(`exit ${code}`, "utf16le").toString("base64");
     const harness = `

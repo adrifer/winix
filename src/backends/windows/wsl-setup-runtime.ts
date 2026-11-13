@@ -13,6 +13,39 @@ interface State { version: 1; fingerprint: string; revision: string; step: "init
 interface CommandOptions { cwd?: string; user?: string; home?: string; env?: NodeJS.ProcessEnv }
 export type SetupRunner = (command: string, args: string[], options?: CommandOptions) => string;
 
+export function checkoutWslRevision(
+  git: (args: string[]) => string, ref: string, revision: string, existingHead?: string,
+): void {
+  git(["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"]);
+  git(["fetch", "--no-tags", "origin"]);
+  git(["fetch", "--no-tags", "origin", revision]);
+  let branch: string | undefined;
+  if (ref === "HEAD") {
+    const remoteHead = git(["ls-remote", "--symref", "origin", "HEAD"]);
+    branch = /^ref: refs\/heads\/([^\s]+)\s+HEAD$/m.exec(remoteHead)?.[1];
+    if (!branch) throw new Error("Cannot determine the repository default branch; use an explicit branch or commit");
+  } else if (!ref.startsWith("refs/tags/") && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(ref)) {
+    const candidate = ref.replace(/^refs\/heads\//, "");
+    let isBranch = true;
+    try { git(["show-ref", "--verify", "--quiet", `refs/remotes/origin/${candidate}`]); }
+    catch (error) { if ((error as { status?: number }).status !== 1) throw error; isBranch = false; }
+    if (isBranch) branch = candidate;
+  }
+  if (branch) {
+    git(["check-ref-format", "--branch", branch]);
+    let current: string | undefined;
+    try { current = git(["symbolic-ref", "--quiet", "--short", "HEAD"]); }
+    catch (error) { if ((error as { status?: number }).status !== 1) throw error; }
+    if (!existingHead || current !== branch) {
+      // An unborn HEAD may already name this branch, but still needs its locked tree.
+      git(["checkout", existingHead ? "-b" : "-B", branch, revision]);
+    }
+    git(["branch", "--set-upstream-to", `origin/${branch}`, branch]);
+  } else {
+    git(["checkout", "--detach", revision]);
+  }
+}
+
 function object(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
@@ -246,8 +279,7 @@ export async function runWslSetup(
       try { existingHead = git(["rev-parse", "--verify", "HEAD"]); }
       catch (error) { if ((error as { status?: number }).status !== 128) throw error; }
       if (existingHead && existingHead !== state.revision) throw new Error("Staging revision changed; refusing reset");
-      git(["fetch", "--depth=1", "--no-tags", "origin", state.revision]);
-      git(["checkout", "--detach", state.revision]);
+      checkoutWslRevision(git, request.setup.ref ?? "HEAD", state.revision, existingHead);
       verify(repository, "nixos", initial.home);
       const config = await fs.realpath(join(repository, request.setup.configDirectory));
       const inside = relative(await fs.realpath(repository), config);
