@@ -45,8 +45,11 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   dirty checkouts; completed setup is never reapplied. Existing distros, passwords,
   authentication and manual reboot/shutdown boundaries remain protected.
   Fresh-image end-to-end activation remains unverified.
-- **Windows-side WSL provisioning** — callable `windows.wsl()` combines feature
-  enablement with optional typed `.wslconfig`; separate distro declarations support
+- **Windows prerequisite inference** — symlinks automatically depend on explicitly
+  declared same-host Developer Mode settings, without enabling the policy implicitly.
+- **Windows-side WSL provisioning** — callable `windows.wsl()` combines the normally
+  locked `Microsoft.WSL` package and feature enablement with optional typed
+  `.wslconfig`; separate distro declarations support
   NixOS-WSL registration with verified, locked x64/ARM64 images. Reboot
   boundaries require manual restart and rerun; existing/unrecorded distros are
   protected, image updates never reinstall them, and removal never deletes data.

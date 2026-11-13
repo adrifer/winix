@@ -723,6 +723,10 @@ directory as `generateWindows(hosts, lock, configDir)`.
 In WSL, filesystem sources are translated with `wslpath` to Windows drive or
 WSL UNC paths; environment-variable sources remain activation-time expressions.
 Other non-Windows generators do not translate local paths.
+Symlink resources automatically depend on typed settings declaring
+`DeveloperMode: true` anywhere in the same host, preserving other explicit
+dependencies. This does not enable Developer Mode implicitly; without such a
+declaration, existing Developer Mode or elevation is required as before.
 
 `windows.powershell.module(name, { repository?, prerelease?, dependsOn? })` declares a
 current-user PowerShell 7 module without an inline version. The default repository
@@ -769,12 +773,15 @@ Windows-side WSL provisioning uses `windows.optionalFeature(name,
 { enabled?, dependsOn? })`, `windows.wsl({ config?, backup?, force?, dependsOn? })`, and
 `windows.wsl.distro(name, { source: "nixos-wsl", installLocation, default?,
 dependsOn?, setup? })`. The grouped enable resource handles WSL and Virtual Machine
-Platform together, with elevation and no automatic restart. Pending changes
+Platform together, with elevation and no automatic restart. `windows.wsl()` also
+declares the `Microsoft.WSL` runtime through normal package/lockfile handling;
+an explicit package declaration may customize its options. Pending changes
 stop dependent provisioning with instructions to restart Windows and rerun.
 Distro resources require enabled feature declarations and a `Microsoft.WSL`
 package in the same host; the features, optional configuration file, and package
 become automatic dependencies. The callable setup returns one handle covering
-the features and optional configuration, ordered after feature enablement.
+the runtime package, features and optional configuration, ordered after runtime
+installation and feature enablement.
 Omitting `config` leaves the existing `.wslconfig` untouched. Registration
 and default selection run for the current Windows account, never SYSTEM.
 

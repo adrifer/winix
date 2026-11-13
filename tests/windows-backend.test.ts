@@ -6,6 +6,7 @@ import {
   host,
   workspace,
   defineInputs,
+  feature,
   evaluate,
   platforms,
   windows,
@@ -18,6 +19,7 @@ import {
   writeWindowsLock,
   type WindowsLock,
 } from "../src/backends/windows/lockfile.ts";
+import type { WindowsOptions } from "../src/types/windows.ts";
 
 const inputs = defineInputs({
   nixpkgs: "github:NixOS/nixpkgs/nixos-unstable",
@@ -983,6 +985,65 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(doc).toContain(`name: "after settings"`);
     expect(doc).toContain(`dependsOn: ["Windows Settings"]`);
     expect(doc).toMatchSnapshot();
+  });
+
+  it.each([false, true])("orders symlinks after declared Developer Mode without duplicating explicit dependencies (%s)", (explicit) => {
+    const developerMode = windows.setting({ DeveloperMode: true });
+    const links = feature("links", ({ windows }) => {
+      const config = windows.file.text("%USERPROFILE%\\source", "config");
+      windows.file.symlink("%USERPROFILE%\\link", "%USERPROFILE%\\source", {
+        dependsOn: explicit ? [config, developerMode] : config,
+      });
+      windows.file.copy("%USERPROFILE%\\copy", "%USERPROFILE%\\source");
+      windows.file.remove("%USERPROFILE%\\old");
+      windows.env.set("EDITOR", "nvim");
+    });
+    const evaluated = evaluate(workspace({
+      inputs, hosts: [host("desktop", platforms.windows(), [links(), developerMode])],
+    }));
+    const doc = generateWindows(evaluated, windowsLock({})).hosts.desktop["configuration.winget"];
+    const blocks = doc.split("\n  - name: ");
+    const link = blocks.find((block) => block.startsWith('"Link file USERPROFILE link"\n'));
+    expect(link).toContain('dependsOn: ["Write file USERPROFILE source", "Windows Settings"]');
+    for (const name of ["Write file USERPROFILE source", "Copy file USERPROFILE copy", "Remove file USERPROFILE old", "Set EDITOR"]) {
+      expect(blocks.find((block) => block.startsWith(`"${name}"\n`))).not.toContain("    dependsOn:");
+    }
+    expect(generateWindows(evaluated, windowsLock({})).hosts.desktop["configuration.winget"]).toBe(doc);
+    const resource = (evaluated[0].windows as WindowsOptions).dsc?.find((resource) =>
+      resource.winix?.kind === "file" && resource.winix.action === "symlink");
+    expect(resource?.dependsOn).toHaveLength(explicit ? 2 : 1);
+  });
+
+  it.each([undefined, false])("does not enable Developer Mode or infer a dependency when its declaration is %s", (developerMode) => {
+    const evaluated = evaluate(workspace({
+      inputs,
+      hosts: [host("desktop", platforms.windows(), [
+        windows.file.symlink("%USERPROFILE%\\link", "%USERPROFILE%\\source"),
+        ...(developerMode === undefined ? [] : [windows.setting({ DeveloperMode: developerMode })]),
+      ])],
+    }));
+    const doc = generateWindows(evaluated, windowsLock({})).hosts.desktop["configuration.winget"];
+    const link = doc.split("\n  - name: ").find((block) => block.startsWith('"Link file USERPROFILE link"\n'));
+    expect(link).not.toContain("    dependsOn:");
+    expect(link).toContain("requires elevation or Developer Mode");
+    expect(doc).not.toContain("DeveloperMode: true");
+  });
+
+  it("keeps inferred Developer Mode dependencies within each host", () => {
+    const links = feature("links", ({ windows }) => {
+      windows.file.symlink("%USERPROFILE%\\link", "%USERPROFILE%\\source");
+    });
+    const evaluated = evaluate(workspace({
+      inputs,
+      hosts: [
+        host("enabled", platforms.windows(), [links(), windows.setting({ DeveloperMode: true })]),
+        host("external", platforms.windows(), [links()]),
+      ],
+    }));
+    const output = generateWindows(evaluated, windowsLock({}));
+    expect(output.hosts.enabled["configuration.winget"]).toContain('dependsOn: ["Windows Settings"]');
+    expect(output.hosts.external["configuration.winget"]).not.toContain("type: Microsoft.Windows.Settings/WindowsSettings");
+    expect(output.hosts.external["configuration.winget"]).not.toContain("    dependsOn:");
   });
 
   it("resolves Winix-managed env references in PATH entries", () => {

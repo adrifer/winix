@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import { evaluate, host, platforms, windows, workspace, type Fragment } from "../src/index.ts";
 import { generateWindows, validateWindowsWslResources } from "../src/backends/windows/index.ts";
 import {
-  emptyWindowsLock, readWindowsLock, resolveWindowsWslImages, serializeWindowsLock,
+  emptyWindowsLock, readWindowsLock, resolveMissingWindowsLockEntries, resolveWindowsWslImages, serializeWindowsLock,
   type WindowsLock, type WindowsLockWslImage,
 } from "../src/backends/windows/lockfile.ts";
 import { optionalFeatureProperties, wslDistroProperties, type WslArchitecture } from "../src/backends/windows/wsl.ts";
@@ -39,14 +39,17 @@ function distro(name = "NixOS", location = "D:/WSL/NixOS", isDefault = true) {
 
 describe("Windows WSL SDK and backend", () => {
   it("returns a handle for the complete setup and supports returned or effect-only declarations", () => {
-    const prerequisite = windows.package({ id: "Microsoft.WSL", version: "2.6.1" });
+    const prerequisite = windows.package("Git.Git");
     const setup = windows.wsl({
       config: { wsl2: { memory: "8GB" } }, backup: true, force: true, dependsOn: prerequisite,
     });
     const resources = setup.windows!.dsc!;
     expect(resources).toHaveLength(2);
     expect(setup.__winixHandle).toEqual({ kind: "dsc", token: resources[1].token });
-    expect(resources[0].dependsOn).toEqual([prerequisite.__winixHandle]);
+    expect(setup.windows!.packages).toEqual({ "Microsoft.WSL": { id: "Microsoft.WSL", source: "winget" } });
+    expect(resources[0].dependsOn).toEqual([
+      { kind: "package", id: "Microsoft.WSL" }, prerequisite.__winixHandle,
+    ]);
     expect(resources[1].dependsOn).toEqual([
       { kind: "dsc", token: resources[0].token }, prerequisite.__winixHandle,
     ]);
@@ -56,22 +59,48 @@ describe("Windows WSL SDK and backend", () => {
       host("desktop", platforms.windows(), ({ windows }) => windows.wsl({ config: { wsl2: { memory: "8GB" } } })),
     ] }));
     expect(returned[0].windows.dsc).toHaveLength(2);
+    expect(returned[0].windows.packages).toEqual(setup.windows!.packages);
     const enabledOnly = windows.wsl();
     expect(enabledOnly.windows!.dsc).toHaveLength(1);
     expect(enabledOnly.__winixHandle).toEqual({ kind: "dsc", token: enabledOnly.windows!.dsc![0].token });
+    expect(enabledOnly.windows!.packages).toEqual(setup.windows!.packages);
+    expect(enabledOnly.windows!.dsc![0].dependsOn).toEqual([{ kind: "package", id: "Microsoft.WSL" }]);
+  });
+
+  it("locks the implicit runtime normally and preserves explicit package options in either declaration order", () => {
+    const evaluated = hosts([windows.wsl()]);
+    const resolver = vi.fn(() => "2.6.1");
+    const resolved = resolveMissingWindowsLockEntries(emptyWindowsLock(now), evaluated, resolver, now);
+    expect(resolver).toHaveBeenCalledExactlyOnceWith("Microsoft.WSL", "winget");
+    const reused = resolveMissingWindowsLockEntries(resolved.lock, evaluated, resolver, now);
+    expect(reused.changed).toBe(false);
+    expect(resolver).toHaveBeenCalledTimes(1);
+    for (const entries of [
+      [windows.package({ id: "Microsoft.WSL", version: "2.6.1", elevated: true }), windows.wsl()],
+      [windows.wsl(), windows.package({ id: "Microsoft.WSL", version: "2.6.1", elevated: true })],
+    ]) {
+      const evaluated = hosts(entries);
+      expect(evaluated[0].windows.packages).toEqual({
+        "Microsoft.WSL": { id: "Microsoft.WSL", source: "winget", version: "2.6.1", elevated: true },
+      });
+      const output = generateWindows(evaluated).hosts.desktop["configuration.winget"];
+      expect(output.match(/id: Microsoft.WSL/g)).toHaveLength(1);
+    }
   });
 
   it("collects WSL effects and wires distro prerequisites without leaking metadata", () => {
     const evaluated = evaluate(workspace({ inputs: {}, hosts: [
       host("desktop", platforms.windows(), ({ windows }) => {
-        windows.package({ id: "Microsoft.WSL", version: "2.6.1" });
         windows.wsl({ config: { wsl2: { memory: "16GB", processors: 8 } }, backup: true });
         windows.wsl.distro("NixOS", {
           source: "nixos-wsl", installLocation: windows.knownFolder.localAppData("Winix/WSL/NixOS"), default: true,
         });
       }),
     ] }));
-    const lock = { ...emptyWindowsLock(now), wslImages: pins };
+    const lock: WindowsLock = {
+      ...emptyWindowsLock(now), wslImages: pins,
+      packages: { "Microsoft.WSL": { source: "winget", version: "2.6.1", resolvedAt: now.toISOString() } },
+    };
     const output = generateWindows(evaluated, lock).hosts.desktop["configuration.winget"];
     expect(output).toContain("Windows features Microsoft Windows Subsystem Linux VirtualMachinePlatform");
     expect(output).toContain("dependsOn: [\"Windows features Microsoft Windows Subsystem Linux VirtualMachinePlatform\", \"WSL configuration\", \"Microsoft WSL\"]");
@@ -103,7 +132,12 @@ describe("Windows WSL SDK and backend", () => {
   it("rejects missing prerequisites, conflicting features, duplicate configs/names/locations and defaults", () => {
     const validate = (entries: Fragment[]) => validateWindowsWslResources(hosts(entries)[0].windows);
     expect(() => validate([distro()])).toThrow("windows.wsl()");
-    expect(() => validate([windows.wsl(), distro()])).toThrow("Microsoft.WSL");
+    expect(() => validate([windows.wsl(), distro()])).not.toThrow();
+    expect(() => validate([
+      windows.optionalFeature("Microsoft-Windows-Subsystem-Linux"),
+      windows.optionalFeature("VirtualMachinePlatform"),
+      distro(),
+    ])).toThrow("Microsoft.WSL");
     expect(() => validate([...baseline(), windows.optionalFeature("VirtualMachinePlatform", { enabled: false })])).toThrow("Conflicting");
     expect(() => validate([...baseline(), distro(), distro("nixos")])).toThrow("Duplicate");
     expect(() => validate([...baseline(), distro(), distro("Other")])).toThrow("installLocation");

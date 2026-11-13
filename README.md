@@ -599,13 +599,13 @@ modules:
 
 ```ts
 host("desktop", platforms.windows(), ({ windows }) => {
-  const developerMode = windows.setting({ DeveloperMode: true });
+  windows.setting({ DeveloperMode: true });
   const icons = windows.powershell.module("Terminal-Icons");
 
   windows.file.symlink(
     windows.knownFolder.documents("PowerShell\\Microsoft.PowerShell_profile.ps1"),
     "../windows/powershell/Microsoft.PowerShell_profile.ps1",
-    { backup: true, dependsOn: [icons, developerMode] },
+    { backup: true, dependsOn: icons },
   );
 });
 ```
@@ -620,6 +620,11 @@ Copy/symlink source strings are relative to the directory containing
 and require the checkout to remain in place. Existing backup/force protections
 are unchanged. Direct `generateWindows(hosts, lock, configDir)` callers must
 supply `configDir` when using relative sources.
+
+Symlinks automatically depend on typed `windows.setting({ DeveloperMode: true })`
+resources declared anywhere in the same host. Developer Mode remains an explicit
+machine-policy choice: Winix does not enable it merely because a symlink exists.
+Without that declaration, symlinks still require existing Developer Mode or elevation.
 
 When generating in WSL, Winix uses `wslpath` to translate filesystem sources to
 Windows drive/UNC paths. Sources inside the Linux filesystem use a WSL UNC path,
@@ -695,7 +700,6 @@ prerelease ensure behavior rather than adding a stable module lock.
 
 ```ts
 host("DESKTOP", platforms.windows(), ({ windows }) => {
-  const runtime = windows.package("Microsoft.WSL");
   const setup = windows.wsl({
     config: {
       wsl2: { memory: "16GB", processors: 8 },
@@ -707,13 +711,15 @@ host("DESKTOP", platforms.windows(), ({ windows }) => {
     source: "nixos-wsl",
     installLocation: "D:/WSL/NixOS",
     default: true,
-    dependsOn: [setup, runtime],
+    dependsOn: setup,
   });
 });
 ```
 
-`windows.wsl({ config?, backup?, force?, dependsOn? })` enables the WSL and
-Virtual Machine Platform Windows features and optionally manages `.wslconfig`.
+`windows.wsl({ config?, backup?, force?, dependsOn? })` declares the `Microsoft.WSL`
+package, enables the WSL and Virtual Machine Platform Windows features, and
+optionally manages `.wslconfig`. The runtime uses normal package locking; a separate
+`windows.package({ id: "Microsoft.WSL", ... })` can customize its package options.
 Calling `windows.wsl()` without config leaves that file untouched.
 `windows.optionalFeature(name,
 { enabled?, dependsOn? })` also supports individual optional features.
@@ -721,10 +727,10 @@ Feature changes require administrator approval. If a restart is required,
 dependent provisioning stops: restart Windows yourself and rerun `winix switch`.
 Winix never automatically restarts Windows or shuts down WSL.
 
-Declare both the features and `Microsoft.WSL` package in the same Windows host.
+Declare `windows.wsl()` in the same Windows host as its distros.
 The distro automatically depends on the features, optional configuration file,
 and runtime package; explicit `dependsOn` also supports other handles. The setup
-handle covers both features and configuration when provided. Registration runs
+handle covers the runtime package, features, and configuration when provided. Registration runs
 as the current Windows user, not SYSTEM;
 use the intended account rather than another administrator's credentials.
 `installLocation` accepts an absolute local-drive path, an environment-variable

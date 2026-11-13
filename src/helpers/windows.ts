@@ -113,6 +113,7 @@ export interface WinWslOpts extends Pick<WinFileOpts, "backup" | "force" | "depe
 }
 
 export interface WinWslNamespace {
+  /** Declare the locked Microsoft.WSL package, required features, and optional .wslconfig. */
   (opts?: WinWslOpts): ResourceHandle;
   distro(name: string, spec: WinWslDistroSpec): ResourceHandle;
 }
@@ -1387,9 +1388,13 @@ export const windows: WindowsHelper = {
     (opts: WinWslOpts = {}): ResourceHandle => {
       normalizeFileOpts(opts, "windows.wsl");
       const content = opts.config === undefined ? undefined : serializeWslConfig(opts.config);
+      const runtime = windows.package("Microsoft.WSL");
+      const dependencies = opts.dependsOn === undefined ? []
+        : Array.isArray(opts.dependsOn) ? opts.dependsOn : [opts.dependsOn];
       const enabled = optionalFeatures(
-        ["Microsoft-Windows-Subsystem-Linux", "VirtualMachinePlatform"], { dependsOn: opts.dependsOn }
+        ["Microsoft-Windows-Subsystem-Linux", "VirtualMachinePlatform"], { dependsOn: [runtime, ...dependencies] }
       );
+      enabled.windows!.packages = runtime.windows!.packages;
       if (content === undefined) return enabled;
       const resource = normalizeFileText(knownFolder("userProfile", ".wslconfig"), content, {
         backup: opts.backup, force: opts.force, dependsOn: opts.dependsOn,
@@ -1398,6 +1403,7 @@ export const windows: WindowsHelper = {
       resource.name = "WSL configuration";
       resource.dependsOn = [enabled.__winixHandle, ...(resource.dependsOn ?? [])];
       const configured = dscHandle(resource);
+      configured.windows!.packages = enabled.windows!.packages;
       configured.windows!.dsc!.unshift(...enabled.windows!.dsc!);
       return configured;
     },

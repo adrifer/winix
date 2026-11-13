@@ -134,6 +134,9 @@ function generateConfiguration(
   const repositoryDependencies = (repository: string): ResourceRef[] => registrations
     .filter((entry) => entry.name.toLowerCase() === repository.toLowerCase())
     .map((entry) => ({ kind: "dsc", token: entry.resource.token! }));
+  const developerModeRefs: ResourceRef[] = (win.dsc ?? [])
+    .filter((resource) => resource.winix?.kind === "setting" && resource.properties?.DeveloperMode === true)
+    .map((resource) => ({ kind: "dsc", token: resource.token! }));
   const resources = (win.dsc ?? []).map((resource) => {
     const metadata = resource.winix;
     if (metadata?.kind === "file") {
@@ -141,7 +144,9 @@ function generateConfiguration(
       if (metadata.wslConfig && properties) {
         properties.setScript += "\nWrite-Warning 'WSL configuration changed. Restart WSL manually when safe; Winix will not stop running distros.'";
       }
-      return cloneDscResource(resource, properties);
+      return cloneDscResource(resource, properties, metadata.action === "symlink"
+        ? [...(resource.dependsOn ?? []), ...developerModeRefs]
+        : resource.dependsOn);
     }
     if (metadata?.kind === "optional-features") {
       return cloneDscResource(resource, optionalFeatureProperties(metadata.names, metadata.enabled));
@@ -616,7 +621,7 @@ function resolveDependsOnRefs(
     }
     ids.push(target.name);
   }
-  return ids;
+  return [...new Set(ids)];
 }
 
 /**

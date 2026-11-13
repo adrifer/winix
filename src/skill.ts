@@ -271,7 +271,10 @@ Resources return handles that can be passed through \`dependsOn\`.
 - \`windows.package()\` installs a winget or Microsoft Store package. A string
   means a floating winget package ID. The object form accepts \`id\`,
   \`source\`, \`version\`, and dependency options.
-- \`windows.setting()\` manages supported Windows settings.
+- \`windows.setting()\` manages supported Windows settings. Symlinks automatically
+  depend on same-host typed settings declaring DeveloperMode: true. Declare that
+  policy explicitly; symlinks never enable Developer Mode themselves. Without the
+  declaration, existing Developer Mode or elevation is still required.
 - \`windows.env.set()\` and \`windows.env.remove()\` manage environment
   variables.
 - \`windows.path.add()\` and \`windows.path.remove()\` manage PATH entries.
@@ -310,15 +313,17 @@ Resources return handles that can be passed through \`dependsOn\`.
 - \`windows.dsc()\` declares an arbitrary DSC resource.
 - \`windows.optionalFeature()\` enables/disables a named Windows optional feature;
   enabled defaults to true. Changes require elevation, never reboot automatically.
-- \`windows.wsl()\` enables the WSL and Virtual Machine Platform features.
+- \`windows.wsl()\` declares the Microsoft.WSL package with normal package locking
+  and enables the WSL and Virtual Machine Platform features. A separate package
+  declaration may customize the runtime's package options.
   Options are config, backup, force, and dependsOn. The optional config manages
   the full current-user .wslconfig with file overwrite protections; omitting it
   leaves the file untouched. The returned handle covers the complete setup.
   If a reboot is needed, restart Windows manually and rerun switch.
   It never shuts down WSL; restart WSL manually when configuration changes.
 - \`windows.wsl.distro()\` registers a named distro with source "nixos-wsl",
-  installLocation, optional default and dependsOn. Declare windows.wsl() and the
-  Microsoft.WSL package in the same host; features, config, and runtime become
+  installLocation, optional default and dependsOn. Declare windows.wsl() in the
+  same host; features, config, and runtime become
   automatic dependencies.
   Images for x64/ARM64 are verified against winix-windows.lock wslImages pins.
   Update with winix update --windows nixos-wsl. Updates never reinstall an
