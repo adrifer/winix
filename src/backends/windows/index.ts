@@ -41,11 +41,13 @@ import { yamlEntry, yamlScalar, type YamlValue } from "./yaml.ts";
 import {
   emptyWindowsLock,
   reconcileInlinePins,
+  windowsModulePin,
   type WindowsLock,
 } from "./lockfile.ts";
 import { isWindowsHost } from "./host.ts";
 import { resolveWindowsFileProperties } from "../../helpers/windows.ts";
-import { powerShellModuleProperties } from "./powershell.ts";
+import { powerShellModuleProperties, powerShellRepositoryScripts } from "./powershell.ts";
+import { powerShellRepositoryUri, resolvePowerShellModule, validateWindowsPowerShellPolicy } from "../../helpers/windows-repositories.ts";
 import { powerShellLiteral as psSingleQuoted } from "../../helpers/utils.ts";
 import { windowsSourcePath } from "./paths.ts";
 import { optionalFeatureProperties, wslDistroProperties } from "./wsl.ts";
@@ -111,7 +113,23 @@ function generateConfiguration(
   configDir?: string
 ): string {
   validateWindowsWslResources(win);
+  validateWindowsPowerShellPolicy(win);
   const packages = sortedPackages(win.packages ?? {});
+  const registrations = Object.entries(win.powershell?.repositories?.repositories ?? {}).map(([name, feed]) => {
+    const scripts = powerShellRepositoryScripts(name, powerShellRepositoryUri(feed.uri));
+    const resource: WinDscResource = {
+      name: `Register PowerShell repository ${name}`,
+      resourceType: "Microsoft.DSC.Transitional/PowerShellScript",
+      properties: { getScript: scripts.get, testScript: scripts.test, setScript: scripts.set },
+      dependsOn: packages.filter((pkg) => pkg.id.toLowerCase() === "microsoft.powershell")
+        .map((pkg): ResourceRef => ({ kind: "package", id: pkg.id })),
+    };
+    Object.defineProperty(resource, "token", { value: Symbol(name), enumerable: false });
+    return { name, resource };
+  });
+  const repositoryDependencies = (repository: string): ResourceRef[] => registrations
+    .filter((entry) => entry.name.toLowerCase() === repository.toLowerCase())
+    .map((entry) => ({ kind: "dsc", token: entry.resource.token! }));
   const resources = (win.dsc ?? []).map((resource) => {
     const metadata = resource.winix;
     if (metadata?.kind === "file") {
@@ -136,12 +154,12 @@ function generateConfiguration(
       ]);
     }
     if (metadata?.kind === "powershell-module") {
-      const module = metadata.module;
-      const pin = lock.modules?.[module.name.toLowerCase()];
-      if (!pin || pin.repository.toLowerCase() !== module.repository.toLowerCase()) {
+      const module = resolvePowerShellModule(win, metadata.module);
+      const pin = windowsModulePin(lock, module);
+      if (!pin) {
         throw new Error(`PowerShell module "${module.name}" has no matching pin in winix-windows.lock. Run winix update --windows.`);
       }
-      const dependencies = [...(resource.dependsOn ?? [])];
+      const dependencies = [...repositoryDependencies(module.repository), ...(resource.dependsOn ?? [])];
       if (packages.some((pkg) => pkg.id === "Microsoft.PowerShell") &&
           !dependencies.some((ref) => ref.kind === "package" && ref.id === "Microsoft.PowerShell")) {
         dependencies.push({ kind: "package", id: "Microsoft.PowerShell" });
@@ -150,9 +168,11 @@ function generateConfiguration(
     }
     return resource;
   });
-  const prepared = prepareWindowsDscResources(win.commands ?? [], resources);
+  const settingsModule = resolvePowerShellModule(win, { name: "Microsoft.Windows.Settings" });
+  const prepared = prepareWindowsDscResources(win.commands ?? [], resources, settingsModule.repository,
+    repositoryDependencies(settingsModule.repository));
   const commands = prepared.commands;
-  const dscResources = prepared.dscResources;
+  const dscResources = [...registrations.map((entry) => entry.resource), ...prepared.dscResources];
 
   const lines: string[] = [];
   lines.push(`# yaml-language-server: $schema=${DSC_SCHEMA}`);
@@ -236,14 +256,16 @@ export function validateWindowsWslResources(win: WindowsOptions): void {
 
 function prepareWindowsDscResources(
   commands: readonly WinRawCommand[],
-  resources: readonly WinDscResource[]
+  resources: readonly WinDscResource[],
+  settingsRepository: string,
+  repositoryDependencies: ResourceRef[]
 ): { commands: WinRawCommand[]; dscResources: WinDscResource[] } {
   const envResolvedResources = resolveManagedEnvironmentReferences(resources);
   if (!envResolvedResources.some((resource) => resource.winix?.kind === "setting")) {
     return { commands: [...commands], dscResources: envResolvedResources };
   }
 
-  const ensureModule = createWindowsSettingsEnsureCommand();
+  const ensureModule = createWindowsSettingsEnsureCommand(settingsRepository, repositoryDependencies);
   const ensureRef: ResourceRef = { kind: "dsc", token: ensureModule.token! };
   return {
     commands: [...commands],
@@ -260,7 +282,7 @@ function prepareWindowsDscResources(
   };
 }
 
-function createWindowsSettingsEnsureCommand(): WinDscResource {
+function createWindowsSettingsEnsureCommand(repository: string, dependsOn: ResourceRef[]): WinDscResource {
   // Microsoft.Windows.Settings currently publishes the WindowsSettings resource
   // as a prerelease module (the upstream sample uses v0.1.0-alpha), so the
   // ensure step must opt into prerelease discovery for now. Revisit/remove
@@ -268,6 +290,7 @@ function createWindowsSettingsEnsureCommand(): WinDscResource {
   const resource: WinDscResource = {
     name: WINDOWS_SETTINGS_MODULE_COMMAND_NAME,
     resourceType: RUN_COMMAND_ON_SET_TYPE,
+    dependsOn,
     properties: {
       executable: "pwsh",
       arguments: {
@@ -277,7 +300,8 @@ function createWindowsSettingsEnsureCommand(): WinDscResource {
         "3": [
           "$ErrorActionPreference = 'Stop';",
           "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {",
-          "  Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null",
+          `  Install-PSResource -Name Microsoft.Windows.Settings -Repository ${psSingleQuoted(repository)} -Scope CurrentUser -Prerelease -TrustRepository -AcceptLicense -ErrorAction Stop | Out-Null;`,
+          "  if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) { throw 'Microsoft.Windows.Settings was not installed' }",
           "}",
         ].join(" "),
         treatAsArray: true,

@@ -118,7 +118,8 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
     (resource) => resource.winix?.kind === "wsl-distro" && resource.winix.distro.setup
   ));
   for (const id of opts.inputs) {
-    if (!floating.has(id) && !pinned.has(id) && !modules.has(id.toLowerCase()) &&
+    if (!floating.has(id) && !pinned.has(id) &&
+        ![...modules.values()].some((module) => module.name.toLowerCase() === id.toLowerCase()) &&
         !(id === "nixos-wsl" && wslImages) && !(id === "wsl-setup" && wslSetup)) {
       throw new Error(`Windows package, PowerShell module, WSL image or setup repository "${id}" is not declared in this workspace.`);
     }

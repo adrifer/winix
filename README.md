@@ -536,7 +536,8 @@ other Linux/macOS systems does not translate local paths; use Windows-reachable
 absolute or environment-variable sources when generating there.
 
 PowerShell module versions and repositories are pinned in the optional `modules`
-section of the existing `winix-windows.lock` (lowercase module-name keys).
+section of the existing `winix-windows.lock` (source-qualified lowercase keys;
+legacy name-only pins remain readable).
 Old package-only locks remain valid. First apply resolves missing entries;
 subsequent applies reuse pins without querying the repository.
 `winix update --windows` refreshes packages and modules, or pass names to update
@@ -544,13 +545,48 @@ only selected entries; `--dry` resolves without writing. Resolution errors never
 replace existing pins. Network access is still needed for installation.
 
 `windows.powershell.module(name, { repository?, dependsOn? })` defaults to
-PSGallery, selects stable releases, and installs the exact locked version for
+the host repository policy, otherwise PSGallery, selects stable releases, and installs the exact locked version for
 the current user. PowerShell 7 with PSResourceGet must already be available for
 resolution. Installation is idempotent and runs directly in DSC's
 `Microsoft.DSC.Transitional/PowerShellScript` resource; a declared `Microsoft.PowerShell` package is an
 automatic dependency. Other versions are not removed. Profiles still import
 modules themselves; an unversioned `Import-Module` can load a newer installed
 version, so installation locking alone does not enforce session imports.
+
+Work profiles can enforce an approved feed without changing shared features:
+
+```ts
+const workRepositories = feature("work-repositories", ({ windows }) => {
+  windows.powershell.repositories({
+    repositories: {
+      approved: { uri: "https://packages.example.com/powershell/v3/index.json" },
+    },
+    default: "approved",
+    allowed: ["approved"],
+  });
+});
+const work = profile("work", [workRepositories(), windowsShell()]);
+```
+
+The policy is resolved after host fragments merge. Omitted module repositories
+and the automatic `Microsoft.Windows.Settings` installer use its default.
+Explicit repositories outside `allowed` fail before resolution; there is no
+fallback. Omit `allowed` to permit explicit overrides. It governs Winix-managed
+PowerShell installers, not raw commands, generic DSC, npm, NuGet, or WSL.
+Personal hosts without this feature retain PSGallery.
+Conflicting policies in one host fail instead of silently widening its allowlist.
+
+Named feeds use HTTPS URLs without embedded credentials. Version resolution
+registers a missing feed for the current user; activation also ensures registration
+before module installation. A same-name registration with a different URI is an
+error, never overwritten. Registration persists, but global priorities and permanent
+trust are unchanged. Authenticate separately using the organization's supported
+PSResourceGet setup; do not put secrets in config or locks. `--dry` does not write
+the lock or activate resources, but resolving missing versions can register a feed.
+Pins distinguish module name, repository name, and configured URI across hosts;
+a new source resolves its own pin. Existing matching installed versions are reused,
+not reinstalled to attest their original source. Settings retains its existing
+prerelease ensure behavior rather than adding a stable module lock.
 
 ### Provision WSL from a Windows host
 

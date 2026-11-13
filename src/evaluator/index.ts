@@ -2,6 +2,8 @@
 
 import type { Fragment, FragmentEntry, HostDef, LazyFragment, NixExpr, RawModuleRef, WorkspaceDef, EvalContext } from "../core/types.ts";
 import { setEvalContext, restoreEvalContext } from "../sdk/index.ts";
+import { powerShellRepositoryPolicyIdentity, validateWindowsPowerShellPolicy } from "../helpers/windows-repositories.ts";
+import type { WindowsOptions } from "../types/windows.ts";
 
 /**
  * Evaluated host: the merged result of all fragments for one host.
@@ -72,16 +74,26 @@ function evaluateHost(host: HostDef): EvaluatedHost {
     }
   }
 
+  validateWindowsPowerShellPolicy(result.windows);
   return result;
 }
 
 function mergeWindowsOptions(
-  target: Record<string, unknown>,
-  source: Record<string, unknown>
+  target: WindowsOptions,
+  source: WindowsOptions
 ): Record<string, unknown> {
+  const targetPolicy = target.powershell?.repositories;
+  const sourcePolicy = source.powershell?.repositories;
+  if (targetPolicy && sourcePolicy &&
+      powerShellRepositoryPolicyIdentity(targetPolicy) !== powerShellRepositoryPolicyIdentity(sourcePolicy)) {
+    throw new Error("Conflicting PowerShell repository policies in one host; declare one policy in the selected profile");
+  }
   const targetCommands = Array.isArray(target.commands) ? target.commands : [];
   const sourceCommands = Array.isArray(source.commands) ? source.commands : [];
-  const result = deepMerge(target, source);
+  const result: WindowsOptions = deepMerge(target, source);
+  if (targetPolicy && sourcePolicy) {
+    result.powershell = { ...result.powershell, repositories: targetPolicy };
+  }
 
   if (targetCommands.length > 0 || sourceCommands.length > 0) {
     result.commands = [...targetCommands, ...sourceCommands];

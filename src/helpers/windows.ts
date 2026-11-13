@@ -23,7 +23,9 @@ import type {
   WinWslConfig,
   WinWslDistro,
   WinWslSetup,
+  WinPowerShellRepositoryPolicy,
 } from "../types/index.ts";
+import { validatePowerShellRepositoryPolicy } from "./windows-repositories.ts";
 
 /**
  * Accepted call shapes for `windows.package(...)`.
@@ -79,7 +81,7 @@ export interface WinSettingOpts {
 }
 
 export interface WinPowerShellModuleOpts {
-  /** Registered PowerShell repository on the target. Defaults to PSGallery. */
+  /** Registered repository; inherits the host policy, otherwise PSGallery. */
   repository?: string;
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
@@ -1261,6 +1263,8 @@ export interface WindowsHelper {
     [Folder in WinKnownFolderName]: (path?: string) => WinKnownFolder;
   };
   powershell: {
+    /** Select and optionally restrict feeds for Winix-managed modules on this host. */
+    repositories(policy: WinPowerShellRepositoryPolicy): Fragment;
     /** Install a current-user PowerShell 7 module using winix-windows.lock. */
     module(name: string, opts?: WinPowerShellModuleOpts): ResourceHandle;
   };
@@ -1428,6 +1432,10 @@ export const windows: WindowsHelper = {
     userProfile: (path) => knownFolder("userProfile", path),
   },
   powershell: {
+    repositories: (policy) => {
+      validatePowerShellRepositoryPolicy(policy);
+      return { windows: { powershell: { repositories: policy } } };
+    },
     module: (name, opts = {}) => {
       if (typeof name !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(name)) {
         throw new Error("windows.powershell.module requires a module name without wildcards or paths");
@@ -1435,8 +1443,8 @@ export const windows: WindowsHelper = {
       if (!opts || typeof opts !== "object" || Array.isArray(opts)) {
         throw new Error("windows.powershell.module options must be an object");
       }
-      const repository = opts.repository ?? "PSGallery";
-      if (typeof repository !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(repository)) {
+      const repository = opts.repository;
+      if (repository !== undefined && (typeof repository !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(repository))) {
         throw new Error("windows.powershell.module repository must be a registered repository name");
       }
       const resource = withDscMetadata(withDscToken({

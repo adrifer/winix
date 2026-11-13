@@ -726,14 +726,29 @@ Other non-Windows generators do not translate local paths.
 
 `windows.powershell.module(name, { repository?, dependsOn? })` declares a
 current-user PowerShell 7 module without an inline version. The default repository
-is PSGallery; named custom repositories must already be registered. Missing
+is the host policy default, otherwise PSGallery. Custom repositories not declared
+by a policy must already be registered. Missing
 stable version pins are resolved on first apply and recorded in the optional
 `modules` section of `winix-windows.lock`, alongside unchanged `packages`.
-Module keys are lowercase because PowerShell names are case-insensitive.
+Module keys are case-insensitive and source-qualified (repository name plus a
+digest of a configured feed URI); legacy name-only pins remain readable.
 `winix update --windows [names...]` refreshes all or selected package/module
 entries; `--dry` resolves without writing. Existing pins require no discovery
 query during apply, but installation may still need the network. Repository
-changes require an explicit update; conflicting repositories across hosts fail.
+changes resolve independent pins; different hosts can use different sources for
+the same module. Conflicting sources within a host fail.
+
+`windows.powershell.repositories({ repositories, default, allowed? })` declares
+host-scoped named HTTPS feeds and selection policy, resolved after fragment merge.
+Omitted module repositories and the automatic Settings installer inherit the
+default; explicit disallowed repositories fail without fallback. This does not
+govern raw/generic DSC commands or other package ecosystems. Named registrations
+are ensured for current-user resolution and as dependencies during activation.
+Conflicting existing registration URIs fail instead of being overwritten; global
+priorities and permanent trust are not changed. Resolution, including missing-pin
+resolution during `--dry`, can register feeds. Credentials stay in separately
+configured PSResourceGet authentication, never config URLs or locks.
+Conflicting policies in a single host fail rather than merging their allowlists.
 
 Module resources install only the locked version, retain other versions, and
 run get/test/set directly through `Microsoft.DSC.Transitional/PowerShellScript`.

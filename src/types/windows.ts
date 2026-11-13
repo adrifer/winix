@@ -32,7 +32,16 @@ export interface WinStartupCommand {
 
 export interface WinPowerShellModule {
   name: string;
-  repository: string;
+  /** Omitted repositories inherit the host policy after all fragments merge. */
+  repository?: string;
+}
+
+export interface WinPowerShellRepositoryPolicy {
+  /** Named HTTPS feeds to register for the current Windows user. No credentials in URLs. */
+  repositories: Record<string, { uri: string }>;
+  default: string;
+  /** When specified, reject other repositories instead of falling back. */
+  allowed?: string[];
 }
 
 export interface WinWslDistro {
@@ -304,6 +313,7 @@ export type WinDscProperties = { [key: string]: WinDscPropertyValue };
  * order controls apply order.
  */
 export interface WindowsOptions extends Record<string, unknown> {
+  powershell?: { repositories?: WinPowerShellRepositoryPolicy };
   /** Declared packages, keyed by package id. */
   packages?: Record<string, WinPackage>;
   /** Raw commands to run on apply, in declaration order. */

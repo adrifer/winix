@@ -296,7 +296,14 @@ Resources return handles that can be passed through \`dependsOn\`.
   sources resolve relative to the directory containing winix.config.ts;
   absolute paths, environment-variable paths, and file URLs are also supported.
 - \`windows.powershell.module()\` declares a current-user PowerShell 7 module
-  by name, with optional repository (default PSGallery) and dependsOn.
+  by name, with optional repository (host default, otherwise PSGallery) and dependsOn.
+  windows.powershell.repositories({ repositories: { approved: { uri: "https://packages.example.com/powershell/v3/index.json" } }, default: "approved", allowed: ["approved"] })
+  declares a host-scoped feed policy. Compose it in work profiles; shared modules
+  and the automatic Settings installer inherit it after merging. Explicit
+  disallowed repositories fail without fallback. Named HTTPS feeds are registered
+  for the current user for resolution/activation, without changing global priority
+  or trust. Existing registrations with different URLs fail explicitly. Module
+  pins include source identity; personal hosts retain their own repositories.
   Versions are recorded in the modules section of winix-windows.lock, not
   handwritten declarations. PowerShell 7 with PSResourceGet is required for
   resolution and installation.

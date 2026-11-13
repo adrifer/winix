@@ -3,19 +3,42 @@ import { powerShellLiteral } from "../../helpers/utils.ts";
 import type { WinDscProperties, WinPowerShellModule } from "../../types/index.ts";
 import type { WindowsLockModule } from "./lockfile.ts";
 
+export function powerShellRepositoryScripts(name: string, uri: string): { get: string; test: string; set: string } {
+  const prelude = [
+    "$ErrorActionPreference = 'Stop'",
+    `$repositoryName = ${powerShellLiteral(name)}`,
+    `$repositoryUri = ${powerShellLiteral(uri)}`,
+    "$registeredRepository = @(Get-PSResourceRepository -ErrorAction Stop | Where-Object { $_.Name -ieq $repositoryName })",
+    `if ($registeredRepository.Count -gt 0 -and $registeredRepository[0].Uri.AbsoluteUri.TrimEnd('/') -cne $repositoryUri) { throw "PowerShell repository $repositoryName is already registered with a different URI; resolve the registration conflict explicitly" }`,
+  ];
+  return {
+    get: [...prelude, "$registeredRepository | Select-Object Name,Uri"].join("\n"),
+    test: [...prelude, "$registeredRepository.Count -eq 1"].join("\n"),
+    set: [
+      ...prelude,
+      "if ($registeredRepository.Count -eq 0) { Register-PSResourceRepository -Name $repositoryName -Uri $repositoryUri -ErrorAction Stop }",
+    ].join("\n"),
+  };
+}
+
 export type PowerShellGalleryRunner = (script: string) => string;
 
 /** Find-PSResource returns the newest stable release unless -Prerelease is requested. */
 export function resolvePowerShellModuleVersion(
   name: string,
   repository: string,
-  run: PowerShellGalleryRunner = (script) => execFileSync(
-    "pwsh", ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encode(script)],
-    { encoding: "utf8" }
-  )
+  repositoryUriOrRunner?: string | PowerShellGalleryRunner,
+  runner?: PowerShellGalleryRunner
 ): string {
+  const repositoryUri = typeof repositoryUriOrRunner === "string" ? repositoryUriOrRunner : undefined;
+  const run = (typeof repositoryUriOrRunner === "function" ? repositoryUriOrRunner : runner) ??
+    ((script: string) => execFileSync(
+      "pwsh", ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encode(script)],
+      { encoding: "utf8" }
+    ));
   const script = [
     "$ErrorActionPreference = 'Stop'",
+    ...(repositoryUri ? [powerShellRepositoryScripts(repository, repositoryUri).set] : []),
     `$found = @(Find-PSResource -Name ${powerShellLiteral(name)} -Repository ${powerShellLiteral(repository)} -ErrorAction Stop)`,
     `if ($found.Count -ne 1 -or $found[0].Name -ine ${powerShellLiteral(name)} -or $found[0].Prerelease) { throw 'Expected one stable module release' }`,
     "$found[0].Version.ToString() | ConvertTo-Json -Compress",

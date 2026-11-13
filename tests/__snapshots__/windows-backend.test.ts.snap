@@ -74,7 +74,7 @@ resources:
         "0": -NoProfile
         "1": -NoLogo
         "2": -Command
-        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null }"
+        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Repository 'PSGallery' -Scope CurrentUser -Prerelease -TrustRepository -AcceptLicense -ErrorAction Stop | Out-Null;   if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) { throw 'Microsoft.Windows.Settings was not installed' } }"
         treatAsArray: true
   # Some Windows settings (including DeveloperMode) require
   # running winget configure from an elevated shell to change.
@@ -167,7 +167,7 @@ resources:
         "0": -NoProfile
         "1": -NoLogo
         "2": -Command
-        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null }"
+        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Repository 'PSGallery' -Scope CurrentUser -Prerelease -TrustRepository -AcceptLicense -ErrorAction Stop | Out-Null;   if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) { throw 'Microsoft.Windows.Settings was not installed' } }"
         treatAsArray: true
   # Some Windows settings (including DeveloperMode) require
   # running winget configure from an elevated shell to change.
@@ -873,7 +873,7 @@ resources:
         "0": -NoProfile
         "1": -NoLogo
         "2": -Command
-        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Prerelease -TrustRepository -AcceptLicense | Out-Null }"
+        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Repository 'PSGallery' -Scope CurrentUser -Prerelease -TrustRepository -AcceptLicense -ErrorAction Stop | Out-Null;   if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) { throw 'Microsoft.Windows.Settings was not installed' } }"
         treatAsArray: true
   # Some Windows settings (including DeveloperMode) require
   # running winget configure from an elevated shell to change.

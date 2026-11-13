@@ -1,12 +1,16 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
-import type { WinPackage, WinPackageSource, WinPowerShellModule, WindowsOptions } from "../../types/index.ts";
+import type { WinPackage, WinPackageSource, WindowsOptions } from "../../types/index.ts";
 import { validWslImage, type WslArchitecture, type WindowsWslImageResolver } from "./wsl.ts";
 import {
   validWslRepository, wslRepositoryKey,
   type WindowsLockWslRepository, type WindowsWslRepositoryResolver,
 } from "./wsl-setup.ts";
+import {
+  resolvePowerShellModule, powerShellRepositoryUri, type ResolvedPowerShellModule,
+} from "../../helpers/windows-repositories.ts";
 
 export const WINDOWS_LOCKFILE_NAME = "winix-windows.lock";
 export const WINDOWS_LOCK_VERSION = 1;
@@ -21,7 +25,7 @@ export interface WindowsLock {
   version: typeof WINDOWS_LOCK_VERSION;
   generatedAt: string;
   packages: Record<string, WindowsLockPackage>;
-  /** PowerShell module names are case-insensitive, stored as lowercase keys. */
+  /** Source-qualified lowercase keys; legacy name-only entries remain readable. */
   modules?: Record<string, WindowsLockModule>;
   wslImages?: Record<string, WindowsLockWslImage>;
   wslRepositories?: Record<string, WindowsLockWslRepository>;
@@ -38,11 +42,29 @@ export interface WindowsLockWslImage {
 
 export interface WindowsLockModule {
   repository: string;
+  repositoryUri?: string;
   version: string;
   resolvedAt: string;
 }
 
-export type WindowsModuleVersionResolver = (name: string, repository: string) => string;
+export type WindowsModuleVersionResolver = (name: string, repository: string, repositoryUri?: string) => string;
+
+export function windowsModuleKey(module: ResolvedPowerShellModule): string {
+  const name = module.name.toLowerCase();
+  if (!module.repositoryUri && module.repository.toLowerCase() === "psgallery") return name;
+  const source = `${name}@${module.repository.toLowerCase()}`;
+  return module.repositoryUri
+    ? `${source}/${createHash("sha256").update(powerShellRepositoryUri(module.repositoryUri)).digest("hex")}`
+    : source;
+}
+
+export function windowsModulePin(lock: WindowsLock, module: ResolvedPowerShellModule): WindowsLockModule | undefined {
+  const pin = lock.modules?.[windowsModuleKey(module)] ??
+    (!module.repositoryUri ? lock.modules?.[module.name.toLowerCase()] : undefined);
+  if (pin?.repository.toLowerCase() !== module.repository.toLowerCase() ||
+      pin?.repositoryUri !== module.repositoryUri) return undefined;
+  return pin;
+}
 
 export type WindowsPackageVersionResolver = (
   id: string,
@@ -260,17 +282,20 @@ export function serializeWindowsLock(lock: WindowsLock): string {
   return JSON.stringify(sorted, null, 2) + "\n";
 }
 
-export function collectWindowsModules(hosts: EvaluatedHost[]): Map<string, WinPowerShellModule> {
-  const modules = new Map<string, WinPowerShellModule>();
+export function collectWindowsModules(hosts: EvaluatedHost[]): Map<string, ResolvedPowerShellModule> {
+  const modules = new Map<string, ResolvedPowerShellModule>();
   for (const host of hosts) {
-    for (const resource of (host.windows as WindowsOptions).dsc ?? []) {
+    const win = host.windows as WindowsOptions;
+    const hostModules = new Map<string, string>();
+    for (const resource of win.dsc ?? []) {
       if (resource.winix?.kind !== "powershell-module") continue;
-      const module = resource.winix.module;
-      const key = module.name.toLowerCase();
-      const existing = modules.get(key);
-      if (existing && existing.repository.toLowerCase() !== module.repository.toLowerCase()) {
+      const module = resolvePowerShellModule(win, resource.winix.module);
+      const key = windowsModuleKey(module);
+      const existing = hostModules.get(module.name.toLowerCase());
+      if (existing && existing !== key) {
         throw new Error(`PowerShell module "${module.name}" is declared with conflicting repositories.`);
       }
+      hostModules.set(module.name.toLowerCase(), key);
       modules.set(key, module);
     }
   }
@@ -335,7 +360,7 @@ export function resolveWindowsWslRepositories(
 
 export function resolveWindowsModuleLockEntries(
   lock: WindowsLock,
-  modules: Iterable<WinPowerShellModule>,
+  modules: Iterable<ResolvedPowerShellModule>,
   resolveVersion: WindowsModuleVersionResolver,
   now = new Date(),
   missingOnly = false
@@ -344,16 +369,12 @@ export function resolveWindowsModuleLockEntries(
   const resolutions: Omit<WindowsLockResolution, "source">[] = [];
   let changed = false;
   for (const module of modules) {
-    const key = module.name.toLowerCase();
-    const previous = next.modules[key];
-    if (previous && previous.repository.toLowerCase() !== module.repository.toLowerCase()) {
-      if (missingOnly) {
-        throw new Error(`PowerShell module "${module.name}" changed repository. Run winix update --windows ${module.name}.`);
-      }
-    } else if (missingOnly && previous) {
+    const key = windowsModuleKey(module);
+    const previous = windowsModulePin(next, module);
+    if (missingOnly && previous) {
       continue;
     }
-    const version = resolveVersion(module.name, module.repository);
+    const version = resolveVersion(module.name, module.repository, module.repositoryUri);
     if (!/^\d+\.\d+\.\d+(?:\.\d+)?$/.test(version)) {
       throw new Error(`PowerShell module "${module.name}" resolver did not return a stable version: ${version}`);
     }
@@ -364,7 +385,11 @@ export function resolveWindowsModuleLockEntries(
       status: unchanged ? "up-to-date" : previous ? "updated" : "new",
     });
     if (unchanged) continue;
-    next.modules[key] = { repository: module.repository, version, resolvedAt: now.toISOString() };
+    next.modules[key] = {
+      repository: module.repository,
+      ...(module.repositoryUri ? { repositoryUri: module.repositoryUri } : {}),
+      version, resolvedAt: now.toISOString(),
+    };
     next.generatedAt = now.toISOString();
     changed = true;
   }
@@ -430,15 +455,30 @@ function validateWindowsLock(value: unknown): WindowsLock {
   if (value.modules !== undefined) {
     if (!isObject(value.modules)) throw new Error(`${WINDOWS_LOCKFILE_NAME} modules must be an object.`);
     for (const [name, entry] of Object.entries(value.modules)) {
-      if (!/^[a-z0-9][a-z0-9._-]*$/i.test(name) || !isObject(entry) ||
+      if (!/^[a-z0-9][a-z0-9._-]*(?:@[a-z0-9][a-z0-9._-]*(?:\/[a-f0-9]{64})?)?$/i.test(name) || !isObject(entry) ||
           typeof entry.repository !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(entry.repository) ||
           typeof entry.version !== "string" || !/^\d+\.\d+\.\d+(?:\.\d+)?$/.test(entry.version) ||
           typeof entry.resolvedAt !== "string") {
         throw new Error(`${WINDOWS_LOCKFILE_NAME} module "${name}" has an invalid repository, stable version, or resolvedAt.`);
       }
+      if (entry.repositoryUri !== undefined &&
+          (typeof entry.repositoryUri !== "string" || powerShellRepositoryUri(entry.repositoryUri) !== entry.repositoryUri)) {
+        throw new Error(`${WINDOWS_LOCKFILE_NAME} module "${name}" has an invalid repository URI.`);
+      }
       const key = name.toLowerCase();
+      if ((key.includes("@") || entry.repositoryUri !== undefined) &&
+          key !== windowsModuleKey({
+            name: name.split("@")[0], repository: entry.repository,
+            ...(typeof entry.repositoryUri === "string" ? { repositoryUri: entry.repositoryUri } : {}),
+          })) {
+        throw new Error(`${WINDOWS_LOCKFILE_NAME} module "${name}" does not match its repository identity.`);
+      }
       if (modules[key]) throw new Error(`${WINDOWS_LOCKFILE_NAME} has duplicate module "${name}".`);
-      modules[key] = { repository: entry.repository, version: entry.version, resolvedAt: entry.resolvedAt };
+      modules[key] = {
+        repository: entry.repository,
+        ...(typeof entry.repositoryUri === "string" ? { repositoryUri: entry.repositoryUri } : {}),
+        version: entry.version, resolvedAt: entry.resolvedAt,
+      };
     }
   }
 

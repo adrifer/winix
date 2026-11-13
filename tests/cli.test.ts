@@ -729,6 +729,54 @@ describe("winix apply Windows output", () => {
 });
 
 describe("PowerShell module CLI locking", () => {
+  it("updates a named module across personal and work sources without changing unrelated pins", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-module-work-cli-"));
+    const uri = "https://packages.example.com/powershell/v3/index.json";
+    try {
+      await writeConfig(dir, `
+        host("personal", platforms.windows(), [
+          windows.powershell.module("Terminal-Icons"),
+          windows.powershell.module("posh-git"),
+        ]),
+        host("work", platforms.windows(), ({ windows }) => {
+          windows.powershell.module("Terminal-Icons");
+          windows.powershell.repositories({
+            repositories: { approved: { uri: ${JSON.stringify(uri)} } },
+            default: "approved",
+            allowed: ["approved"],
+          });
+        })
+      `);
+      const resolve = vi.fn(() => "0.11.0");
+      await applyWorkspace(dir, {
+        host: "work", dry: false, diff: false, resolveWindowsModuleVersion: resolve,
+      });
+      expect(resolve).toHaveBeenCalledExactlyOnceWith("Terminal-Icons", "approved", uri);
+      await applyWorkspace(dir, {
+        dry: false, diff: false, resolveWindowsModuleVersion: () => "0.11.0",
+      });
+      const before = readWindowsLock(dir)!;
+      const updateModule = vi.fn(() => "0.12.0");
+      await update(dir, {
+        inputs: ["terminal-icons"], windows: true, dry: false,
+        resolveWindowsModuleVersion: updateModule,
+      });
+      expect(updateModule).toHaveBeenCalledTimes(2);
+      const after = readWindowsLock(dir)!;
+      expect(Object.values(after.modules!).filter((entry) => entry.version === "0.12.0")).toHaveLength(2);
+      expect(after.modules?.["posh-git"]).toEqual(before.modules?.["posh-git"]);
+      await applyWorkspace(dir, {
+        host: "work", dry: false, diff: false,
+        resolveWindowsModuleVersion: () => { throw new Error("offline"); },
+      });
+      const output = await readFile(join(dir, ".winix", "out", "work", "configuration.winget"), "utf8");
+      expect(output).not.toContain("PSGallery");
+      expect(output).toContain("-Repository 'approved'");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("pins on first apply, reuses pins offline, and updates only a named module", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-module-cli-"));
     try {

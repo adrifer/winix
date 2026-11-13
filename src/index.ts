@@ -68,6 +68,7 @@ export type {
   WinKnownFolderName,
   WinFilePath,
   WinPowerShellModule,
+  WinPowerShellRepositoryPolicy,
   WinStartupCommand,
   WinStartupWindowStyle,
 } from "./types/index.ts";

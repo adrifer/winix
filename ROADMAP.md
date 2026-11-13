@@ -54,6 +54,9 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 - **Declarative Windows shell primitives** — activation-time known-folder file
   targets, config-relative copy/symlink sources (including optional file URLs),
   and PowerShell 7 modules pinned alongside packages in `winix-windows.lock`.
+- **Host-scoped PowerShell feeds** — composable work-profile repository policy,
+  strict allowlists without public fallback, named HTTPS registration for resolution
+  and activation, Settings installer selection, and source-aware module pins.
 - **PowerShell 7 execution** — file/PATH/module scripts use DSC's native
   PowerShellScript resource without a nested shell; raw command strings default
   to `pwsh`. Native Registry environment handling remains unchanged.

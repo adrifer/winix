@@ -60,5 +60,15 @@ export default workspace({
       nixos.packages("socat", "bubblewrap"),
       developer(),
     ]),
+    host("windows-work", platforms.windows(), ({ windows }) => {
+      windows.powershell.repositories({
+        repositories: {
+          approved: { uri: "https://packages.example.com/powershell/v3/index.json" },
+        },
+        default: "approved",
+        allowed: ["approved"],
+      });
+      windows.setting({ DeveloperMode: true });
+    }),
   ],
 });

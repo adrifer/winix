@@ -5,14 +5,15 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it, vi } from "vitest";
-import { evaluate, host, platforms, windows, workspace, type Fragment } from "../src/index.ts";
+import { evaluate, feature, host, platforms, profile, windows, workspace, type Fragment } from "../src/index.ts";
 import { generateWindows } from "../src/backends/windows/index.ts";
 import {
   collectWindowsModules, emptyWindowsLock, readWindowsLock, reconcileInlinePins,
   resolveWindowsLockEntries, resolveWindowsModuleLockEntries, serializeWindowsLock,
+  windowsModuleKey,
   type WindowsLock,
 } from "../src/backends/windows/lockfile.ts";
-import { powerShellModuleProperties, resolvePowerShellModuleVersion } from "../src/backends/windows/powershell.ts";
+import { powerShellModuleProperties, powerShellRepositoryScripts, resolvePowerShellModuleVersion } from "../src/backends/windows/powershell.ts";
 import { resolveWindowsFileProperties } from "../src/helpers/windows.ts";
 import { windowsSourcePath } from "../src/backends/windows/paths.ts";
 import { powerShellLiteral } from "../src/helpers/utils.ts";
@@ -204,16 +205,185 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
     expect(reconcileInlinePins(next.lock, hosts([])).modules).toEqual(next.lock.modules);
   });
 
-  it("rejects conflicting repositories and requires explicit updates for repository changes", () => {
+  it("rejects conflicting repositories within a host and pins new sources independently", () => {
     expect(() => collectWindowsModules(hosts([
       windows.powershell.module("Terminal-Icons"),
       windows.powershell.module("terminal-icons", { repository: "Other" }),
     ]))).toThrow(/conflicting repositories/);
-    expect(() => resolveWindowsModuleLockEntries(
+    const changed = resolveWindowsModuleLockEntries(
       { ...emptyWindowsLock(), modules: { "terminal-icons": pin } },
       [{ ...module, repository: "Other" }], () => "0.12.0", new Date(), true
-    )).toThrow(/changed repository/);
+    );
+    expect(changed.lock.modules?.["terminal-icons"]).toEqual(pin);
+    expect(changed.lock.modules?.["terminal-icons@other"]?.version).toBe("0.12.0");
     expect(() => resolveWindowsModuleLockEntries(emptyWindowsLock(), [module], () => "0.12.0-beta")).toThrow(/stable version/);
+  });
+
+  describe("host PowerShell repository policy", () => {
+    const uri = "https://packages.example.com/powershell/v3/index.json";
+    const policy = {
+      repositories: { approved: { uri } },
+      default: "approved",
+      allowed: ["approved"],
+    };
+
+    function workAndPersonal() {
+      const shell = feature("shell", ({ windows }) => {
+        windows.powershell.module("Terminal-Icons");
+        windows.setting({ DeveloperMode: true });
+      });
+      const workRepositories = feature("work-repositories", ({ windows }) => {
+        windows.powershell.repositories(policy);
+      });
+      const work = profile("work", [shell(), workRepositories()]);
+      return evaluate(workspace({
+        inputs: {},
+        hosts: [
+          host("personal", platforms.windows(), [shell()]),
+          host("work", platforms.windows(), [work()]),
+        ],
+      }));
+    }
+
+    it("applies after merging shared profile effects, without leaking into personal hosts", () => {
+      const evaluated = workAndPersonal();
+      const modules = collectWindowsModules(evaluated);
+      expect(modules.size).toBe(2);
+      const resolve = vi.fn(() => "0.11.0");
+      const { lock } = resolveWindowsModuleLockEntries(emptyWindowsLock(), modules.values(), resolve);
+      expect(resolve).toHaveBeenCalledWith("Terminal-Icons", "approved", uri);
+      const docs = generateWindows(evaluated, lock).hosts;
+      expect(docs.personal["configuration.winget"]).toContain("-Repository 'PSGallery'");
+      expect(docs.personal["configuration.winget"]).not.toContain(uri);
+      const work = docs.work["configuration.winget"];
+      expect(work).not.toContain("PSGallery");
+      expect(work).toContain(uri);
+      expect(work).toContain("-Repository 'approved'");
+      expect(work).toContain("Install-PSResource -Name Microsoft.Windows.Settings -Repository 'approved'");
+      expect(work.match(/dependsOn: \["Register PowerShell repository approved"\]/g)).toHaveLength(2);
+      expect(work).not.toContain("Unregister-PSResourceRepository");
+      expect(work).not.toContain("-Trusted");
+      expect(work).not.toContain("-Priority");
+    });
+
+    it("rejects explicit disallowed repositories in either fragment order", () => {
+      const module = windows.powershell.module("Terminal-Icons", { repository: "PSGallery" });
+      const repositories = windows.powershell.repositories(policy);
+      for (const entries of [[module, repositories], [repositories, module]]) {
+        expect(() => hosts(entries)).toThrow(/disallowed repository "PSGallery"/);
+      }
+      expect(() => windows.powershell.repositories({ ...policy, allowed: ["PSGallery"] })).toThrow(/must be allowed/);
+      expect(() => windows.powershell.repositories({ ...policy, default: "missing" })).toThrow(/not declared/);
+      for (const uri of ["http://packages.example.com", "https://user:password@packages.example.com", "https://packages.example.com?token=secret"]) {
+        expect(() => windows.powershell.repositories({
+          ...policy, repositories: { approved: { uri } },
+        })).toThrow(/HTTPS without/);
+      }
+    });
+
+    it("refuses conflicting composed policies instead of widening a work allowlist", () => {
+      const work = windows.powershell.repositories(policy);
+      const publicFeeds = windows.powershell.repositories({
+        repositories: {}, default: "PSGallery", allowed: ["PSGallery"],
+      });
+      for (const entries of [[work, publicFeeds], [publicFeeds, work]]) {
+        expect(() => hosts(entries)).toThrow(/Conflicting PowerShell repository policies/);
+      }
+      expect(() => hosts([work, windows.powershell.repositories(policy)])).not.toThrow();
+    });
+
+    it("round-trips both source pins, reuses them offline, and does not reuse pins after a URI change", async () => {
+      const modules = [...collectWindowsModules(workAndPersonal()).values()];
+      const { lock } = resolveWindowsModuleLockEntries(emptyWindowsLock(), modules, () => "0.11.0");
+      const dir = await mkdtemp(join(tmpdir(), "winix-source-lock-"));
+      try {
+        await writeFile(join(dir, "winix-windows.lock"), serializeWindowsLock(lock));
+        const read = readWindowsLock(dir)!;
+        expect(read).toEqual(lock);
+        const offline = vi.fn(() => { throw new Error("offline"); });
+        expect(resolveWindowsModuleLockEntries(read, modules, offline, new Date(), true).changed).toBe(false);
+        expect(offline).not.toHaveBeenCalled();
+        const workModule = modules.find((module) => module.repository === "approved")!;
+        const moved = { ...workModule, repositoryUri: "https://other.example.com/v3/index.json" };
+        expect(windowsModuleKey(moved)).not.toBe(windowsModuleKey(workModule));
+        expect(() => resolveWindowsModuleLockEntries(read, [moved], offline, new Date(), true)).toThrow("offline");
+        const badLock = structuredClone(lock);
+        badLock.modules![windowsModuleKey(workModule)].repositoryUri = moved.repositoryUri;
+        await writeFile(join(dir, "winix-windows.lock"), JSON.stringify(badLock));
+        expect(() => readWindowsLock(dir)).toThrow(/repository identity/);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    it.skipIf(!hasPowerShell7)("registers only a missing named feed and refuses mismatched registrations", () => {
+      const scripts = powerShellRepositoryScripts("approved", uri);
+      expect(runPowerShell7(`
+  $script:uri = $null
+  $script:registrations = 0
+  function Get-PSResourceRepository {
+    [CmdletBinding()] param()
+    if ($script:uri) { [pscustomobject]@{ Name = 'approved'; Uri = [uri]$script:uri } }
+  }
+  function Register-PSResourceRepository {
+    [CmdletBinding()] param([string]$Name, [string]$Uri)
+    $script:uri = $Uri
+    $script:registrations++
+  }
+  $test = { ${scripts.test} }
+  $set = { ${scripts.set} }
+  if (& $test) { throw 'Missing feed incorrectly passed' }
+  & $set
+  & $set
+  if (-not (& $test) -or $script:registrations -ne 1) { throw 'Not idempotent' }
+  $script:uri = 'https://unexpected.example.com'
+  try { & $set; throw 'Mismatch was accepted' } catch {
+    if ($_.Exception.Message -notlike '*different URI*') { throw }
+  }
+  'REPOSITORY_OK'
+  `)).toContain("REPOSITORY_OK");
+    });
+
+    it.skipIf(!hasPowerShell7)("executes the generated Settings ensure command only against the approved feed", () => {
+      const evaluated = workAndPersonal();
+      const { lock } = resolveWindowsModuleLockEntries(
+        emptyWindowsLock(), collectWindowsModules(evaluated).values(), () => "0.11.0"
+      );
+      const doc = generateWindows(evaluated, lock).hosts.work["configuration.winget"];
+      const script: string = JSON.parse(doc.match(/^\s*"3": (".*")$/m)![1]);
+      expect(runPowerShell7(`
+$script:installed = $false
+$script:installs = 0
+function Get-Module {
+  param([switch]$ListAvailable, [string]$Name)
+  if ($script:installed) { [pscustomobject]@{ Name = $Name } }
+}
+function Install-PSResource {
+  [CmdletBinding()]
+  param([string]$Name, [string]$Repository, [string]$Scope,
+    [switch]$Prerelease, [switch]$TrustRepository, [switch]$AcceptLicense)
+  if ($Name -ne 'Microsoft.Windows.Settings' -or $Repository -ne 'approved' -or $Scope -ne 'CurrentUser') {
+    throw 'Wrong module source or scope'
+  }
+  $script:installed = $true
+  $script:installs++
+}
+& { ${script} }
+& { ${script} }
+if ($script:installs -ne 1) { throw 'Settings installation was not idempotent' }
+'SETTINGS_REPOSITORY_OK'
+`)).toContain("SETTINGS_REPOSITORY_OK");
+    });
+
+    it("uses the same named feed and URI during version resolution, with no public fallback", () => {
+      expect(resolvePowerShellModuleVersion("Terminal-Icons", "approved", uri, (script) => {
+        expect(script).toContain("Register-PSResourceRepository -Name $repositoryName -Uri $repositoryUri");
+        expect(script).toContain(uri);
+        expect(script).toContain("Find-PSResource -Name 'Terminal-Icons' -Repository 'approved'");
+        expect(script).not.toContain("PSGallery");
+        return '"0.11.0"';
+      })).toBe("0.11.0");
+    });
   });
 
   it("round-trips module entries and rejects malformed module locks", async () => {
