@@ -74,9 +74,10 @@ def confirm(message, yes):
         return
     # stdin contains this script, not an interactive terminal.
     try:
-        with open("/dev/tty", "r+") as tty:
+        with open("/dev/tty", "w") as tty:
             tty.write(message + " [y/N] ")
             tty.flush()
+        with open("/dev/tty", "r") as tty:
             answer = tty.readline().strip().lower()
     except OSError as error:
         raise RuntimeError("Interactive confirmation unavailable; pass --yes only after reviewing the repository/script") from error

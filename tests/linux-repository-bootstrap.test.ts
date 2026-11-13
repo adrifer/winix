@@ -13,6 +13,34 @@ const script = readFileSync("scripts/bootstrap-linux.sh", "utf8");
 const source = script.split('python3 - "$@" <<\'PY\'\n')[1].split("\nPY")[0];
 
 describe.skipIf(!available)("Linux repository bootstrap with mocked downloads/activation", () => {
+  it("accepts and declines interactive trust using a real non-seekable terminal", () => {
+    const test = `
+import os, pty
+namespace = {"__name__":"bootstrap_test"}
+exec(${JSON.stringify(source)}, namespace)
+master, slave = pty.openpty()
+path = os.ttyname(slave)
+namespace["open"] = lambda name, mode="r": open(path if name == "/dev/tty" else name, mode)
+try:
+    os.write(master, b"yes\\n")
+    namespace["confirm"]("Trust repository?", False)
+    assert b"Trust repository? [y/N]" in os.read(master, 4096)
+    os.write(master, b"no\\n")
+    try:
+        namespace["confirm"]("Activate?", False)
+        raise AssertionError("Declined trust was accepted")
+    except RuntimeError as error:
+        assert "cancelled" in str(error)
+finally:
+    os.close(slave)
+    os.close(master)
+print("WINIX_INTERACTIVE_TRUST_SUCCESS")
+`;
+    const output = execFileSync(windows ? "wsl.exe" : "python3", windows
+      ? ["--", "python3", "-"] : ["-"], { input: test, encoding: "utf8", timeout: 15000 });
+    expect(output).toContain("WINIX_INTERACTIVE_TRUST_SUCCESS");
+  });
+
   it("verifies downloads, preserves existing checkouts and propagates safety failures", () => {
     const test = `
 import hashlib, json, os, pathlib, tempfile, sys
