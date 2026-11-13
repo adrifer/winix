@@ -1,11 +1,10 @@
 import { hostname } from "node:os";
 import { join } from "node:path";
-import { realpath } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import type { WindowsOptions } from "../../types/index.ts";
 import {
   managedWindowsResources, nativeWindowsStateAdapter, reconcileWindows,
-  resourceKey, windowsStatePath,
+  resourceKey, windowsStatePath, windowsStateOwner,
   withWindowsStateLock,
   type WindowsStateAdapter,
 } from "../windows-state.ts";
@@ -72,7 +71,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
       }
       await reconcileWindows({
         statePath,
-        owner: JSON.stringify([(await realpath(configDir)).toLowerCase(), hostName]),
+        owner: await windowsStateOwner(configDir, hostName),
         desired, definitions,
         dry: opts.dry,
         yes: opts.yes,

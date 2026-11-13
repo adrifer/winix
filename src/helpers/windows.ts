@@ -83,6 +83,8 @@ export interface WinSettingOpts {
 export interface WinPowerShellModuleOpts {
   /** Registered repository; inherits the host policy, otherwise PSGallery. */
   repository?: string;
+  /** Include prereleases during lock resolution. Defaults to stable releases only. */
+  prerelease?: boolean;
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -1447,11 +1449,16 @@ export const windows: WindowsHelper = {
       if (repository !== undefined && (typeof repository !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(repository))) {
         throw new Error("windows.powershell.module repository must be a registered repository name");
       }
+      if (opts.prerelease !== undefined && typeof opts.prerelease !== "boolean") {
+        throw new Error("windows.powershell.module prerelease must be a boolean");
+      }
       const resource = withDscMetadata(withDscToken({
         resourceType: POWERSHELL_SCRIPT_RESOURCE,
         name: `PowerShell module ${name}`,
         dependsOn: resolveDependsOn(opts.dependsOn),
-      }), { kind: "powershell-module", module: { name, repository } });
+      }), { kind: "powershell-module", module: {
+        name, repository, ...(opts.prerelease !== undefined ? { prerelease: opts.prerelease } : {}),
+      } });
       return dscHandle(resource);
     },
   },

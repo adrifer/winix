@@ -147,6 +147,12 @@ activation and ARM64 execution are not yet verified.
 
 ### Bootstrap an existing repository
 
+Repository-specific entry scripts can download/verify Winix bootstrap installers and supply
+repository, ref, destination, config-directory and host defaults. Git installation,
+cloning and existing-checkout validation remain owned by Winix. Private HTTPS
+repositories use Git's configured authentication/credential helper; never embed
+credentials in scripts or repository URLs.
+
 The Winix-owned `bootstrap-windows.ps1` and `bootstrap-linux.sh` release assets
 prepare a trusted config repository without Node/npm. Download the script and
 its `.sha256` from a **versioned release supporting repository bootstrap**,
@@ -213,7 +219,7 @@ For ongoing use, bootstrap writes `.winix/bin/winix.ps1` (Windows) or
 
 The launcher rereads the manifest on every invocation. If an optional
 `node_modules/@adrifer/winix` is installed, its version must match the pin and
-the launcher uses its own CLI/SDK under Node >=22.13. Install dependencies
+the launcher uses its own CLI/SDK under supported Node 22.13+, 24 or 26. Install dependencies
 explicitly with `npm ci` using an approved npm source; bootstrap never does it.
 Existing `npm run` scripts also use that local CLI, without a global installation.
 Without the npm SDK, the verified standalone executable must match the pin;
@@ -235,8 +241,12 @@ npx @adrifer/winix@latest init
 npm install
 ```
 
-The npm CLI requires Node.js with native TypeScript transformation and the
-`--experimental-transform-types` flag (Node 22.13+ or 24; use Node 24).
+The npm CLI supports stable Node.js 22.13+ (22.x), 24.x and 26.x.
+Its launcher enables `--experimental-transform-types` on Node 22/24 and omits
+the removed flag on Node 26. Node 26 only supports erasable TypeScript: use Node
+24 if your config or local imports contain enums, parameter properties or other
+syntax requiring transformation. Odd-numbered and untested future majors are
+rejected explicitly.
 The standalone executable has no installed Node version requirement.
 
 If you prefer to set up files yourself instead of using `init`, add the package to your own `package.json`:
@@ -626,7 +636,7 @@ subsequent applies reuse pins without querying the repository.
 only selected entries; `--dry` resolves without writing. Resolution errors never
 replace existing pins. Network access is still needed for installation.
 
-`windows.powershell.module(name, { repository?, dependsOn? })` defaults to
+`windows.powershell.module(name, { repository?, prerelease?, dependsOn? })` defaults to
 the host repository policy, otherwise PSGallery, selects stable releases, and installs the exact locked version for
 the current user. PowerShell 7 with PSResourceGet must already be available for
 resolution. Installation is idempotent and runs directly in DSC's
@@ -634,6 +644,17 @@ resolution. Installation is idempotent and runs directly in DSC's
 automatic dependency. Other versions are not removed. Profiles still import
 modules themselves; an unversioned `Import-Module` can load a newer installed
 version, so installation locking alone does not enforce session imports.
+Set `prerelease: true` to allow a prerelease pin; its full version, including
+the prerelease label, is locked and checked. A shared module with any stable-only
+declaration remains stable-only.
+
+`windows.setting(...)` implicitly declares `Microsoft.Windows.Settings` through
+this same mechanism, with prereleases allowed and the host's repository policy
+enforced. First apply adds its exact source-qualified module pin; no version
+belongs in handwritten configuration. A different installed version does not
+satisfy that pin. Native Settings activation and adapted-resource discovery with
+multiple side-by-side module versions remain unverified; installing the pin
+does not claim to force DSC's module selection.
 
 Work profiles can enforce an approved feed without changing shared features:
 
@@ -811,20 +832,20 @@ Store policy. Run from a normal Windows account, not WSL or another admin accoun
 
 ```powershell
 # Read-only: reports missing/old prerequisites and exits unsuccessfully if not ready.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1 -Check
+powershell.exe -NoProfile -File .\scripts\bootstrap-windows.ps1 -Check
 # Executable workflow: omit all Node/npm checks and installations.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1 -Standalone -Check
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1 -Standalone
+powershell.exe -NoProfile -File .\scripts\bootstrap-windows.ps1 -Standalone -Check
+powershell.exe -NoProfile -File .\scripts\bootstrap-windows.ps1 -Standalone
 # Review and confirm installation/upgrade of missing or outdated prerequisites.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1
+powershell.exe -NoProfile -File .\scripts\bootstrap-windows.ps1
 # Choose NVM for Windows rather than standalone Node on NVM-based setups.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1 -UseNvm
+powershell.exe -NoProfile -File .\scripts\bootstrap-windows.ps1 -UseNvm
 ```
 
-`-ExecutionPolicy Bypass` applies to this process only, not the machine/user
-policy; organizational policy may still block execution. `-Yes` accepts bootstrap
+Run scripts only through an execution route permitted by your signing and
+organizational policies; the bootstrap does not override them. `-Yes` accepts bootstrap
 installation for automation. Installers may request UAC elevation. The script
-checks Git, Node (22.13+), npm, PowerShell (7.4+), PSResourceGet/PSGallery, DSC
+checks Git, supported stable Node (22.13+/24/26), npm, PowerShell (7.4+), PSResourceGet/PSGallery, DSC
 (3.2+), and the backend's required DSC resources. Supported existing versions
 are kept; standalone installs use `Git.Git`, `OpenJS.NodeJS.LTS`,
 `Microsoft.PowerShell`, and `Microsoft.DSC` from the exact WinGet source/IDs.
@@ -918,6 +939,23 @@ requirements across activations by the same Windows account.
   Removing a host or moving a workspace does not automatically release its old
   recorded requirements.
 
+After moving a checkout or renaming a host, explicitly transfer the old owner's
+requirements to the current config directory and new host:
+
+```powershell
+winix state owners
+winix state migrate-owner <old-owner-id> --host new-host --dry
+winix state migrate-owner <old-owner-id> --host new-host --yes
+winix switch --host new-host --dry
+```
+
+Run migration from the new config checkout. It changes inventory
+metadata only, never evaluates config or activates/deletes resources. Every
+resource's snapshots and removal rights, including external/unowned status, are
+preserved; other owners stay recorded. The next switch still enforces shared
+requirements, drift checks and removal confirmation. Migration requires `--yes`
+unless previewing with `--dry`; old owners are never discarded automatically.
+
 When packages or startup shortcuts would be removed, `switch` lists them and asks
 `Continue with switch? [y/N]` before activation. Declining or closing the prompt
 cancels the whole switch without activation or cleanup. Switches without removals
@@ -938,6 +976,7 @@ winix state forget package winget Example.App
 `state forget` preserves recorded requirements but releases ownership for that
 resource across this user's inventory. If still declared, it remains required;
 future creation or explicit shortcut replacement can grant ownership again.
+It does not fix a stale owner identity; use explicit owner migration instead.
 Package removal requires an exact installed-version match and uses exact ID,
 source, and version selection.
 

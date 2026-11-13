@@ -368,6 +368,13 @@ package/module/image/repository pins (all when omitted, nixos-wsl for images,
 wsl-setup for setup commits); --dry reports without writing.
 Keep the lock in version control. Installation still requires network access
 when the locked package/module is not installed.
+Typed \`windows.setting(...)\` implicitly locks Microsoft.Windows.Settings through
+the same host-policy/source-aware module mechanism, with prereleases allowed.
+\`windows.powershell.module(name, { prerelease: true })\` opts other modules in;
+stable-only declarations reject prerelease pins. Exact numeric version and
+prerelease label are checked. Do not put versions in handwritten settings config.
+Side-by-side DSC adapted-module selection/native Settings activation is unverified;
+installing the pin alone does not guarantee which installed module DSC selects.
 
 Native Windows \`winix switch\` keeps a separate per-user/machine applied-state
 inventory in LocalAppData/Winix, shared across recorded workspace/host activations.
@@ -384,6 +391,12 @@ External shortcut edits/package-version drift block reconciliation.
 without deleting the resource; --dry previews. Do not copy applied state to a
 new machine or infer ownership from version locks. Direct DSC/script activation
 bypasses this tracking. Files, modules, env and PATH cleanup are not tracked.
+\`state forget\` retains owner requirements; it cannot repair checkout moves or
+host renames. Run \`winix state owners\`, then from the new config checkout use
+\`winix state migrate-owner <old-owner-id> --host NEW --dry\` and explicitly
+confirm with \`--yes\` instead of \`--dry\`. This transfers recorded requirements,
+not resources, and preserves snapshots, external status, other owners, drift
+checks and later removal confirmation. It does not evaluate config or activate.
 
 For fresh Windows prerequisites, \`scripts/bootstrap-windows.ps1\` runs in built-in
 Windows PowerShell 5.1 or PowerShell 7. App Installer/WinGet is the initial
@@ -423,10 +436,14 @@ Do not run real bootstrap/activation as a development check on a shared machine.
 \`winix bootstrap --host HOST\` performs the checkout validation/preview/confirmation
 phase. Its generated \`.winix/bin/winix.ps1\` or \`.winix/bin/winix\` launcher invokes
 \`winix run <args>\`, rereading the exact pin on every invocation. A matching
-optional node_modules SDK uses its own CLI under Node >=22.13; stale/corrupt
+optional node_modules SDK uses its own CLI under supported stable Node
+22.13+ (22.x), 24.x or 26.x; stale/corrupt
 local packages fail, never silently fall back. Otherwise the standalone must
 match the manifest; rerun bootstrap after changing the pin. The user may run
 \`npm ci\` explicitly using an approved source, then use normal local npm scripts.
+The npm launcher enables transformation on Node 22/24, omits the removed
+transform flag on 26, and rejects unsupported majors. Node 26 accepts erasable
+TypeScript only; use Node 24 for enums/parameter properties in config/local imports.
 
 On existing NixOS/NixOS-WSL, \`bash bootstrap-nixos.sh\` (from
 \`scripts/bootstrap-nixos.sh\` or a reviewed release asset) opens a temporary

@@ -7,6 +7,8 @@ import { execFileSync } from "node:child_process";
 import { standaloneRuntime } from "../../runtime.ts";
 import { resolveWinixVersionRange } from "./init.ts";
 import { runCommand } from "../run.ts";
+import { nodeTypeArguments } from "../node.ts";
+export { nodeTypeArguments } from "../node.ts";
 
 export function pinnedWinixVersion(spec: unknown): string {
   if (typeof spec !== "string") throw new Error("package.json must declare an exact @adrifer/winix dependency");
@@ -79,14 +81,6 @@ export async function runCheckout(
     };
   }
   await run(command.command, [...command.args, ...args], { cwd: directory });
-}
-
-export function nodeTypeArguments(version: string): string[] {
-  const parsed = /^v?(\d+)\.(\d+)\.\d+$/.exec(version);
-  if (!parsed || Number(parsed[1]) < 22 || Number(parsed[1]) === 22 && Number(parsed[2]) < 13) {
-    throw new Error(`Local SDK requires stable Node >=22.13, found ${version}. Install it explicitly or remove the optional node_modules SDK to retain standalone mode.`);
-  }
-  return Number(parsed[1]) >= 26 ? [] : ["--experimental-transform-types"];
 }
 
 async function confirm(message: string, yes: boolean): Promise<void> {

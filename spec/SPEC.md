@@ -724,12 +724,20 @@ In WSL, filesystem sources are translated with `wslpath` to Windows drive or
 WSL UNC paths; environment-variable sources remain activation-time expressions.
 Other non-Windows generators do not translate local paths.
 
-`windows.powershell.module(name, { repository?, dependsOn? })` declares a
+`windows.powershell.module(name, { repository?, prerelease?, dependsOn? })` declares a
 current-user PowerShell 7 module without an inline version. The default repository
 is the host policy default, otherwise PSGallery. Custom repositories not declared
 by a policy must already be registered. Missing
 stable version pins are resolved on first apply and recorded in the optional
 `modules` section of `winix-windows.lock`, alongside unchanged `packages`.
+`prerelease: true` allows prerelease pins; installation checks both numeric version
+and prerelease label. Any stable-only declaration for a shared module/source
+prevents prerelease selection. Typed settings implicitly declare
+`Microsoft.Windows.Settings` with prereleases allowed through this same mechanism,
+including repository enforcement and missing-pin/explicit update resolution.
+Existing arbitrary versions never substitute for the pin. Other module versions
+are not removed; session imports and DSC adapted-resource selection with
+side-by-side versions are not guaranteed by installation locking.
 Module keys are case-insensitive and source-qualified (repository name plus a
 digest of a configured feed URI); legacy name-only pins remain readable.
 `winix update --windows [names...]` refreshes all or selected package/module
@@ -839,6 +847,11 @@ not ready. Install mode confirms the prerequisite plan (`-Yes` for automation),
 installs/upgrades missing/outdated Git, Node LTS, PowerShell 7, and DSC via exact
 WinGet IDs/source, enables WinGet configuration support, then verifies npm,
 Node TypeScript support, PSResourceGet commands, and required DSC resources.
+Supported stable npm runtimes are Node 22.13+ (22.x), 24.x and 26.x; installed LTS
+must pass the same check. The npm launcher/checkout handoff and bootstrap probe
+enable transformation on 22/24 and omit its removed flag on 26. Node 26 supports
+erasable TypeScript only; enum/parameter-property configs require Node 22/24.
+Unsupported majors and prerelease runtimes are rejected rather than guessed.
 `-UseNvm` selects NVM for Windows instead of standalone Node, with manager
 conflict protection. Existing supported versions are kept. No host activation,
 WSL provisioning, persistent execution-policy changes, or automatic reboot is
@@ -900,6 +913,16 @@ are untouched. Shortcut hash or package-version drift blocks reconciliation.
 `state forget startup <name>` or `state forget package <source> <id>` releases
 removal ownership without deleting resources or other owners' requirements;
 `--dry` previews ownership release.
+
+`state owners` lists stable owner IDs and recorded config-directory/host identities.
+After a checkout move or host rename, `state migrate-owner <old-owner-id> --host NEW`
+transfers all that identity's requirements to the current config-directory/host.
+`--dry` previews without writing; real migration requires explicit `--yes`.
+It changes inventory metadata only, without evaluating configuration or touching
+system resources. Other owners, snapshots and owned/unowned status are preserved,
+including when the new identity already shares a resource. The next switch still
+enforces conflicts, drift and removal confirmation. `state forget` deliberately
+retains owner requirements and is not an alternative to identity migration.
 
 If existing owned resources would be removed, `switch` lists them and requires
 confirmation (`Continue with switch? [y/N]`) before activation. Declining or

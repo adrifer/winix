@@ -860,10 +860,13 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    expect(() => generateWindows(evaluate(ws))).toThrow("no matching pin");
+    const doc = generateWindows(evaluate(ws), windowsLock({})).hosts.desktop["configuration.winget"];
     expect(doc).toContain(`name: "Ensure Microsoft Windows Settings module"`);
-    expect(doc).toContain("type: Microsoft.DSC.Transitional/RunCommandOnSet");
-    expect(doc).toContain("Install-PSResource -Name Microsoft.Windows.Settings");
+    expect(doc).toContain("type: Microsoft.DSC.Transitional/PowerShellScript");
+    expect(doc).toContain("$name = 'Microsoft.Windows.Settings'");
+    expect(doc).toContain("$version = '0.1.0-alpha.6'");
+    expect(doc).toContain("Install-PSResource -Name $name -Version $version");
     expect(doc).toContain(`type: Microsoft.Windows.Settings/WindowsSettings`);
     expect(doc).toContain("DeveloperMode: true");
     expect(doc).toContain(`dependsOn: ["Ensure Microsoft Windows Settings module"]`);
@@ -880,7 +883,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    const doc = generateWindows(evaluate(ws), windowsLock({})).hosts.desktop["configuration.winget"];
     expect(doc).toContain("elevated shell");
   });
 
@@ -916,7 +919,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    const doc = generateWindows(evaluate(ws), windowsLock({})).hosts.desktop["configuration.winget"];
     for (const key of [
       "AppColorMode",
       "AutoColorization",
@@ -956,9 +959,9 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
+    const doc = generateWindows(evaluate(ws), windowsLock({})).hosts.desktop["configuration.winget"];
     expect(doc.match(/Ensure Microsoft Windows Settings module/g)).toHaveLength(3);
-    expect(doc.match(/Install-PSResource -Name Microsoft\.Windows\.Settings/g)).toHaveLength(1);
+    expect(doc.match(/Install-PSResource -Name \$name -Version \$version/g)).toHaveLength(1);
     expect(doc.match(/type: Microsoft\.Windows\.Settings\/WindowsSettings/g)).toHaveLength(2);
   });
 
@@ -1108,6 +1111,11 @@ function windowsLock(
   return {
     version: 1,
     generatedAt: "2026-06-24T18:37:00.000Z",
+    modules: {
+      "microsoft.windows.settings": {
+        repository: "PSGallery", version: "0.1.0-alpha.6", resolvedAt: "2026-06-24T18:37:00.000Z",
+      },
+    },
     packages: Object.fromEntries(
       Object.entries(packages).map(([id, entry]) => [
         id,

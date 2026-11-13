@@ -87,8 +87,11 @@ describe("checkout-pinned bootstrap", () => {
     expect(nodeTypeArguments("v22.13.0")).toEqual(["--experimental-transform-types"]);
     expect(nodeTypeArguments("v24.0.0")).toEqual(["--experimental-transform-types"]);
     expect(nodeTypeArguments("v26.0.0")).toEqual([]);
-    expect(() => nodeTypeArguments("v22.12.0")).toThrow("Node >=22.13");
+    expect(() => nodeTypeArguments("v22.12.0")).toThrow("Node 22.13+");
     expect(() => nodeTypeArguments("v26.0.0-rc.1")).toThrow("stable Node");
+    for (const version of ["v23.0.0", "v25.0.0", "v28.0.0"]) {
+      expect(() => nodeTypeArguments(version)).toThrow("stable Node");
+    }
   });
 
   it.each(["main", "HEAD", "refs/heads/main", "refs/tags/first", "commit"])(

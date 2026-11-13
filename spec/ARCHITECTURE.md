@@ -28,8 +28,29 @@ winix.config.ts (user)
 ```
 
 There is **no IPC boundary**. The CLI, evaluator, SDK, helpers, and backend
-all run in one TypeScript process (Node ≥ 22 with native TS via
-`--experimental-strip-types`).
+all run in one runtime process. The npm launcher supports stable Node 22.13+
+(22.x), 24.x and 26.x: 22/24 use `--experimental-transform-types`, while 26 uses
+native erasable-only TypeScript because that flag and transformation were removed.
+Standalone builds embed Bun and share one SDK/evaluator context.
+
+### Windows inspection costs
+
+The native applied-state adapter currently starts a synchronous
+`dsc resource get --resource Microsoft.WinGet/Package` process per package
+inspection, in addition to WinGet configuration's own checks. Measure inspection
+count and elapsed time separately for desired-resource inventory before
+activation, removal planning, activation itself, desired-resource inventory after
+activation, immediate pre-removal inspection, removal and post-removal verification.
+Keep state-lock/load/save and package/startup timings separate so process startup
+cost is not confused with activation or filesystem work.
+
+A future optimization can batch desired-package inspection once per pre/post
+phase through a DSC configuration get, provided results are correlated by exact
+ID/source and missing, failed and ambiguous results remain distinguishable.
+Do not reuse inventory across activation, infer absence from a failed lookup, or
+remove immediate pre-removal drift checks/post-removal verification. Wrapping
+synchronous process calls in `Promise.all` does not provide batching. No batching
+optimization or performance improvement is claimed by this stabilization pass.
 
 ## 2. Module layout
 

@@ -9,7 +9,8 @@ import {
   type WindowsLockWslRepository, type WindowsWslRepositoryResolver,
 } from "./wsl-setup.ts";
 import {
-  resolvePowerShellModule, powerShellRepositoryUri, type ResolvedPowerShellModule,
+  resolvePowerShellModule, powerShellRepositoryUri, powerShellModuleVersion, windowsSettingsModule,
+  type ResolvedPowerShellModule,
 } from "../../helpers/windows-repositories.ts";
 
 export const WINDOWS_LOCKFILE_NAME = "winix-windows.lock";
@@ -47,7 +48,9 @@ export interface WindowsLockModule {
   resolvedAt: string;
 }
 
-export type WindowsModuleVersionResolver = (name: string, repository: string, repositoryUri?: string) => string;
+export type WindowsModuleVersionResolver = (
+  name: string, repository: string, repositoryUri?: string, prerelease?: boolean
+) => string;
 
 export function windowsModuleKey(module: ResolvedPowerShellModule): string {
   const name = module.name.toLowerCase();
@@ -62,7 +65,8 @@ export function windowsModulePin(lock: WindowsLock, module: ResolvedPowerShellMo
   const pin = lock.modules?.[windowsModuleKey(module)] ??
     (!module.repositoryUri ? lock.modules?.[module.name.toLowerCase()] : undefined);
   if (pin?.repository.toLowerCase() !== module.repository.toLowerCase() ||
-      pin?.repositoryUri !== module.repositoryUri) return undefined;
+      pin?.repositoryUri !== module.repositoryUri ||
+      (!module.prerelease && pin.version.includes("-"))) return undefined;
   return pin;
 }
 
@@ -287,16 +291,18 @@ export function collectWindowsModules(hosts: EvaluatedHost[]): Map<string, Resol
   for (const host of hosts) {
     const win = host.windows as WindowsOptions;
     const hostModules = new Map<string, string>();
-    for (const resource of win.dsc ?? []) {
-      if (resource.winix?.kind !== "powershell-module") continue;
-      const module = resolvePowerShellModule(win, resource.winix.module);
+    const declared = (win.dsc ?? []).flatMap((resource) =>
+      resource.winix?.kind === "powershell-module" ? [resolvePowerShellModule(win, resource.winix.module)] : []);
+    if (win.dsc?.some((resource) => resource.winix?.kind === "setting")) declared.push(windowsSettingsModule(win));
+    for (const module of declared) {
       const key = windowsModuleKey(module);
       const existing = hostModules.get(module.name.toLowerCase());
       if (existing && existing !== key) {
         throw new Error(`PowerShell module "${module.name}" is declared with conflicting repositories.`);
       }
       hostModules.set(module.name.toLowerCase(), key);
-      modules.set(key, module);
+      const previous = modules.get(key);
+      modules.set(key, previous ? { ...module, prerelease: !!previous.prerelease && !!module.prerelease } : module);
     }
   }
   return modules;
@@ -308,15 +314,15 @@ export function hasWindowsWslDistros(hosts: EvaluatedHost[]): boolean {
   ));
 }
 
-export function resolveWindowsWslImages(
+export async function resolveWindowsWslImages(
   lock: WindowsLock, resolve: WindowsWslImageResolver, now = new Date(), missingOnly = false
-): { lock: WindowsLock; changed: boolean } {
+): Promise<{ lock: WindowsLock; changed: boolean }> {
   const images = { ...lock.wslImages };
   let changed = false;
   for (const architecture of ["x64", "arm64"] as const) {
     const key = `nixos-wsl/${architecture}`;
     if (missingOnly && images[key]) continue;
-    const image = { ...resolve(architecture), resolvedAt: now.toISOString() };
+    const image = { ...await resolve(architecture), resolvedAt: now.toISOString() };
     if (!validWslImage(image) || image.architecture !== architecture) {
       throw new Error(`Invalid NixOS-WSL image resolution for ${architecture}`);
     }
@@ -374,9 +380,9 @@ export function resolveWindowsModuleLockEntries(
     if (missingOnly && previous) {
       continue;
     }
-    const version = resolveVersion(module.name, module.repository, module.repositoryUri);
-    if (!/^\d+\.\d+\.\d+(?:\.\d+)?$/.test(version)) {
-      throw new Error(`PowerShell module "${module.name}" resolver did not return a stable version: ${version}`);
+    const version = resolveVersion(module.name, module.repository, module.repositoryUri, !!module.prerelease);
+    if (!powerShellModuleVersion.test(version) || (!module.prerelease && version.includes("-"))) {
+      throw new Error(`PowerShell module "${module.name}" resolver did not return an allowed version: ${version}`);
     }
     const unchanged = previous?.version === version &&
       previous.repository.toLowerCase() === module.repository.toLowerCase();
@@ -457,9 +463,9 @@ function validateWindowsLock(value: unknown): WindowsLock {
     for (const [name, entry] of Object.entries(value.modules)) {
       if (!/^[a-z0-9][a-z0-9._-]*(?:@[a-z0-9][a-z0-9._-]*(?:\/[a-f0-9]{64})?)?$/i.test(name) || !isObject(entry) ||
           typeof entry.repository !== "string" || !/^[a-z0-9][a-z0-9._-]*$/i.test(entry.repository) ||
-          typeof entry.version !== "string" || !/^\d+\.\d+\.\d+(?:\.\d+)?$/.test(entry.version) ||
+          typeof entry.version !== "string" || !powerShellModuleVersion.test(entry.version) ||
           typeof entry.resolvedAt !== "string") {
-        throw new Error(`${WINDOWS_LOCKFILE_NAME} module "${name}" has an invalid repository, stable version, or resolvedAt.`);
+        throw new Error(`${WINDOWS_LOCKFILE_NAME} module "${name}" has an invalid repository, version, or resolvedAt.`);
       }
       if (entry.repositoryUri !== undefined &&
           (typeof entry.repositoryUri !== "string" || powerShellRepositoryUri(entry.repositoryUri) !== entry.repositoryUri)) {

@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import type { WinDscProperties, WinWslDistro } from "../../types/index.ts";
 import { filePathExpression, filePathPrelude } from "../../helpers/windows.ts";
 import { powerShellLiteral as ps } from "../../helpers/utils.ts";
@@ -6,7 +5,8 @@ import type { WindowsLockWslImage } from "./lockfile.ts";
 import { wslRepositoryKey, wslSetupPrelude, type WindowsLockWslRepository } from "./wsl-setup.ts";
 
 export type WslArchitecture = "x64" | "arm64";
-export type WindowsWslImageResolver = (architecture: WslArchitecture) => Omit<WindowsLockWslImage, "resolvedAt">;
+export type WindowsWslImageResolver = (architecture: WslArchitecture) =>
+  Omit<WindowsLockWslImage, "resolvedAt"> | Promise<Omit<WindowsLockWslImage, "resolvedAt">>;
 
 export function validWslImage(value: unknown): value is WindowsLockWslImage {
   if (!value || typeof value !== "object") return false;
@@ -19,31 +19,34 @@ export function validWslImage(value: unknown): value is WindowsLockWslImage {
   return entry.url === `https://github.com/nix-community/NixOS-WSL/releases/download/${entry.version}/${asset}`;
 }
 
-export const resolveNixosWslImage: WindowsWslImageResolver = (architecture) => {
+export const resolveNixosWslImage: WindowsWslImageResolver = async (architecture) => {
   const assetName = architecture === "x64" ? "nixos.wsl" : "nixos.aarch64.wsl";
-  const script = `
-    const response = await fetch("https://api.github.com/repos/nix-community/NixOS-WSL/releases/latest", {
-      headers: { Accept: "application/vnd.github+json", "User-Agent": "Winix" },
-      signal: AbortSignal.timeout(30000),
-    });
-    if (!response.ok) throw new Error("NixOS-WSL release lookup failed: HTTP " + response.status);
-    const release = await response.json();
-    if (release.draft || release.prerelease) throw new Error("Expected a stable NixOS-WSL release");
-    const asset = release.assets?.find(asset => asset.name === ${JSON.stringify(assetName)});
-    if (!asset || !/^sha256:[a-f0-9]{64}$/.test(asset.digest)) throw new Error("Release asset lacks a SHA256 digest");
-    console.log(JSON.stringify({
-      source: "nixos-wsl", architecture: ${JSON.stringify(architecture)},
-      version: release.tag_name, url: asset.browser_download_url, sha256: asset.digest.slice(7),
-    }));
-  `;
-  const image: unknown = JSON.parse(execFileSync(process.execPath, ["--input-type=module", "--eval", script], {
-    encoding: "utf8", timeout: 45000, stdio: ["pipe", "pipe", "pipe"],
-  }));
-  if (!image || typeof image !== "object" || !validWslImage({ ...image, resolvedAt: "" })) {
+  const response = await fetch("https://api.github.com/repos/nix-community/NixOS-WSL/releases/latest", {
+    headers: { Accept: "application/vnd.github+json", "User-Agent": "Winix" },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!response.ok) throw new Error(`NixOS-WSL release lookup failed: HTTP ${response.status}`);
+  const release: unknown = await response.json();
+  if (!release || typeof release !== "object" || !("draft" in release) || release.draft !== false ||
+      !("prerelease" in release) || release.prerelease !== false) {
+    throw new Error("Expected a stable NixOS-WSL release");
+  }
+  const asset = "assets" in release && Array.isArray(release.assets)
+    ? release.assets.find((entry: unknown): entry is Record<string, unknown> =>
+      !!entry && typeof entry === "object" && "name" in entry && entry.name === assetName)
+    : undefined;
+  if (!asset || typeof asset.digest !== "string" || !/^sha256:[a-f0-9]{64}$/.test(asset.digest)) {
+    throw new Error("Release asset lacks a SHA256 digest");
+  }
+  const image = {
+    source: "nixos-wsl" as const, architecture,
+    version: "tag_name" in release ? release.tag_name : undefined,
+    url: asset.browser_download_url, sha256: asset.digest.slice(7), resolvedAt: "",
+  };
+  if (!validWslImage(image)) {
     throw new Error("Invalid official NixOS-WSL release image");
   }
-  const validated = image as Omit<WindowsLockWslImage, "resolvedAt">;
-  if (validated.architecture !== architecture) throw new Error("NixOS-WSL image architecture mismatch");
+  const { resolvedAt: _, ...validated } = image;
   return validated;
 };
 

@@ -216,7 +216,7 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
     );
     expect(changed.lock.modules?.["terminal-icons"]).toEqual(pin);
     expect(changed.lock.modules?.["terminal-icons@other"]?.version).toBe("0.12.0");
-    expect(() => resolveWindowsModuleLockEntries(emptyWindowsLock(), [module], () => "0.12.0-beta")).toThrow(/stable version/);
+    expect(() => resolveWindowsModuleLockEntries(emptyWindowsLock(), [module], () => "0.12.0-beta")).toThrow(/allowed version/);
   });
 
   describe("host PowerShell repository policy", () => {
@@ -248,10 +248,11 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
     it("applies after merging shared profile effects, without leaking into personal hosts", () => {
       const evaluated = workAndPersonal();
       const modules = collectWindowsModules(evaluated);
-      expect(modules.size).toBe(2);
+      expect(modules.size).toBe(4);
       const resolve = vi.fn(() => "0.11.0");
       const { lock } = resolveWindowsModuleLockEntries(emptyWindowsLock(), modules.values(), resolve);
-      expect(resolve).toHaveBeenCalledWith("Terminal-Icons", "approved", uri);
+      expect(resolve).toHaveBeenCalledWith("Terminal-Icons", "approved", uri, false);
+      expect(resolve).toHaveBeenCalledWith("Microsoft.Windows.Settings", "approved", uri, true);
       const docs = generateWindows(evaluated, lock).hosts;
       expect(docs.personal["configuration.winget"]).toContain("-Repository 'PSGallery'");
       expect(docs.personal["configuration.winget"]).not.toContain(uri);
@@ -259,7 +260,8 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
       expect(work).not.toContain("PSGallery");
       expect(work).toContain(uri);
       expect(work).toContain("-Repository 'approved'");
-      expect(work).toContain("Install-PSResource -Name Microsoft.Windows.Settings -Repository 'approved'");
+      expect(work).toContain("$name = 'Microsoft.Windows.Settings'");
+      expect(work).toContain("-Name $name -Version $version -Repository 'approved'");
       expect(work.match(/dependsOn: \["Register PowerShell repository approved"\]/g)).toHaveLength(2);
       expect(work).not.toContain("Unregister-PSResourceRepository");
       expect(work).not.toContain("-Trusted");
@@ -344,28 +346,34 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
   `)).toContain("REPOSITORY_OK");
     });
 
-    it.skipIf(!hasPowerShell7)("executes the generated Settings ensure command only against the approved feed", () => {
+    it.skipIf(!hasPowerShell7)("installs only the exact Settings prerelease from the approved feed and reuses it", () => {
       const evaluated = workAndPersonal();
       const { lock } = resolveWindowsModuleLockEntries(
-        emptyWindowsLock(), collectWindowsModules(evaluated).values(), () => "0.11.0"
+        emptyWindowsLock(), collectWindowsModules(evaluated).values(),
+        (name) => name === "Microsoft.Windows.Settings" ? "0.1.0-alpha.6" : "0.11.0"
       );
       const doc = generateWindows(evaluated, lock).hosts.work["configuration.winget"];
-      const script: string = JSON.parse(doc.match(/^\s*"3": (".*")$/m)![1]);
+      const section = doc.split('  - name: "Ensure Microsoft Windows Settings module"')[1].split("  - name:")[0];
+      const script = section.split("      setScript: |-\n")[1].split("\n")
+        .filter((line) => line.startsWith("        ")).map((line) => line.slice(8)).join("\n");
       expect(runPowerShell7(`
-$script:installed = $false
+$script:installed = 'alpha.5'
 $script:installs = 0
 function Get-Module {
   param([switch]$ListAvailable, [string]$Name)
-  if ($script:installed) { [pscustomobject]@{ Name = $Name } }
+  if ($script:installed) {
+    [pscustomobject]@{ Name = $Name; Version = [version]'0.1.0'; PrivateData = @{PSData=@{Prerelease=$script:installed}} }
+  }
 }
 function Install-PSResource {
   [CmdletBinding()]
-  param([string]$Name, [string]$Repository, [string]$Scope,
-    [switch]$Prerelease, [switch]$TrustRepository, [switch]$AcceptLicense)
-  if ($Name -ne 'Microsoft.Windows.Settings' -or $Repository -ne 'approved' -or $Scope -ne 'CurrentUser') {
+  param([string]$Name, [string]$Version, [string]$Repository, [string]$Scope,
+    [switch]$Prerelease, [switch]$TrustRepository, [switch]$AcceptLicense, [switch]$Reinstall)
+  if ($Name -ne 'Microsoft.Windows.Settings' -or $Repository -ne 'approved' -or $Scope -ne 'CurrentUser' -or
+      $Version -ne '0.1.0-alpha.6' -or -not $Prerelease) {
     throw 'Wrong module source or scope'
   }
-  $script:installed = $true
+  $script:installed = 'alpha.6'
   $script:installs++
 }
 & { ${script} }
@@ -395,7 +403,7 @@ if ($script:installs -ne 1) { throw 'Settings installation was not idempotent' }
       await writeFile(join(dir, "winix-windows.lock"), JSON.stringify({
         ...lock, modules: { "terminal-icons": { ...pin, version: "latest" } },
       }));
-      expect(() => readWindowsLock(dir)).toThrow(/invalid repository, stable version/);
+      expect(() => readWindowsLock(dir)).toThrow(/invalid repository, version/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -413,6 +421,28 @@ if ($script:installs -ne 1) { throw 'Settings installation was not idempotent' }
     expect(() => resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", () => {
       throw new Error("network unavailable");
     })).toThrow(/network unavailable/);
+  });
+
+  it("resolves and round-trips prereleases only for modules that explicitly allow them", async () => {
+    const prereleaseModule = { ...module, prerelease: true };
+    const version = resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", (script) => {
+      expect(script).toContain("-Prerelease");
+      expect(script).toContain("$version += '-' + $found[0].Prerelease");
+      return '"0.12.0-beta.2"';
+    }, true);
+    const { lock } = resolveWindowsModuleLockEntries(emptyWindowsLock(), [prereleaseModule], () => version);
+    const directory = await mkdtemp(join(tmpdir(), "winix-module-prerelease-"));
+    try {
+      await writeFile(join(directory, "winix-windows.lock"), serializeWindowsLock(lock));
+      expect(readWindowsLock(directory)).toEqual(lock);
+      const properties = powerShellModuleProperties(prereleaseModule, lock.modules!["terminal-icons"]);
+      expect(properties.testScript).toContain("$prerelease = 'beta.2'");
+      expect(properties.setScript).toContain("-Version $version -Repository 'PSGallery' -Prerelease");
+      expect(() => resolveWindowsModuleLockEntries(emptyWindowsLock(), [module], () => version)).toThrow("allowed version");
+      const stable = vi.fn(() => "0.11.0");
+      expect(resolveWindowsModuleLockEntries(lock, [module], stable, new Date(), true).changed).toBe(true);
+      expect(stable).toHaveBeenCalledTimes(1);
+    } finally { await rm(directory, { recursive: true, force: true }); }
   });
 
   it("keeps Unicode script data ASCII on the DSC transport without expanding PowerShell syntax", () => {

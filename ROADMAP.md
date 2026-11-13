@@ -15,6 +15,14 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Windows stabilization** — in-process WSL release resolution works in the
+  compiled executable as well as npm; explicit applied-state owner migration
+  preserves shared-resource/drift/removal protections; implicit Settings modules
+  use host-policy/source-aware pins with exact prerelease checks. The npm launcher
+  and bootstrap agree on supported Node 22.13+/24/26 (26: erasable TypeScript only).
+  Isolated regressions cover the Windows executable and real Node 22/24/26
+  runtimes. Native Settings/side-by-side adapted discovery and fresh-machine
+  activation remain unverified; package-inspection batching is deferred.
 - **Repository bootstrap and local SDK handoff** — Windows and Linux entrypoints
   clone/validate trusted HTTPS repositories, read exact SDK pins without evaluating
   config, verify matching standalone downloads, and separate no-change dry runs,

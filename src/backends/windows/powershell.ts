@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { powerShellLiteral } from "../../helpers/utils.ts";
 import type { WinDscProperties, WinPowerShellModule } from "../../types/index.ts";
 import type { WindowsLockModule } from "./lockfile.ts";
+import { powerShellModuleVersion } from "../../helpers/windows-repositories.ts";
 
 export function powerShellRepositoryScripts(name: string, uri: string): { get: string; test: string; set: string } {
   const prelude = [
@@ -28,10 +29,13 @@ export function resolvePowerShellModuleVersion(
   name: string,
   repository: string,
   repositoryUriOrRunner?: string | PowerShellGalleryRunner,
+  prereleaseOrRunner: boolean | PowerShellGalleryRunner = false,
   runner?: PowerShellGalleryRunner
 ): string {
   const repositoryUri = typeof repositoryUriOrRunner === "string" ? repositoryUriOrRunner : undefined;
-  const run = (typeof repositoryUriOrRunner === "function" ? repositoryUriOrRunner : runner) ??
+  const prerelease = prereleaseOrRunner === true;
+  const run = (typeof repositoryUriOrRunner === "function" ? repositoryUriOrRunner :
+    typeof prereleaseOrRunner === "function" ? prereleaseOrRunner : runner) ??
     ((script: string) => execFileSync(
       "pwsh", ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encode(script)],
       { encoding: "utf8" }
@@ -39,14 +43,16 @@ export function resolvePowerShellModuleVersion(
   const script = [
     "$ErrorActionPreference = 'Stop'",
     ...(repositoryUri ? [powerShellRepositoryScripts(repository, repositoryUri).set] : []),
-    `$found = @(Find-PSResource -Name ${powerShellLiteral(name)} -Repository ${powerShellLiteral(repository)} -ErrorAction Stop)`,
-    `if ($found.Count -ne 1 -or $found[0].Name -ine ${powerShellLiteral(name)} -or $found[0].Prerelease) { throw 'Expected one stable module release' }`,
-    "$found[0].Version.ToString() | ConvertTo-Json -Compress",
+    `$found = @(Find-PSResource -Name ${powerShellLiteral(name)} -Repository ${powerShellLiteral(repository)}${prerelease ? " -Prerelease" : ""} -ErrorAction Stop)`,
+    `if ($found.Count -ne 1 -or $found[0].Name -ine ${powerShellLiteral(name)}${prerelease ? "" : " -or $found[0].Prerelease"}) { throw 'Expected one matching module release' }`,
+    "$version = $found[0].Version.ToString()",
+    "if ($found[0].Prerelease) { $version += '-' + $found[0].Prerelease }",
+    "$version | ConvertTo-Json -Compress",
   ].join("\n");
   try {
     const version: unknown = JSON.parse(run(script).trim());
-    if (typeof version !== "string" || !/^\d+\.\d+\.\d+(?:\.\d+)?$/.test(version)) {
-      throw new Error("Repository did not return a stable module version");
+    if (typeof version !== "string" || !powerShellModuleVersion.test(version) || (!prerelease && version.includes("-"))) {
+      throw new Error("Repository did not return an allowed module version");
     }
     return version;
   } catch (error) {
@@ -67,11 +73,17 @@ export function powerShellModuleProperties(
   module: WinPowerShellModule,
   pin: WindowsLockModule
 ): WinDscProperties {
+  if (!powerShellModuleVersion.test(pin.version) || (!module.prerelease && pin.version.includes("-"))) {
+    throw new Error(`Module ${module.name} has an invalid or disallowed version pin`);
+  }
+  const [version, prerelease = ""] = pin.version.split(/-(.*)/s);
   const variables = [
     `$name = ${powerShellLiteral(module.name)}`,
     `$version = ${powerShellLiteral(pin.version)}`,
+    `$baseVersion = ${powerShellLiteral(version)}`,
+    `$prerelease = ${powerShellLiteral(prerelease)}`,
   ];
-  const present = "@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$version -and -not $_.PrivateData.PSData.Prerelease }).Count -gt 0";
+  const present = "@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0";
   const prelude = [
     "$ErrorActionPreference = 'Stop'",
     "if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }",
@@ -86,7 +98,7 @@ export function powerShellModuleProperties(
     setScript: [
       ...prelude,
       `if (${present}) { return }`,
-      `Install-PSResource -Name $name -Version $version -Repository ${powerShellLiteral(pin.repository)} -Scope CurrentUser -TrustRepository -AcceptLicense -Reinstall -ErrorAction Stop | Out-Null`,
+      `Install-PSResource -Name $name -Version $version -Repository ${powerShellLiteral(pin.repository)}${prerelease ? " -Prerelease" : ""} -Scope CurrentUser -TrustRepository -AcceptLicense -Reinstall -ErrorAction Stop | Out-Null`,
       `if (-not (${present})) { throw "Module $name $version was not installed" }`,
     ].join("\n"),
   };

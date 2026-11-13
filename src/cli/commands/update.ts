@@ -154,7 +154,7 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
   lock = resolvedModules.lock;
   changed = changed || resolvedModules.changed;
   if (wslImages && (opts.inputs.length === 0 || opts.inputs.includes("nixos-wsl"))) {
-    const images = resolveWindowsWslImages(lock, opts.resolveWindowsWslImage ?? resolveNixosWslImage, now);
+    const images = await resolveWindowsWslImages(lock, opts.resolveWindowsWslImage ?? resolveNixosWslImage, now);
     lock = images.lock;
     changed = changed || images.changed;
     console.log(`  ${images.changed ? "resolved" : "up to date"}  NixOS-WSL images (existing distros will not be reinstalled)`);

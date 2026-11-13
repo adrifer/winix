@@ -1,7 +1,8 @@
-#!/usr/bin/env -S node --experimental-transform-types --no-warnings
+#!/usr/bin/env node
 // Winix CLI entry point
 
 import { parseArgs } from "node:util";
+import { dirname } from "node:path";
 import { apply } from "./commands/apply.ts";
 import { check } from "./commands/check.ts";
 import { init, resolveWinixVersionRange } from "./commands/init.ts";
@@ -11,7 +12,11 @@ import { switchCommand } from "./commands/switch.ts";
 import { update } from "./commands/update.ts";
 import { renderSkill } from "../skill.ts";
 import { bootstrapCheckout, runCheckout } from "./commands/bootstrap.ts";
-import { forgetWindowsResource, windowsStatePath, type ManagedResource } from "./windows-state.ts";
+import {
+  forgetWindowsResource, windowsStatePath, listWindowsOwners, migrateWindowsOwner, windowsStateOwner,
+  type ManagedResource,
+} from "./windows-state.ts";
+import { findConfig } from "./loader.ts";
 
 if (process.argv[2] === "run") {
   try { await runCheckout(process.cwd(), process.argv.slice(3)); }
@@ -68,12 +73,14 @@ Commands:
   update       Update generated flake.lock and copy it to project root
   inspect      Print host composition and fragment graph
   state forget Release Windows removal ownership without deleting a resource
+  state owners List Windows applied-state owners and their migration IDs
+  state migrate-owner <id> Transfer an old owner's requirements to this checkout/--host
 
 Options:
   --host <name>   Target a specific host
   --prepare-only Stop bootstrap after validation/preview; no activation
-  --dry           Preview generation (apply) or activation and managed cleanup (switch)
-  -y, --yes       Confirm managed Windows removals without prompting (switch)
+  --dry           Preview generation, activation/cleanup, or owner migration
+  -y, --yes       Confirm bootstrap, managed removals, or explicit owner migration
   --diff          Show diff against current output (apply)
   --windows       Resolve Windows package/module/WSL image lockfile (update)
   --strict        Treat conflicts as errors (check)
@@ -103,8 +110,9 @@ if (values["prepare-only"] && command !== "bootstrap") {
   console.error("--prepare-only is only supported by winix bootstrap.");
   process.exit(2);
 }
-if (values.yes && command !== "switch" && command !== "bootstrap") {
-  console.error("--yes is only supported by winix switch or bootstrap.");
+if (values.yes && command !== "switch" && command !== "bootstrap" &&
+    !(command === "state" && positionals[1] === "migrate-owner")) {
+  console.error("--yes is only supported by winix switch, bootstrap or state migrate-owner.");
   process.exit(2);
 }
 
@@ -194,6 +202,22 @@ switch (command) {
   case "state":
     try {
       if (process.platform !== "win32") throw new Error("Windows applied state is only available on native Windows.");
+      if (positionals[1] === "owners" && positionals.length === 2) {
+        const owners = await listWindowsOwners(windowsStatePath());
+        for (const entry of owners) console.log(`${entry.id}  ${entry.owner}  (${entry.resources} resource(s))`);
+        if (!owners.length) console.log("No recorded Windows owners.");
+        break;
+      }
+      if (positionals[1] === "migrate-owner" && positionals.length === 3) {
+        if (!values.host) throw new Error("Owner migration requires --host <new-declared-host>");
+        const config = findConfig(cwd);
+        if (!config) throw new Error("Run owner migration from the new Winix config checkout.");
+        await migrateWindowsOwner(
+          windowsStatePath(), positionals[2], await windowsStateOwner(dirname(config), values.host),
+          { dry: values.dry, yes: values.yes },
+        );
+        break;
+      }
       let resource: ManagedResource;
       if (positionals[1] === "forget" && positionals[2] === "startup" && positionals.length === 4) {
         resource = { kind: "startup", name: positionals[3] };
@@ -201,7 +225,7 @@ switch (command) {
                  positionals.length === 5 && ["winget", "msstore"].includes(positionals[3])) {
         resource = { kind: "package", source: positionals[3], id: positionals[4] };
       } else {
-        throw new Error("Usage: winix state forget startup <name> [--dry] OR winix state forget package <winget|msstore> <id> [--dry]");
+        throw new Error("Usage: winix state owners | state migrate-owner <id> --host <name> [--dry|--yes] | state forget startup <name> [--dry] | state forget package <winget|msstore> <id> [--dry]");
       }
       await forgetWindowsResource(windowsStatePath(), resource, values.dry);
     } catch (err) {

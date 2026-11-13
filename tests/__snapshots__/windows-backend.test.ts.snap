@@ -67,15 +67,34 @@ metadata:
     processor: dscv3
 resources:
   - name: "Ensure Microsoft Windows Settings module"
-    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    type: Microsoft.DSC.Transitional/PowerShellScript
     properties:
-      executable: pwsh
-      arguments:
-        "0": -NoProfile
-        "1": -NoLogo
-        "2": -Command
-        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Repository 'PSGallery' -Scope CurrentUser -Prerelease -TrustRepository -AcceptLicense -ErrorAction Stop | Out-Null;   if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) { throw 'Microsoft.Windows.Settings was not installed' } }"
-        treatAsArray: true
+      getScript: |-
+        $ErrorActionPreference = 'Stop'
+        if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }
+        $name = 'Microsoft.Windows.Settings'
+        $version = '0.1.0-alpha.6'
+        $baseVersion = '0.1.0'
+        $prerelease = 'alpha.6'
+        Get-Module -ListAvailable -Name $name | Select-Object Name,@{Name='Version';Expression={$_.Version.ToString()}}
+      testScript: |-
+        $ErrorActionPreference = 'Stop'
+        if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }
+        $name = 'Microsoft.Windows.Settings'
+        $version = '0.1.0-alpha.6'
+        $baseVersion = '0.1.0'
+        $prerelease = 'alpha.6'
+        @(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0
+      setScript: |-
+        $ErrorActionPreference = 'Stop'
+        if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }
+        $name = 'Microsoft.Windows.Settings'
+        $version = '0.1.0-alpha.6'
+        $baseVersion = '0.1.0'
+        $prerelease = 'alpha.6'
+        if (@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0) { return }
+        Install-PSResource -Name $name -Version $version -Repository 'PSGallery' -Prerelease -Scope CurrentUser -TrustRepository -AcceptLicense -Reinstall -ErrorAction Stop | Out-Null
+        if (-not (@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0)) { throw "Module $name $version was not installed" }
   # Some Windows settings (including DeveloperMode) require
   # running winget configure from an elevated shell to change.
   - name: "Windows Settings"
@@ -160,15 +179,34 @@ metadata:
     processor: dscv3
 resources:
   - name: "Ensure Microsoft Windows Settings module"
-    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    type: Microsoft.DSC.Transitional/PowerShellScript
     properties:
-      executable: pwsh
-      arguments:
-        "0": -NoProfile
-        "1": -NoLogo
-        "2": -Command
-        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Repository 'PSGallery' -Scope CurrentUser -Prerelease -TrustRepository -AcceptLicense -ErrorAction Stop | Out-Null;   if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) { throw 'Microsoft.Windows.Settings was not installed' } }"
-        treatAsArray: true
+      getScript: |-
+        $ErrorActionPreference = 'Stop'
+        if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }
+        $name = 'Microsoft.Windows.Settings'
+        $version = '0.1.0-alpha.6'
+        $baseVersion = '0.1.0'
+        $prerelease = 'alpha.6'
+        Get-Module -ListAvailable -Name $name | Select-Object Name,@{Name='Version';Expression={$_.Version.ToString()}}
+      testScript: |-
+        $ErrorActionPreference = 'Stop'
+        if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }
+        $name = 'Microsoft.Windows.Settings'
+        $version = '0.1.0-alpha.6'
+        $baseVersion = '0.1.0'
+        $prerelease = 'alpha.6'
+        @(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0
+      setScript: |-
+        $ErrorActionPreference = 'Stop'
+        if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }
+        $name = 'Microsoft.Windows.Settings'
+        $version = '0.1.0-alpha.6'
+        $baseVersion = '0.1.0'
+        $prerelease = 'alpha.6'
+        if (@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0) { return }
+        Install-PSResource -Name $name -Version $version -Repository 'PSGallery' -Prerelease -Scope CurrentUser -TrustRepository -AcceptLicense -Reinstall -ErrorAction Stop | Out-Null
+        if (-not (@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0)) { throw "Module $name $version was not installed" }
   # Some Windows settings (including DeveloperMode) require
   # running winget configure from an elevated shell to change.
   - name: "Windows Settings"
@@ -866,15 +904,34 @@ resources:
     properties:
       executable: pwsh
   - name: "Ensure Microsoft Windows Settings module"
-    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    type: Microsoft.DSC.Transitional/PowerShellScript
     properties:
-      executable: pwsh
-      arguments:
-        "0": -NoProfile
-        "1": -NoLogo
-        "2": -Command
-        "3": "$ErrorActionPreference = 'Stop'; if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) {   Install-PSResource -Name Microsoft.Windows.Settings -Repository 'PSGallery' -Scope CurrentUser -Prerelease -TrustRepository -AcceptLicense -ErrorAction Stop | Out-Null;   if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) { throw 'Microsoft.Windows.Settings was not installed' } }"
-        treatAsArray: true
+      getScript: |-
+        $ErrorActionPreference = 'Stop'
+        if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }
+        $name = 'Microsoft.Windows.Settings'
+        $version = '0.1.0-alpha.6'
+        $baseVersion = '0.1.0'
+        $prerelease = 'alpha.6'
+        Get-Module -ListAvailable -Name $name | Select-Object Name,@{Name='Version';Expression={$_.Version.ToString()}}
+      testScript: |-
+        $ErrorActionPreference = 'Stop'
+        if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }
+        $name = 'Microsoft.Windows.Settings'
+        $version = '0.1.0-alpha.6'
+        $baseVersion = '0.1.0'
+        $prerelease = 'alpha.6'
+        @(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0
+      setScript: |-
+        $ErrorActionPreference = 'Stop'
+        if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }
+        $name = 'Microsoft.Windows.Settings'
+        $version = '0.1.0-alpha.6'
+        $baseVersion = '0.1.0'
+        $prerelease = 'alpha.6'
+        if (@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0) { return }
+        Install-PSResource -Name $name -Version $version -Repository 'PSGallery' -Prerelease -Scope CurrentUser -TrustRepository -AcceptLicense -Reinstall -ErrorAction Stop | Out-Null
+        if (-not (@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0)) { throw "Module $name $version was not installed" }
   # Some Windows settings (including DeveloperMode) require
   # running winget configure from an elevated shell to change.
   - name: "Windows Settings"
@@ -898,6 +955,13 @@ exports[`winix-windows.lock > writes deterministic JSON with sorted package keys
     "ZedIndustries.Zed": {
       "source": "winget",
       "version": "0.190.0",
+      "resolvedAt": "2026-06-24T18:37:00.000Z"
+    }
+  },
+  "modules": {
+    "microsoft.windows.settings": {
+      "repository": "PSGallery",
+      "version": "0.1.0-alpha.6",
       "resolvedAt": "2026-06-24T18:37:00.000Z"
     }
   }

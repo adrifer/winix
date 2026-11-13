@@ -4,6 +4,7 @@ export default workspace({
   inputs: {},
   hosts: [
     host("windows-shell", platforms.windows(), ({ windows }) => {
+      // Settings also uses the exact module pin in winix-windows.lock.
       const developerMode = windows.setting({ DeveloperMode: true });
       const icons = windows.powershell.module("Terminal-Icons");
       const wslRuntime = windows.package({ id: "Microsoft.WSL", version: "2.6.1" });

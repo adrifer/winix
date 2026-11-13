@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-11T00:00:00.000Z",
+  "generatedAt": "2026-11-13T00:00:00.000Z",
   "packages": {
     "Microsoft.WSL": {
       "source": "winget",
@@ -9,6 +9,11 @@
     }
   },
   "modules": {
+    "microsoft.windows.settings": {
+      "repository": "PSGallery",
+      "version": "0.1.1-alpha",
+      "resolvedAt": "2026-11-13T00:00:00.000Z"
+    },
     "terminal-icons": {
       "repository": "PSGallery",
       "version": "0.11.0",

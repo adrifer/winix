@@ -99,7 +99,7 @@ export function wslSetupPrelude(setup: WinWslSetup, pin: WindowsLockWslRepositor
     const extension = import.meta.url.endsWith(".ts") ? "ts" : "js";
     const source = readFileSync(new URL(`./wsl-setup-runtime.${extension}`, import.meta.url), "utf8");
     const runtime = extension === "ts"
-      ? (createRequire(import.meta.url)("node:module") as typeof import("node:module")).stripTypeScriptTypes(source, { mode: "transform" })
+      ? (createRequire(import.meta.url)("node:module") as typeof import("node:module")).stripTypeScriptTypes(source, { mode: "strip" })
       : source;
     launch = [
       `export WINIX_WSL_SETUP_RUNTIME='${Buffer.from(runtime + "\nawait dispatchWslSetup();\n").toString("base64")}'`,

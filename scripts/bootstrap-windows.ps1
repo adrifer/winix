@@ -94,12 +94,14 @@ function Get-WinixBootstrapTools {
                 throw "Prerelease $($tool.Command) is not supported by this bootstrap. Install a stable release."
             }
         }
+        $ready = $null -ne $version -and $version -ge [version]$tool.Minimum
+        if ($tool.Command -eq 'node.exe' -and $ready -and $version.Major -notin @(22, 24, 26)) { $ready = $false }
         [pscustomobject]@{
             Id = $tool.Id
             Command = $tool.Command
             Path = $path
             Version = $version
-            Ready = $null -ne $version -and $version -ge [version]$tool.Minimum
+            Ready = $ready
             Minimum = $tool.Minimum
         }
     }
@@ -116,10 +118,14 @@ function Test-WinixBootstrapCapabilities {
         if (-not $npm) { throw 'npm.cmd is unavailable. Repair the Node.js installation or open a new terminal, then rerun.' }
         Invoke-WinixBootstrapNative $npm @('--version') | Out-Null
         $node = Get-WinixBootstrapApplication 'node.exe'
-        Invoke-WinixBootstrapNative $node @(
-            '--experimental-transform-types', '--no-warnings', '--input-type=module', '--eval',
+        $nodeVersion = (Invoke-WinixBootstrapNative $node @('--version')) -join ''
+        if ($nodeVersion -notmatch '^v?(22|24|26)\.') { throw 'Winix npm supports stable Node 22.13+, 24.x or 26.x.' }
+        $nodeArgs = @(
+            '--no-warnings', '--input-type=module', '--eval',
             "import { stripTypeScriptTypes } from 'node:module'; stripTypeScriptTypes('const x: number = 1');"
-        ) | Out-Null
+        )
+        if ([int]$Matches[1] -lt 26) { $nodeArgs = @('--experimental-transform-types') + $nodeArgs }
+        Invoke-WinixBootstrapNative $node $nodeArgs | Out-Null
     }
     $pwsh = Get-WinixBootstrapApplication 'pwsh.exe'
     $script = @'

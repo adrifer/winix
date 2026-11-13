@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 const binary = process.env.WINIX_STANDALONE_TEST_BINARY;
 
-describe.skipIf(!binary)("standalone executable without node_modules", () => {
+describe.skipIf(!binary)("standalone executable without node_modules", { timeout: 30000 }, () => {
   const run = (cwd: string, args: string[], env: NodeJS.ProcessEnv = {}) =>
     execFileSync(resolve(binary!), args, {
       cwd, env: { ...process.env, ...env }, encoding: "utf8", timeout: 30000,
@@ -66,6 +66,59 @@ export default workspace({ inputs: {}, hosts: [
       expect(output).toContain("winix check");
       expect(output).not.toContain("npm install");
       expect(run(directory, ["check"])).toContain("Configuration valid");
+    } finally { await rm(directory, { recursive: true, force: true }); }
+  });
+
+  it("resolves missing and explicitly updated WSL image pins in the compiled process", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "winix-binary-images-"));
+    try {
+      await writeFile(join(directory, "winix.config.ts"), `
+import { host, platforms, workspace } from "@adrifer/winix";
+globalThis.fetch = async (url) => {
+  if (String(url) !== "https://api.github.com/repos/nix-community/NixOS-WSL/releases/latest") {
+    throw new Error("Unexpected network request: " + url);
+  }
+  return Response.json({ draft: false, prerelease: false, tag_name: "2605.7.2", assets: [
+    ...["nixos.wsl", "nixos.aarch64.wsl"].map(name => ({
+      name, digest: "sha256:" + "a".repeat(64),
+      browser_download_url: "https://github.com/nix-community/NixOS-WSL/releases/download/2605.7.2/" + name
+    }))
+  ] });
+};
+export default workspace({ inputs: {}, hosts: [
+  host("test", platforms.windows(), ({ windows }) => {
+    windows.package({ id: "Microsoft.WSL", version: "2.6.1" });
+    windows.wsl();
+    windows.wsl.distro("NixOS", { source: "nixos-wsl", installLocation: "D:/WSL/WinixTest" });
+  })
+] });
+`);
+      const output = run(directory, ["apply", "--dry", "--host", "test"]);
+      expect(output).toContain("2605.7.2");
+      expect(output).toContain("nixos.aarch64.wsl");
+      expect(run(directory, ["update", "--windows", "nixos-wsl", "--dry"])).toContain("NixOS-WSL images");
+      await expect(readFile(join(directory, "winix-windows.lock"))).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(readFile(join(directory, ".winix", "out", "test", "configuration.winget"))).rejects.toMatchObject({ code: "ENOENT" });
+      const lockPath = join(directory, "winix-windows.lock");
+      const previous = JSON.stringify({
+        version: 1, generatedAt: "2026-01-01T00:00:00.000Z", packages: {},
+        wslImages: Object.fromEntries(["x64", "arm64"].map(architecture => [`nixos-wsl/${architecture}`, {
+          source: "nixos-wsl", architecture, version: "2405.1", sha256: "b".repeat(64),
+          url: "https://github.com/nix-community/NixOS-WSL/releases/download/2405.1/" +
+            (architecture === "x64" ? "nixos.wsl" : "nixos.aarch64.wsl"),
+          resolvedAt: "2026-01-01T00:00:00.000Z",
+        }])),
+      });
+      await writeFile(lockPath, previous);
+      run(directory, ["update", "--windows", "nixos-wsl", "--dry"]);
+      expect(await readFile(lockPath, "utf8")).toBe(previous);
+      run(directory, ["update", "--windows", "nixos-wsl"]);
+      const updated = JSON.parse(await readFile(lockPath, "utf8"));
+      for (const architecture of ["x64", "arm64"]) {
+        expect(updated.wslImages[`nixos-wsl/${architecture}`]).toMatchObject({
+          architecture, version: "2605.7.2", sha256: "a".repeat(64),
+        });
+      }
     } finally { await rm(directory, { recursive: true, force: true }); }
   });
 

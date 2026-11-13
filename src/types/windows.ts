@@ -34,6 +34,8 @@ export interface WinPowerShellModule {
   name: string;
   /** Omitted repositories inherit the host policy after all fragments merge. */
   repository?: string;
+  /** Allow prereleases when resolving the lock; installations still use an exact pin. */
+  prerelease?: boolean;
 }
 
 export interface WinPowerShellRepositoryPolicy {

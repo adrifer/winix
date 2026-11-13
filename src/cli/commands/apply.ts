@@ -71,7 +71,7 @@ export async function applyWorkspace(
   const windowsHosts = evaluated.filter((host) => hostPlatforms.get(host.name) === "windows");
   for (const host of windowsHosts) validateWindowsWslResources(host.windows);
   const windowsLock = windowsHosts.length > 0
-    ? prepareWindowsLock(
+    ? await prepareWindowsLock(
       configDir,
       windowsHosts,
       opts.dry || opts.windowsLockDry === true,
@@ -145,7 +145,7 @@ export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
   await applyWorkspace(cwd, opts);
 }
 
-function prepareWindowsLock(
+async function prepareWindowsLock(
   configDir: string,
   windowsHosts: ReturnType<typeof evaluate>,
   dry: boolean,
@@ -153,7 +153,7 @@ function prepareWindowsLock(
   resolveModuleVersion: WindowsModuleVersionResolver,
   resolveWslImage: WindowsWslImageResolver,
   resolveRepository: WindowsWslRepositoryResolver
-): WindowsLock {
+): Promise<WindowsLock> {
   const now = new Date();
   const lock = readWindowsLock(configDir) ?? emptyWindowsLock(now);
   const reconciled = reconcileInlinePins(lock, windowsHosts, now);
@@ -167,7 +167,7 @@ function prepareWindowsLock(
     resolved.lock, collectWindowsModules(windowsHosts).values(), resolveModuleVersion, now, true
   );
   const images = hasWindowsWslDistros(windowsHosts)
-    ? resolveWindowsWslImages(modules.lock, resolveWslImage, now, true)
+    ? await resolveWindowsWslImages(modules.lock, resolveWslImage, now, true)
     : { lock: modules.lock, changed: false };
   const repositories = resolveWindowsWslRepositories(images.lock, windowsHosts, resolveRepository, now, true);
   const changed = windowsLockChanged(lock, repositories.lock);

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { hostname } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
@@ -46,6 +46,51 @@ export function resourceKey(resource: ManagedResource): string {
   return JSON.stringify(resource.kind === "startup"
     ? ["startup", resource.name.toLowerCase()]
     : ["package", resource.source.toLowerCase(), resource.id.toLowerCase()]);
+}
+
+export async function windowsStateOwner(configDir: string, host: string): Promise<string> {
+  if (!host) throw new Error("A host name is required");
+  return JSON.stringify([(await realpath(configDir)).toLowerCase(), host]);
+}
+
+export function windowsOwnerId(owner: string): string {
+  return createHash("sha256").update(owner).digest("hex");
+}
+
+export async function listWindowsOwners(path: string): Promise<{ id: string; owner: string; resources: number }[]> {
+  const state = await loadState(path);
+  const counts = new Map<string, number>();
+  for (const entry of Object.values(state.entries)) {
+    for (const owner of new Set(entry.owners)) counts.set(owner, (counts.get(owner) ?? 0) + 1);
+  }
+  return [...counts].sort(([left], [right]) => left.localeCompare(right))
+    .map(([owner, resources]) => ({ id: windowsOwnerId(owner), owner, resources }));
+}
+
+export async function migrateWindowsOwner(
+  path: string, oldId: string, target: string, opts: { dry: boolean; yes?: boolean },
+  report: (message: string) => void = console.log,
+): Promise<void> {
+  if (!/^[a-f0-9]{64}$/i.test(oldId) || !target) throw new Error("Use an owner ID from winix state owners and a target owner");
+  if (!opts.dry && !opts.yes) {
+    throw new Error("Owner migration changes applied-state requirements. Preview with --dry, then confirm with --yes. No resources will be deleted.");
+  }
+  await withWindowsStateLock(path, opts.dry, async () => {
+    const state = await loadState(path);
+    const owners = new Set(Object.values(state.entries).flatMap((entry) => entry.owners));
+    const matches = [...owners].filter((owner) => windowsOwnerId(owner) === oldId.toLowerCase());
+    if (matches.length !== 1) throw new Error("Recorded owner not found or ambiguous; run winix state owners");
+    const previous = matches[0];
+    if (previous === target) throw new Error("The recorded owner already matches this checkout and host");
+    report(`${opts.dry ? "Would migrate" : "Migrating"} owner ${previous} -> ${target}`);
+    for (const [key, entry] of Object.entries(state.entries)) {
+      if (!entry.owners.includes(previous)) continue;
+      report(`  ${key}`);
+      entry.owners = [...new Set(entry.owners.map((owner) => owner === previous ? target : owner))];
+    }
+    if (!opts.dry) await saveState(path, state);
+    report("No installed resources changed. Ownership, snapshots and shared requirements are preserved; the next switch still checks drift and confirms removals.");
+  });
 }
 
 export function managedWindowsResources(host: EvaluatedHost): ManagedResource[] {
@@ -201,7 +246,8 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
       const entry = state.entries[key];
       if (typeof opts.definitions[key] !== "string") throw new Error(`Missing resource definition: ${key}`);
       if (entry?.owners.some((owner) => owner !== opts.owner) && entry.definition !== opts.definitions[key]) {
-        throw new Error(`Conflicting declaration for resource required by another workspace/host: ${key}`);
+        throw new Error(`Conflicting declaration for resource required by another workspace/host: ${key}. ` +
+          "Run winix state owners; after a checkout move or host rename, explicitly preview state migrate-owner <id> --host <name> --dry.");
       }
       if (entry?.owned && current !== null && !sameSnapshot(current, entry.snapshot)) {
         throw new Error(`Managed resource changed outside Winix: ${key}. Restore it or explicitly resolve ownership before activation.`);

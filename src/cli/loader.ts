@@ -28,7 +28,7 @@ export async function loadWorkspace(cwd: string): Promise<LoadResult> {
 
   const configDir = dirname(configPath);
 
-  // Import the config file (requires Node --experimental-strip-types or pre-compiled)
+  // The npm launcher or embedded runtime supplies TypeScript support.
   const fileUrl = pathToFileURL(configPath).href;
   const mod = await import(fileUrl);
 
@@ -42,7 +42,7 @@ export async function loadWorkspace(cwd: string): Promise<LoadResult> {
   return { workspace, configDir, configPath };
 }
 
-function findConfig(dir: string): string | null {
+export function findConfig(dir: string): string | null {
   let current = resolve(dir);
 
   for (let i = 0; i < 10; i++) {

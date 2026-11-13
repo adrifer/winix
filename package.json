@@ -40,9 +40,13 @@
     }
   },
   "bin": {
-    "winix": "dist/cli/index.js"
+    "winix": "scripts/winix.mjs"
+  },
+  "engines": {
+    "node": "^22.13.0 || ^24.0.0 || ^26.0.0"
   },
   "files": [
+    "scripts/winix.mjs",
     "scripts/bootstrap-windows.ps1",
     "scripts/bootstrap-nixos.sh",
     "scripts/bootstrap-linux.sh",

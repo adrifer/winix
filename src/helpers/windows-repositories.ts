@@ -5,6 +5,12 @@ export interface ResolvedPowerShellModule extends WinPowerShellModule {
   repositoryUri?: string;
 }
 
+export const powerShellModuleVersion = /^\d+\.\d+\.\d+(?:\.\d+)?(?:-[a-z0-9]+(?:[.-][a-z0-9]+)*)?$/i;
+
+export function windowsSettingsModule(win: WindowsOptions): ResolvedPowerShellModule {
+  return resolvePowerShellModule(win, { name: "Microsoft.Windows.Settings", prerelease: true });
+}
+
 export const powerShellRepositoryName = /^[a-z0-9][a-z0-9._-]*$/i;
 
 export function powerShellRepositoryUri(value: string): string {

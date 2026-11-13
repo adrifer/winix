@@ -729,6 +729,50 @@ describe("winix apply Windows output", () => {
 });
 
 describe("PowerShell module CLI locking", () => {
+  it("pins implicit Settings from the approved feed, reuses it offline and updates it explicitly", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-settings-cli-"));
+    const uri = "https://packages.example.com/powershell/v3/index.json";
+    try {
+      await writeConfig(dir, `
+        host("work", platforms.windows(), ({ windows }) => {
+          windows.setting({ DeveloperMode: true });
+          windows.powershell.module("Terminal-Icons");
+          windows.powershell.repositories({
+            repositories: { approved: { uri: ${JSON.stringify(uri)} } },
+            default: "approved", allowed: ["approved"],
+          });
+        })
+      `);
+      const resolve = vi.fn((name: string) => name === "Microsoft.Windows.Settings" ? "0.1.0-alpha.6" : "0.11.0");
+      await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsModuleVersion: resolve });
+      expect(resolve).toHaveBeenCalledWith("Microsoft.Windows.Settings", "approved", uri, true);
+      const before = readWindowsLock(dir)!;
+      const offline = () => { throw new Error("offline"); };
+      await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsModuleVersion: offline });
+      expect(readWindowsLock(dir)).toEqual(before);
+      const resolveUpdate = vi.fn(() => "0.1.0-alpha.7");
+      await update(dir, {
+        inputs: ["Microsoft.Windows.Settings"], windows: true, dry: true,
+        resolveWindowsModuleVersion: resolveUpdate,
+      });
+      expect(resolveUpdate).toHaveBeenCalledExactlyOnceWith("Microsoft.Windows.Settings", "approved", uri, true);
+      expect(readWindowsLock(dir)).toEqual(before);
+      await update(dir, {
+        inputs: ["Microsoft.Windows.Settings"], windows: true, dry: false,
+        resolveWindowsModuleVersion: resolveUpdate,
+      });
+      for (const [key, pin] of Object.entries(before.modules!)) {
+        expect(readWindowsLock(dir)!.modules![key].version).toBe(
+          key.startsWith("microsoft.windows.settings") ? "0.1.0-alpha.7" : pin.version);
+      }
+      await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsModuleVersion: offline });
+      const output = await readFile(join(dir, ".winix", "out", "work", "configuration.winget"), "utf8");
+      expect(output).toContain("$version = '0.1.0-alpha.7'");
+      expect(output).toContain("-Repository 'approved'");
+      expect(output).not.toContain("PSGallery");
+    } finally { await rm(dir, { recursive: true, force: true }); }
+  });
+
   it("updates a named module across personal and work sources without changing unrelated pins", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-module-work-cli-"));
     const uri = "https://packages.example.com/powershell/v3/index.json";
@@ -751,7 +795,7 @@ describe("PowerShell module CLI locking", () => {
       await applyWorkspace(dir, {
         host: "work", dry: false, diff: false, resolveWindowsModuleVersion: resolve,
       });
-      expect(resolve).toHaveBeenCalledExactlyOnceWith("Terminal-Icons", "approved", uri);
+      expect(resolve).toHaveBeenCalledExactlyOnceWith("Terminal-Icons", "approved", uri, false);
       await applyWorkspace(dir, {
         dry: false, diff: false, resolveWindowsModuleVersion: () => "0.11.0",
       });

@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync } from "node:fs";
@@ -14,7 +14,15 @@ const script = join(process.cwd(), "scripts", "bootstrap-windows.ps1").replaceAl
 const shells = [
   join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
   "pwsh",
-];
+].filter((shell) => {
+  if (process.platform !== "win32") return true;
+  const probe = spawnSync(shell, ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "Get-ExecutionPolicy"], { encoding: "utf8", timeout: 15000 });
+  if (probe.error) throw probe.error;
+  if (probe.status !== 0 && !probe.stderr.includes("CouldNotAutoloadMatchingModule")) throw new Error(probe.stderr);
+  const blocked = probe.status !== 0 || ["AllSigned", "Restricted"].includes(probe.stdout.trim());
+  if (blocked) console.warn(`Skipping bootstrap fixtures in ${shell}: host signing policy/security module prevents unsigned script execution.`);
+  return !blocked;
+});
 
 function run(shell: string, setup: string, options = "-Yes", action = "Invoke-WinixWindowsBootstrap"): BootstrapResult {
   const harness = `
@@ -79,7 +87,7 @@ catch { $failure = $_.Exception.Message }
 'WINIX_RESULT:' + (@{ ok = $ok; error = $failure; calls = @($script:calls) } | ConvertTo-Json -Depth 8 -Compress)
 `;
   const output = execFileSync(shell, [
-    "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+    "-NoLogo", "-NoProfile", "-NonInteractive",
     "-EncodedCommand", Buffer.from(harness, "utf16le").toString("base64"),
   ], { encoding: "utf8", timeout: 30000, stdio: ["ignore", "pipe", "pipe"] });
   const result = output.split(/\r?\n/).find((line) => line.startsWith("WINIX_RESULT:"));
@@ -88,6 +96,20 @@ catch { $failure = $_.Exception.Message }
 }
 
 describe.skipIf(process.platform !== "win32").each(shells)("Windows bootstrap using %s (mocked installations)", (shell) => {
+  it.each(["22.13.0", "24.0.0", "26.0.0"])("probes supported Node %s without passing removed flags to Node 26", (version) => {
+    const result = run(shell, `$script:versions['node.exe'] = '${version}'`, "-Check");
+    expect(result.ok, result.error ?? "").toBe(true);
+    const probe = result.calls.find((call) => call.file === "node.exe" && call.args.includes("--eval"));
+    expect(probe).toBeDefined();
+    expect(probe!.args.includes("--experimental-transform-types")).toBe(!version.startsWith("26."));
+  });
+
+  it.each(["22.12.0", "25.0.0", "28.0.0"])("rejects unsupported Node %s during check without installing anything", (version) => {
+    const result = run(shell, `$script:versions['node.exe'] = '${version}'`, "-Check");
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Prerequisites are missing or too old");
+    expect(result.calls.some((call) => ["install", "upgrade"].includes(call.args[0]))).toBe(false);
+  });
   it("prepares a pinned checkout without npm and preserves it on rerun", () => {
     const root = mkdtempSync(join(tmpdir(), "winix-repository-"));
     try {
@@ -187,7 +209,7 @@ try {
 } catch { $_.Exception.Message }
 `;
     const output = execFileSync(shell, [
-      "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+      "-NoLogo", "-NoProfile", "-NonInteractive",
       "-EncodedCommand", Buffer.from(harness, "utf16le").toString("base64"),
     ], { encoding: "utf8", timeout: 30000, stdio: ["ignore", "pipe", "pipe"] });
     expect(output).toContain(code === 3010 ? "requires a restart" : "exit 7");

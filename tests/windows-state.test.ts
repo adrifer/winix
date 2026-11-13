@@ -6,6 +6,7 @@ import { createInterface } from "node:readline/promises";
 import { describe, expect, it, vi } from "vitest";
 import {
   parseAppliedState, reconcileWindows, resourceKey, forgetWindowsResource, confirmWindowsRemovals,
+  listWindowsOwners, migrateWindowsOwner, windowsOwnerId,
   type ManagedResource, type ResourceSnapshot,
 } from "../src/cli/windows-state.ts";
 
@@ -65,6 +66,60 @@ async function fixture(run: (fixture: {
 }
 
 describe("Windows applied-state reconciliation", () => {
+  it("explicitly migrates a moved/renamed owner and then permits its package version update", async () => fixture(async (f) => {
+    await f.apply([pkg]);
+    const before = await readFile(f.statePath, "utf8");
+    const owners = await listWindowsOwners(f.statePath);
+    expect(owners).toEqual([{ id: windowsOwnerId("workspace-A/desktop"), owner: "workspace-A/desktop", resources: 1 }]);
+    const target = "moved-checkout/renamed-host";
+    await expect(f.apply([pkg], { owner: target, definition: "v2" })).rejects.toThrow("Conflicting declaration");
+    await expect(migrateWindowsOwner(f.statePath, owners[0].id, target, { dry: false })).rejects.toThrow("--yes");
+    const report = vi.fn();
+    await migrateWindowsOwner(f.statePath, owners[0].id, target, { dry: true }, report);
+    expect(await readFile(f.statePath, "utf8")).toBe(before);
+    await migrateWindowsOwner(f.statePath, owners[0].id, target, { dry: false, yes: true }, report);
+    const migrated = parseAppliedState(await readFile(f.statePath, "utf8"));
+    expect(migrated.entries[resourceKey(pkg)]).toEqual({
+      ...parseAppliedState(before).entries[resourceKey(pkg)], owners: [target],
+    });
+    await f.apply([pkg], { owner: target, definition: "v2", activate: async () => {
+      f.actual.set(resourceKey(pkg), { version: "2.0" });
+    } });
+    expect(f.actual.get(resourceKey(pkg))).toEqual({ version: "2.0" });
+    expect(f.remove).not.toHaveBeenCalled();
+  }));
+
+  it("migration preserves other owners, drift checks and removal confirmation", async () => fixture(async (f) => {
+    await f.apply([pkg, startup]);
+    await f.apply([pkg], { owner: "workspace-B/desktop" });
+    await migrateWindowsOwner(f.statePath, windowsOwnerId("workspace-A/desktop"), "new", { dry: false, yes: true }, () => {});
+    await expect(f.apply([pkg], { owner: "new", definition: "v2" })).rejects.toThrow("Conflicting declaration");
+    f.actual.set(resourceKey(startup), changed);
+    await expect(f.apply([pkg, startup], { owner: "new" })).rejects.toThrow("changed outside Winix");
+    await expect(f.apply([], { owner: "new" })).rejects.toThrow("externally modified");
+    f.actual.set(resourceKey(startup), shortcut);
+    vi.stubGlobal("process", { ...process, stdin: { isTTY: false }, stdout: { isTTY: false } });
+    try { await expect(f.apply([], { owner: "new", yes: false })).rejects.toThrow("confirmation"); }
+    finally { vi.unstubAllGlobals(); }
+    expect(f.remove).not.toHaveBeenCalled();
+  }));
+
+  it("merges an already-recorded destination without adopting external packages or losing shared ownership", async () => fixture(async (f) => {
+    f.actual.set(resourceKey(pkg), installed);
+    await f.apply([pkg, startup]);
+    await f.apply([pkg], { owner: "new" });
+    await migrateWindowsOwner(f.statePath, windowsOwnerId("workspace-A/desktop"), "new", { dry: false, yes: true }, () => {});
+    const state = parseAppliedState(await readFile(f.statePath, "utf8"));
+    expect(state.entries[resourceKey(pkg)].owners).toEqual(["new"]);
+    expect(state.entries[resourceKey(pkg)].owned).toBe(false);
+    expect(state.entries[resourceKey(startup)].owned).toBe(true);
+    await f.apply([], { owner: "new" });
+    expect(f.remove).toHaveBeenCalledTimes(1);
+    expect(f.actual.get(resourceKey(pkg))).toEqual(installed);
+    await expect(migrateWindowsOwner(f.statePath, "f".repeat(64), "new", { dry: false, yes: true }, () => {}))
+      .rejects.toThrow("not found");
+  }));
+
   it.each(["close", "SIGINT"])("cancels confirmation when the prompt receives %s", async (event) => {
     const readline = await vi.importActual<typeof import("node:readline/promises")>("node:readline/promises");
     const prompt = readline.createInterface({ input: new PassThrough(), output: new PassThrough() });

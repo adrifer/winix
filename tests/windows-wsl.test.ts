@@ -117,16 +117,16 @@ describe("Windows WSL SDK and backend", () => {
 });
 
 describe("NixOS-WSL image locks", () => {
-  it("pins both architectures once, preserves old locks and refreshes only on explicit update", () => {
+  it("pins both architectures once, preserves old locks and refreshes only on explicit update", async () => {
     const resolver = vi.fn(image);
     const original = emptyWindowsLock(now);
-    const result = resolveWindowsWslImages(original, resolver, now, true);
+    const result = await resolveWindowsWslImages(original, resolver, now, true);
     expect(resolver).toHaveBeenCalledTimes(2);
     expect(JSON.parse(serializeWindowsLock(result.lock)).wslImages).toEqual(pins);
     expect(original.wslImages).toBeUndefined();
-    expect(resolveWindowsWslImages(result.lock, resolver, now, true).changed).toBe(false);
+    expect((await resolveWindowsWslImages(result.lock, resolver, now, true)).changed).toBe(false);
     expect(resolver).toHaveBeenCalledTimes(2);
-    expect(resolveWindowsWslImages(result.lock, resolver, now).changed).toBe(false);
+    expect((await resolveWindowsWslImages(result.lock, resolver, now)).changed).toBe(false);
     expect(resolver).toHaveBeenCalledTimes(4);
   });
 
@@ -145,10 +145,10 @@ describe("NixOS-WSL image locks", () => {
         expect(() => readWindowsLock(dir)).toThrow("WSL image");
       }
       const before = serializeWindowsLock(lock);
-      expect(() => resolveWindowsWslImages(lock, (architecture) => {
+      await expect(resolveWindowsWslImages(lock, (architecture) => {
         if (architecture === "arm64") throw new Error("offline");
         return { ...image(architecture), sha256: "b".repeat(64) };
-      })).toThrow("offline");
+      })).rejects.toThrow("offline");
       expect(serializeWindowsLock(lock)).toBe(before);
     } finally { await rm(dir, { recursive: true, force: true }); }
   });
