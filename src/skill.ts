@@ -399,8 +399,19 @@ are automatically uninstalled after successful activation; always preview
 with \`winix switch --dry\`. Other recorded owners prevent removal.
 Switches with package/startup removals prompt before activation; declining cancels
 the entire switch. Use \`--yes\`/\`-y\` for automation; noninteractive runs with
-removals require it. Dry runs and switches without removals do not prompt.
-External shortcut edits/package-version drift block reconciliation.
+removals require it. Dry runs do not prompt.
+Native Windows switch treats floating package locks as minimum versions/fresh
+install targets: install missing, upgrade older, keep newer without downgrading.
+Owned external upgrades retain ownership and refresh observed snapshots after
+successful activation; pre-installed packages remain unowned. An inline version
+is exact: existing mismatches fail explicitly before activation.
+Unequal non-dotted-numeric versions cannot be ordered and require explicit
+resolution. Interactive successful switches offer a separate [y/N] lock update
+for newer floating packages. Declining continues; dry/noninteractive runs do not
+update observed-version pins, and --yes does not accept lock-update prompts.
+Plain apply/direct DSC scripts keep lock-based generation.
+External shortcut edits, package downgrades and exact-pin drift still block
+reconciliation; externally modified removals remain protected.
 \`winix state forget startup <name>\` or
 \`winix state forget package <winget|msstore> <id>\` releases removal ownership
 without deleting the resource; --dry previews. Do not copy applied state to a

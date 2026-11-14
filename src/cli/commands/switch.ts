@@ -17,6 +17,11 @@ import {
   platformForEvaluatedHost,
 } from "../activation.ts";
 import { applyWorkspace } from "./apply.ts";
+import { readWindowsLock, serializeWindowsLock, writeWindowsLock } from "../../backends/windows/lockfile.ts";
+import {
+  compareWindowsPackageVersions, confirmWindowsPackageLockUpdate, effectiveWindowsPackageVersion,
+  type WindowsPackageRequirement,
+} from "../windows-package-versions.ts";
 
 interface SwitchOptions {
   host?: string;
@@ -40,11 +45,38 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
   const statePath = platform === "windows" && process.platform === "win32"
     ? opts.windowsState?.path ?? windowsStatePath() : undefined;
   const performSwitch = async () => {
+    const adapter = opts.windowsState?.adapter ?? nativeWindowsStateAdapter;
+    const requirements: Record<string, WindowsPackageRequirement> = {};
+    const activationVersions: Record<string, string> = {};
+    const newer: { id: string; installed: string; locked: string }[] = [];
     const result = await applyWorkspace(cwd, {
       host: hostName,
       dry: opts.dry && platform === "windows",
       diff: false,
       windowsLockDry: opts.dry,
+      windowsPackageVersions: statePath ? async (hosts, lock) => {
+        const versions: Record<string, string> = {};
+        for (const host of hosts) {
+          for (const resource of managedWindowsResources(host)) {
+            if (resource.kind !== "package") continue;
+            const pkg = (host.windows as WindowsOptions).packages?.[resource.id];
+            const version = pkg?.version ?? lock.packages[resource.id]?.version;
+            if (!version) throw new Error(`Missing package version: ${resource.id}`);
+            const requirement = { version, exact: pkg?.version !== undefined };
+            requirements[resourceKey(resource)] = requirement;
+            const snapshot = await adapter.inspect(resource);
+            if (snapshot !== null && !("version" in snapshot)) throw new Error(`Invalid package snapshot: ${resource.id}`);
+            const installed = snapshot?.version;
+            versions[resource.id] = effectiveWindowsPackageVersion(resource.id, requirement, installed);
+            activationVersions[resourceKey(resource)] = versions[resource.id];
+            if (!requirement.exact && installed !== undefined && compareWindowsPackageVersions(installed, version) > 0) {
+              console.log(`Keeping ${resource.id} ${installed} (locked ${version}).`);
+              newer.push({ id: resource.id, installed, locked: version });
+            }
+          }
+        }
+        return versions;
+      } : undefined,
     });
 
     const activationTarget =
@@ -54,7 +86,24 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
     const command = activationCommand(platform, activationTarget);
 
     console.log(`\nRunning: ${command.join(" ")}`);
-    const activate = () => runCommand(command[0], command.slice(1), { dry: opts.dry });
+    const activate = async () => {
+      if (statePath && !opts.dry) {
+        for (const resource of managedWindowsResources(selected)) {
+          if (resource.kind !== "package") continue;
+          const key = resourceKey(resource);
+          const current = await adapter.inspect(resource);
+          if (current !== null) {
+            if (!("version" in current)) throw new Error(`Invalid package snapshot: ${resource.id}`);
+            effectiveWindowsPackageVersion(resource.id, requirements[key], current.version);
+            if (!requirements[key].exact &&
+                compareWindowsPackageVersions(current.version, activationVersions[key]) > 0) {
+              throw new Error(`Package ${resource.id} updated during switch. Rerun switch to keep ${current.version}; refusing stale activation.`);
+            }
+          }
+        }
+      }
+      await runCommand(command[0], command.slice(1), { dry: opts.dry });
+    };
     if (statePath) {
       const desired = managedWindowsResources(selected);
       const windows = selected.windows as WindowsOptions;
@@ -73,12 +122,39 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         statePath,
         owner: await windowsStateOwner(configDir, hostName),
         desired, definitions,
+        packageRequirements: requirements,
         dry: opts.dry,
         yes: opts.yes,
-        adapter: opts.windowsState?.adapter ?? nativeWindowsStateAdapter,
+        adapter,
         lockHeld: true,
         activate,
       });
+      if (!opts.dry && lock) {
+        let expected = serializeWindowsLock(lock);
+        for (const candidate of newer) {
+          const current = await adapter.inspect({
+            kind: "package", id: candidate.id, source: lock.packages[candidate.id].source,
+          });
+          if (!current || !("version" in current) || current.version !== candidate.installed) {
+            console.log(`Not updating lock for ${candidate.id}: installed version changed during activation.`);
+            continue;
+          }
+          if (!await confirmWindowsPackageLockUpdate(candidate.id, candidate.installed, candidate.locked)) continue;
+          const saved = readWindowsLock(configDir);
+          if (!saved || serializeWindowsLock(saved) !== expected) {
+            throw new Error("winix-windows.lock changed during switch; refusing to overwrite concurrent changes.");
+          }
+          const now = new Date().toISOString();
+          const updated = {
+            ...saved, generatedAt: now, packages: {
+              ...saved.packages, [candidate.id]: { ...saved.packages[candidate.id], version: candidate.installed, resolvedAt: now },
+            },
+          };
+          writeWindowsLock(configDir, updated);
+          expected = serializeWindowsLock(updated);
+          console.log(`Updated winix-windows.lock: ${candidate.id} ${candidate.locked} -> ${candidate.installed}.`);
+        }
+      }
     } else {
       if (platform === "windows") console.log("Windows removal inventory can only be inspected on native Windows.");
       await activate();

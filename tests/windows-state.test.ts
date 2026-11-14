@@ -9,6 +9,7 @@ import {
   listWindowsOwners, migrateWindowsOwner, windowsOwnerId,
   type ManagedResource, type ResourceSnapshot,
 } from "../src/cli/windows-state.ts";
+import type { WindowsPackageRequirement } from "../src/cli/windows-package-versions.ts";
 
 vi.mock("node:readline/promises", () => ({ createInterface: vi.fn() }));
 
@@ -40,6 +41,7 @@ async function fixture(run: (fixture: {
   actual: Map<string, ResourceSnapshot>;
   apply(desired: ManagedResource[], options?: {
     owner?: string; dry?: boolean; yes?: boolean; activate?: () => Promise<void>; definition?: string;
+    requirement?: WindowsPackageRequirement;
   }): Promise<void>;
   remove: ReturnType<typeof vi.fn>;
 }) => Promise<void>) {
@@ -53,6 +55,7 @@ async function fixture(run: (fixture: {
       apply: (desired, options = {}) => reconcileWindows({
         statePath, owner: options.owner ?? "workspace-A/desktop", desired,
         definitions: Object.fromEntries(desired.map((resource) => [resourceKey(resource), options.definition ?? "same"])),
+        packageRequirements: options.requirement ? { [resourceKey(pkg)]: options.requirement } : undefined,
         dry: options.dry ?? false,
         yes: options.yes ?? true,
         adapter: { inspect: async (resource) => actual.get(resourceKey(resource)) ?? null, remove },
@@ -66,6 +69,65 @@ async function fixture(run: (fixture: {
 }
 
 describe("Windows applied-state reconciliation", () => {
+  it("accepts externally upgraded floating packages, preserves ownership and refreshes the observed snapshot", async () => fixture(async (f) => {
+    await f.apply([pkg]);
+    f.actual.set(resourceKey(pkg), { version: "2.0" });
+    await f.apply([pkg], { requirement: { version: "1.0", exact: false }, activate: async () => {} });
+    const entry = parseAppliedState(await readFile(f.statePath, "utf8")).entries[resourceKey(pkg)];
+    expect(entry.owned).toBe(true);
+    expect(entry.snapshot).toEqual({ version: "2.0" });
+    expect(f.remove).not.toHaveBeenCalled();
+  }));
+
+  it("keeps pre-installed newer packages externally owned and dry runs read-only", async () => fixture(async (f) => {
+    f.actual.set(resourceKey(pkg), { version: "2.0" });
+    const requirement = { version: "1.0", exact: false };
+    await f.apply([pkg], { requirement, activate: async () => {} });
+    const saved = await readFile(f.statePath, "utf8");
+    expect(parseAppliedState(saved).entries[resourceKey(pkg)].owned).toBe(false);
+    f.actual.set(resourceKey(pkg), { version: "3.0" });
+    await f.apply([pkg], { requirement, dry: true, activate: async () => {} });
+    expect(await readFile(f.statePath, "utf8")).toBe(saved);
+  }));
+
+  it("upgrades an externally updated floating package that is still older than the new lock", async () => fixture(async (f) => {
+    await f.apply([pkg]);
+    f.actual.set(resourceKey(pkg), { version: "2.0" });
+    await f.apply([pkg], {
+      requirement: { version: "3.0", exact: false },
+      activate: async () => { f.actual.set(resourceKey(pkg), { version: "3.0" }); },
+    });
+    expect(parseAppliedState(await readFile(f.statePath, "utf8")).entries[resourceKey(pkg)].snapshot).toEqual({ version: "3.0" });
+  }));
+
+  it("preserves shared exact requirements while allowing shared floating upgrades", async () => fixture(async (f) => {
+    const requirement = { version: "1.0", exact: false };
+    await f.apply([pkg], { requirement });
+    await f.apply([pkg], { requirement, owner: "workspace-B/desktop", activate: async () => {} });
+    const activate = vi.fn(async () => {});
+    await expect(f.apply([pkg], { requirement: { version: "1.0", exact: true }, activate })).rejects.toThrow("Conflicting exact/minimum");
+    expect(activate).not.toHaveBeenCalled();
+    f.actual.set(resourceKey(pkg), { version: "2.0" });
+    await f.apply([pkg], { requirement, activate: async () => {} });
+    expect(parseAppliedState(await readFile(f.statePath, "utf8")).entries[resourceKey(pkg)].snapshot).toEqual({ version: "2.0" });
+  }));
+
+  it("still refuses downgrades, exact-pin drift and unsatisfied activation without rewriting inventory", async () => fixture(async (f) => {
+    await f.apply([pkg]);
+    const saved = await readFile(f.statePath, "utf8");
+    const activate = vi.fn(async () => {});
+    f.actual.set(resourceKey(pkg), { version: "2.0" });
+    await expect(f.apply([pkg], { requirement: { version: "1.0", exact: true }, activate })).rejects.toThrow("Exact version mismatch");
+    expect(activate).not.toHaveBeenCalled();
+    await expect(f.apply([pkg], {
+      requirement: { version: "1.0", exact: false },
+      activate: async () => { f.actual.set(resourceKey(pkg), { version: "1.0" }); },
+    })).rejects.toThrow("unexpectedly downgraded");
+    expect(await readFile(f.statePath, "utf8")).toBe(saved);
+    f.actual.set(resourceKey(pkg), { version: "0.9" });
+    await expect(f.apply([pkg], { requirement: { version: "1.0", exact: false }, activate })).rejects.toThrow("changed outside Winix");
+  }));
+
   it("explicitly migrates a moved/renamed owner and then permits its package version update", async () => fixture(async (f) => {
     await f.apply([pkg]);
     const before = await readFile(f.statePath, "utf8");

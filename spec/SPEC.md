@@ -936,7 +936,19 @@ Removed owned shortcut declarations are automatically cleaned up after successfu
 activation, without terminating programs. Unused owned packages are automatically
 uninstalled after successful activation. `switch --dry` previews all cleanup;
 exact package ID/source/version selection is used. External resources
-are untouched. Shortcut hash or package-version drift blocks reconciliation.
+are untouched. Shortcut hash drift and package downgrade/exact-pin drift block
+reconciliation. Floating package locks are minimum versions/fresh-install
+targets during native Windows switch: older packages upgrade; newer installed
+versions are retained using an activation-only version override without changing
+the lock or uninstall ownership. Successfully observed external upgrades update
+the inventory snapshot. Inline version declarations remain exact and existing
+mismatches fail before activation, never silently downgrade. Unequal versions
+outside dotted numeric syntax fail explicitly rather than guessing ordering.
+After a successful interactive switch, newer floating packages offer a separate
+default-no lock-update prompt. Dry and noninteractive runs do not prompt or
+write observed-version pins; --yes applies only to removal confirmation. Normal
+pin resolution remains unchanged. Plain apply and direct DSC activation do not
+perform this runtime reconciliation. Removal drift checks remain conservative.
 `state forget startup <name>` or `state forget package <source> <id>` releases
 removal ownership without deleting resources or other owners' requirements;
 `--dry` previews ownership release.

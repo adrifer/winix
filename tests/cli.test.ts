@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { readWindowsLock } from "../src/backends/windows/lockfile.ts";
+import * as packageVersionPolicy from "../src/cli/windows-package-versions.ts";
 import { windowsSourcePath } from "../src/backends/windows/paths.ts";
 import {
   detectConflicts,
@@ -933,6 +934,86 @@ describe("winix switch Windows dry run", () => {
 });
 
 describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", () => {
+  it.each(["stale", "failed", "concurrent"] as const)("does not update locks after %s activation state", async (failure) => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-package-lock-safety-"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const confirm = vi.spyOn(packageVersionPolicy, "confirmWindowsPackageLockUpdate").mockImplementation(async () => {
+      const lock = readWindowsLock(dir)!;
+      lock.packages["Other.App"] = { version: "2", source: "winget", resolvedAt: lock.generatedAt };
+      await writeFile(join(dir, "winix-windows.lock"), JSON.stringify(lock));
+      return true;
+    });
+    const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async () => {
+      if (failure === "failed") throw new Error("activation failed");
+    });
+    let inspections = 0;
+    try {
+      await writeConfig(dir, 'host("desktop", platforms.windows(), [windows.package("Example.App")])');
+      await writeFile(join(dir, "winix-windows.lock"), JSON.stringify({
+        version: 1, generatedAt: "2026-11-13T00:00:00Z",
+        packages: { "Example.App": { version: "7", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" } },
+      }));
+      await expect(switchCommand(dir, {
+        host: "desktop", dry: false,
+        windowsState: {
+          path: join(dir, "inventory.json"),
+          adapter: {
+            inspect: async () => ({ version: failure === "stale" && ++inspections >= 3 ? "9" : "8" }),
+            remove: async () => { throw new Error("Must not uninstall"); },
+          },
+        },
+      })).rejects.toThrow(failure === "stale" ? "updated during switch" : failure === "failed" ? "activation failed" : "changed during switch");
+      expect(readWindowsLock(dir)?.packages["Example.App"].version).toBe("7");
+      if (failure !== "concurrent") expect(confirm).not.toHaveBeenCalled();
+      else expect(readWindowsLock(dir)?.packages["Other.App"].version).toBe("2");
+      if (failure === "stale") expect(runner).not.toHaveBeenCalled();
+    } finally {
+      log.mockRestore(); confirm.mockRestore(); runner.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it.each(["accept", "decline", "dry"] as const)("keeps a newer package in activation output and %s the optional lock update", async (mode) => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-package-upgrade-"));
+    const logs: string[] = [];
+    const log = vi.spyOn(console, "log").mockImplementation((...args) => { logs.push(args.join(" ")); });
+    const confirm = vi.spyOn(packageVersionPolicy, "confirmWindowsPackageLockUpdate").mockResolvedValue(mode === "accept");
+    const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async (_command, args, opts) => {
+      if (!opts?.dry) {
+        const yaml = await readFile(args![args!.indexOf("-f") + 1], "utf8");
+        expect(yaml).toContain('version: "8"');
+      }
+    });
+    try {
+      await writeConfig(dir, 'host("desktop", platforms.windows(), [windows.package("Example.App")])');
+      const lock = {
+        version: 1, generatedAt: "2026-11-13T00:00:00Z",
+        packages: { "Example.App": { version: "7", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" } },
+      };
+      await writeFile(join(dir, "winix-windows.lock"), JSON.stringify(lock));
+      const inventory = join(dir, "inventory.json");
+      await switchCommand(dir, {
+        dry: mode === "dry", host: "desktop",
+        windowsState: {
+          path: inventory,
+          adapter: { inspect: async () => ({ version: "8" }), remove: async () => { throw new Error("Must not uninstall"); } },
+        },
+      });
+      expect(readWindowsLock(dir)?.packages["Example.App"].version).toBe(mode === "accept" ? "8" : "7");
+      if (mode === "dry") {
+        expect(confirm).not.toHaveBeenCalled();
+        expect(logs.some((line) => line.includes('version: "8"'))).toBe(true);
+        expect(existsSync(inventory)).toBe(false);
+      } else {
+        expect(confirm).toHaveBeenCalledWith("Example.App", "8", "7");
+        expect(JSON.parse(await readFile(inventory, "utf8")).entries['["package","winget","example.app"]'].owned).toBe(false);
+      }
+    } finally {
+      log.mockRestore(); confirm.mockRestore(); runner.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it.each(["startup", "package"] as const)("records successful %s activation and automatically removes a deleted declaration only on a real switch", async (kind) => {
     const dir = await mkdtemp(join(tmpdir(), "winix-switch-state-"));
     let present = false;

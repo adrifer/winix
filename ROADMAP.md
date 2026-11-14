@@ -31,6 +31,10 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   Linux supports existing Nix tools and private NixOS runtime libraries. Fresh
   branch-based WSL setups retain full history/upstream tracking while activating
   only the locked commit; completed setups remain untouched.
+- **Windows package update defaults** — native switch preserves newer floating
+  packages, refreshes owned upgrade observations, and offers interactive
+  default-no lock updates. Inline versions remain exact; pre-installed packages
+  stay externally owned and unsafe removals remain protected.
 - **Standalone release executables** — embedded Bun runtime/shared SDK for
   Windows and glibc Linux x64/ARM64, SHA256 release manifest, registry-free
   configuration loading, optional Node-free Windows prerequisite checks, and

@@ -1005,9 +1005,30 @@ cancels the whole switch without activation or cleanup. Switches without removal
 and `--dry` do not prompt. Use `winix switch --yes` (or `-y`) to accept removals
 for automation; noninteractive switches with removals require this flag.
 
-Startup file hashes and installed package versions detect drift. External edits
-or version changes block reconciliation rather than silently deleting or
-overwriting managed resources. Restore the recorded resource, or explicitly
+During native Windows `switch`, a package without an inline `version` uses its
+lock as a minimum version and fresh-install target. An absent package installs
+the lock; an older installed version upgrades; a newer installed version is kept
+and reported. The generated activation document targets that installed version,
+not the older lock. External upgrades of owned packages retain ownership and
+refresh the observed snapshot after successful activation. Pre-installed packages
+remain unowned even when upgraded by Winix.
+
+An inline declaration such as `windows.package({ id: "Git.Git", version: "2.44.0" })`
+is exact. Installed version mismatches stop before activation, without an
+automatic downgrade. Unequal versions that are not dotted numeric values cannot
+be reliably ordered and fail with instructions to resolve them explicitly.
+
+After a successful interactive switch that kept a newer floating package,
+Winix asks `Update winix-windows.lock to <version>? [y/N]`. Declining keeps the
+lock and still completes the switch. Dry/noninteractive runs never ask or
+update observed-version pins; `--yes` confirms removals, not lock updates.
+Normal missing-pin resolution remains unchanged. These defaults apply to
+`winix switch`, not direct generated-script/DSC activation or plain `apply`.
+
+Startup file hashes and installed package versions still protect removals.
+External shortcut edits, package downgrades, and exact-pin drift block
+reconciliation rather than silently deleting or overwriting managed resources.
+Restore the recorded resource, or explicitly
 release Winix's removal rights without deleting anything:
 
 ```powershell

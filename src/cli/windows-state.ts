@@ -8,6 +8,7 @@ import type { EvaluatedHost } from "../evaluator/index.ts";
 import type { WindowsOptions } from "../types/index.ts";
 import { powerShellLiteral } from "../helpers/utils.ts";
 import { runCommand } from "./run.ts";
+import { compareWindowsPackageVersions, effectiveWindowsPackageVersion, type WindowsPackageRequirement } from "./windows-package-versions.ts";
 
 export type ManagedResource =
   | { kind: "startup"; name: string }
@@ -19,6 +20,7 @@ interface Entry {
   owned: boolean;
   snapshot: ResourceSnapshot;
   definition: string;
+  packageExact?: boolean;
 }
 interface AppliedState {
   version: 1;
@@ -29,6 +31,7 @@ export interface WindowsStateAdapter {
   remove(resource: ManagedResource, snapshot: NonNullable<ResourceSnapshot>): Promise<void>;
 }
 export interface ReconcileOptions {
+  packageRequirements?: Record<string, WindowsPackageRequirement>;
   statePath: string;
   owner: string;
   desired: ManagedResource[];
@@ -139,6 +142,7 @@ export function parseAppliedState(text: string): AppliedState {
         key !== resourceKey(entry.resource) || typeof entry.owned !== "boolean" ||
         typeof entry.definition !== "string" ||
         !Array.isArray(entry.owners) || !entry.owners.every((owner: unknown) => typeof owner === "string") ||
+        (entry.packageExact !== undefined && typeof entry.packageExact !== "boolean") ||
         !(entry.snapshot === null || (entry.resource.kind === "startup"
           ? typeof entry.snapshot?.fingerprint === "string" && /^[a-f0-9]{64}$/.test(entry.snapshot.fingerprint)
           : typeof entry.snapshot?.version === "string" && entry.snapshot.version.length > 0))) {
@@ -244,13 +248,29 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
       const current = await opts.adapter.inspect(resource);
       before.set(key, current);
       const entry = state.entries[key];
+      const requirement = resource.kind === "package" ? opts.packageRequirements?.[key] : undefined;
+      if (requirement && current && "version" in current) {
+        effectiveWindowsPackageVersion(resource.kind === "package" ? resource.id : key, requirement, current.version);
+      }
       if (typeof opts.definitions[key] !== "string") throw new Error(`Missing resource definition: ${key}`);
       if (entry?.owners.some((owner) => owner !== opts.owner) && entry.definition !== opts.definitions[key]) {
         throw new Error(`Conflicting declaration for resource required by another workspace/host: ${key}. ` +
           "Run winix state owners; after a checkout move or host rename, explicitly preview state migrate-owner <id> --host <name> --dry.");
       }
+      if (requirement && entry?.owners.some((owner) => owner !== opts.owner)) {
+        if (entry.packageExact !== undefined && entry.packageExact !== requirement.exact) {
+          throw new Error(`Conflicting exact/minimum package policies across workspace/hosts: ${key}`);
+        }
+        if (!sameSnapshot(current, entry.snapshot) && entry.packageExact !== false) {
+          throw new Error(`Package changed while required by another exact or legacy workspace/host: ${key}`);
+        }
+      }
       if (entry?.owned && current !== null && !sameSnapshot(current, entry.snapshot)) {
-        throw new Error(`Managed resource changed outside Winix: ${key}. Restore it or explicitly resolve ownership before activation.`);
+        const upgrade = requirement && !requirement.exact && "version" in current &&
+          entry.snapshot && "version" in entry.snapshot &&
+          compareWindowsPackageVersions(current.version, entry.snapshot.version) > 0;
+        if (!upgrade) throw new Error(`Managed resource changed outside Winix: ${key}. Restore it or explicitly resolve ownership before activation.`);
+        report(`Keeping externally upgraded package: ${key} ${current.version}`);
       }
     }
     const removals: [string, Entry, ResourceSnapshot][] = [];
@@ -285,8 +305,24 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
       const current = await opts.adapter.inspect(resource);
       if (current === null) throw new Error(`Activation succeeded but managed resource is missing: ${key}`);
       const entry = state.entries[key];
+      const requirement = resource.kind === "package" ? opts.packageRequirements?.[key] : undefined;
+      if (requirement) {
+        if (!("version" in current) || (requirement.exact
+          ? current.version !== requirement.version
+          : compareWindowsPackageVersions(current.version, requirement.version) < 0)) {
+          throw new Error(`Activation did not satisfy package version requirement: ${key}`);
+        }
+        const initial = before.get(key);
+        if (!requirement.exact && initial && "version" in initial &&
+            compareWindowsPackageVersions(current.version, initial.version) < 0) {
+          throw new Error(`Activation unexpectedly downgraded package: ${key}`);
+        }
+      }
       if (entry && entry.owners.some((owner) => owner !== opts.owner) && !sameSnapshot(current, entry.snapshot)) {
-        throw new Error(`Activation changed a resource required by another workspace/host: ${key}`);
+        const upgrade = requirement && !requirement.exact && entry.packageExact === false && "version" in current &&
+          entry.snapshot && "version" in entry.snapshot &&
+          compareWindowsPackageVersions(current.version, entry.snapshot.version) > 0;
+        if (!upgrade) throw new Error(`Activation changed a resource required by another workspace/host: ${key}`);
       }
       after.set(key, current);
     }
@@ -304,6 +340,9 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
           (resource.kind === "startup" && !sameSnapshot(initial, current)),
         snapshot: current,
         definition: opts.definitions[key],
+        ...(resource.kind === "package" && opts.packageRequirements?.[key]
+          ? { packageExact: opts.packageRequirements[key].exact }
+          : previous?.packageExact === undefined ? {} : { packageExact: previous.packageExact }),
       };
     }
     await saveState(opts.statePath, state);

@@ -30,6 +30,8 @@ import { resolveWslRepository, type WindowsWslRepositoryResolver } from "../../b
 import { platformForEvaluatedHost, type ActivationPlatform } from "../activation.ts";
 
 interface ApplyOptions {
+  /** Activation-only overrides; the committed lock and inline declarations remain unchanged. */
+  windowsPackageVersions?: (hosts: ReturnType<typeof evaluate>, lock: WindowsLock) => Promise<Record<string, string>>;
   host?: string;
   dry: boolean;
   diff: boolean;
@@ -82,8 +84,15 @@ export async function applyWorkspace(
     )
     : undefined;
   const nixOutput = nixHosts.length > 0 ? generateNix(workspace, nixHosts) : undefined;
+  const runtimeVersions = windowsLock && opts.windowsPackageVersions
+    ? await opts.windowsPackageVersions(windowsHosts, windowsLock) : {};
+  const activationLock = windowsLock ? {
+    ...windowsLock,
+    packages: Object.fromEntries(Object.entries(windowsLock.packages).map(([id, pin]) =>
+      [id, runtimeVersions[id] === undefined ? pin : { ...pin, version: runtimeVersions[id] }])),
+  } : undefined;
   const windowsOutput = windowsHosts.length > 0
-    ? generateWindows(windowsHosts, windowsLock, configDir)
+    ? generateWindows(windowsHosts, activationLock, configDir)
     : undefined;
   printWarnings(nixOutput?.warnings ?? []);
   printWarnings(windowsOutput?.warnings ?? []);
