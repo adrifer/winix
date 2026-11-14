@@ -258,10 +258,10 @@ export function validateWindowsWslResources(win: WindowsOptions): void {
   if (defaults > 1) throw new Error("Only one WSL distro can be declared default per Windows host");
   if (configs > 1) throw new Error("Declare only one windows.wsl({ config }) per Windows host");
   if (distros && !WSL_FEATURES.every((name) => features.get(name) === true)) {
-    throw new Error("WSL distro provisioning requires windows.wsl() or both required optional features enabled");
+    throw new Error("WSL distro declarations require windows.wsl() or both required optional features enabled");
   }
   if (distros && !Object.values(win.packages ?? {}).some((pkg) => pkg.id.toLowerCase() === "microsoft.wsl")) {
-    throw new Error('WSL distro provisioning requires windows.package("Microsoft.WSL")');
+    throw new Error('WSL distro declarations require windows.package("Microsoft.WSL")');
   }
 }
 

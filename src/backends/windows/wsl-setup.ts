@@ -125,24 +125,31 @@ export function wslSetupPrelude(setup: WinWslSetup, pin: WindowsLockWslRepositor
     'export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG$\'\\n\'}extra-experimental-features = nix-command flakes"',
     ...launch,
   ].join("\n");
+  return wslScriptInvocation("Invoke-WinixWslSetup", probe, activate);
+}
+
+export function wslScriptInvocation(
+  name: string, probe: string, activate: string, operation = "WSL setup"
+): string[] {
   return [
-    "function Invoke-WinixWslSetup([bool]$TestOnly) {",
+    `function ${name}([bool]$TestOnly) {`,
+    `  $operation = ${ps(operation)}`,
     `  $script = if ($TestOnly) { ${ps(probe + "\n")} } else { ${ps(activate + "\n")} }`,
     "  $start = [Diagnostics.ProcessStartInfo]::new('wsl.exe')",
     "  $start.UseShellExecute = $false",
     "  $start.RedirectStandardInput = $true; $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true",
     "  $start.StandardInputEncoding = [Text.UTF8Encoding]::new($false)",
     "  $start.StandardOutputEncoding = $start.StandardInputEncoding; $start.StandardErrorEncoding = $start.StandardInputEncoding",
-    "  foreach ($argument in @('--distribution', $name, '--user', 'root', '--exec', 'bash', '-s')) { $start.ArgumentList.Add($argument) }",
+    "  foreach ($argument in @('--distribution', $name, '--user', 'root', '--exec', 'bash', '--noprofile', '--norc', '-s')) { $start.ArgumentList.Add($argument) }",
     "  $process = [Diagnostics.Process]::new(); $process.StartInfo = $start",
     "  try {",
-    "    if (-not $process.Start()) { throw 'Could not start WSL setup' }",
+    "    if (-not $process.Start()) { throw \"Could not start $operation\" }",
     "    $stdout = $process.StandardOutput.ReadToEndAsync(); $stderr = $process.StandardError.ReadToEndAsync()",
     "    $process.StandardInput.Write($script); $process.StandardInput.Close()",
     "    $process.WaitForExit()",
     "    $output = $stdout.GetAwaiter().GetResult(); $errors = $stderr.GetAwaiter().GetResult()",
     "    if ($TestOnly -and $process.ExitCode -eq 3) { return $false }",
-    "    if ($process.ExitCode -ne 0) { throw \"WSL setup failed ($($process.ExitCode)): $output $errors\" }",
+    "    if ($process.ExitCode -ne 0) { throw \"$operation failed ($($process.ExitCode)): $output $errors\" }",
     "    if (-not $TestOnly) { if ($output) { Write-Host $output }; if ($errors) { Write-Host $errors } }",
     "    return $true",
     "  } finally { $process.Dispose() }",

@@ -771,7 +771,7 @@ selects PowerShell's normal installed version, not necessarily the locked one.
 
 Windows-side WSL provisioning uses `windows.optionalFeature(name,
 { enabled?, dependsOn? })`, `windows.wsl({ config?, backup?, force?, dependsOn? })`, and
-`windows.wsl.distro(name, { source: "nixos-wsl", installLocation, default?,
+`windows.wsl.distro(name, { source: "nixos-wsl", installLocation, default?, host?,
 dependsOn?, setup? })`. The grouped enable resource handles WSL and Virtual Machine
 Platform together, with elevation and no automatic restart. `windows.wsl()` also
 declares the `Microsoft.WSL` runtime through normal package/lockfile handling;
@@ -796,14 +796,34 @@ download images; activation verifies the target-architecture image before import
 Image updates only affect future registrations, never existing Linux systems.
 
 Names and locations must be unique per Windows host, with at most one default.
-Install locations must be new absolute local-drive directories (including
-resolved environment/known-folder paths). Existing registrations must match
-location, WSL version 2, and a Winix registration marker `.winix-wsl.json`;
-unrecorded/conflicting distros are never adopted or repaired automatically.
+Creation locations must be new absolute local-drive directories (including
+resolved environment/known-folder paths). Previously provisioned registrations
+must match location, WSL version 2, and a Winix marker `.winix-wsl.json`.
 Failed or interrupted imports never trigger unregister rollback. Removing a
 declaration never unregisters a distro, deletes its filesystem, or disables
 features implicitly. Explicit feature disable remains supported. The separately
 declared WSL package retains ordinary package ownership rules.
+
+The same distro declaration automatically adopts an untracked existing
+registration only when it is WSL 2, runs NixOS, and its kernel hostname matches
+`host` (defaulting to `setup.host`). No Git, checkout, config, or Linux user
+inspection is required. With no expected hostname, adoption fails explicitly.
+A root non-login probe reads only OS identity and hostname; it may start WSL
+but never modifies Linux or executes repository code. A mismatching registration
+fails, never triggers import, conversion, replacement, or hostname changes.
+Creation occurs only when both the named registration and tracking record are absent.
+
+Local AppData `Winix\wsl-registrations\registration-<lowercase-name>.json` records
+version, source, name, GUID, actual location, adoption status and expected hostname.
+Get/test never write records; set rechecks registration identity before recording
+with exclusive creation. Subsequent runs reject missing/replaced registrations,
+location changes, changed adopted hostname declarations and corrupt records.
+Legacy import markers migrate to tracking without being reclassified as adopted.
+Adopted distros retain their actual location and defaults; `setup` is never run
+for them, even on later applies. Linux activation remains manual. Winix-created
+distros keep their first-run/resume and default management behavior.
+Dry generation/check are static only; provisioning pins remain available because
+the same declaration can create on another machine.
 
 Optional distro `setup` explicitly links a trusted HTTPS Git `repository`,
 optional `ref` (default HEAD), relative `configDirectory`, and Linux `host`;

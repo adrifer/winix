@@ -115,6 +115,7 @@ export interface WinWslOpts extends Pick<WinFileOpts, "backup" | "force" | "depe
 export interface WinWslNamespace {
   /** Declare the locked Microsoft.WSL package, required features, and optional .wslconfig. */
   (opts?: WinWslOpts): ResourceHandle;
+  /** Create an absent distro or adopt a matching WSL 2/NixOS/Linux hostname registration. */
   distro(name: string, spec: WinWslDistroSpec): ResourceHandle;
 }
 
@@ -1418,12 +1419,17 @@ export const windows: WindowsHelper = {
             (spec.default !== undefined && typeof spec.default !== "boolean")) {
           throw new Error("windows.wsl.distro requires source 'nixos-wsl', an absolute/environment/known-folder installLocation, and an optional boolean default");
         }
+        if (spec.host !== undefined && (typeof spec.host !== "string" ||
+            !/^[a-z0-9][a-z0-9._-]*$/i.test(spec.host))) {
+          throw new Error("windows.wsl.distro host must be a valid expected Linux hostname");
+        }
         return dscHandle(withDscMetadata(withDscToken({
           resourceType: POWERSHELL_SCRIPT_RESOURCE,
           name: `WSL distro ${name}`,
           dependsOn: resolveDependsOn(spec.dependsOn),
         }), { kind: "wsl-distro", distro: {
           name, source: spec.source, installLocation: spec.installLocation, default: spec.default ?? false,
+          ...(spec.host === undefined ? {} : { host: spec.host }),
           ...(spec.setup === undefined ? {} : { setup: normalizeWslSetup(spec.setup) }),
         } }));
       },

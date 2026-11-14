@@ -47,6 +47,10 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   Fresh-image end-to-end activation remains unverified.
 - **Windows prerequisite inference** — symlinks automatically depend on explicitly
   declared same-host Developer Mode settings, without enabling the policy implicitly.
+- **Idempotent WSL distro declarations** — one `windows.wsl.distro()` creates
+  absent distros or adopts matching WSL 2/NixOS/Linux hostname registrations.
+  GUID/location tracking protects subsequent runs. Adoption preserves the existing
+  distro and skips Linux setup/default changes; Linux activation stays manual.
 - **Windows-side WSL provisioning** — callable `windows.wsl()` combines the normally
   locked `Microsoft.WSL` package and feature enablement with optional typed
   `.wslconfig`; separate distro declarations support

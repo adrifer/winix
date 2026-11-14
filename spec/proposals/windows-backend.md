@@ -1242,8 +1242,15 @@ The explicit `Microsoft.WSL` package and enabled feature resources become
 automatic distro dependencies. Official x64/ARM64 image URLs and SHA256 digests
 are pinned in `winix-windows.lock` (`wslImages`); updates affect future imports
 only. Reboots require manual restart and rerun; `.wslconfig` changes never shut
-down WSL. Existing unrecorded/conflicting distros are refused, not adopted.
-Successful imports record `.winix-wsl.json`; neither removing a declaration nor
+down WSL. An untracked existing distro is adopted only when its named
+registration is WSL 2, its OS is NixOS, and its Linux hostname matches `host`
+(defaulting to `setup.host`). Mismatches fail without creating a replacement.
+Adoption records GUID and actual location in current-user Local AppData
+`Winix\wsl-registrations`, preserves defaults, skips Linux setup, and leaves
+Linux activation manual. No Git, checkout, config or account inspection is
+required for matching. Later runs reject changed or missing registration identity.
+Successful imports retain `.winix-wsl.json` and gain registration tracking;
+neither removing a declaration nor
 failed import recovery automatically unregisters or deletes a distro.
 
 ## Open questions

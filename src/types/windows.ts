@@ -49,8 +49,13 @@ export interface WinPowerShellRepositoryPolicy {
 export interface WinWslDistro {
   name: string;
   source: "nixos-wsl";
+  /** Creation destination; an adopted distro keeps its registered location. */
   installLocation: WinFilePath;
+  /** Default selection is managed only for Winix-created distros. */
   default: boolean;
+  /** Expected Linux hostname for adoption; defaults to setup.host. */
+  host?: string;
+  /** First-run setup for Winix-created distros; never run for adopted distros. */
   setup?: WinWslSetup;
 }
 

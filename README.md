@@ -749,8 +749,9 @@ import. Image updates affect **new registrations only**, never existing Linux
 filesystems. Dry generation can resolve missing pins but neither writes the lock
 nor downloads images.
 
-Winix refuses conflicting or unrecorded existing distros; it does not automatically
-adopt, replace, move, convert, or unregister them. Successful imports create
+Winix creates the declared distro only when its registration is absent. It never
+replaces, moves, converts, or unregisters a conflicting existing distro.
+Successful imports create
 `.winix-wsl.json` in the installation directory to identify that registration.
 If import is interrupted before recording completes, inspect the existing
 registration and disk manually; Winix will not unregister it as rollback.
@@ -759,7 +760,43 @@ Only explicit `enabled: false` disables a feature. The separately declared
 WSL package follows normal package ownership/removal rules.
 
 The Windows registration name (`NixOS`) and Linux Winix host name (`wsl-work`,
-for example) are independent. To automate their first-run link, opt into `setup`:
+for example) are independent. The **same declaration** can create a distro on a
+new machine or adopt a matching existing one:
+
+```ts
+windows.wsl();
+windows.wsl.distro("NixOS", {
+  source: "nixos-wsl",
+  host: "wsl-work",
+  installLocation: windows.knownFolder.localAppData("Winix\\WSL\\NixOS"),
+});
+```
+
+During Windows activation, an untracked registration must be WSL 2, run NixOS,
+and report the expected Linux hostname. `host` supplies that hostname and defaults
+to `setup.host` when omitted. Winix normally sets Linux's hostname to its host ID;
+if yours is overridden, set `host` to the actual expected hostname. Without
+either hostname declaration, existing untracked distros are refused.
+
+Matching distros are automatically recorded under the current Windows user's
+Local AppData `Winix\wsl-registrations\registration-<name>.json`. Records bind the
+registration GUID, actual location, and adopted hostname. An adopted distro keeps
+its actual location; `installLocation` is only the creation destination. Later
+runs revalidate identity and refuse changed/missing registrations, hostname
+changes, or invalid tracking records. Inspect these records before manual
+recovery; never remove one while activation is running. Existing Winix import
+markers remain supported and retain their provisioning behavior.
+
+Adoption checks no Git origin, user, checkout, or config files and executes no
+repository code. It may start a stopped distro but never writes Linux setup
+state, clones repositories, installs dependencies, changes defaults, or activates
+Linux. `setup` and `default` are not applied to adopted distros, even on later
+runs. Activate Linux manually. `winix check` and dry generation perform static
+checks only; creation pins may still be resolved, but no distro is inspected or
+adopted. Removing the declaration leaves the distro, its data, and tracking alone.
+Automatic adoption is not available in preview.3.
+
+For a **new distro**, automate its first-run link by opting into `setup`:
 
 ```ts
 windows.wsl.distro("NixOS", {

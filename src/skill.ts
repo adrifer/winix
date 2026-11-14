@@ -321,13 +321,23 @@ Resources return handles that can be passed through \`dependsOn\`.
   leaves the file untouched. The returned handle covers the complete setup.
   If a reboot is needed, restart Windows manually and rerun switch.
   It never shuts down WSL; restart WSL manually when configuration changes.
-- \`windows.wsl.distro()\` registers a named distro with source "nixos-wsl",
-  installLocation, optional default and dependsOn. Declare windows.wsl() in the
+- \`windows.wsl.distro()\` creates or adopts a named distro with source "nixos-wsl",
+  installLocation, optional host, default and dependsOn. Declare windows.wsl() in the
   same host; features, config, and runtime become
   automatic dependencies.
   Images for x64/ARM64 are verified against winix-windows.lock wslImages pins.
   Update with winix update --windows nixos-wsl. Updates never reinstall an
-  existing distro. Conflicting/unrecorded distros are refused, not adopted.
+  existing distro. An untracked existing registration is automatically adopted
+  only if it is WSL 2, runs NixOS, and its Linux hostname matches host (defaults
+  to setup.host). An expected hostname is required for adoption, not creation.
+  No Git/user/checkout/config inspection. Mismatches fail without replacement.
+  Adoption preserves actual location and defaults, skips setup permanently, and
+  leaves Linux activation manual. Probing may start WSL but makes no Linux changes.
+  Local AppData Winix/wsl-registrations records GUID/location/adoption/hostname;
+  later runs reject changed or missing registrations and hostname mismatches.
+  Legacy Winix import markers retain their provisioning behavior.
+  check/dry are static only; creation pins may still resolve. Adoption is not
+  available in preview.3.
   Removing a declaration never unregisters a distro or deletes its data.
   Optional setup opts into trusted first-run Linux provisioning:
   { repository: "https://github.com/example/dotfiles.git", ref: "main",

@@ -10,6 +10,7 @@ export default workspace({
       const wslSetup = windows.wsl({ config: { wsl2: { memory: "16GB", processors: 8 } }, backup: true });
       windows.wsl.distro("NixOS", {
         source: "nixos-wsl",
+        host: "wsl-work",
         installLocation: windows.knownFolder.localAppData("Winix\\WSL\\NixOS"),
         default: true,
         dependsOn: wslSetup,
