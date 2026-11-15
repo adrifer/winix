@@ -78,6 +78,13 @@ export interface WinPowerShellRepositoryPolicy {
   allowed?: string[];
 }
 
+export interface WinNpmRegistryPolicy {
+  registries: Record<string, { uri: string }>;
+  default: string;
+  /** npm scope (including @) mapped to a declared registry name. */
+  scopes?: Record<string, string>;
+}
+
 export interface WinWslDistro {
   name: string;
   source: "nixos-wsl";
@@ -354,6 +361,7 @@ export type WinDscProperties = { [key: string]: WinDscPropertyValue };
  * order controls apply order.
  */
 export interface WindowsOptions extends Record<string, unknown> {
+  npm?: { registries?: WinNpmRegistryPolicy };
   powershell?: { repositories?: WinPowerShellRepositoryPolicy };
   /** Declared packages, keyed by package id. */
   packages?: Record<string, WinPackage>;

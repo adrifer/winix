@@ -268,6 +268,17 @@ Available helpers:
 Windows hosts generate a DSC v3 configuration for \`winget configure\`.
 Resources return handles that can be passed through \`dependsOn\`.
 
+- \`windows.npm.registries({ registries: { work: {
+  uri: "https://packages.example.com/npm/" } }, default: "work",
+  scopes: { "@company": "work" } })\` configures current-user npm default/scoped
+  registries after host merging. HTTPS only, no credentials/query/fragments.
+  Manages only registry and declared @scope:registry keys in .npmrc or absolute
+  NPM_CONFIG_USERCONFIG; preserves auth/comments/unrelated settings, rejects
+  symlinked files and concurrent edits. Removing declarations doesn't clean up.
+  No npm installation, token management or package installation. No allowed-list
+  enforcement: project config/env/CLI can override it. Does not alter Winix
+  SDK/bootstrap downloads or Linux WSL setup. Dry generation never writes .npmrc.
+
 - \`windows.wallpaper({ source: "../wallpapers/desktop.jpg", style: "Fill" })\`
   manages the current-user desktop image; source is a local/config-relative or
   known-folder path. Styles: Fill, Fit, Stretch, Tile, Center, Span. Source

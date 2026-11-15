@@ -15,6 +15,11 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Windows npm registries** — host-scoped named default/scoped registry
+  configuration in current-user .npmrc, preserving auth/unrelated settings with
+  idempotent atomic updates. No package installation or registry allowlist
+  enforcement; isolated file tests do not alter the shared user's npm config.
+
 - **Windows personalization and fonts** — current-user wallpaper, explicit accent
   color, Explorer preferences and taskbar visibility/auto-hide; local/HTTPS/ZIP
   font installation with official Nerd Fonts discovery and separate checksum

@@ -31,6 +31,8 @@ import type {
 import { validatePowerShellRepositoryPolicy } from "./windows-repositories.ts";
 import { validateFontSources, validateWallpaper, personalizationValues } from "./windows-personalization.ts";
 import { personalizationProperties } from "../backends/windows/personalization.ts";
+import { npmRegistryEntries } from "./windows-npm.ts";
+import type { WinNpmRegistryPolicy } from "../types/windows.ts";
 
 /**
  * Accepted call shapes for `windows.package(...)`.
@@ -1270,6 +1272,7 @@ export interface WinFileNamespace {
 }
 
 export interface WindowsHelper {
+  npm: { registries(policy: WinNpmRegistryPolicy): Fragment };
   fonts(spec: { sources: WinFontSource[]; dependsOn?: ResourceHandle | ResourceHandle[] }): ResourceHandle;
   wallpaper(spec: WinWallpaper & { dependsOn?: ResourceHandle | ResourceHandle[] }): ResourceHandle;
   personalization(options: WinPersonalization, opts?: WinSettingOpts): ResourceHandle;
@@ -1487,6 +1490,12 @@ export const windows: WindowsHelper = {
         name, repository, ...(opts.prerelease !== undefined ? { prerelease: opts.prerelease } : {}),
       } });
       return dscHandle(resource);
+    },
+  },
+  npm: {
+    registries: (policy) => {
+      npmRegistryEntries(policy);
+      return { windows: { npm: { registries: policy } } };
     },
   },
   package: (arg: WinPackageArg): ResourceHandle => {

@@ -72,6 +72,7 @@ export type {
   WinFilePath,
   WinPowerShellModule,
   WinPowerShellRepositoryPolicy,
+  WinNpmRegistryPolicy,
   WinStartupCommand,
   WinStartupWindowStyle,
 } from "./types/index.ts";

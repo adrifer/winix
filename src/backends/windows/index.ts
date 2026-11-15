@@ -57,6 +57,8 @@ import { windowsSourcePath } from "./paths.ts";
 import { optionalFeatureProperties, wslDistroProperties } from "./wsl.ts";
 import { fontsProperties } from "./fonts.ts";
 import { wallpaperProperties } from "./personalization.ts";
+import { npmRegistryProperties } from "./npm.ts";
+import { npmRegistryEntries } from "../../helpers/windows-npm.ts";
 
 export { isWindowsHost } from "./host.ts";
 
@@ -139,7 +141,12 @@ function generateConfiguration(
   const developerModeRefs: ResourceRef[] = (win.dsc ?? [])
     .filter((resource) => resource.winix?.kind === "setting" && resource.properties?.DeveloperMode === true)
     .map((resource) => ({ kind: "dsc", token: resource.token! }));
-  const resources = (win.dsc ?? []).map((resource) => {
+  const npmResource: WinDscResource[] = win.npm?.registries ? [{
+    resourceType: "Microsoft.DSC.Transitional/PowerShellScript",
+    name: "npm registries",
+    properties: npmRegistryProperties(npmRegistryEntries(win.npm.registries)),
+  }] : [];
+  const resources = [...(win.dsc ?? []), ...npmResource].map((resource) => {
     const metadata = resource.winix;
     if (metadata?.kind === "fonts") {
       return cloneDscResource(resource, fontsProperties(metadata.sources, lock, configDir));

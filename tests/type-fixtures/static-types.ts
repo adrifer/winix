@@ -2,6 +2,12 @@ import { account, darwin, home, nix, nixos, windows, feature, profile, host, pla
 import type { GitOptions } from "@adrifer/winix/types";
 
 const icons: ResourceHandle = windows.powershell.module("Terminal-Icons");
+windows.npm.registries({
+  registries: { work: { uri: "https://packages.example.com/npm/" } },
+  default: "work", scopes: { "@company": "work" },
+});
+// @ts-expect-error npm registry URLs are declared in URI objects.
+windows.npm.registries({ registries: { work: "https://example.com" }, default: "work" });
 const fonts: ResourceHandle = windows.fonts({
   sources: ["../fonts/font.ttf", { url: "https://example.com/fonts.zip", files: ["**/*.ttf"] },
     { provider: "nerd-fonts", family: "JetBrainsMono", version: "v3.5.1" }],

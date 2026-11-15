@@ -6,6 +6,10 @@ export default workspace({
     host("windows-shell", platforms.windows(), ({ windows }) => {
       // Settings also uses the exact module pin in winix-windows.lock.
       windows.setting({ DeveloperMode: true });
+      windows.npm.registries({
+        registries: { npmjs: { uri: "https://registry.npmjs.org/" } },
+        default: "npmjs",
+      });
       windows.personalization({
         accentColor: "#336699",
         explorer: { showExtensions: true, showHiddenFiles: false, openTo: "ThisPC" },

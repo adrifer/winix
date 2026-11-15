@@ -960,6 +960,41 @@ as `.lnk.bak` and refuses backup collisions, while `force: true` opts into
 replacement without a backup. A new shortcut is staged and verified before
 replacing the old one. Keep names unique per host.
 
+### Windows npm registries
+
+Configure npm's current-user default and scoped registries independently from
+PowerShell repositories:
+
+```ts
+windows.npm.registries({
+  registries: {
+    npmjs: { uri: "https://registry.npmjs.org/" },
+    work: { uri: "https://packages.example.com/npm/" },
+  },
+  default: "work",
+  scopes: { "@my-company": "work", "@adrifer": "npmjs" },
+});
+```
+
+The host's merged policy emits one idempotent DSC resource managing only
+`registry` and the declared `@scope:registry` entries in the current user's
+`.npmrc` (or absolute `NPM_CONFIG_USERCONFIG` when set during activation).
+Existing authentication, comments and unrelated scopes/options are preserved.
+Managed keys are explicitly replaced; symlinked userconfigs and concurrent
+edits fail rather than overwriting their targets. Removing declarations leaves
+their previous settings in place; cleanup is not tracked.
+
+Registries require HTTPS URLs without embedded credentials, queries or
+fragments. Authentication stays external (for example `npm login` or existing
+environment-token references); Winix never logs or declares tokens. npm itself
+need not be installed to generate or apply this file resource.
+
+Unlike PowerShell module policy, this does not enforce an `allowed` list:
+project `.npmrc`, environment variables and npm command-line options can
+override user settings, and package locks may contain independent download
+URLs. It does not redirect Winix bootstrap/SDK downloads, WSL setup npm, or
+install packages. `check`/`apply --dry` do not modify the userconfig.
+
 ### Windows personalization and fonts
 
 These helpers manage the current Windows user without requiring elevation:

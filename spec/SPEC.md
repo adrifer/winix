@@ -924,6 +924,16 @@ Desired shortcuts are unchanged on repeat applies. Replacements require
 New shortcuts are staged and verified before replacement, using Unicode-capable
 Shell APIs. Names must be unique per host.
 
+`windows.npm.registries({ registries, default, scopes? })` configures the merged
+host's current-user npm registry and declared scoped registry keys. URLs are
+HTTPS without credentials/query/fragments; names must be declared, scopes use
+`@name`. The DSC resource preserves authentication and unrelated `.npmrc`
+content, rejects links/concurrent changes, and updates atomically. It honors
+absolute NPM_CONFIG_USERCONFIG at activation. No allowlist enforcement,
+package installation, automatic npm setup, token management or cleanup is
+implied; project/environment/CLI npm settings can override it. Bootstrap and
+Linux WSL setup remain independent.
+
 Windows personalization uses current-user DSC PowerShell resources:
 `windows.wallpaper({ source, style })` manages a content-addressed local image
 with the desktop API; `windows.personalization({ accentColor, explorer, taskbar })`
