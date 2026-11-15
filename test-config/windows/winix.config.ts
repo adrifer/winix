@@ -6,6 +6,14 @@ export default workspace({
     host("windows-shell", platforms.windows(), ({ windows }) => {
       // Settings also uses the exact module pin in winix-windows.lock.
       windows.setting({ DeveloperMode: true });
+      windows.personalization({
+        accentColor: "#336699",
+        explorer: { showExtensions: true, showHiddenFiles: false, openTo: "ThisPC" },
+        taskbar: { search: "Hidden", taskView: true, widgets: false },
+      });
+      // Optional declarations; image/font paths resolve relative to this config:
+      // windows.wallpaper({ source: "../../wallpapers/desktop.jpg", style: "Fill" });
+      // windows.fonts({ sources: [{ provider: "nerd-fonts", family: "JetBrainsMono" }] });
       const icons = windows.powershell.module("Terminal-Icons");
       const wslSetup = windows.wsl({ config: { wsl2: { memory: "16GB", processors: 8 } }, backup: true });
       windows.wsl.distro("NixOS", {

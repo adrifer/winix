@@ -18,6 +18,38 @@ export interface WinKnownFolder {
 
 export type WinFilePath = string | WinKnownFolder;
 
+export type WinFontSource = string | {
+  url: string;
+  sha256?: string;
+  /** ZIP member names or recursive extension selectors; defaults to all TTF/OTF files. */
+  files?: string[];
+} | {
+  provider: "nerd-fonts";
+  family: string;
+  /** Official release tag; omitted tags resolve latest once, then remain locked. */
+  version?: string;
+};
+
+export interface WinWallpaper {
+  source: WinFilePath;
+  style?: "Fill" | "Fit" | "Stretch" | "Tile" | "Center" | "Span";
+}
+
+export interface WinPersonalization {
+  accentColor?: string;
+  explorer?: {
+    showExtensions?: boolean;
+    showHiddenFiles?: boolean;
+    openTo?: "ThisPC" | "Home";
+  };
+  taskbar?: {
+    autoHide?: boolean;
+    search?: "Hidden" | "Icon" | "IconAndLabel" | "Box";
+    taskView?: boolean;
+    widgets?: boolean;
+  };
+}
+
 export type WinStartupWindowStyle = "normal" | "minimized" | "maximized";
 
 export interface WinStartupCommand {
@@ -207,6 +239,8 @@ export interface WinDscResource {
 }
 
 export type WinDscMetadata =
+  | { kind: "fonts"; sources: WinFontSource[] }
+  | { kind: "wallpaper"; wallpaper: WinWallpaper }
   | {
       kind: "optional-features";
       names: string[];

@@ -924,6 +924,27 @@ Desired shortcuts are unchanged on repeat applies. Replacements require
 New shortcuts are staged and verified before replacement, using Unicode-capable
 Shell APIs. Names must be unique per host.
 
+Windows personalization uses current-user DSC PowerShell resources:
+`windows.wallpaper({ source, style })` manages a content-addressed local image
+with the desktop API; `windows.personalization({ accentColor, explorer, taskbar })`
+manages only declared accent/Explorer/taskbar preferences and taskbar auto-hide.
+No automatic Explorer restart, per-monitor images, lock-screen policy or app
+theme selection is implied. Registry preferences can require signing out and
+remain dependent on Windows version/policy.
+
+`windows.fonts({ sources })` installs current-user TTF/OTF files from local paths,
+HTTPS downloads/ZIPs, or the built-in `nerd-fonts` provider. Relative sources
+resolve from the config directory. Remote font identity, URL, release and SHA-256
+are locked separately in `winix-windows.lock.fonts`; a supplied digest is trusted
+explicitly, otherwise initial resolution trusts upstream metadata/downloads.
+Missing pins resolve on apply; `update --windows fonts` refreshes fonts only.
+`fonts search [query] --provider nerd-fonts` lists official release ZIP IDs.
+Unsafe archives, checksum mismatches, missing fonts, and conflicting installed
+files/registry entries fail. No silent replacement or removal ownership is
+claimed. Family names are read from font metadata; app font selection is separate.
+Dry runs may resolve metadata/checksums but never install fonts, change the
+desktop, or write pins. Native activation remains unverified.
+
 Native Windows `switch` reconciles startup/package ownership using a versioned,
 machine-local per-user inventory in `%LOCALAPPDATA%\Winix`, separate from
 version locks. Owners are canonical config-directory/host identities. After

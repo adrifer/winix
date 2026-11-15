@@ -15,6 +15,13 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Windows personalization and fonts** — current-user wallpaper, explicit accent
+  color, Explorer preferences and taskbar visibility/auto-hide; local/HTTPS/ZIP
+  font installation with official Nerd Fonts discovery and separate checksum
+  pins. Idempotent scripts, archive safety and CLI locking are covered without
+  desktop activation. Native activation remains unverified; Google Fonts,
+  font cleanup, per-monitor wallpapers and lock-screen policy remain deferred.
+
 - **Windows stabilization** — in-process WSL release resolution works in the
   compiled executable as well as npm; explicit applied-state owner migration
   preserves shared-resource/drift/removal protections; implicit Settings modules

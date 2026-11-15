@@ -31,8 +31,10 @@ import { platformForEvaluatedHost } from "../activation.ts";
 import { loadWorkspace } from "../loader.ts";
 import { runCommand } from "../run.ts";
 import { applyWorkspace } from "./apply.ts";
+import { collectFontSources, resolveWindowsFonts, resolveFontSource, type WindowsFontResolver } from "../../backends/windows/fonts.ts";
 
 interface UpdateOptions {
+  resolveWindowsFont?: WindowsFontResolver;
   inputs: string[];
   dry: boolean;
   windows?: boolean;
@@ -113,6 +115,7 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
   const pinned = collectInlinePinnedPackages(windowsHosts);
   const floating = collectFloatingPackages(windowsHosts, pinned);
   const modules = collectWindowsModules(windowsHosts);
+  const fonts = collectFontSources(windowsHosts);
   const wslImages = hasWindowsWslDistros(windowsHosts);
   const wslSetup = windowsHosts.some((host) => (host.windows as WindowsOptions).dsc?.some(
     (resource) => resource.winix?.kind === "wsl-distro" && resource.winix.distro.setup
@@ -120,6 +123,7 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
   for (const id of opts.inputs) {
     if (!floating.has(id) && !pinned.has(id) &&
         ![...modules.values()].some((module) => module.name.toLowerCase() === id.toLowerCase()) &&
+        !(id === "fonts" && fonts.size > 0) &&
         !(id === "nixos-wsl" && wslImages) && !(id === "wsl-setup" && wslSetup)) {
       throw new Error(`Windows package, PowerShell module, WSL image or setup repository "${id}" is not declared in this workspace.`);
     }
@@ -165,6 +169,12 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
     lock = repositories.lock;
     changed = changed || repositories.changed;
     console.log(`  ${repositories.changed ? "resolved" : "up to date"}  WSL setup repository commits (first-run only)`);
+  }
+  if (fonts.size > 0 && (opts.inputs.length === 0 || opts.inputs.includes("fonts"))) {
+    const result = await resolveWindowsFonts(lock, fonts.values(), opts.resolveWindowsFont ?? resolveFontSource, now);
+    lock = result.lock;
+    changed = changed || result.changed;
+    console.log(`  ${result.changed ? "resolved" : "up to date"}  font sources`);
   }
 
   for (const resolution of resolved.resolutions) {

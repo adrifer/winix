@@ -17,6 +17,7 @@ import {
   type ManagedResource,
 } from "./windows-state.ts";
 import { findConfig } from "./loader.ts";
+import { nerdFontsCatalog } from "../backends/windows/fonts.ts";
 
 if (process.argv[2] === "run") {
   try { await runCheckout(process.cwd(), process.argv.slice(3)); }
@@ -28,6 +29,7 @@ const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
     host: { type: "string" },
+    provider: { type: "string" },
     dry: { type: "boolean", default: false },
     yes: { type: "boolean", short: "y", default: false },
     diff: { type: "boolean", default: false },
@@ -72,6 +74,7 @@ Commands:
   switch       Generate output and run the host activation command
   update       Update generated flake.lock and copy it to project root
   inspect      Print host composition and fragment graph
+  fonts search [query] --provider nerd-fonts  Search official font release IDs
   state forget Release Windows removal ownership without deleting a resource
   state owners List Windows applied-state owners and their migration IDs
   state migrate-owner <id> Transfer an old owner's requirements to this checkout/--host
@@ -117,6 +120,19 @@ if (values.yes && command !== "switch" && command !== "bootstrap" &&
 }
 
 switch (command) {
+  case "fonts":
+    try {
+      if (positionals[1] !== "search" || positionals.length > 3 || values.provider !== "nerd-fonts") {
+        throw new Error("Usage: winix fonts search [query] --provider nerd-fonts");
+      }
+      const catalog = await nerdFontsCatalog();
+      const query = positionals[2]?.toLowerCase() ?? "";
+      const fonts = catalog.fonts.filter((font) => font.family.toLowerCase().includes(query));
+      if (!fonts.length) throw new Error(`No Nerd Fonts IDs match "${query}"`);
+      console.log(`Nerd Fonts ${catalog.version} (download IDs, not installed family names):`);
+      for (const font of fonts) console.log(`  ${font.family}`);
+    } catch (error) { console.error(`Error: ${(error as Error).message}`); process.exit(1); }
+    break;
   case "bootstrap":
     try {
       await bootstrapCheckout(cwd, {

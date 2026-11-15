@@ -24,8 +24,13 @@ import type {
   WinWslDistro,
   WinWslSetup,
   WinPowerShellRepositoryPolicy,
+  WinFontSource,
+  WinWallpaper,
+  WinPersonalization,
 } from "../types/index.ts";
 import { validatePowerShellRepositoryPolicy } from "./windows-repositories.ts";
+import { validateFontSources, validateWallpaper, personalizationValues } from "./windows-personalization.ts";
+import { personalizationProperties } from "../backends/windows/personalization.ts";
 
 /**
  * Accepted call shapes for `windows.package(...)`.
@@ -759,7 +764,19 @@ export function resolveWindowsFileProperties(
 ): WinDscProperties | undefined {
   const file = resource.winix;
   if (file?.kind !== "file") return resource.properties;
-  let source = file.source;
+  const source = file.source === undefined ? undefined : resolveWindowsSource(file.source, configDir, sourcePath);
+  switch (file.action) {
+    case "text": return buildFileTextScriptProperties({ ...file, content: file.content! });
+    case "remove": return buildFileRemoveScriptProperties(file);
+    case "symlink": return buildFileSymlinkScriptProperties({ ...file, source: source! });
+    case "copy": return buildFileCopyScriptProperties({ ...file, source: source! });
+  }
+}
+
+export function resolveWindowsSource(
+  original: string, configDir?: string, sourcePath: (path: string) => string = (path) => path
+): string {
+  let source = original;
   if (source !== undefined && !/%[^%]+%/.test(source) &&
       !win32.isAbsolute(source) && !posix.isAbsolute(source)) {
     if (!configDir) throw new Error("Relative Windows file sources require a configDir when calling generateWindows.");
@@ -771,12 +788,7 @@ export function resolveWindowsFileProperties(
         : resolve(configDir, source);
   }
   if (source !== undefined && !/%[^%]+%/.test(source)) source = sourcePath(source);
-  switch (file.action) {
-    case "text": return buildFileTextScriptProperties({ ...file, content: file.content! });
-    case "remove": return buildFileRemoveScriptProperties(file);
-    case "symlink": return buildFileSymlinkScriptProperties({ ...file, source: source! });
-    case "copy": return buildFileCopyScriptProperties({ ...file, source: source! });
-  }
+  return source;
 }
 
 function buildPathScriptProperties(opts: {
@@ -1258,6 +1270,9 @@ export interface WinFileNamespace {
 }
 
 export interface WindowsHelper {
+  fonts(spec: { sources: WinFontSource[]; dependsOn?: ResourceHandle | ResourceHandle[] }): ResourceHandle;
+  wallpaper(spec: WinWallpaper & { dependsOn?: ResourceHandle | ResourceHandle[] }): ResourceHandle;
+  personalization(options: WinPersonalization, opts?: WinSettingOpts): ResourceHandle;
   optionalFeature(name: string, opts?: WinOptionalFeatureOpts): ResourceHandle;
   wsl: WinWslNamespace;
   /** Manage named current-user Startup shortcuts without running the commands during apply. */
@@ -1491,6 +1506,25 @@ export const windows: WindowsHelper = {
   },
   setting: (settings: WinSettings, opts?: WinSettingOpts): ResourceHandle =>
     dscHandle(normalizeSetting(settings, opts)),
+  fonts: (spec) => {
+    validateFontSources(spec?.sources);
+    return dscHandle(withDscMetadata(withDscToken({
+      resourceType: POWERSHELL_SCRIPT_RESOURCE, name: "Windows fonts",
+      dependsOn: resolveDependsOn(spec.dependsOn),
+    }), { kind: "fonts", sources: spec.sources }));
+  },
+  wallpaper: (spec) => {
+    validateWallpaper(spec);
+    return dscHandle(withDscMetadata(withDscToken({
+      resourceType: POWERSHELL_SCRIPT_RESOURCE, name: "Windows wallpaper",
+      dependsOn: resolveDependsOn(spec.dependsOn),
+    }), { kind: "wallpaper", wallpaper: { source: spec.source, style: spec.style } }));
+  },
+  personalization: (options, opts) => dscHandle(withDscToken({
+    resourceType: POWERSHELL_SCRIPT_RESOURCE, name: "Windows personalization",
+    properties: personalizationProperties(personalizationValues(options), options.taskbar?.autoHide),
+    dependsOn: resolveDependsOn(opts?.dependsOn),
+  })),
   env: {
     set: (name: string, value: string, opts?: WinEnvOpts): ResourceHandle =>
       dscHandle(normalizeEnv(name, "Present", value, opts)),

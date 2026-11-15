@@ -28,8 +28,10 @@ import { resolvePowerShellModuleVersion } from "../../backends/windows/powershel
 import { resolveNixosWslImage, type WindowsWslImageResolver } from "../../backends/windows/wsl.ts";
 import { resolveWslRepository, type WindowsWslRepositoryResolver } from "../../backends/windows/wsl-setup.ts";
 import { platformForEvaluatedHost, type ActivationPlatform } from "../activation.ts";
+import { collectFontSources, resolveWindowsFonts, resolveFontSource, type WindowsFontResolver } from "../../backends/windows/fonts.ts";
 
 interface ApplyOptions {
+  resolveWindowsFont?: WindowsFontResolver;
   /** Activation-only overrides; the committed lock and inline declarations remain unchanged. */
   windowsPackageVersions?: (hosts: ReturnType<typeof evaluate>, lock: WindowsLock) => Promise<Record<string, string>>;
   host?: string;
@@ -80,7 +82,8 @@ export async function applyWorkspace(
       opts.resolveWindowsPackageVersion ?? resolveWingetVersion,
       opts.resolveWindowsModuleVersion ?? resolvePowerShellModuleVersion,
       opts.resolveWindowsWslImage ?? resolveNixosWslImage,
-      opts.resolveWindowsWslRepository ?? resolveWslRepository
+      opts.resolveWindowsWslRepository ?? resolveWslRepository,
+      opts.resolveWindowsFont ?? resolveFontSource
     )
     : undefined;
   const nixOutput = nixHosts.length > 0 ? generateNix(workspace, nixHosts) : undefined;
@@ -161,7 +164,8 @@ async function prepareWindowsLock(
   resolveVersion: WindowsPackageVersionResolver,
   resolveModuleVersion: WindowsModuleVersionResolver,
   resolveWslImage: WindowsWslImageResolver,
-  resolveRepository: WindowsWslRepositoryResolver
+  resolveRepository: WindowsWslRepositoryResolver,
+  resolveFont: WindowsFontResolver
 ): Promise<WindowsLock> {
   const now = new Date();
   const lock = readWindowsLock(configDir) ?? emptyWindowsLock(now);
@@ -179,23 +183,26 @@ async function prepareWindowsLock(
     ? await resolveWindowsWslImages(modules.lock, resolveWslImage, now, true)
     : { lock: modules.lock, changed: false };
   const repositories = resolveWindowsWslRepositories(images.lock, windowsHosts, resolveRepository, now, true);
-  const changed = windowsLockChanged(lock, repositories.lock);
-  if (!changed) return repositories.lock;
+  const fonts = await resolveWindowsFonts(repositories.lock, collectFontSources(windowsHosts).values(), resolveFont, now, true);
+  const changed = windowsLockChanged(lock, fonts.lock);
+  if (!changed) return fonts.lock;
 
   if (dry) {
     if (windowsLockChanged(lock, resolved.lock)) printWindowsLockDryRun(resolved.resolutions);
     for (const entry of modules.resolutions) console.warn(`Would pin PowerShell module ${entry.id} ${entry.version} in winix-windows.lock`);
     if (images.changed) console.warn("Would pin verified NixOS-WSL images for x64/arm64 in winix-windows.lock");
     if (repositories.changed) console.warn("Would pin WSL setup repository commits in winix-windows.lock");
-    return repositories.lock;
+    if (fonts.changed) console.warn("Would pin verified font sources in winix-windows.lock");
+    return fonts.lock;
   }
 
-  writeWindowsLock(configDir, repositories.lock);
+  writeWindowsLock(configDir, fonts.lock);
   if (windowsLockChanged(lock, resolved.lock)) printWindowsLockUpdate(resolved.resolutions);
   for (const entry of modules.resolutions) console.log(`✓ Pinned PowerShell module ${entry.id} ${entry.version} in winix-windows.lock`);
   if (images.changed) console.log("✓ Pinned verified NixOS-WSL images for x64/arm64 in winix-windows.lock");
   if (repositories.changed) console.log("✓ Pinned WSL setup repository commits in winix-windows.lock");
-  return repositories.lock;
+  if (fonts.changed) console.log("✓ Pinned verified font sources in winix-windows.lock");
+  return fonts.lock;
 }
 
 function printWindowsLockDryRun(resolutions: { id: string; source: string; version: string }[]): void {

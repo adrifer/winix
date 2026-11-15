@@ -55,6 +55,8 @@ import {
 import { powerShellLiteral as psSingleQuoted } from "../../helpers/utils.ts";
 import { windowsSourcePath } from "./paths.ts";
 import { optionalFeatureProperties, wslDistroProperties } from "./wsl.ts";
+import { fontsProperties } from "./fonts.ts";
+import { wallpaperProperties } from "./personalization.ts";
 
 export { isWindowsHost } from "./host.ts";
 
@@ -139,6 +141,12 @@ function generateConfiguration(
     .map((resource) => ({ kind: "dsc", token: resource.token! }));
   const resources = (win.dsc ?? []).map((resource) => {
     const metadata = resource.winix;
+    if (metadata?.kind === "fonts") {
+      return cloneDscResource(resource, fontsProperties(metadata.sources, lock, configDir));
+    }
+    if (metadata?.kind === "wallpaper") {
+      return cloneDscResource(resource, wallpaperProperties(metadata.wallpaper, configDir));
+    }
     if (metadata?.kind === "file") {
       const properties = resolveWindowsFileProperties(resource, configDir, windowsSourcePath);
       if (metadata.wslConfig && properties) {

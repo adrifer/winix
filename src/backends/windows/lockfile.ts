@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { validFontPin, type WindowsFontPin } from "./fonts.ts";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
@@ -26,6 +27,7 @@ export interface WindowsLock {
   version: typeof WINDOWS_LOCK_VERSION;
   generatedAt: string;
   packages: Record<string, WindowsLockPackage>;
+  fonts?: Record<string, WindowsFontPin>;
   /** Source-qualified lowercase keys; legacy name-only entries remain readable. */
   modules?: Record<string, WindowsLockModule>;
   wslImages?: Record<string, WindowsLockWslImage>;
@@ -271,6 +273,10 @@ export function serializeWindowsLock(lock: WindowsLock): string {
       sorted.modules[name] = { ...lock.modules[name] };
     }
   }
+  if (lock.fonts !== undefined) {
+    sorted.fonts = {};
+    for (const key of Object.keys(lock.fonts).sort(comparePackageIds)) sorted.fonts[key] = { ...lock.fonts[key] };
+  }
   if (lock.wslImages !== undefined) {
     sorted.wslImages = {};
     for (const key of Object.keys(lock.wslImages).sort(comparePackageIds)) {
@@ -489,6 +495,14 @@ function validateWindowsLock(value: unknown): WindowsLock {
   }
 
   const wslImages: Record<string, WindowsLockWslImage> = {};
+  const fonts: Record<string, WindowsFontPin> = {};
+  if (value.fonts !== undefined) {
+    if (!isObject(value.fonts)) throw new Error(`${WINDOWS_LOCKFILE_NAME} fonts must be an object`);
+    for (const [key, pin] of Object.entries(value.fonts)) {
+      if (!/^[a-f0-9]{64}$/.test(key) || !validFontPin(pin)) throw new Error(`${WINDOWS_LOCKFILE_NAME} font pin "${key}" is invalid`);
+      fonts[key] = { ...pin };
+    }
+  }
   if (value.wslImages !== undefined) {
     if (!isObject(value.wslImages)) throw new Error(`${WINDOWS_LOCKFILE_NAME} wslImages must be an object.`);
     for (const [key, image] of Object.entries(value.wslImages)) {
@@ -512,6 +526,7 @@ function validateWindowsLock(value: unknown): WindowsLock {
     version: WINDOWS_LOCK_VERSION,
     generatedAt: value.generatedAt,
     packages,
+    ...(value.fonts === undefined ? {} : { fonts }),
     ...(value.modules === undefined ? {} : { modules }),
     ...(value.wslImages === undefined ? {} : { wslImages }),
     ...(value.wslRepositories === undefined ? {} : { wslRepositories }),

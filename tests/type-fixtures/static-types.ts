@@ -2,6 +2,19 @@ import { account, darwin, home, nix, nixos, windows, feature, profile, host, pla
 import type { GitOptions } from "@adrifer/winix/types";
 
 const icons: ResourceHandle = windows.powershell.module("Terminal-Icons");
+const fonts: ResourceHandle = windows.fonts({
+  sources: ["../fonts/font.ttf", { url: "https://example.com/fonts.zip", files: ["**/*.ttf"] },
+    { provider: "nerd-fonts", family: "JetBrainsMono", version: "v3.5.1" }],
+  dependsOn: icons,
+});
+windows.wallpaper({ source: windows.knownFolder.documents("wallpaper.jpg"), style: "Fill", dependsOn: fonts });
+windows.personalization({ accentColor: "#123456", explorer: { openTo: "Home" }, taskbar: { autoHide: true, search: "Icon" } });
+// @ts-expect-error Only implemented font providers are accepted.
+windows.fonts({ sources: [{ provider: "google-fonts", family: "Roboto" }] });
+// @ts-expect-error Wallpaper styles are named values.
+windows.wallpaper({ source: "wallpaper.jpg", style: "Fullscreen" });
+// @ts-expect-error Taskbar search is a named mode.
+windows.personalization({ taskbar: { search: true } });
 const wslFeatures: ResourceHandle = windows.wsl({
   config: { wsl2: { memory: "16GB", processors: 8, networkingMode: "mirrored" } }, backup: true,
 });

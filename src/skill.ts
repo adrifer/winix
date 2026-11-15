@@ -268,6 +268,33 @@ Available helpers:
 Windows hosts generate a DSC v3 configuration for \`winget configure\`.
 Resources return handles that can be passed through \`dependsOn\`.
 
+- \`windows.wallpaper({ source: "../wallpapers/desktop.jpg", style: "Fill" })\`
+  manages the current-user desktop image; source is a local/config-relative or
+  known-folder path. Styles: Fill, Fit, Stretch, Tile, Center, Span. Source
+  hashes detect changed images; remote wallpapers and per-monitor assignments
+  are not supported.
+- \`windows.personalization({ accentColor: "#336699", explorer: {
+  showExtensions: true, showHiddenFiles: false, openTo: "ThisPC" }, taskbar: {
+  autoHide: false, search: "Hidden", taskView: true, widgets: false } })\`
+  changes only declared current-user values. Accent disables automatic coloring;
+  do not contradict it with windows.setting AutoColorization. Explorer openTo is
+  ThisPC/Home; search is Hidden/Icon/IconAndLabel/Box. Some preferences require
+  signing out and depend on Windows version/policy; never restart Explorer.
+- \`windows.fonts({ sources: ["../fonts/font.ttf", {
+  url: "https://example.com/fonts.zip", files: ["**/*.ttf"] }, {
+  provider: "nerd-fonts", family: "JetBrainsMono" }] })\` installs current-user
+  TTF/OTF fonts. URL sources require HTTPS without credentials, optionally sha256;
+  files selects exact ZIP members or **/*.ttf / **/*.otf. Nerd Fonts is the only
+  provider, with optional exact version vX.Y.Z. Discover IDs with
+  \`winix fonts search [query] --provider nerd-fonts\`; IDs are not installed family
+  names. Remote sources lock URL/version/checksum; first resolution trusts upstream
+  unless an independent sha256 is supplied. \`winix update --windows fonts\`
+  refreshes only font pins. Apply reuses pins; dry runs don't write/install.
+  Installation verifies hashes, bounds/safely extracts ZIPs, reports actual font
+  families and rejects differing existing files/registry entries. Identical
+  files are reused; no font removal or automatic app font selection. Native
+  desktop/font activation remains unverified; don't rehearse on a shared machine.
+
 - \`windows.package()\` installs a winget or Microsoft Store package. A string
   means a floating winget package ID. The object form accepts \`id\`,
   \`source\`, \`version\`, and dependency options.

@@ -729,6 +729,37 @@ describe("winix apply Windows output", () => {
   });
 });
 
+describe("Font CLI locking", () => {
+  it("previews without writes, pins fonts, reuses pins offline and updates only fonts", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-font-cli-"));
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), ({ windows }) => {
+          windows.fonts({ sources: [{ provider: "nerd-fonts", family: "JetBrainsMono" }] });
+        })
+      `);
+      const pin = {
+        url: "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.zip",
+        version: "v3.5.1", format: "zip" as const, sha256: "a".repeat(64), resolvedAt: new Date().toISOString(),
+      };
+      await applyWorkspace(dir, { dry: true, diff: false, resolveWindowsFont: async () => pin });
+      expect(readWindowsLock(dir)).toBeNull();
+      expect(existsSync(join(dir, ".winix", "out"))).toBe(false);
+      await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsFont: async () => pin });
+      const before = readWindowsLock(dir)!;
+      const offline = vi.fn(async () => { throw new Error("offline"); });
+      await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsFont: offline });
+      expect(offline).not.toHaveBeenCalled();
+      const next = { ...pin, version: "v3.5.2", url: pin.url.replace("v3.5.1", "v3.5.2"), sha256: "b".repeat(64) };
+      await update(dir, { windows: true, inputs: ["fonts"], dry: true, resolveWindowsFont: async () => next });
+      expect(readWindowsLock(dir)).toEqual(before);
+      await update(dir, { windows: true, inputs: ["fonts"], dry: false, resolveWindowsFont: async () => next });
+      expect(Object.values(readWindowsLock(dir)!.fonts!)[0].version).toBe("v3.5.2");
+      expect(readWindowsLock(dir)!.packages).toEqual(before.packages);
+    } finally { await rm(dir, { recursive: true, force: true }); }
+  });
+});
+
 describe("PowerShell module CLI locking", () => {
   it("pins implicit Settings from the approved feed, reuses it offline and updates it explicitly", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-settings-cli-"));

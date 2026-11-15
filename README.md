@@ -960,6 +960,74 @@ as `.lnk.bak` and refuses backup collisions, while `force: true` opts into
 replacement without a backup. A new shortcut is staged and verified before
 replacing the old one. Keep names unique per host.
 
+### Windows personalization and fonts
+
+These helpers manage the current Windows user without requiring elevation:
+
+```ts
+windows.wallpaper({ source: "../wallpapers/desktop.jpg", style: "Fill" });
+windows.personalization({
+  accentColor: "#336699",
+  explorer: { showExtensions: true, showHiddenFiles: false, openTo: "ThisPC" },
+  taskbar: { autoHide: false, search: "Hidden", taskView: true, widgets: false },
+});
+windows.fonts({
+  sources: [
+    "../fonts/MyFont-Regular.ttf",
+    { url: "https://example.com/releases/v1/fonts.zip", files: ["**/*.ttf"] },
+    { provider: "nerd-fonts", family: "JetBrainsMono" },
+  ],
+});
+```
+
+Wallpaper accepts a local path or `windows.knownFolder.*` path. Relative image
+and font paths resolve from `winix.config.ts`, including Windows and WSL path
+conversion. Wallpaper images are cached by content hash, so editing the source
+image is detected. Styles are `Fill` (default), `Fit`, `Stretch`, `Tile`, `Center`,
+and `Span`; this is one desktop background, not per-monitor image assignment.
+
+Personalization only changes declared values. `accentColor` is `#RRGGBB` and
+disables automatic accent coloring. Explorer `openTo` accepts `ThisPC` or `Home`;
+hidden files does not expose protected operating-system files. Taskbar `search`
+accepts `Hidden`, `Icon`, `IconAndLabel`, or `Box`. Explorer/taskbar/accent values
+depend on Windows version and policy and may require signing out; Winix never
+restarts Explorer. Existing `windows.setting()` theme settings remain available.
+Avoid declaring conflicting automatic accent coloring in both helpers.
+
+Fonts support local `.ttf`/`.otf` files, HTTPS `.ttf`/`.otf` downloads, and ZIP
+archives. ZIP `files` accepts exact member paths or `**/*.ttf` / `**/*.otf`;
+omitting it selects all font files. Unsafe archives, missing selections and
+conflicting filenames fail explicitly. Downloads and expanded archives have
+size limits. Remote sources must not contain credentials. An optional `sha256`
+provides an independently trusted checksum; otherwise the first resolution
+records the upstream digest or the downloaded bytes (trust on first use).
+
+Remote fonts have a separate `fonts` section in `winix-windows.lock`. First
+apply resolves missing entries; subsequent apply reuses them without a catalog
+query. `winix update --windows fonts` refreshes only font pins; `--dry` never
+writes pins or installs fonts. Installation verifies checksums and caches
+downloads in Local AppData. Nerd Fonts IDs come from official release ZIP
+assets, not a handwritten registry:
+
+```sh
+winix fonts search JetBrains --provider nerd-fonts
+winix update --windows fonts --dry
+```
+
+Nerd Fonts is the only built-in provider. Its optional `version: "vX.Y.Z"` selects
+an exact upstream release; otherwise latest resolves once and stays locked.
+Provider IDs, archive filenames and installed family names differ. Installation
+reports family names from font metadata; configure Terminal/editors separately
+to select them. Fonts are installed and registered for the current user,
+identical files are reused, and differing existing files/registry entries are
+not overwritten. Updating a ZIP pin may therefore require explicitly resolving
+an existing font collision. Font removal/cleanup is not tracked; deleting a
+declaration leaves installed fonts and caches intact.
+
+These helpers emit idempotent DSC PowerShell resources. Native desktop/font
+activation has not been rehearsed on a shared machine; automated checks cover
+authoring, locking, generated scripts and isolated archive handling.
+
 ### Windows removal and ownership
 
 Native Windows `winix switch` keeps a separate applied-state inventory under
