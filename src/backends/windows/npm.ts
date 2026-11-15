@@ -10,7 +10,7 @@ $path = if ($env:NPM_CONFIG_USERCONFIG) {
 } else { Join-Path ([Environment]::GetFolderPath('UserProfile')) '.npmrc' }
 if (-not [IO.Path]::IsPathFullyQualified($path)) { throw 'npm userconfig must be an absolute path' }
 if (Test-Path -LiteralPath $path) {
-  if ((Get-Item -LiteralPath $path).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+  if ((Get-Item -LiteralPath $path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {
     throw 'npm userconfig is a symlink; configure its source file explicitly instead'
   }
 }
@@ -51,7 +51,7 @@ try {
   [IO.File]::WriteAllText($temporary, $next, [Text.UTF8Encoding]::new($false))
   if ((Read-WinixNpmConfig) -cne $original) { throw 'npm userconfig changed during activation; rerun' }
   if (Test-Path -LiteralPath $path) {
-    if ((Get-Item -LiteralPath $path).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'npm userconfig became a link' }
+    if ((Get-Item -LiteralPath $path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'npm userconfig became a link' }
     [IO.File]::Replace($temporary, $path, [NullString]::Value)
   } else { [IO.File]::Move($temporary, $path, $false) }
 } finally {
