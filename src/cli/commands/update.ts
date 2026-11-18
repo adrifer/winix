@@ -236,7 +236,7 @@ function collectFloatingPackages(
   for (const host of windowsHosts) {
     const win = host.windows as WindowsOptions;
     for (const pkg of Object.values(win.packages ?? {})) {
-      if (pkg.version !== undefined) continue;
+      if (pkg.version !== undefined || pkg.anyVersion) continue;
 
       const pinnedPkg = pinned.get(pkg.id);
       if (pinnedPkg) {

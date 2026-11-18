@@ -280,7 +280,7 @@ resources:
             Move-Item -LiteralPath $Path -Destination $backupPath
             return
           }
-          if (-not $Force) { throw "Target already exists and differs: $Path. Pass force: true or backup: true." }
+          if (-not $Force) { throw "Target already exists and differs: $Path (declared with backup: false). Move it manually, drop backup: false, or pass force: true." }
           $item = Get-Item -LiteralPath $Path -Force
           if ($item.PSIsContainer -and $null -eq $item.LinkType) {
             $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
@@ -293,7 +293,7 @@ resources:
         '
         $encoding = 'utf8'
         $force = $false
-        $backup = $false
+        $backup = $true
         $desired = Get-WinixTextBytes $content $encoding
         if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { return $false }
         $actual = [IO.File]::ReadAllBytes($target)
@@ -322,7 +322,7 @@ resources:
             Move-Item -LiteralPath $Path -Destination $backupPath
             return
           }
-          if (-not $Force) { throw "Target already exists and differs: $Path. Pass force: true or backup: true." }
+          if (-not $Force) { throw "Target already exists and differs: $Path (declared with backup: false). Move it manually, drop backup: false, or pass force: true." }
           $item = Get-Item -LiteralPath $Path -Force
           if ($item.PSIsContainer -and $null -eq $item.LinkType) {
             $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
@@ -335,7 +335,7 @@ resources:
         '
         $encoding = 'utf8'
         $force = $false
-        $backup = $false
+        $backup = $true
         $desired = Get-WinixTextBytes $content $encoding
         if (Test-Path -LiteralPath $target -PathType Leaf) {
           $actual = [IO.File]::ReadAllBytes($target)
@@ -362,7 +362,7 @@ resources:
             Move-Item -LiteralPath $Path -Destination $backupPath
             return
           }
-          if (-not $Force) { throw "Target already exists and differs: $Path. Pass force: true or backup: true." }
+          if (-not $Force) { throw "Target already exists and differs: $Path (declared with backup: false). Move it manually, drop backup: false, or pass force: true." }
           $item = Get-Item -LiteralPath $Path -Force
           if ($item.PSIsContainer -and $null -eq $item.LinkType) {
             $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
@@ -441,7 +441,7 @@ resources:
             Move-Item -LiteralPath $Path -Destination $backupPath
             return
           }
-          if (-not $Force) { throw "Target already exists and differs: $Path. Pass force: true or backup: true." }
+          if (-not $Force) { throw "Target already exists and differs: $Path (declared with backup: false). Move it manually, drop backup: false, or pass force: true." }
           $item = Get-Item -LiteralPath $Path -Force
           if ($item.PSIsContainer -and $null -eq $item.LinkType) {
             $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
@@ -508,7 +508,7 @@ resources:
         $source = Expand-WinixPath '%USERPROFILE%\\dotfiles\\nvim'
         $recursive = $false
         $force = $false
-        $backup = $false
+        $backup = $true
         if ($recursive) { Test-WinixRecursiveSymlink $source $target } else { Test-WinixSymlink $source $target }
       setScript: |-
         function Expand-WinixPath([string]$Path) { [Environment]::ExpandEnvironmentVariables($Path) }
@@ -524,7 +524,7 @@ resources:
             Move-Item -LiteralPath $Path -Destination $backupPath
             return
           }
-          if (-not $Force) { throw "Target already exists and differs: $Path. Pass force: true or backup: true." }
+          if (-not $Force) { throw "Target already exists and differs: $Path (declared with backup: false). Move it manually, drop backup: false, or pass force: true." }
           $item = Get-Item -LiteralPath $Path -Force
           if ($item.PSIsContainer -and $null -eq $item.LinkType) {
             $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
@@ -591,7 +591,7 @@ resources:
         $source = Expand-WinixPath '%USERPROFILE%\\dotfiles\\nvim'
         $recursive = $false
         $force = $false
-        $backup = $false
+        $backup = $true
         Assert-WinixCanCreateSymlink
         if (-not (Test-Path -LiteralPath $source)) { throw "Source path does not exist: $source" }
         if ($recursive) {
@@ -633,7 +633,7 @@ resources:
             Move-Item -LiteralPath $Path -Destination $backupPath
             return
           }
-          if (-not $Force) { throw "Target already exists and differs: $Path. Pass force: true or backup: true." }
+          if (-not $Force) { throw "Target already exists and differs: $Path (declared with backup: false). Move it manually, drop backup: false, or pass force: true." }
           $item = Get-Item -LiteralPath $Path -Force
           if ($item.PSIsContainer -and $null -eq $item.LinkType) {
             $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
@@ -666,7 +666,7 @@ resources:
         $target = Expand-WinixPath '%APPDATA%\\tool\\config.json'
         $source = Expand-WinixPath 'C:\\config\\config.json'
         $force = $false
-        $backup = $false
+        $backup = $true
         Test-WinixCopy $source $target
       setScript: |-
         function Expand-WinixPath([string]$Path) { [Environment]::ExpandEnvironmentVariables($Path) }
@@ -692,7 +692,7 @@ resources:
             Move-Item -LiteralPath $Path -Destination $backupPath
             return
           }
-          if (-not $Force) { throw "Target already exists and differs: $Path. Pass force: true or backup: true." }
+          if (-not $Force) { throw "Target already exists and differs: $Path (declared with backup: false). Move it manually, drop backup: false, or pass force: true." }
           $item = Get-Item -LiteralPath $Path -Force
           if ($item.PSIsContainer -and $null -eq $item.LinkType) {
             $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
@@ -725,7 +725,7 @@ resources:
         $target = Expand-WinixPath '%APPDATA%\\tool\\config.json'
         $source = Expand-WinixPath 'C:\\config\\config.json'
         $force = $false
-        $backup = $false
+        $backup = $true
         if (-not (Test-Path -LiteralPath $source)) { throw "Source path does not exist: $source" }
         if (Test-WinixCopy $source $target) { return }
         Move-WinixExistingTarget $target $force $backup

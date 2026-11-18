@@ -18,6 +18,7 @@ import {
 } from "./windows-state.ts";
 import { findConfig } from "./loader.ts";
 import { nerdFontsCatalog } from "../backends/windows/fonts.ts";
+import { packageSearch, windowsImport } from "./commands/windows-packages.ts";
 
 if (process.argv[2] === "run") {
   try { await runCheckout(process.cwd(), process.argv.slice(3)); }
@@ -75,6 +76,8 @@ Commands:
   update       Update generated flake.lock and copy it to project root
   inspect      Print host composition and fragment graph
   fonts search [query] --provider nerd-fonts  Search official font release IDs
+  package search <query>  Search winget and show how to declare a package
+  windows import [--host <name>]  Print declarations for installed, undeclared packages
   state forget Release Windows removal ownership without deleting a resource
   state owners List Windows applied-state owners and their migration IDs
   state migrate-owner <id> Transfer an old owner's requirements to this checkout/--host
@@ -133,6 +136,26 @@ switch (command) {
       for (const font of fonts) console.log(`  ${font.family}`);
     } catch (error) { console.error(`Error: ${(error as Error).message}`); process.exit(1); }
     break;
+  case "package":
+    try {
+      if (positionals[1] !== "search" || positionals.length < 3) throw new Error("Usage: winix package search <query>");
+      packageSearch(positionals.slice(2).join(" "));
+    } catch (err) {
+      console.error(`\u2717 Error: ${(err as Error).message}`);
+      process.exit(1);
+    }
+    break;
+
+  case "windows":
+    try {
+      if (positionals[1] !== "import" || positionals.length !== 2) throw new Error("Usage: winix windows import [--host <name>]");
+      await windowsImport(cwd, { host: values.host });
+    } catch (err) {
+      console.error(`\u2717 Error: ${(err as Error).message}`);
+      process.exit(1);
+    }
+    break;
+
   case "bootstrap":
     try {
       await bootstrapCheckout(cwd, {

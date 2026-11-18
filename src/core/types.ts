@@ -153,7 +153,11 @@ export interface InputWithOptions {
  * Workspace definition: the top-level configuration.
  */
 export interface WorkspaceDef {
-  inputs: Record<string, InputDef>;
+  /**
+   * Flake inputs. Required (with `nixpkgs`) when the workspace has NixOS or
+   * nix-darwin hosts; optional for Windows-only workspaces.
+   */
+  inputs?: Record<string, InputDef>;
   hosts: HostDef[];
 }
 

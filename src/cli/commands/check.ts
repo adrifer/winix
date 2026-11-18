@@ -7,6 +7,8 @@ import { generateNix, type NixOutput } from "../../backends/nix/index.ts";
 import { validateWindowsWslResources } from "../../backends/windows/index.ts";
 import { validateWindowsWslSetupTargets } from "../../backends/windows/wsl-setup-runtime.ts";
 import type { WindowsOptions } from "../../types/index.ts";
+import { readWindowsLock, windowsLockGaps } from "../../backends/windows/lockfile.ts";
+import { platformForEvaluatedHost } from "../activation.ts";
 import {
   analyzeWorkspace,
   collectEscapeReport,
@@ -72,6 +74,14 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
 
     for (const item of ignoredFragments) {
       console.warn(`Warning: ${item.host} ${item.fragment}: no applicable configuration (ignored scopes: ${item.scopes.join(", ")}).`);
+    }
+
+    const windowsHosts = evaluated.filter((host) => platformForEvaluatedHost(host) === "windows");
+    const gaps = windowsLockGaps(readWindowsLock(configDir), windowsHosts);
+    if (gaps.length > 0) {
+      const ids = [...new Set(gaps.map((gap) => gap.id))];
+      console.warn(`Warning: ${ids.length} Windows package(s) not pinned in winix-windows.lock: ${ids.join(", ")}.`);
+      console.warn(`  The next apply resolves them with winget (network); a mistyped id fails there. Pin now with winix update --windows ${ids.join(" ")}, or find ids with winix package search <query>.`);
     }
 
     if (opts.escapeReport) {

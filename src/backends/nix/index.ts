@@ -45,7 +45,7 @@ function generateFlake(
   workspace: WorkspaceDef,
   hosts: EvaluatedHost[]
 ): string {
-  const inputLines = Object.entries(workspace.inputs)
+  const inputLines = Object.entries(workspace.inputs ?? {})
     .map(([name, def]) => formatInput(name, def))
     .join("\n");
 
@@ -476,6 +476,10 @@ function validateWorkspaceInputs(
   hosts: EvaluatedHost[]
 ): string[] {
   const warnings: string[] = [];
+  const nixHosts = hosts.filter((host) => Object.keys(host.nixos).length > 0 || Object.keys(host.darwin).length > 0);
+  if (nixHosts.length > 0 && !hasInput(workspace, "nixpkgs")) {
+    warnings.push(`${nixHosts.map((host) => host.name).join(", ")}: NixOS/nix-darwin hosts need a nixpkgs input, e.g. inputs: { nixpkgs: "nixos-unstable" }`);
+  }
   if (hosts.some((host) => Object.keys(host.darwin).length > 0) && !hasInput(workspace, "nix-darwin")) {
     warnings.push(
       "darwin host detected but workspace inputs do not include nix-darwin"
@@ -514,7 +518,7 @@ export function hasHomeManagerImport(host: EvaluatedHost): boolean {
 }
 
 function hasInput(workspace: WorkspaceDef, nixName: string): boolean {
-  return Object.entries(workspace.inputs).some(
+  return Object.entries(workspace.inputs ?? {}).some(
     ([name, def]) => inputNixName(name, def) === nixName
   );
 }

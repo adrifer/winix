@@ -46,6 +46,12 @@ import type { WinNpmRegistryPolicy } from "../types/windows.ts";
 export interface WinPackageSpec {
   id: string;
   source?: WinPackageSource;
+  /**
+   * Omitted: pinned in winix-windows.lock (newer installs are kept).
+   * `"1.2.3"`: exactly this version. `"any"`: installed in any version; for
+   * apps that update themselves or report no usable version. Never locked,
+   * compared or downgraded.
+   */
   version?: string;
   elevated?: boolean;
   /**
@@ -56,6 +62,9 @@ export interface WinPackageSpec {
 }
 
 export type WinPackageArg = string | WinPackageSpec;
+
+/** Options for the `windows.package(id, opts)` form. */
+export type WinPackageOpts = Omit<WinPackageSpec, "id">;
 
 /**
  * Accepted object shape for `windows.raw(...)`.
@@ -98,7 +107,15 @@ export interface WinPowerShellModuleOpts {
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
-export interface WinStartupCommandSpec extends WinStartupCommand {
+export interface WinStartupCommandSpec extends Omit<WinStartupCommand, "executable" | "arguments" | "workingDirectory"> {
+  /**
+   * Path, application name, or a windows.file.* handle (its target is used and
+   * the file becomes a dependency). The same applies to arguments and
+   * workingDirectory.
+   */
+  executable: WinFilePath | ResourceHandle;
+  arguments?: (WinFilePath | ResourceHandle)[];
+  workingDirectory?: WinFilePath | ResourceHandle;
   backup?: boolean;
   force?: boolean;
   dependsOn?: ResourceHandle | ResourceHandle[];
@@ -160,6 +177,8 @@ const KNOWN_FOLDERS = {
   localAppData: "LocalApplicationData",
   appData: "ApplicationData",
   userProfile: "UserProfile",
+  programFiles: "ProgramFiles",
+  programFilesX86: "ProgramFilesX86",
 } as const;
 
 function knownFolder(folder: WinKnownFolderName, path = ""): WinKnownFolder {
@@ -213,6 +232,21 @@ export interface WinFileOpts {
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
+export interface WinLinkedFileOpts extends Pick<WinFileOpts, "force" | "backup" | "dependsOn"> {
+  /** "symlink" (default) keeps the file live-linked to the checkout; "copy" writes a copy. */
+  mode?: "symlink" | "copy";
+}
+
+export interface WinPowerShellProfileOpts extends WinLinkedFileOpts {
+  /** "pwsh" (PowerShell 7, default) or "windowspowershell" (Windows PowerShell 5.1). */
+  shell?: "pwsh" | "windowspowershell";
+}
+
+export interface WinTerminalSettingsOpts extends WinLinkedFileOpts {
+  /** Windows Terminal channel. Defaults to "stable". */
+  channel?: "stable" | "preview";
+}
+
 /**
  * Resolve `dependsOn` (a single handle or an array) into the stable resource
  * references the emitter wires up. Throws on a value that is not a Winix
@@ -240,7 +274,16 @@ function resolveDependsOn(
   return refs;
 }
 
-function normalizePackage(arg: WinPackageArg): WinPackage {
+function normalizePackage(arg: WinPackageArg, opts?: WinPackageOpts): WinPackage {
+  if (opts !== undefined) {
+    if (typeof arg !== "string") {
+      throw new Error("windows.package(id, opts) takes an id string; put options in the spec object instead");
+    }
+    if (!opts || typeof opts !== "object" || Array.isArray(opts) || "id" in opts) {
+      throw new Error(`windows.package("${arg}", opts) requires an options object without id`);
+    }
+    return normalizePackage({ ...opts, id: arg });
+  }
   if (typeof arg === "string") {
     if (arg.length === 0) {
       throw new Error("windows.package(id) requires a non-empty package id");
@@ -263,7 +306,11 @@ function normalizePackage(arg: WinPackageArg): WinPackage {
     if (typeof arg.version !== "string" || arg.version.length === 0) {
       throw new Error(`windows.package("${arg.id}") version must be a non-empty string`);
     }
-    pkg.version = arg.version;
+    if (arg.version === "latest" || arg.version === "*") {
+      throw new Error(`windows.package("${arg.id}") version "${arg.version}" is not supported; use "any" to accept any installed version, or an exact version`);
+    }
+    if (arg.version === "any") pkg.anyVersion = true;
+    else pkg.version = arg.version;
   }
   if (arg.elevated !== undefined) {
     pkg.elevated = arg.elevated;
@@ -639,7 +686,7 @@ function normalizePath(
 }
 
 function normalizeFileOpts(opts: WinFileOpts | undefined, helper: string): WinFileOpts {
-  if (opts === undefined) return {};
+  if (opts === undefined) return { backup: true };
   if (opts === null || typeof opts !== "object" || Array.isArray(opts)) {
     throw new Error(`${helper} options must be an object when provided`);
   }
@@ -658,7 +705,9 @@ function normalizeFileOpts(opts: WinFileOpts | undefined, helper: string): WinFi
       `${helper} encoding "${opts.encoding}" is invalid; expected "utf8", "utf8bom", or "ascii"`
     );
   }
-  return opts;
+  // An existing, different target is moved to <target>.bak unless the resource
+  // opts out with backup: false (fail instead) or asks for force (delete it).
+  return { ...opts, backup: opts.backup ?? opts.force !== true };
 }
 
 function scriptDsc(
@@ -1071,7 +1120,7 @@ function fileMoveTargetPrelude(): string[] {
     "    Move-Item -LiteralPath $Path -Destination $backupPath",
     "    return",
     "  }",
-    "  if (-not $Force) { throw \"Target already exists and differs: $Path. Pass force: true or backup: true.\" }",
+    "  if (-not $Force) { throw \"Target already exists and differs: $Path (declared with backup: false). Move it manually, drop backup: false, or pass force: true.\" }",
     "  $item = Get-Item -LiteralPath $Path -Force",
     "  if ($item.PSIsContainer -and $null -eq $item.LinkType) {",
     "    $children = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue)",
@@ -1180,16 +1229,34 @@ function psBoolean(value: boolean): string {
   return value ? "$true" : "$false";
 }
 
-function normalizeStartupCommand(name: string, spec: WinStartupCommandSpec): WinDscResource {
+type ResolvedStartupSpec = WinStartupCommand & Pick<WinStartupCommandSpec, "backup" | "force" | "dependsOn">;
+
+function normalizeStartupCommand(name: string, input: WinStartupCommandSpec): WinDscResource {
   const helper = "windows.startup.command";
   if (typeof name !== "string" || !name.trim() || /[<>:"/\\|?*\x00-\x1f]|[. ]$/.test(name) ||
       /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name) || name.length > 251) {
     throw new Error(`${helper} requires a valid shortcut name without path separators or reserved Windows names`);
   }
-  if (!spec || typeof spec !== "object" || Array.isArray(spec)) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error(`${helper} requires a command specification`);
   }
-  normalizeFileOpts(spec, helper);
+  // A file handle used as a path means "this file's target", and implies the dependency.
+  const implied: ResourceHandle[] = [];
+  const pathOf = (value: WinFilePath | ResourceHandle): WinFilePath => {
+    const target = fileHandleTarget(value);
+    if (target === undefined) return value as WinFilePath;
+    implied.push(value as ResourceHandle);
+    return target;
+  };
+  const explicit = input.dependsOn === undefined ? [] : Array.isArray(input.dependsOn) ? input.dependsOn : [input.dependsOn];
+  let spec: ResolvedStartupSpec = {
+    ...input,
+    executable: pathOf(input.executable),
+    workingDirectory: input.workingDirectory === undefined ? undefined : pathOf(input.workingDirectory),
+    arguments: Array.isArray(input.arguments) ? input.arguments.map(pathOf) : input.arguments as undefined,
+  };
+  if (implied.length > 0) spec.dependsOn = [...explicit, ...implied.filter((handle) => !explicit.includes(handle))];
+  spec = { ...spec, ...normalizeFileOpts(spec, helper) };
   for (const [key, value] of [
     ["executable", spec.executable],
     ["workingDirectory", spec.workingDirectory ?? knownFolder("userProfile")],
@@ -1317,7 +1384,24 @@ export interface WindowsHelper {
     repositories(policy: WinPowerShellRepositoryPolicy): Fragment;
     /** Install a current-user PowerShell 7 module using winix-windows.lock. */
     module(name: string, opts?: WinPowerShellModuleOpts): ResourceHandle;
+    /**
+     * Link (or copy) the current user's PowerShell profile from `source`.
+     * The target is `$PROFILE.CurrentUserCurrentHost`, i.e. Documents (OneDrive
+     * redirection included) \\PowerShell (or WindowsPowerShell for 5.1).
+     */
+    profile(source: string | URL, opts?: WinPowerShellProfileOpts): ResourceHandle;
   };
+  terminal: {
+    /** Link (or copy) Windows Terminal's settings.json from `source` for the selected channel. */
+    settings(source: string | URL, opts?: WinTerminalSettingsOpts): ResourceHandle;
+  };
+  /**
+   * Absolute path of `path` relative to the directory holding winix.config.ts,
+   * resolved when the workspace is evaluated, e.g. `windows.configPath("..")`
+   * for the repository root. For values such as environment variables;
+   * file sources are already config-relative.
+   */
+  configPath(path?: string): string;
   /**
    * Declare a winget/msstore package.
    *
@@ -1325,9 +1409,10 @@ export interface WindowsHelper {
    * windows.package("Git.Git")
    * windows.package({ source: "msstore", id: "9NKSQGP7F2NH" })
    * windows.package({ id: "Git.Git", version: "2.44.0" })
+   * windows.package("Valve.Steam", { version: "any" }) // self-updating: any version
    * ```
    */
-  package(arg: WinPackageArg): ResourceHandle;
+  package(arg: WinPackageArg, opts?: WinPackageOpts): ResourceHandle;
 
   /**
    * Run an arbitrary command on every Windows apply via DSC v3's
@@ -1415,6 +1500,14 @@ export interface WindowsHelper {
  * be passed to another resource's `dependsOn`. The `__winixHandle` marker is
  * non-enumerable so it never leaks into the merged IR or emitted output.
  */
+/** The target of a handle returned by windows.file.* (and the file helpers built on it). */
+function fileHandleTarget(value: unknown): WinFilePath | undefined {
+  if (!value || typeof value !== "object" || !("__winixHandle" in value)) return undefined;
+  const dsc = (value as ResourceHandle).windows?.dsc;
+  const resource = dsc?.[dsc.length - 1];
+  return resource?.winix?.kind === "file" && resource.winix.action !== "remove" ? resource.winix.target : undefined;
+}
+
 function asHandle(fragment: Fragment, ref: ResourceRef): ResourceHandle {
   Object.defineProperty(fragment, "__winixHandle", {
     value: ref,
@@ -1422,6 +1515,17 @@ function asHandle(fragment: Fragment, ref: ResourceRef): ResourceHandle {
     configurable: true,
   });
   return fragment as ResourceHandle;
+}
+
+function linkedFile(
+  target: WinKnownFolder, source: string | URL, opts: WinLinkedFileOpts, helper: string,
+): ResourceHandle {
+  if (!opts || typeof opts !== "object" || Array.isArray(opts)) throw new Error(`${helper} options must be an object`);
+  const { mode = "symlink", ...fileOpts } = opts;
+  if (mode !== "symlink" && mode !== "copy") throw new Error(`${helper} mode must be "symlink" or "copy"`);
+  return dscHandle(mode === "copy"
+    ? normalizeFileCopy(target, source, fileOpts)
+    : normalizeFileSymlink(target, source, fileOpts));
 }
 
 function dscHandle(resource: WinDscResource): ResourceHandle {
@@ -1492,8 +1596,38 @@ export const windows: WindowsHelper = {
     localAppData: (path) => knownFolder("localAppData", path),
     appData: (path) => knownFolder("appData", path),
     userProfile: (path) => knownFolder("userProfile", path),
+    programFiles: (path) => knownFolder("programFiles", path),
+    programFilesX86: (path) => knownFolder("programFilesX86", path),
+  },
+  configPath: (path = ".") => {
+    const configDir = getOptionalEvalContext()?.configDir;
+    if (!configDir) {
+      throw new Error("windows.configPath needs the config directory; evaluate the workspace through the Winix CLI");
+    }
+    if (typeof path !== "string") throw new Error("windows.configPath(path) requires a string");
+    return win32.resolve(configDir, path);
+  },
+  terminal: {
+    settings: (source, opts = {}) => {
+      const { channel = "stable", ...rest } = opts;
+      if (channel !== "stable" && channel !== "preview") {
+        throw new Error('windows.terminal.settings channel must be "stable" or "preview"');
+      }
+      const packageName = channel === "preview" ? "Microsoft.WindowsTerminalPreview" : "Microsoft.WindowsTerminal";
+      return linkedFile(knownFolder("localAppData", `Packages/${packageName}_8wekyb3d8bbwe/LocalState/settings.json`),
+        source, rest, "windows.terminal.settings");
+    },
   },
   powershell: {
+    profile: (source, opts = {}) => {
+      const { shell = "pwsh", ...rest } = opts;
+      if (shell !== "pwsh" && shell !== "windowspowershell") {
+        throw new Error('windows.powershell.profile shell must be "pwsh" or "windowspowershell"');
+      }
+      const directory = shell === "pwsh" ? "PowerShell" : "WindowsPowerShell";
+      return linkedFile(knownFolder("documents", `${directory}/Microsoft.PowerShell_profile.ps1`),
+        source, rest, "windows.powershell.profile");
+    },
     repositories: (policy) => {
       validatePowerShellRepositoryPolicy(policy);
       return { windows: { powershell: { repositories: policy } } };
@@ -1528,8 +1662,8 @@ export const windows: WindowsHelper = {
       return { windows: { npm: { registries: policy } } };
     },
   },
-  package: (arg: WinPackageArg): ResourceHandle => {
-    const pkg = normalizePackage(arg);
+  package: (arg: WinPackageArg, opts?: WinPackageOpts): ResourceHandle => {
+    const pkg = normalizePackage(arg, opts);
     const fragment: Fragment = { windows: { packages: { [pkg.id]: pkg } } };
     return asHandle(fragment, { kind: "package", id: pkg.id });
   },

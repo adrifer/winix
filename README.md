@@ -617,21 +617,128 @@ host("desktop", platforms.windows(), ({ windows }) => {
   windows.file.symlink(
     windows.knownFolder.documents("PowerShell\\Microsoft.PowerShell_profile.ps1"),
     "../windows/powershell/Microsoft.PowerShell_profile.ps1",
-    { backup: true, dependsOn: icons },
+    { dependsOn: icons },
   );
 });
 ```
 
 `windows.knownFolder.documents(childPath?)` resolves redirected Documents **during activation**,
 not on the machine generating the configuration. Supported folders are
-`documents`, `desktop`, `localAppData`, `appData`, and `userProfile`. The optional
+`documents`, `desktop`, `localAppData`, `appData`, `userProfile`,
+`programFiles`, and `programFilesX86`. The optional
 child path must stay within the folder. All `windows.file.*` targets accept it.
 Copy/symlink source strings are relative to the directory containing
 `winix.config.ts`, not the calling feature or working directory. Absolute paths,
 `%VARIABLE%` paths, and `file:` URL objects remain supported. Symlinks stay live
-and require the checkout to remain in place. Existing backup/force protections
-are unchanged. Direct `generateWindows(hosts, lock, configDir)` callers must
+and require the checkout to remain in place. Direct `generateWindows(hosts, lock, configDir)` callers must
 supply `configDir` when using relative sources.
+
+**Existing files are backed up by default.** When a file, `.wslconfig` or
+Startup shortcut target already exists and differs, Winix moves it to
+`<target>.bak` and puts its own in place. It fails if that `.bak` already
+exists, so nothing is overwritten. Targets that already match are left alone, so
+this only happens the first time Winix takes a file over (or after something
+else replaced it). Per resource:
+
+- `backup: false` refuses to replace an existing target and fails the switch instead.
+- `force: true` deletes the existing target without a backup (populated
+  directories are still refused). `force` with `backup: true` backs up.
+
+Before this default, replacement needed an explicit `backup: true` or
+`force: true`; configs that set `backup: true` everywhere can drop it.
+
+#### Writing Windows config
+
+Shortcuts for things most Windows hosts repeat:
+
+```ts
+// Windows-only workspaces need no Nix inputs.
+export default workspace({ hosts: [
+  host("desktop", platforms.windows(), ({ windows }) => {
+    // Apps that update themselves: install when missing, never pin or downgrade.
+    windows.package("Valve.Steam", { version: "any" });
+
+    // Named targets instead of typed-out paths.
+    windows.powershell.profile("../windows/powershell/Microsoft.PowerShell_profile.ps1");
+    windows.terminal.settings("../windows/terminal/settings.json", { channel: "preview" });
+    windows.env.set("REPOS", windows.configPath("../.."));
+
+    // A file handle used as a path supplies the path *and* the dependency.
+    const komorebi = windows.package("LGUG2Z.komorebi");
+    const config = windows.file.symlink(windows.knownFolder.userProfile("komorebi.json"), "../windows/komorebi.json");
+    windows.startup.command("komorebi", {
+      executable: windows.knownFolder.programFiles("komorebi/bin/komorebic-no-console.exe"),
+      arguments: ["start", "--config", config],
+      dependsOn: komorebi,
+    });
+
+    // Light/dark mode lives next to the rest of the appearance settings.
+    windows.personalization({ colorMode: "Dark", accentColor: "#336699" });
+  }),
+] });
+```
+
+- `version: "any"` is for apps that update themselves (browsers, launchers,
+  Teams) or that winget can't report a usable version for. See
+  [Package versions](#package-versions) below.
+- `windows.powershell.profile(source, { shell?, mode?, backup?, force? })` targets
+  `Documents\PowerShell\Microsoft.PowerShell_profile.ps1` (`shell:
+  "windowspowershell"` for 5.1), following OneDrive-redirected Documents.
+  `windows.terminal.settings(source, { channel?: "stable" | "preview" })` targets the
+  packaged Terminal's `LocalState\settings.json`. Both symlink by default; use
+  `mode: "copy"` to copy instead.
+- `windows.configPath(path?)` returns an absolute path relative to
+  `winix.config.ts` at evaluation, for string values. File sources are already
+  config-relative.
+- In `windows.startup.command`, a `windows.file.*` handle can stand in for the
+  executable, an argument, or the working directory. Winix uses its target and
+  adds the dependency.
+- `winix package search <query>` finds winget ids. `winix windows import
+  [--host <name>]` compares `winget export` with the host's declarations and
+  prints paste-ready `windows.package(...)` lines for installed, undeclared apps.
+  Shared runtimes such as VC++ redistributables are listed on one line, and
+  declared packages that aren't installed are listed too. It is read-only.
+- `winix check` warns about floating packages missing from `winix-windows.lock`.
+  Apply would resolve them online, and a typo would only fail there.
+
+#### Package versions
+
+A package's `version` picks one of three policies:
+
+```ts
+windows.package({ id: "Git.Git", version: "2.44.0" }); // exact
+windows.package("Git.Git");                             // locked (default)
+windows.package("Valve.Steam", { version: "any" });     // any version
+```
+
+**Declaring and activating**
+
+| | Exact: `version: "2.44.0"` | Locked (default) | Any: `version: "any"` |
+|---|---|---|---|
+| Use for | Tools that must be one specific version | Most tools | Apps that update themselves, or report no usable version (e.g. `Unknown`) |
+| `winix-windows.lock` | Records the inline pin | First apply pins the latest winget version; `winix update --windows` refreshes it | No entry |
+| Not installed | Installs that version | Installs the locked version | Installs whatever winget currently offers |
+| Installed version is older | Switch fails ("Exact version mismatch") | Upgraded to the locked version | Left alone |
+| Installed version is newer | Switch fails; never downgraded | Kept ("Keeping X (locked Y)"); switch offers to update the lock | Left alone; no prompt |
+| winget reports `Unknown` | Switch fails | Kept (warning each switch); never reinstalled | Left alone; no warning |
+| Changed outside Winix (Winix-installed) | Switch fails | Newer accepted; older fails | Any change accepted |
+| `check` warns when not in the lock | No | Yes (apply would resolve it online) | No |
+
+**Removing the declaration**
+
+| | Exact | Locked (default) | Any |
+|---|---|---|---|
+| Installed by Winix, version unchanged | Uninstalled, after confirmation | Uninstalled, after confirmation | Uninstalled, after confirmation |
+| Installed by Winix, version changed since | Refused ("externally modified") | Refused ("externally modified") | Uninstalled, after confirmation |
+| Installed by Winix, winget reports `Unknown` | Refused; remove it by hand | Refused; remove it by hand | Refused; remove it by hand |
+| Installed before Winix managed it | Never uninstalled | Never uninstalled | Never uninstalled |
+
+Uninstalls also need two things: no other host or workspace on the machine
+still declares the package, and `switch --dry` lists it first as a planned
+removal. `--yes` skips the confirmation. To keep a Winix-installed package but
+stop managing it, run `winix state forget package winget <id>` before removing
+the declaration. Hosts that share a package must use the same policy for it.
+`"latest"` and `"*"` are rejected; there is no always-upgrade mode yet.
 
 Symlinks automatically depend on typed `windows.setting({ DeveloperMode: true })`
 resources declared anywhere in the same host. Developer Mode remains an explicit
@@ -720,7 +827,6 @@ host("DESKTOP", platforms.windows(), ({ windows }) => {
       wsl2: { memory: "16GB", processors: 8 },
       experimental: { autoMemoryReclaim: "gradual" },
     },
-    backup: true,
   });
   windows.wsl.distro("NixOS", {
     source: "nixos-wsl",
@@ -1019,7 +1125,6 @@ windows.startup.command("my-app", {
   arguments: ["--config", windows.knownFolder.appData("MyApp/config.json")],
   workingDirectory: windows.knownFolder.userProfile(),
   windowStyle: "minimized",
-  backup: true,
   dependsOn: appPackage,
 });
 ```
@@ -1040,9 +1145,9 @@ embedded quotes, backslashes, and Unicode; no shell is implicitly inserted.
 
 `windowStyle` accepts `normal` (default), `minimized`, or `maximized`; minimized
 does not guarantee a hidden console. Correct shortcuts are left untouched.
-Replacement is refused by default; `backup: true` preserves an existing entry
-as `.lnk.bak` and refuses backup collisions, while `force: true` opts into
-replacement without a backup. A new shortcut is staged and verified before
+A different existing shortcut is preserved as `.lnk.bak` by default (backup
+collisions fail). `backup: false` refuses the replacement instead, and
+`force: true` replaces it without a backup. A new shortcut is staged and verified before
 replacing the old one. Keep names unique per host.
 
 ### Windows npm registries

@@ -24,6 +24,8 @@ interface Entry {
   snapshot: ResourceSnapshot;
   definition: string;
   packageExact?: boolean;
+  /** Declared with version: "any"; version changes are not drift. */
+  packageAnyVersion?: true;
 }
 interface AppliedState {
   version: 1;
@@ -35,6 +37,8 @@ export interface WindowsStateAdapter {
 }
 export interface ReconcileOptions {
   packageRequirements?: Record<string, WindowsPackageRequirement>;
+  /** Package keys declared with `version: "any"`: presence only. */
+  anyVersionPackages?: ReadonlySet<string>;
   statePath: string;
   owner: string;
   desired: ManagedResource[];
@@ -120,6 +124,13 @@ export function managedWindowsResources(host: EvaluatedHost): ManagedResource[] 
 
 function sameSnapshot(a: ResourceSnapshot, b: ResourceSnapshot): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** A version: "any" package counts as unchanged while it stays installed. */
+function sameIgnoringAnyVersion(entry: Entry, current: ResourceSnapshot): boolean {
+  if (sameSnapshot(current, entry.snapshot)) return true;
+  return entry.packageAnyVersion === true && current !== null && "version" in current &&
+    entry.snapshot !== null && "version" in entry.snapshot;
 }
 
 function comparePackageSnapshots(
@@ -266,8 +277,15 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
       before.set(key, current);
       const entry = state.entries[key];
       const requirement = resource.kind === "package" ? opts.packageRequirements?.[key] : undefined;
+      const anyVersion = resource.kind === "package" && opts.anyVersionPackages?.has(key) === true;
       if (requirement && current && "version" in current) {
         effectiveWindowsPackageVersion(resource.kind === "package" ? resource.id : key, requirement, current.version);
+      }
+      const sharedWith = entry?.owners.filter((owner) => owner !== opts.owner) ?? [];
+      if (sharedWith.length > 0 && entry &&
+          ((anyVersion && entry.packageExact !== undefined) || (!anyVersion && entry.packageAnyVersion === true))) {
+        throw new Error(`Conflicting package update policies across workspace/hosts: ${key}. ` +
+          'Declare version: "any" in every host that shares it, or in none.');
       }
       if (typeof opts.definitions[key] !== "string") throw new Error(`Missing resource definition: ${key}`);
       if (entry?.owners.some((owner) => owner !== opts.owner) && entry.definition !== opts.definitions[key]) {
@@ -283,6 +301,10 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
         }
       }
       if (entry?.owned && current !== null && !sameSnapshot(current, entry.snapshot)) {
+        if (anyVersion && "version" in current && entry.snapshot && "version" in entry.snapshot) {
+          report(`Keeping package (version: any): ${key} ${current.version}`);
+          continue;
+        }
         if (resource.kind === "package" && requirement && !requirement.exact && "version" in current &&
             entry.snapshot && "version" in entry.snapshot) {
           const change = comparePackageSnapshots(resource.id, current, entry.snapshot);
@@ -312,7 +334,7 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
       if (entry.resource.kind === "package" && current && "version" in current) {
         assertRemovablePackageVersion(entry.resource.id, current.version);
       }
-      if (current !== null && !sameSnapshot(current, entry.snapshot)) {
+      if (current !== null && !sameIgnoringAnyVersion(entry, current)) {
         throw new Error(`Refusing to remove externally modified resource: ${key}. Resolve ownership explicitly.`);
       }
       report(`${current === null ? "Already absent" : opts.dry ? "Would remove" : "Planned removal"}: ${key}`);
@@ -350,7 +372,8 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
           throw new Error(`Activation unexpectedly downgraded package: ${key}`);
         }
       }
-      if (entry && entry.owners.some((owner) => owner !== opts.owner) && !sameSnapshot(current, entry.snapshot)) {
+      const anyVersion = resource.kind === "package" && opts.anyVersionPackages?.has(key) === true;
+      if (!anyVersion && entry && entry.owners.some((owner) => owner !== opts.owner) && !sameSnapshot(current, entry.snapshot)) {
         const change = resource.kind === "package" && requirement && !requirement.exact &&
           entry.packageExact === false && "version" in current && entry.snapshot && "version" in entry.snapshot
           ? comparePackageSnapshots(resource.id, current, entry.snapshot) : 0;
@@ -374,7 +397,9 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
           (resource.kind === "startup" && !sameSnapshot(initial, current)),
         snapshot: current,
         definition: opts.definitions[key],
-        ...(resource.kind === "package" && opts.packageRequirements?.[key]
+        ...(resource.kind === "package" && opts.anyVersionPackages?.has(key)
+          ? { packageAnyVersion: true as const }
+          : resource.kind === "package" && opts.packageRequirements?.[key]
           ? { packageExact: opts.packageRequirements[key].exact }
           : previous?.packageExact === undefined ? {} : { packageExact: previous.packageExact }),
       };

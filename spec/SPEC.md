@@ -775,6 +775,38 @@ package is declared. Registered repository discovery uses PowerShell 7 with PSRe
 Profile imports are separate from installation: an unversioned import still
 selects PowerShell's normal installed version, not necessarily the locked one.
 
+#### Windows authoring conveniences
+
+- `windows.package` `version: "any"` (spec object, or the `windows.package(id, opts)`
+  form) normalizes to `WinPackage.anyVersion: true` with no `version`.
+  `"latest"` and `"*"` are rejected. Combining it with an exact version for the
+  same id in one host fails during lock reconciliation and emission. Lock resolution, `winix update --windows` and check's lock-gap
+  warning skip it. The emitter renders it without `version` and needs no lock
+  entry. Switch records no version requirement or lock prompt and passes the key
+  as `anyVersionPackages` to reconciliation. Applied-state entries carry
+  `packageAnyVersion: true`. A version change is reported ("Keeping package
+  (version: any)"), not treated as drift, and does not block owned removal. Owners sharing a package
+  must agree on the policy. Combining it with an exact version is an error.
+- Known folders add `programFiles` and `programFilesX86`.
+  `windows.powershell.profile` and `windows.terminal.settings` are file
+  symlink/copy resources with fixed known-folder targets.
+- `windows.configPath(path)` resolves against `EvalContext.configDir` with
+  Windows path semantics and fails without it.
+- Startup `executable`, `arguments` and `workingDirectory` accept file handles
+  (not removals). The handle's target is used and the handle is appended to
+  `dependsOn`.
+- File-like resources (`windows.file.*`, `powershell.profile`,
+  `terminal.settings`, `.wslconfig`) and Startup shortcuts default to
+  `backup: !force`. A differing existing target moves to `<target>.bak`, and a
+  backup collision fails. `backup: false` restores the refuse-to-replace
+  behavior, and `force: true` alone deletes without a backup.
+- `windows.personalization({ colorMode })` writes `AppsUseLightTheme` and
+  `SystemUsesLightTheme`.
+- `WorkspaceDef.inputs` is optional. Nix hosts without a `nixpkgs` input get
+  a generation warning.
+- CLI: `winix package search <query>` (winget search) and `winix windows import
+  [--host]` (`winget export` diff). Both are read-only and Windows-only.
+
 #### Hybrid Windows ↔ WSL
 
 - `platforms.wsl(opts)` is a NixOS platform variant: `platforms.nixos(opts)`
@@ -970,8 +1002,9 @@ resolve on the target. Windows argv quoting preserves empty/Unicode arguments,
 spaces, quotes, and backslashes without implicitly invoking a shell.
 
 Shortcut names must be valid Windows filenames without paths or reserved names.
-Desired shortcuts are unchanged on repeat applies. Replacements require
-`backup: true` (preserving `.lnk.bak`, failing on collision) or `force: true`.
+Desired shortcuts are unchanged on repeat applies. Replacements back up to
+`.lnk.bak` by default (failing on collision); `backup: false` refuses them and
+`force: true` replaces without a backup.
 New shortcuts are staged and verified before replacement, using Unicode-capable
 Shell APIs. Names must be unique per host.
 

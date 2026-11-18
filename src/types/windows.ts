@@ -8,7 +8,9 @@
 
 import type { ResourceRef } from "../core/types.ts";
 
-export type WinKnownFolderName = "documents" | "desktop" | "localAppData" | "appData" | "userProfile";
+export type WinKnownFolderName =
+  | "documents" | "desktop" | "localAppData" | "appData" | "userProfile"
+  | "programFiles" | "programFilesX86";
 
 export interface WinKnownFolder {
   kind: "knownFolder";
@@ -36,6 +38,12 @@ export interface WinWallpaper {
 }
 
 export interface WinPersonalization {
+  /**
+   * Light/dark mode. One value sets apps and system alike; the object form
+   * sets them separately. Same registry values as windows.setting
+   * AppColorMode/SystemColorMode; declare each in one place only.
+   */
+  colorMode?: "Light" | "Dark" | { apps?: "Light" | "Dark"; system?: "Light" | "Dark" };
   accentColor?: string;
   explorer?: {
     showExtensions?: boolean;
@@ -167,6 +175,12 @@ export interface WinPackage {
    * `winget configure` is run from a non-elevated shell.
    */
   elevated?: boolean;
+  /**
+   * Declared with `version: "any"`: Winix only ensures it is installed. No lock
+   * pin, no version comparison, no lock-update prompt, never a downgrade.
+   * Removal stays ownership-checked. `version` is then undefined.
+   */
+  anyVersion?: true;
   /**
    * Resources this package must be applied after, as resolved resource
    * references (from handles passed to `dependsOn`). Emitted as DSC v3

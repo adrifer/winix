@@ -55,7 +55,7 @@ export function validateWallpaper(wallpaper: WinWallpaper): void {
       throw new Error("Wallpaper requires a local image path");
     }
   } else if (!source || source.kind !== "knownFolder" ||
-      !["documents", "desktop", "localAppData", "appData", "userProfile"].includes(source.folder) ||
+      !["documents", "desktop", "localAppData", "appData", "userProfile", "programFiles", "programFilesX86"].includes(source.folder) ||
       typeof source.path !== "string" || /[\0\r\n]/.test(source.path) ||
       /^[\\/]|^[a-z]:/i.test(source.path) || source.path.split(/[\\/]/).includes("..")) {
     throw new Error("Wallpaper requires a valid known-folder or local image path");
@@ -80,7 +80,20 @@ export function personalizationValues(options: WinPersonalization): Personalizat
   const advanced = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced";
   const add = (path: string, name: string, value: number) => values.push({ path, name, value });
   for (const key of Object.keys(options)) {
-    if (!["accentColor", "explorer", "taskbar"].includes(key)) throw new Error(`Unknown personalization option ${key}`);
+    if (!["colorMode", "accentColor", "explorer", "taskbar"].includes(key)) throw new Error(`Unknown personalization option ${key}`);
+  }
+  if (options.colorMode !== undefined) {
+    const mode = options.colorMode;
+    const both = typeof mode === "string" ? { apps: mode, system: mode } : mode;
+    if (!both || typeof both !== "object" || Array.isArray(both) ||
+        Object.keys(both).some((key) => key !== "apps" && key !== "system") ||
+        Object.values(both).some((value) => value !== "Light" && value !== "Dark") ||
+        Object.keys(both).length === 0) {
+      throw new Error('colorMode must be "Light", "Dark", or { apps?, system? } with those values');
+    }
+    const personalize = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    if (both.apps) add(personalize, "AppsUseLightTheme", both.apps === "Light" ? 1 : 0);
+    if (both.system) add(personalize, "SystemUsesLightTheme", both.system === "Light" ? 1 : 0);
   }
   if (options.accentColor !== undefined) {
     if (!/^#[a-f0-9]{6}$/i.test(options.accentColor)) throw new Error("accentColor must be #RRGGBB");

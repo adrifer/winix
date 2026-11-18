@@ -232,8 +232,13 @@ function generateConfiguration(
   lines.push("resources:");
   for (const pkg of packages) {
     const plan = naming.packages.get(pkg)!;
-    const version = lockedVersionForPackage(pkg, lock);
-    const presenceOnly = pkg.version === undefined && presenceOnlyPackages.has(pkg.id);
+    // version: "any" is presence-only and never needs a lock pin.
+    const anyVersion = pkg.anyVersion === true;
+    if (anyVersion && pkg.version !== undefined) {
+      throw new Error(`Windows package "${pkg.id}" is declared with both version "any" and version "${pkg.version}". Declare one version policy per package.`);
+    }
+    const version = anyVersion ? undefined : lockedVersionForPackage(pkg, lock);
+    const presenceOnly = anyVersion || (pkg.version === undefined && presenceOnlyPackages.has(pkg.id));
     lines.push(...renderPackageResource(pkg, presenceOnly ? undefined : version, plan, naming));
   }
   for (const command of commands) {

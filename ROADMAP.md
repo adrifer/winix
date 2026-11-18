@@ -15,6 +15,16 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Windows authoring conveniences** — `version: "any"` packages
+  (presence-only, unlocked, self-updates aren't drift); Program Files known
+  folders; `windows.powershell.profile()` / `windows.terminal.settings()`;
+  `windows.configPath()`; file handles as startup paths with inferred
+  dependencies; existing files/shortcuts backed up by default; personalization
+  `colorMode`; optional `inputs` for Windows-only workspaces; check warns on
+  unpinned packages; `winix package search` and read-only `winix windows
+  import`. A plan view, inventory batching and generated-output dedup (review
+  section 4) remain open.
+
 - **Hybrid Windows ↔ WSL authoring** — `platforms.wsl()` NixOS variant (module
   import, `wsl.enable`, `platforms.wsl.isActive`); missing-input warnings for
   module imports; WSL setup `host`/`user` take host and account values;

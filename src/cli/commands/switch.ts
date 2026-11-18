@@ -54,6 +54,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
     const requirements: Record<string, WindowsPackageRequirement> = {};
     const activationVersions: Record<string, string> = {};
     const unknownVersions = new Set<string>();
+    const anyVersionPackages = new Set<string>();
     const newer: { id: string; installed: string; locked: string }[] = [];
     const result = await applyWorkspace(cwd, {
       host: hostName,
@@ -66,6 +67,11 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
           for (const resource of managedWindowsResources(host)) {
             if (resource.kind !== "package") continue;
             const pkg = (host.windows as WindowsOptions).packages?.[resource.id];
+            if (pkg?.anyVersion) {
+              // version: "any": presence only, no version requirement or lock prompt.
+              anyVersionPackages.add(resourceKey(resource));
+              continue;
+            }
             const version = pkg?.version ?? lock.packages[resource.id]?.version;
             if (!version) throw new Error(`Missing package version: ${resource.id}`);
             const requirement = { version, exact: pkg?.version !== undefined };
@@ -107,6 +113,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         for (const resource of managedWindowsResources(selected)) {
           if (resource.kind !== "package") continue;
           const key = resourceKey(resource);
+          if (anyVersionPackages.has(key)) continue;
           const current = await adapter.inspect(resource);
           if (current !== null) {
             if (!("version" in current)) throw new Error(`Invalid package snapshot: ${resource.id}`);
@@ -128,7 +135,8 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
       const lock = result.windowsLock;
       for (const resource of desired) {
         const definition = resource.kind === "package"
-          ? windows.packages?.[resource.id].version ?? lock?.packages[resource.id]?.version
+          ? (windows.packages?.[resource.id].anyVersion ? "version:any" : undefined) ??
+            windows.packages?.[resource.id].version ?? lock?.packages[resource.id]?.version
           : JSON.stringify(windows.dsc?.find(
             (entry) => entry.winix?.kind === "startup" && entry.winix.name === resource.name
           )?.properties);
@@ -140,6 +148,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         owner: await windowsStateOwner(configDir, hostName),
         desired, definitions,
         packageRequirements: requirements,
+        anyVersionPackages,
         dry: opts.dry,
         yes: opts.yes,
         adapter,

@@ -19,7 +19,7 @@ export default workspace({
       // windows.wallpaper({ source: "../../wallpapers/desktop.jpg", style: "Fill" });
       // windows.fonts({ sources: [{ provider: "nerd-fonts", family: "JetBrainsMono" }] });
       const icons = windows.powershell.module("Terminal-Icons");
-      const wslSetup = windows.wsl({ config: { wsl2: { memory: "16GB", processors: 8 } }, backup: true });
+      const wslSetup = windows.wsl({ config: { wsl2: { memory: "16GB", processors: 8 } } });
       windows.wsl.distro("NixOS", {
         source: "nixos-wsl",
         host: "wsl-work",
@@ -36,13 +36,12 @@ export default workspace({
       const readme = windows.file.symlink(
         windows.knownFolder.documents("Winix\\README.md"),
         "../../README.md",
-        { backup: true, dependsOn: icons },
+        { dependsOn: icons },
       );
       windows.startup.command("Winix README", {
         executable: "notepad.exe",
         arguments: [windows.knownFolder.documents("Winix\\README.md")],
         dependsOn: readme,
-        backup: true,
       });
     }),
   ],

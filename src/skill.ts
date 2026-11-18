@@ -160,7 +160,8 @@ Use one platform factory as the second argument to each host:
 
 - \`platforms.nixos({ system, stateVersion, allowUnfree, homeManager, hostname })\`
 - \`platforms.darwin({ system, stateVersion, allowUnfree, homeManager, homebrew, hostname })\`
-- \`platforms.windows({ hostname })\`
+- \`platforms.windows({ hostname })\`. Windows-only workspaces may omit
+  \`inputs\`; NixOS/nix-darwin hosts need a \`nixpkgs\` input.
 - \`platforms.wsl({ stateVersion, input, ... })\` is NixOS under WSL: the NixOS
   options plus the NixOS-WSL module import (\`inputs.nixos-wsl\` unless \`input\`
   names another Nix input) and \`wsl.enable = true\`. Declare the input, e.g.
@@ -293,6 +294,9 @@ Resources return handles that can be passed through \`dependsOn\`.
   known-folder path. Styles: Fill, Fit, Stretch, Tile, Center, Span. Source
   hashes detect changed images; remote wallpapers and per-monitor assignments
   are not supported.
+- \`windows.personalization({ colorMode: "Dark" })\` (or \`{ apps, system }\`) sets
+  light/dark mode, the same values as windows.setting AppColorMode/SystemColorMode;
+  declare each in one place.
 - \`windows.personalization({ accentColor: "#336699", explorer: {
   showExtensions: true, showHiddenFiles: false, openTo: "ThisPC" }, taskbar: {
   autoHide: false, search: "Hidden", taskView: true, widgets: false } })\`
@@ -317,7 +321,18 @@ Resources return handles that can be passed through \`dependsOn\`.
 
 - \`windows.package()\` installs a winget or Microsoft Store package. A string
   means a floating winget package ID. The object form accepts \`id\`,
-  \`source\`, \`version\`, and dependency options.
+  \`source\`, \`version\`, and dependency options; the
+  \`windows.package(id, opts)\` form takes the same options. version omitted:
+  pinned in winix-windows.lock (newer installs kept, lock update offered);
+  version "1.2.3": exact (any mismatch fails); version "any": installed in any
+  version, for apps that update themselves or report no usable version
+  (Steam, Teams, launchers, NVM): no lock pin, no comparison or prompt, never
+  a downgrade. "latest" and "*" are rejected. Removal uninstalls only
+  Winix-installed packages, after confirmation; pre-existing ones are never
+  uninstalled. Find ids with
+  \`winix package search <query>\`; \`winix windows import [--host]\` prints
+  declarations for installed, undeclared packages. check warns about floating
+  packages missing from winix-windows.lock (apply would resolve them online).
 - \`windows.setting()\` manages supported Windows settings. Symlinks automatically
   depend on same-host typed settings declaring DeveloperMode: true. Declare that
   policy explicitly; symlinks never enable Developer Mode themselves. Without the
@@ -326,25 +341,40 @@ Resources return handles that can be passed through \`dependsOn\`.
   variables.
 - \`windows.path.add()\` and \`windows.path.remove()\` manage PATH entries.
 - \`windows.file.text()\`, \`windows.file.symlink()\`,
-  \`windows.file.copy()\`, and \`windows.file.remove()\` manage files.
+  \`windows.file.copy()\`, and \`windows.file.remove()\` manage files. A differing
+  existing target (files, .wslconfig, Startup shortcuts) is moved to <target>.bak
+  by default; a backup collision fails. Don't add backup: true; use
+  backup: false to fail instead, or force: true to delete without a backup.
 - \`windows.startup.command(name, spec)\` manages a named current-user Startup
   shortcut, without running it during apply. Supply executable and optional argv
   arguments, workingDirectory, windowStyle (normal/minimized/maximized),
   dependsOn, backup, and force. Executables may be application names on PATH or
   absolute/environment/known-folder paths. Arguments are literal strings or
   known-folder paths; the default working directory is the user profile.
-  Executable and working directory must exist during activation. Replacement
-  requires backup or force; backup collisions fail. This is sign-in startup,
+  A windows.file.* handle may be used as executable, argument or working
+  directory: its target is used and the shortcut depends on it automatically.
+  Executable and working directory must exist during activation. A differing
+  shortcut is backed up by default (backup: false refuses, force: true deletes);
+  backup collisions fail. This is sign-in startup,
   not a service, scheduled task, elevated launch, or all-users startup.
   Native Windows switch tracks created/replaced shortcut ownership and removes
   unchanged owned entries when declarations disappear. Matching pre-existing
   shortcuts remain externally owned.
 - \`windows.knownFolder.documents()\`, \`windows.knownFolder.desktop()\`,
-  \`windows.knownFolder.localAppData()\`, \`windows.knownFolder.appData()\`, and
-  \`windows.knownFolder.userProfile()\` build typed file targets resolved during
+  \`windows.knownFolder.localAppData()\`, \`windows.knownFolder.appData()\`,
+  \`windows.knownFolder.userProfile()\`, \`windows.knownFolder.programFiles()\`, and
+  \`windows.knownFolder.programFilesX86()\` build typed file targets resolved during
   activation. Each accepts an optional relative child path. File copy/symlink
   sources resolve relative to the directory containing winix.config.ts;
   absolute paths, environment-variable paths, and file URLs are also supported.
+- \`windows.powershell.profile(source, { shell, mode, backup, force })\` links (or
+  with mode "copy", copies) the current user's profile: Documents (OneDrive
+  redirection included)/PowerShell, or WindowsPowerShell with shell
+  "windowspowershell". \`windows.terminal.settings(source, { channel })\` does the
+  same for Windows Terminal settings.json (channel "stable" or "preview").
+- \`windows.configPath(path)\` returns an absolute path relative to
+  winix.config.ts at evaluation, for values such as environment variables, e.g.
+  \`windows.env.set("REPOS", windows.configPath("../.."))\`.
 - \`windows.powershell.module()\` declares a current-user PowerShell 7 module
   by name, with optional repository (host default, otherwise PSGallery) and dependsOn.
   windows.powershell.repositories({ repositories: { approved: { uri: "https://packages.example.com/powershell/v3/index.json" } }, default: "approved", allowed: ["approved"] })

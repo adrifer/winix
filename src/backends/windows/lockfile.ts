@@ -128,6 +128,12 @@ export function reconcileInlinePins(
   for (const host of evaluatedWindowsHosts) {
     const win = host.windows as WindowsOptions;
     for (const pkg of Object.values(win.packages ?? {})) {
+      if (pkg.anyVersion && pkg.version !== undefined) {
+        throw new Error(
+          `Windows package "${pkg.id}" is declared with both version "any" and version "${pkg.version}" in host "${host.name}". ` +
+          "Declare one version policy per package."
+        );
+      }
       if (pkg.version === undefined) continue;
 
       const priorPin = inlinePins.get(pkg.id);
@@ -164,6 +170,23 @@ export function reconcileInlinePins(
   };
 }
 
+/**
+ * Floating packages without a lock pin. Apply resolves them with winget (network),
+ * which is also when a mistyped id first fails; check reports them offline.
+ */
+export function windowsLockGaps(
+  lock: WindowsLock | null, evaluatedWindowsHosts: EvaluatedHost[],
+): { host: string; id: string; source: WinPackageSource }[] {
+  const gaps: { host: string; id: string; source: WinPackageSource }[] = [];
+  for (const host of evaluatedWindowsHosts) {
+    for (const pkg of Object.values((host.windows as WindowsOptions).packages ?? {})) {
+      if (pkg.version !== undefined || pkg.anyVersion || lock?.packages[pkg.id]) continue;
+      gaps.push({ host: host.name, id: pkg.id, source: pkg.source });
+    }
+  }
+  return gaps;
+}
+
 export function emptyWindowsLock(now = new Date()): WindowsLock {
   return {
     version: WINDOWS_LOCK_VERSION,
@@ -183,7 +206,7 @@ export function resolveMissingWindowsLockEntries(
   for (const host of evaluatedWindowsHosts) {
     const win = host.windows as WindowsOptions;
     for (const pkg of Object.values(win.packages ?? {})) {
-      if (pkg.version !== undefined || lock.packages[pkg.id] !== undefined) continue;
+      if (pkg.version !== undefined || pkg.anyVersion || lock.packages[pkg.id] !== undefined) continue;
 
       const existing = missing.get(pkg.id);
       if (existing && existing.source !== pkg.source) {

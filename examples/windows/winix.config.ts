@@ -30,14 +30,8 @@
 
 import { host, platforms, windows, workspace } from "@adrifer/winix";
 
+// Windows-only workspaces need no Nix `inputs`.
 export default workspace({
-  inputs: {
-    // Windows hosts do not consume nixpkgs, but `workspace` requires an
-    // inputs object. This is a placeholder until inputs are made optional
-    // for windows-only workspaces.
-    nixpkgs: "github:NixOS/nixpkgs/nixos-unstable",
-  },
-
   hosts: [
     host("desktop", platforms.windows(), ({ windows }) => {
       // --- Packages (winget) ---
