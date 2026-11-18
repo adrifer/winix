@@ -184,12 +184,12 @@ exports[`reference example integration > generates stable Nix output for example
   programs.zsh.enable = true;
   programs.nix-ld.enable = true;
   programs.nix-ld.libraries = with pkgs; [ icu zlib openssl ];
-  wsl.defaultUser = lib.mkDefault "tony";
   wsl.enable = true;
   wsl.wslConf.interop.enabled = true;
   wsl.wslConf.interop.appendWindowsPath = false;
   wsl.interop.register = true;
   wsl.extraBin = [ { src = "\${pkgs.coreutils}/bin/mkdir"; } { src = "\${pkgs.coreutils}/bin/cat"; } { src = "\${pkgs.coreutils}/bin/whoami"; } { src = "\${pkgs.coreutils}/bin/ls"; } { src = "\${pkgs.busybox}/bin/addgroup"; } { src = "\${pkgs.su}/bin/groupadd"; } { src = "\${pkgs.su}/bin/usermod"; } ];
+  wsl.defaultUser = lib.mkDefault "tony";
   environment.interactiveShellInit = ''
         win_home="$(wslpath -w "$HOME")"
         win_home_slash="''\${win_home//\\\\//}"

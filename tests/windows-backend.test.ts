@@ -229,6 +229,32 @@ describe("generateWindows() emitter", () => {
     expect(out.hosts.desktop).toMatchSnapshot();
   });
 
+  it("emits presence-only floating packages without a version, keeping inline pins", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [
+        host("desktop", platforms.windows(), [
+          windows.package("CoreyButler.NVMforWindows"),
+          windows.package({ id: "Microsoft.VisualStudioCode", version: "1.90.1" }),
+        ]),
+      ],
+    });
+    const lock = windowsLock({
+      "CoreyButler.NVMforWindows": { source: "winget", version: "1.2.2" },
+      "Microsoft.VisualStudioCode": { source: "winget", version: "1.90.1" },
+    });
+    const doc = generateWindows(evaluate(ws), lock, undefined, {
+      presenceOnlyPackages: new Set(["CoreyButler.NVMforWindows", "Microsoft.VisualStudioCode"]),
+    }).hosts.desktop["configuration.winget"];
+    const nvm = doc.slice(doc.indexOf("id: CoreyButler.NVMforWindows"), doc.indexOf("id: Microsoft.VisualStudioCode"));
+    expect(nvm).not.toContain("version:");
+    expect(doc).toContain('version: "1.90.1"');
+    // Presence-only still requires the package to be locked.
+    expect(() => generateWindows(evaluate(ws), windowsLock({
+      "Microsoft.VisualStudioCode": { source: "winget", version: "1.90.1" },
+    }), undefined, { presenceOnlyPackages: new Set(["CoreyButler.NVMforWindows"]) })).toThrow(/is not locked/);
+  });
+
   it("emits an empty resources list for a windows host with no packages", () => {
     const ws = workspace({
       inputs,

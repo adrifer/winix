@@ -90,10 +90,20 @@ const WINDOWS_SETTINGS_MODULE_COMMAND_NAME = "Ensure Microsoft Windows Settings 
  * Generate Windows bundles for every Windows host in the evaluated workspace.
  * Non-Windows hosts are skipped.
  */
+export interface GenerateWindowsOptions {
+  /**
+   * Floating package ids whose installed version is not comparable (winget
+   * reports e.g. "Unknown"). They are emitted without `version`, so DSC only
+   * ensures presence instead of reinstalling the locked version on every run.
+   */
+  presenceOnlyPackages?: ReadonlySet<string>;
+}
+
 export function generateWindows(
   evaluatedHosts: EvaluatedHost[],
   lock: WindowsLock = emptyWindowsLock(),
-  configDir?: string
+  configDir?: string,
+  options: GenerateWindowsOptions = {}
 ): WindowsOutput {
   const hosts: Record<string, WindowsHostOutput> = {};
   const warnings: string[] = [];
@@ -103,7 +113,7 @@ export function generateWindows(
   for (const host of windowsHosts) {
     const win = host.windows as WindowsOptions;
     hosts[host.name] = {
-      "configuration.winget": generateConfiguration(host.name, win, resolvedLock, configDir),
+      "configuration.winget": generateConfiguration(host.name, win, resolvedLock, configDir, options.presenceOnlyPackages),
       "apply.ps1": generateApplyScript(),
     };
   }
@@ -118,7 +128,8 @@ function generateConfiguration(
   hostName: string,
   win: WindowsOptions,
   lock: WindowsLock,
-  configDir?: string
+  configDir?: string,
+  presenceOnlyPackages: ReadonlySet<string> = new Set()
 ): string {
   validateWindowsWslResources(win);
   validateWindowsPowerShellPolicy(win);
@@ -221,7 +232,9 @@ function generateConfiguration(
   lines.push("resources:");
   for (const pkg of packages) {
     const plan = naming.packages.get(pkg)!;
-    lines.push(...renderPackageResource(pkg, lockedVersionForPackage(pkg, lock), plan, naming));
+    const version = lockedVersionForPackage(pkg, lock);
+    const presenceOnly = pkg.version === undefined && presenceOnlyPackages.has(pkg.id);
+    lines.push(...renderPackageResource(pkg, presenceOnly ? undefined : version, plan, naming));
   }
   for (const command of commands) {
     const plan = naming.commands.get(command)!;
@@ -657,7 +670,7 @@ function resolveDependsOnRefs(
  */
 function renderPackageResource(
   pkg: WinPackage,
-  version: string,
+  version: string | undefined,
   plan: ResourcePlan,
   naming: NamingPlan
 ): string[] {
@@ -672,8 +685,9 @@ function renderPackageResource(
   out.push(`      id: ${yamlScalar(pkg.id)}`);
   out.push(`      source: ${yamlScalar(pkg.source)}`);
   out.push(`      acceptAgreements: true`);
-  // Quote versions so values like "1.0" are not parsed as numbers.
-  out.push(`      version: ${yamlQuoted(version)}`);
+  // Quote versions so values like "1.0" are not parsed as numbers. Presence-only
+  // packages (non-comparable installed version) omit it deliberately.
+  if (version !== undefined) out.push(`      version: ${yamlQuoted(version)}`);
   // Only request elevation when explicitly asked. Per-user packages install
   // fine without it, and forcing elevation makes `winget configure` fail with
   // an internal error when run from a non-elevated shell.

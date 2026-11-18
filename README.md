@@ -421,6 +421,9 @@ const shell = feature("shell", ({ home, platforms }) =>
 ### Account helpers
 
 `account.user()` wires together platform users and Home Manager users.
+On NixOS-WSL, `wslDefault: true` sets `wsl.defaultUser` as a Nix default,
+unless the host already declares a default user. It detects WSL from
+`wsl.enable` or the NixOS-WSL module import, not a feature or profile name.
 
 ```ts
 const adrifer = account.user("adrifer", () => ({
@@ -826,6 +829,8 @@ The Linux host must explicitly enable NixOS-WSL, import its input module, declar
 `system.stateVersion`, and match the distro architecture. `user` selects an
 already-declared normal account, not a second account definition. Omit it when
 Home Manager or the sole normal account identifies the user unambiguously.
+`winix check` validates offline that `setup.host` names one NixOS host in the
+workspace and that an explicit `setup.user` is a normal account on that host.
 Home Manager's username/home must agree with the selected account. `checkout`
 defaults to `<declared-home>/dotfiles` and must stay inside that home.
 
@@ -1129,6 +1134,11 @@ Normal missing-pin resolution remains unchanged. These defaults apply to
 `winix switch`, not direct generated-script/DSC activation or plain `apply`.
 
 Startup file hashes and installed package versions still protect removals.
+If the installed version is non-numeric or reported as `Unknown` (common for
+self-updating installers), switch warns and emits that floating package without
+a version, so activation ensures it is installed instead of reinstalling the
+locked version every run. The lock entry is kept. Exact pins still require a
+match, and automatic removal refuses non-comparable installed versions.
 External shortcut edits, package downgrades, and exact-pin drift block
 reconciliation rather than silently deleting or overwriting managed resources.
 Restore the recorded resource, or explicitly

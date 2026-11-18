@@ -2,6 +2,7 @@
 
 import type { Fragment, FragmentEntry, HostDef, LazyFragment, NixExpr, RawModuleRef, WorkspaceDef, EvalContext } from "../core/types.ts";
 import { setEvalContext, restoreEvalContext } from "../sdk/index.ts";
+import { nix } from "../helpers/nix.ts";
 import { powerShellRepositoryPolicyIdentity, validateWindowsPowerShellPolicy } from "../helpers/windows-repositories.ts";
 import type { WindowsOptions } from "../types/windows.ts";
 
@@ -59,7 +60,9 @@ function evaluateHost(host: HostDef): EvaluatedHost {
     windows: {},
   };
 
+  let defaultUser: string | undefined;
   for (const fragment of resolvedFragments) {
+    defaultUser = fragment.__wslDefaultUser ?? defaultUser;
     if (fragment.nixos && shouldMergeScope(resolvedFragments, "nixos")) {
       result.nixos = deepMerge(result.nixos, fragment.nixos);
     }
@@ -71,6 +74,19 @@ function evaluateHost(host: HostDef): EvaluatedHost {
     }
     if (fragment.windows && shouldMergeScope(resolvedFragments, "windows")) {
       result.windows = mergeWindowsOptions(result.windows, fragment.windows);
+    }
+  }
+
+  const wsl = result.nixos.wsl;
+  if (defaultUser && (platformId === "nixos" || platformId === "linux") &&
+      (wsl === undefined || isPlainObject(wsl))) {
+    const options = wsl ?? {};
+    const imports = result.nixos.imports;
+    const importsWsl = Array.isArray(imports) && imports.some(
+      (entry) => typeof entry === "string" && /^inputs\.[a-z0-9._-]+\.nixosModules\.wsl$/i.test(entry.trim())
+    );
+    if (options.defaultUser === undefined && (options.enable === true || (options.enable === undefined && importsWsl))) {
+      result.nixos.wsl = { ...options, defaultUser: nix.lib.mkDefault(defaultUser) };
     }
   }
 

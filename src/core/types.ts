@@ -15,6 +15,8 @@ export interface Fragment {
   __id?: string;
   /** Internal: marks this as a platform fragment */
   __platform?: boolean;
+  /** Internal: account requesting a NixOS-WSL default user */
+  __wslDefaultUser?: string;
 }
 
 /**

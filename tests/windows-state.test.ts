@@ -5,7 +5,7 @@ import { PassThrough } from "node:stream";
 import { createInterface } from "node:readline/promises";
 import { describe, expect, it, vi } from "vitest";
 import {
-  parseAppliedState, reconcileWindows, resourceKey, forgetWindowsResource, confirmWindowsRemovals,
+  parseAppliedState, reconcileWindows, resourceKey, forgetWindowsResource, confirmWindowsRemovals, nativeWindowsStateAdapter,
   listWindowsOwners, migrateWindowsOwner, windowsOwnerId,
   type ManagedResource, type ResourceSnapshot,
 } from "../src/cli/windows-state.ts";
@@ -69,6 +69,20 @@ async function fixture(run: (fixture: {
 }
 
 describe("Windows applied-state reconciliation", () => {
+  it("allows unknown floating observations but refuses to remove the package before activation", async () => fixture(async (f) => {
+    const requirement = { version: "1.0", exact: false };
+    const key = resourceKey(pkg);
+    await f.apply([pkg], { requirement });
+    f.actual.set(key, { version: "Unknown" });
+    await f.apply([pkg], { requirement, activate: async () => {} });
+    expect(parseAppliedState(await readFile(f.statePath, "utf8")).entries[key].snapshot).toEqual({ version: "Unknown" });
+    const activate = vi.fn();
+    await expect(f.apply([], { dry: true, activate })).rejects.toThrow("Refusing automatic removal of Example.App");
+    expect(activate).not.toHaveBeenCalled();
+    expect(f.remove).not.toHaveBeenCalled();
+    await expect(nativeWindowsStateAdapter.remove(pkg, { version: "Unknown" })).rejects.toThrow("Refusing automatic removal of Example.App");
+  }));
+
   it("accepts externally upgraded floating packages, preserves ownership and refreshes the observed snapshot", async () => fixture(async (f) => {
     await f.apply([pkg]);
     f.actual.set(resourceKey(pkg), { version: "2.0" });

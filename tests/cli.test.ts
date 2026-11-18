@@ -26,7 +26,7 @@ import {
   SKILL_WRAPPER,
   SKILL_WRAPPER_PATH,
 } from "../src/cli/commands/install.js";
-import { validateGeneratedNixSyntax } from "../src/cli/commands/check.js";
+import { check, validateGeneratedNixSyntax } from "../src/cli/commands/check.js";
 import {
   flakeRefForHost,
   selectHost,
@@ -55,6 +55,44 @@ const nixos = platform("linux", () => ({
 }));
 
 describe("CLI analysis", () => {
+  it("warns once per wholly ignored feature, and fails strict checks", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-check-scopes-"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exit = vi.spyOn(process, "exit").mockImplementation(() => { throw new Error("check exited"); });
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          feature("home-only", ({ home }) => { home.packages("git"); home.program("git"); })(),
+          feature("portable", ({ home, windows }) => { home.packages("git"); windows.package("Git.Git"); })(),
+          feature("empty", () => {})(),
+        ]),
+        host("server", platforms.nixos({ homeManager: false }), [
+          feature("win-only", ({ windows }) => { windows.package("Git.Git"); })(),
+          feature("home-disabled", ({ home }) => { home.packages("git"); })(),
+        ]),
+        host("mac", platforms.darwin(), [
+          feature("win-only", ({ windows }) => { windows.package("Git.Git"); })(),
+        ])
+      `);
+      await check(dir, { strict: false, escapeReport: false });
+      expect(exit).not.toHaveBeenCalled();
+      expect(warn.mock.calls.flat().filter((message) => message.includes("ignored scopes"))).toEqual([
+        "Warning: desktop home-only: no applicable configuration (ignored scopes: homeManager).",
+        "Warning: server win-only: no applicable configuration (ignored scopes: windows).",
+        "Warning: server home-disabled: no applicable configuration (ignored scopes: homeManager).",
+        "Warning: mac win-only: no applicable configuration (ignored scopes: windows).",
+      ]);
+      await expect(check(dir, { strict: true, escapeReport: false })).rejects.toThrow("check exited");
+      expect(exit).toHaveBeenCalledWith(1);
+      expect(error).toHaveBeenCalledWith("  Strict check failed");
+    } finally {
+      log.mockRestore(); warn.mockRestore(); error.mockRestore(); exit.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("detects duplicate hosts and scalar conflicts", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },
@@ -965,6 +1003,49 @@ describe("winix switch Windows dry run", () => {
 });
 
 describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", () => {
+  it.each([true, false])("switches presence-only after an unknown observation (dry: %s)", async (dry) => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-package-unknown-"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const confirm = vi.spyOn(packageVersionPolicy, "confirmWindowsPackageLockUpdate");
+    const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async (_command, args) => {
+      if (!dry) {
+        const configuration = await readFile(args![args!.indexOf("-f") + 1], "utf8");
+        expect(configuration).toContain("id: Example.App");
+        // A locked version would make DSC report drift and reinstall on every run.
+        expect(configuration).not.toContain("version:");
+      }
+    });
+    try {
+      await writeConfig(dir, 'host("desktop", platforms.windows(), [windows.package("Example.App")])');
+      await writeFile(join(dir, "winix-windows.lock"), JSON.stringify({
+        version: 1, generatedAt: "2026-11-13T00:00:00Z",
+        packages: { "Example.App": { version: "7", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" } },
+      }));
+      const inspect = vi.fn(async () => ({ version: "Unknown" }))
+        .mockResolvedValueOnce({ version: "Unknown" })
+        .mockResolvedValueOnce({ version: "Unknown" })
+        .mockResolvedValueOnce({ version: "8" });
+      await switchCommand(dir, {
+        host: "desktop", dry,
+        windowsState: { path: join(dir, "applied.json"), adapter: { inspect, remove: vi.fn() } },
+      });
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/Example\.App.*Unknown.*without enforcing locked version 7/));
+      expect(runner).toHaveBeenCalledWith("winget", expect.any(Array), { dry });
+      expect(confirm).not.toHaveBeenCalled();
+      expect(readWindowsLock(dir)?.packages["Example.App"].version).toBe("7");
+      if (dry) {
+        const output = log.mock.calls.flat().join("\n");
+        expect(output).toContain("id: Example.App");
+        expect(output).not.toContain("version:");
+      }
+    } finally {
+      log.mockRestore(); warn.mockRestore(); confirm.mockRestore(); runner.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it.each(["stale", "failed", "concurrent"] as const)("does not update locks after %s activation state", async (failure) => {
     const dir = await mkdtemp(join(tmpdir(), "winix-package-lock-safety-"));
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -1092,7 +1173,7 @@ async function writeConfig(dir: string, hostsSource: string): Promise<void> {
   await writeFile(
     join(dir, "winix.config.mjs"),
     `
-      import { host, platforms, windows, workspace } from ${JSON.stringify(indexUrl)};
+      import { feature, host, platforms, windows, workspace } from ${JSON.stringify(indexUrl)};
 
       export default workspace({
         inputs: { nixpkgs: "nixos-unstable" },

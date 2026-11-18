@@ -15,6 +15,10 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Workspace validation** — check flags wholly ignored fragments and validates
+  WSL setup host/user targets offline. WSL account defaults now follow the
+  merged NixOS config rather than the profile name.
+
 - **Windows npm registries** — host-scoped named default/scoped registry
   configuration in current-user .npmrc, preserving auth/unrelated settings with
   idempotent atomic updates. No package installation or registry allowlist
@@ -46,7 +50,9 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 - **Windows package update defaults** — native switch preserves newer floating
   packages, refreshes owned upgrade observations, and offers interactive
   default-no lock updates. Inline versions remain exact; pre-installed packages
-  stay externally owned and unsafe removals remain protected.
+  stay externally owned and unsafe removals remain protected. Floating packages with
+  an unknown installed version are ensured present without a version (no
+  reinstall loop) and block automatic removal.
 - **Standalone release executables** — embedded Bun runtime/shared SDK for
   Windows and glibc Linux x64/ARM64, SHA256 release manifest, registry-free
   configuration loading, optional Node-free Windows prerequisite checks, and

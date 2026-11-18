@@ -8,7 +8,10 @@ import type { EvaluatedHost } from "../evaluator/index.ts";
 import type { WindowsOptions } from "../types/index.ts";
 import { powerShellLiteral } from "../helpers/utils.ts";
 import { runCommand } from "./run.ts";
-import { compareWindowsPackageVersions, effectiveWindowsPackageVersion, type WindowsPackageRequirement } from "./windows-package-versions.ts";
+import {
+  compareWindowsPackageVersions, effectiveWindowsPackageVersion, isComparableWindowsPackageVersion,
+  type WindowsPackageRequirement,
+} from "./windows-package-versions.ts";
 
 export type ManagedResource =
   | { kind: "startup"; name: string }
@@ -117,6 +120,20 @@ export function managedWindowsResources(host: EvaluatedHost): ManagedResource[] 
 
 function sameSnapshot(a: ResourceSnapshot, b: ResourceSnapshot): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function comparePackageSnapshots(
+  id: string, current: { version: string }, previous: { version: string },
+): number | undefined {
+  if (!isComparableWindowsPackageVersion(current.version) || !isComparableWindowsPackageVersion(previous.version)) return undefined;
+  return compareWindowsPackageVersions(id, current.version, previous.version);
+}
+
+function assertRemovablePackageVersion(id: string, version: string): void {
+  if (!isComparableWindowsPackageVersion(version)) {
+    throw new Error(`Refusing automatic removal of ${id}: installed version was reported as non-comparable (${JSON.stringify(version)}). ` +
+      `Uninstall it manually, or keep it installed and release Winix ownership with \`winix state forget package <source> ${id}\`.`);
+  }
 }
 
 function validResource(value: unknown): value is ManagedResource {
@@ -266,11 +283,19 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
         }
       }
       if (entry?.owned && current !== null && !sameSnapshot(current, entry.snapshot)) {
-        const upgrade = requirement && !requirement.exact && "version" in current &&
-          entry.snapshot && "version" in entry.snapshot &&
-          compareWindowsPackageVersions(current.version, entry.snapshot.version) > 0;
-        if (!upgrade) throw new Error(`Managed resource changed outside Winix: ${key}. Restore it or explicitly resolve ownership before activation.`);
-        report(`Keeping externally upgraded package: ${key} ${current.version}`);
+        if (resource.kind === "package" && requirement && !requirement.exact && "version" in current &&
+            entry.snapshot && "version" in entry.snapshot) {
+          const change = comparePackageSnapshots(resource.id, current, entry.snapshot);
+          if (change === undefined) {
+            report(`Skipping version drift check for ${key}: non-comparable version (${current.version} vs ${entry.snapshot.version})`);
+            continue;
+          }
+          if (change > 0) {
+            report(`Keeping externally upgraded package: ${key} ${current.version}`);
+            continue;
+          }
+        }
+        throw new Error(`Managed resource changed outside Winix: ${key}. Restore it or explicitly resolve ownership before activation.`);
       }
     }
     const removals: [string, Entry, ResourceSnapshot][] = [];
@@ -284,6 +309,9 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
         continue;
       }
       const current = await opts.adapter.inspect(entry.resource);
+      if (entry.resource.kind === "package" && current && "version" in current) {
+        assertRemovablePackageVersion(entry.resource.id, current.version);
+      }
       if (current !== null && !sameSnapshot(current, entry.snapshot)) {
         throw new Error(`Refusing to remove externally modified resource: ${key}. Resolve ownership explicitly.`);
       }
@@ -306,23 +334,29 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
       if (current === null) throw new Error(`Activation succeeded but managed resource is missing: ${key}`);
       const entry = state.entries[key];
       const requirement = resource.kind === "package" ? opts.packageRequirements?.[key] : undefined;
-      if (requirement) {
-        if (!("version" in current) || (requirement.exact
-          ? current.version !== requirement.version
-          : compareWindowsPackageVersions(current.version, requirement.version) < 0)) {
+      if (resource.kind === "package" && requirement) {
+        if (!("version" in current)) {
+          throw new Error(`Activation did not satisfy package version requirement: ${key}`);
+        }
+        if (requirement.exact) {
+          effectiveWindowsPackageVersion(resource.id, requirement, current.version);
+        } else if (isComparableWindowsPackageVersion(current.version) &&
+                   compareWindowsPackageVersions(resource.id, current.version, requirement.version) < 0) {
           throw new Error(`Activation did not satisfy package version requirement: ${key}`);
         }
         const initial = before.get(key);
         if (!requirement.exact && initial && "version" in initial &&
-            compareWindowsPackageVersions(current.version, initial.version) < 0) {
+            (comparePackageSnapshots(resource.id, current, initial) ?? 0) < 0) {
           throw new Error(`Activation unexpectedly downgraded package: ${key}`);
         }
       }
       if (entry && entry.owners.some((owner) => owner !== opts.owner) && !sameSnapshot(current, entry.snapshot)) {
-        const upgrade = requirement && !requirement.exact && entry.packageExact === false && "version" in current &&
-          entry.snapshot && "version" in entry.snapshot &&
-          compareWindowsPackageVersions(current.version, entry.snapshot.version) > 0;
-        if (!upgrade) throw new Error(`Activation changed a resource required by another workspace/host: ${key}`);
+        const change = resource.kind === "package" && requirement && !requirement.exact &&
+          entry.packageExact === false && "version" in current && entry.snapshot && "version" in entry.snapshot
+          ? comparePackageSnapshots(resource.id, current, entry.snapshot) : 0;
+        if (change !== undefined && change <= 0) {
+          throw new Error(`Activation changed a resource required by another workspace/host: ${key}`);
+        }
       }
       after.set(key, current);
     }
@@ -418,7 +452,8 @@ if (Test-Path -LiteralPath $path) {
   },
   async remove(resource, snapshot) {
     if (resource.kind === "package") {
-      if (!("version" in snapshot)) throw new Error("Missing package version for uninstall");
+      if (!("version" in snapshot)) throw new Error(`Missing package version for uninstall: ${resource.id}`);
+      assertRemovablePackageVersion(resource.id, snapshot.version);
       await runCommand("winget", [
         "uninstall", "--id", resource.id, "--exact", "--source", resource.source,
         "--version", snapshot.version, "--silent", "--disable-interactivity",

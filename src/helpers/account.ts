@@ -89,7 +89,6 @@ function accountFragment(username: string, opts: AccountOpts): Fragment {
   const ctx = getEvalContext();
   const isDarwin = ctx.platform === "darwin";
   const isNixos = ctx.platform === "nixos" || ctx.platform === "linux";
-  const isWsl = ctx.activeIds.has("wsl");
   const usesHomebrew = ctx.activeIds.has("homebrew");
   const homeDirectory =
     opts.homeDirectory ?? opts.home ?? (isDarwin ? `/Users/${username}` : `/home/${username}`);
@@ -116,6 +115,7 @@ function accountFragment(username: string, opts: AccountOpts): Fragment {
       ...(isPlainObject(homeManager) && homeManager),
     },
     ...(isNixos && {
+      ...(opts.wslDefault && { __wslDefaultUser: username }),
       nixos: {
         users: {
           users: {
@@ -139,12 +139,6 @@ function accountFragment(username: string, opts: AccountOpts): Fragment {
             [nixosShellProgram]: { enable: true },
           },
         }),
-        ...(opts.wslDefault &&
-          isWsl && {
-            wsl: {
-              defaultUser: nix.lib.mkDefault(username),
-            },
-          }),
       },
     }),
     ...(isDarwin && {

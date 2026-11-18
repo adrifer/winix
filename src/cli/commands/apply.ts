@@ -27,13 +27,19 @@ import { resolveWingetVersion } from "../../backends/windows/resolver.ts";
 import { resolvePowerShellModuleVersion } from "../../backends/windows/powershell.ts";
 import { resolveNixosWslImage, type WindowsWslImageResolver } from "../../backends/windows/wsl.ts";
 import { resolveWslRepository, type WindowsWslRepositoryResolver } from "../../backends/windows/wsl-setup.ts";
+import { validateWindowsWslSetupTargets } from "../../backends/windows/wsl-setup-runtime.ts";
 import { platformForEvaluatedHost, type ActivationPlatform } from "../activation.ts";
 import { collectFontSources, resolveWindowsFonts, resolveFontSource, type WindowsFontResolver } from "../../backends/windows/fonts.ts";
 
 interface ApplyOptions {
   resolveWindowsFont?: WindowsFontResolver;
   /** Activation-only overrides; the committed lock and inline declarations remain unchanged. */
-  windowsPackageVersions?: (hosts: ReturnType<typeof evaluate>, lock: WindowsLock) => Promise<Record<string, string>>;
+  /**
+   * Activation-time package versions keyed by package id. `null` means the
+   * package is installed with a non-comparable version (e.g. winget reports
+   * "Unknown"): emit it presence-only so activation does not reinstall it.
+   */
+  windowsPackageVersions?: (hosts: ReturnType<typeof evaluate>, lock: WindowsLock) => Promise<Record<string, string | null>>;
   host?: string;
   dry: boolean;
   diff: boolean;
@@ -57,15 +63,15 @@ export async function applyWorkspace(
   opts: ApplyOptions
 ): Promise<ApplyResult> {
   const { workspace, configDir } = await loadWorkspace(cwd);
-  let evaluated = evaluate(workspace);
+  const allHosts = evaluate(workspace);
+  let evaluated = allHosts;
 
   if (opts.host) {
     evaluated = evaluated.filter((h) => h.name === opts.host);
     if (evaluated.length === 0) {
-      const all = evaluate(workspace);
       throw new Error(
         `Host "${opts.host}" not found. Available hosts:\n` +
-        all.map((h) => `  - ${h.name}`).join("\n")
+        allHosts.map((h) => `  - ${h.name}`).join("\n")
       );
     }
   }
@@ -74,6 +80,7 @@ export async function applyWorkspace(
   const nixHosts = evaluated.filter((host) => hostPlatforms.get(host.name) !== "windows");
   const windowsHosts = evaluated.filter((host) => hostPlatforms.get(host.name) === "windows");
   for (const host of windowsHosts) validateWindowsWslResources(host.windows);
+  validateWindowsWslSetupTargets(workspace, allHosts, windowsHosts);
   const windowsLock = windowsHosts.length > 0
     ? await prepareWindowsLock(
       configDir,
@@ -89,13 +96,18 @@ export async function applyWorkspace(
   const nixOutput = nixHosts.length > 0 ? generateNix(workspace, nixHosts) : undefined;
   const runtimeVersions = windowsLock && opts.windowsPackageVersions
     ? await opts.windowsPackageVersions(windowsHosts, windowsLock) : {};
+  const presenceOnlyPackages = new Set(
+    Object.entries(runtimeVersions).filter(([, version]) => version === null).map(([id]) => id),
+  );
   const activationLock = windowsLock ? {
     ...windowsLock,
-    packages: Object.fromEntries(Object.entries(windowsLock.packages).map(([id, pin]) =>
-      [id, runtimeVersions[id] === undefined ? pin : { ...pin, version: runtimeVersions[id] }])),
+    packages: Object.fromEntries(Object.entries(windowsLock.packages).map(([id, pin]) => {
+      const version = runtimeVersions[id];
+      return [id, typeof version === "string" ? { ...pin, version } : pin];
+    })),
   } : undefined;
   const windowsOutput = windowsHosts.length > 0
-    ? generateWindows(windowsHosts, activationLock, configDir)
+    ? generateWindows(windowsHosts, activationLock, configDir, { presenceOnlyPackages })
     : undefined;
   printWarnings(nixOutput?.warnings ?? []);
   printWarnings(windowsOutput?.warnings ?? []);

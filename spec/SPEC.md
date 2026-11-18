@@ -1132,9 +1132,14 @@ Typecheck the workspace and validate fragments without side effects.
 
 ```bash
 winix check
-winix check --strict          # scalar conflicts become errors, not warnings
+winix check --strict          # fail on conflicts, duplicate hosts, or wholly ignored fragments
 winix check --escape-report   # also report escape-hatch usage (raw, rawModule)
 ```
+
+Check warns when a feature or inline fragment contributes only scopes that do
+not apply to the target, such as Home Manager config on Windows. Mixed-scope
+features are fine as long as at least one scope applies. These warnings fail
+`--strict`, like scalar conflicts and duplicate host names.
 
 The check also warns when a plain string contains a likely unescaped Nix
 interpolation such as `${config.*}`, `${pkgs.*}`, or `${lib.*}`. Diagnostics

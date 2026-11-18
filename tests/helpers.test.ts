@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   evaluate,
   account,
+  feature,
   darwin as darwinHelpers,
   generateNix,
   home,
@@ -606,7 +607,7 @@ describe("curated helpers", () => {
   });
 
   it("account.user() configures Home Manager, NixOS users, and WSL default user", () => {
-    const wsl = profile("wsl", []);
+    const wsl = feature("nixos-wsl-support", ({ nixos }) => { nixos({ wsl: { enable: true } }); });
     const adrifer = account.user("adrifer", () => ({
       admin: true,
       shell: "zsh",
@@ -631,6 +632,24 @@ describe("curated helpers", () => {
     expect((evaluated.nixos as any).users.groups.media.members).toEqual(["adrifer", "jellyfin"]);
     expect((evaluated.nixos as any).programs.zsh.enable).toBe(true);
     expect((evaluated.nixos as any).wsl.defaultUser).toEqual(nix.lib.mkDefault("adrifer"));
+  });
+
+  it("only sets the account's default on WSL hosts and preserves explicit defaults", () => {
+    const alice = account.user("alice", () => ({ wslDefault: true }));
+    const imports = nixosHelpers.imports("inputs.nixos-wsl.nixosModules.wsl");
+    const [regular, imported, explicit, disabled] = evaluate(workspace({
+      inputs: {},
+      hosts: [
+        host("regular", platforms.nixos(), [alice(), profile("wsl", [])()]),
+        host("imported", platforms.nixos(), [alice(), imports]),
+        host("explicit", platforms.nixos(), [imports, nixosHelpers({ wsl: { defaultUser: "other" } }), alice()]),
+        host("disabled", platforms.nixos(), [imports, nixosHelpers({ wsl: { enable: false } }), alice()]),
+      ],
+    }));
+    expect(regular.nixos).not.toHaveProperty("wsl");
+    expect(imported.nixos.wsl).toEqual({ defaultUser: nix.lib.mkDefault("alice") });
+    expect(explicit.nixos.wsl).toEqual({ defaultUser: "other" });
+    expect(disabled.nixos.wsl).toEqual({ enable: false });
   });
 
   it("account.user() configures darwin primaryUser, environment.shells, and programs", () => {

@@ -12,9 +12,9 @@ describe("Windows package version policy", () => {
     expect(effectiveWindowsPackageVersion("Example.App", { version: "7", exact: false })).toBe("7");
     expect(effectiveWindowsPackageVersion("Example.App", { version: "7", exact: false }, "8")).toBe("8");
     expect(effectiveWindowsPackageVersion("Example.App", { version: "7", exact: false }, "6")).toBe("7");
-    expect(compareWindowsPackageVersions("10.0", "9.99")).toBe(1);
-    expect(compareWindowsPackageVersions("1.0.0", "1")).toBe(0);
-    expect(compareWindowsPackageVersions("999999999999999999999", "999999999999999999998")).toBe(1);
+    expect(compareWindowsPackageVersions("Example.App", "10.0", "9.99")).toBe(1);
+    expect(compareWindowsPackageVersions("Example.App", "1.0.0", "1")).toBe(0);
+    expect(compareWindowsPackageVersions("Example.App", "999999999999999999999", "999999999999999999998")).toBe(1);
   });
 
   it("requires exact declarations without downgrading and rejects ambiguous version ordering", () => {
@@ -22,9 +22,14 @@ describe("Windows package version policy", () => {
     for (const installed of ["6", "8"]) {
       expect(() => effectiveWindowsPackageVersion("Example.App", { version: "7", exact: true }, installed)).toThrow("Exact version mismatch");
     }
-    expect(compareWindowsPackageVersions("release-seven", "release-seven")).toBe(0);
-    expect(() => compareWindowsPackageVersions("Unknown", "7")).toThrow("Cannot reliably compare");
-    expect(() => compareWindowsPackageVersions("8-beta", "7")).toThrow("Cannot reliably compare");
+    expect(compareWindowsPackageVersions("Example.App", "release-seven", "release-seven")).toBe(0);
+    expect(() => compareWindowsPackageVersions("Example.App", "7", "8-beta")).toThrow(/Cannot reliably compare.*Example\.App/);
+  });
+
+  it.each(["Unknown", "8-beta"])("uses the lock for a floating package reported as %j but rejects an exact mismatch", (installed) => {
+    expect(effectiveWindowsPackageVersion("Example.App", { version: "7", exact: false }, installed)).toBe("7");
+    expect(() => effectiveWindowsPackageVersion("Example.App", { version: "7", exact: true }, installed))
+      .toThrow(/Exact version mismatch for Example\.App: installed version reported as non-comparable/);
   });
 
   it.each(["y", "N", ""])("updates locks only on an affirmative interactive answer (%s)", async (answer) => {

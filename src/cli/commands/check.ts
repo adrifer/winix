@@ -5,10 +5,12 @@ import { loadWorkspace } from "../loader.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { generateNix, type NixOutput } from "../../backends/nix/index.ts";
 import { validateWindowsWslResources } from "../../backends/windows/index.ts";
+import { validateWindowsWslSetupTargets } from "../../backends/windows/wsl-setup-runtime.ts";
 import type { WindowsOptions } from "../../types/index.ts";
 import {
   analyzeWorkspace,
   collectEscapeReport,
+  collectIgnoredFragments,
   collectSuspiciousNixReferences,
   detectConflicts,
   findDuplicateHosts,
@@ -25,11 +27,13 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
     const duplicateHosts = findDuplicateHosts(workspace);
     const evaluated = evaluate(workspace);
     for (const host of evaluated) validateWindowsWslResources(host.windows as WindowsOptions);
+    validateWindowsWslSetupTargets(workspace, evaluated, evaluated);
     const output = generateNix(workspace, evaluated);
     validateGeneratedNixSyntax(output);
     const analyses = analyzeWorkspace(workspace);
     const conflicts = detectConflicts(analyses);
     const suspiciousReferences = collectSuspiciousNixReferences(analyses);
+    const ignoredFragments = collectIgnoredFragments(analyses, evaluated);
 
     console.log(`✓ Configuration valid`);
     console.log(`  Hosts: ${evaluated.map((h) => h.name).join(", ")}`);
@@ -66,6 +70,10 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
       }
     }
 
+    for (const item of ignoredFragments) {
+      console.warn(`Warning: ${item.host} ${item.fragment}: no applicable configuration (ignored scopes: ${item.scopes.join(", ")}).`);
+    }
+
     if (opts.escapeReport) {
       const report = collectEscapeReport(analyses);
       console.log(`\nEscape hatch report: ${report.length} item(s)`);
@@ -76,7 +84,7 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
       }
     }
 
-    if (opts.strict && (duplicateHosts.length > 0 || conflicts.length > 0)) {
+    if (opts.strict && (duplicateHosts.length > 0 || conflicts.length > 0 || ignoredFragments.length > 0)) {
       throw new Error("Strict check failed");
     }
   } catch (err) {

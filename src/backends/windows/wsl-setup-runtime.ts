@@ -3,9 +3,9 @@ import { randomUUID } from "node:crypto";
 import * as fs from "node:fs/promises";
 import { join, resolve, dirname, relative, isAbsolute } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { WorkspaceDef } from "../../core/types.ts";
+import type { HostDef, WorkspaceDef } from "../../core/types.ts";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
-import type { WinWslSetup } from "../../types/index.ts";
+import type { WindowsOptions, WinWslSetup } from "../../types/index.ts";
 
 interface Request { setup: WinWslSetup; revision: string; fingerprint: string }
 interface Plan { user: string; home: string; checkout: string; host: string }
@@ -56,19 +56,65 @@ function linuxDirectory(value: unknown): value is string {
     !value.slice(1).split("/").some((part) => part === "" || part === "." || part === "..");
 }
 
+function selectWslSetupHost(hosts: readonly HostDef[], name: string): HostDef {
+  const targets = hosts.filter((host) => host.name === name);
+  if (targets.length !== 1 || targets[0].platform.__id !== "nixos") {
+    throw new Error(`setup.host "${name}" must identify exactly one NixOS host`);
+  }
+  return targets[0];
+}
+
+function selectWslSetupUser(host: EvaluatedHost, user?: string): string {
+  const users = object(object(host.nixos.users).users);
+  const home = object(host.homeManager.home);
+  const candidates = Object.keys(users).filter((name) => object(users[name]).isNormalUser === true && name !== "root");
+  const selected = user ?? (typeof home.username === "string" ? home.username : candidates.length === 1 ? candidates[0] : undefined);
+  if (!selected || !/^[a-z_][a-z0-9_-]*$/.test(selected) || !candidates.includes(selected)) {
+    throw new Error(user === undefined
+      ? "WSL setup must select a declared normal Linux user; specify setup.user when ambiguous"
+      : `setup.user "${user}" must name a declared normal Linux user`);
+  }
+  const account = object(users[selected]);
+  if (account.isSystemUser === true || account.uid === 0) throw new Error(`WSL setup cannot select a system/root account: ${selected}`);
+  return selected;
+}
+
+export function validateWindowsWslSetupTargets(
+  workspace: WorkspaceDef, evaluated: EvaluatedHost[], windowsHosts: EvaluatedHost[],
+): void {
+  for (const host of windowsHosts) {
+    for (const resource of (host.windows as WindowsOptions).dsc ?? []) {
+      if (resource.winix?.kind !== "wsl-distro") continue;
+      const { distro } = resource.winix;
+      if (!distro.setup) continue;
+      const context = `Windows host "${host.name}", WSL distro "${distro.name}"`;
+      let target: HostDef;
+      try {
+        target = selectWslSetupHost(workspace.hosts, distro.setup.host);
+      } catch (error) {
+        const available = workspace.hosts.filter((entry) => entry.platform.__id === "nixos").map((entry) => entry.name);
+        throw new Error(`${context}: ${(error as Error).message}. Available NixOS hosts: ${available.join(", ") || "(none)"}.`, { cause: error });
+      }
+      if (distro.setup.user === undefined) continue;
+      const linuxHost = evaluated[workspace.hosts.indexOf(target)];
+      try {
+        selectWslSetupUser(linuxHost, distro.setup.user);
+      } catch (error) {
+        const users = object(object(linuxHost.nixos.users).users);
+        const normal = Object.keys(users).filter((name) => object(users[name]).isNormalUser === true && name !== "root");
+        throw new Error(`${context}: ${(error as Error).message}. Normal users declared by "${target.name}": ${normal.join(", ") || "(none)"}.`, { cause: error });
+      }
+    }
+  }
+}
+
 export function createWslAccountPlan(
   host: EvaluatedHost, setup: WinWslSetup, architecture: string
 ): { plan: Plan; accountHost: EvaluatedHost } {
   const usersOptions = object(host.nixos.users);
-  const users = object(usersOptions.users);
+  const selected = selectWslSetupUser(host, setup.user);
+  const account = object(object(usersOptions.users)[selected]);
   const home = object(host.homeManager.home);
-  const candidates = Object.keys(users).filter((name) => object(users[name]).isNormalUser === true && name !== "root");
-  const selected = setup.user ?? (typeof home.username === "string" ? home.username : candidates.length === 1 ? candidates[0] : undefined);
-  if (!selected || !/^[a-z_][a-z0-9_-]*$/.test(selected) || !candidates.includes(selected)) {
-    throw new Error("WSL setup must select a declared normal Linux user; specify setup.user when ambiguous");
-  }
-  const account = object(users[selected]);
-  if (account.isSystemUser === true || account.uid === 0) throw new Error("WSL setup cannot select a system/root account");
   const userHome = account.home ?? `/home/${selected}`;
   if (!linuxDirectory(userHome)) throw new Error("Invalid declared Linux home directory");
   if (home.username !== undefined && (home.username !== selected || home.homeDirectory !== userHome)) {
@@ -128,9 +174,8 @@ export async function prepareWslAccount(
   ], { cwd: configDirectory })) as typeof import("../../index.ts");
   const workspace = (await import(pathToFileURL(join(configDirectory, configName[0])).href)).default as WorkspaceDef;
   if (!workspace || !Array.isArray(workspace.hosts)) throw new Error("Invalid Winix workspace");
-  const targets = workspace.hosts.filter((host) => host.name === setup.host && host.platform.__id === "nixos");
-  if (targets.length !== 1) throw new Error(`WSL setup target "${setup.host}" must identify one NixOS host`);
-  const [evaluated] = sdk.evaluate({ ...workspace, hosts: targets });
+  const target = selectWslSetupHost(workspace.hosts, setup.host);
+  const [evaluated] = sdk.evaluate({ ...workspace, hosts: [target] });
   const architecture = process.arch === "x64" ? "x86_64-linux" : process.arch === "arm64" ? "aarch64-linux" : "";
   const { plan, accountHost } = createWslAccountPlan(evaluated, setup, architecture);
   const output = sdk.generateNix(workspace, [accountHost]);

@@ -1,10 +1,14 @@
 import { createInterface } from "node:readline/promises";
 
 /** Only dotted numeric versions have an unambiguous ordering across Windows installers. */
-export function compareWindowsPackageVersions(left: string, right: string): number {
+export function isComparableWindowsPackageVersion(version: string): boolean {
+  return /^\d+(?:\.\d+)*$/.test(version);
+}
+
+export function compareWindowsPackageVersions(id: string, left: string, right: string): number {
   if (left === right) return 0;
-  if (!/^\d+(?:\.\d+)*$/.test(left) || !/^\d+(?:\.\d+)*$/.test(right)) {
-    throw new Error(`Cannot reliably compare Windows package versions "${left}" and "${right}". Declare an exact version or resolve the package version explicitly.`);
+  if (!isComparableWindowsPackageVersion(left) || !isComparableWindowsPackageVersion(right)) {
+    throw new Error(`Cannot reliably compare Windows package versions "${left}" and "${right}" for ${id}. Declare an exact version or resolve the package version explicitly.`);
   }
   const a = left.split(".").map(BigInt);
   const b = right.split(".").map(BigInt);
@@ -26,11 +30,14 @@ export function effectiveWindowsPackageVersion(
   if (installed === undefined) return requirement.version;
   if (requirement.exact) {
     if (installed !== requirement.version) {
-      throw new Error(`Exact version mismatch for ${id}: installed ${installed}, required ${requirement.version}. Resolve it explicitly; Winix will not silently replace or downgrade it.`);
+      const observed = isComparableWindowsPackageVersion(installed)
+        ? `installed ${installed}` : `installed version reported as non-comparable (${JSON.stringify(installed)})`;
+      throw new Error(`Exact version mismatch for ${id}: ${observed}, required ${requirement.version}. Resolve it explicitly; Winix will not silently replace or downgrade it.`);
     }
     return requirement.version;
   }
-  return compareWindowsPackageVersions(installed, requirement.version) >= 0 ? installed : requirement.version;
+  if (!isComparableWindowsPackageVersion(installed)) return requirement.version;
+  return compareWindowsPackageVersions(id, installed, requirement.version) >= 0 ? installed : requirement.version;
 }
 
 export async function confirmWindowsPackageLockUpdate(id: string, installed: string, locked: string): Promise<boolean> {

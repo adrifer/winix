@@ -8,8 +8,9 @@ import type {
   WorkspaceDef,
   EvalContext,
 } from "../core/types.ts";
-import { collectActiveIds } from "../evaluator/index.ts";
+import { collectActiveIds, type EvaluatedHost } from "../evaluator/index.ts";
 import { restoreEvalContext, setEvalContext } from "../sdk/index.ts";
+import { hasHomeManagerImport } from "../backends/nix/index.ts";
 
 export interface FragmentRecord {
   label: string;
@@ -61,6 +62,38 @@ export function findDuplicateHosts(workspace: WorkspaceDef): string[] {
     seen.add(host.name);
   }
   return [...duplicates];
+}
+
+const scopes = ["nixos", "darwin", "homeManager", "windows"] as const;
+type Scope = typeof scopes[number];
+
+export function collectIgnoredFragments(
+  analyses: HostAnalysis[], evaluated: EvaluatedHost[],
+): { host: string; fragment: string; scopes: Scope[] }[] {
+  return analyses.flatMap((analysis, index) => {
+    const platform = analysis.fragments.find(({ fragment }) => fragment.__platform)?.fragment;
+    if (!platform) return [];
+    const applicable = new Set(scopes.filter((scope) => platform[scope]));
+    if (!applicable.has("windows") &&
+        (hasHomeManagerImport(evaluated[index]) || !["nixos", "darwin"].includes(analysis.platform))) {
+      applicable.add("homeManager");
+    }
+
+    const byLabel = new Map<string, Set<Scope>>();
+    for (const { label, fragment } of analysis.fragments) {
+      if (fragment.__platform) continue;
+      const contributed = byLabel.get(label) ?? new Set<Scope>();
+      for (const scope of scopes) {
+        const data = fragment[scope];
+        if (data && walkLeaves(data).some(({ value }) => value !== undefined)) contributed.add(scope);
+      }
+      byLabel.set(label, contributed);
+    }
+    return [...byLabel].flatMap(([fragment, contributed]) =>
+      contributed.size > 0 && ![...contributed].some((scope) => applicable.has(scope))
+        ? [{ host: analysis.name, fragment, scopes: [...contributed] }]
+        : []);
+  });
 }
 
 export function detectConflicts(analyses: HostAnalysis[]): Conflict[] {

@@ -11,6 +11,7 @@ import { normalizeWslSetup } from "../src/helpers/windows.ts";
 import { emptyWindowsLock, readWindowsLock, resolveWindowsWslRepositories, serializeWindowsLock } from "../src/backends/windows/lockfile.ts";
 import { resolveWslRepository, wslRepositoryKey, wslSetupPrelude } from "../src/backends/windows/wsl-setup.ts";
 import { applyWorkspace } from "../src/cli/commands/apply.ts";
+import { check } from "../src/cli/commands/check.ts";
 import { update } from "../src/cli/commands/update.ts";
 import { pathToFileURL } from "node:url";
 import * as runtime from "../src/runtime.ts";
@@ -46,6 +47,41 @@ function linuxHost() {
 }
 
 describe("WSL first-run setup declarations and locks", () => {
+  it.each([
+    ["linux-typo", "alice", "", 'setup.host "linux-typo" must identify exactly one NixOS host'],
+    ["desktop", "alice", "", 'setup.host "desktop" must identify exactly one NixOS host'],
+    ["linux", "alice", ',host("linux",platforms.nixos(),[])', 'setup.host "linux" must identify exactly one NixOS host'],
+    ["linux", "missing", "", 'setup.user "missing" must name a declared normal Linux user'],
+  ])("rejects invalid setup before locking packages or provisioning a distro (%s, %s)", async (target, user, extraHost, detail) => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-setup-target-"));
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exit = vi.spyOn(process, "exit").mockImplementation(() => { throw new Error("check exited"); });
+    try {
+      const sdk = pathToFileURL(join(process.cwd(), "src", "index.ts")).href;
+      await writeFile(join(dir, "winix.config.mjs"), `
+import {account,workspace,host,platforms} from ${JSON.stringify(sdk)};
+export default workspace({inputs:{},hosts:[host("desktop",platforms.windows(),({windows})=>{
+  windows.package({id:"Microsoft.WSL",version:"3.0.5"}); windows.wsl();
+  windows.wsl.distro("NixOS",{source:"nixos-wsl",installLocation:"C:/WSL/NixOS",setup:${JSON.stringify({ ...setup, host: target, user })}});
+}),host("linux",platforms.nixos(),[account.user("alice",()=>({}))()])${extraHost}]});`);
+      const hint = detail.startsWith("setup.user")
+        ? 'Normal users declared by "linux": alice'
+        : "Available NixOS hosts: linux";
+      const diagnostic = `Windows host "desktop", WSL distro "NixOS": ${detail}. ${hint}`;
+      await expect(check(dir, { strict: false, escapeReport: false })).rejects.toThrow("check exited");
+      expect(error).toHaveBeenCalledWith(expect.stringContaining(diagnostic));
+      expect(exit).toHaveBeenCalledWith(1);
+      const resolve = vi.fn();
+      await expect(applyWorkspace(dir, {
+        host: "desktop", dry: true, diff: false, resolveWindowsWslImage: resolve, resolveWindowsWslRepository: resolve,
+      })).rejects.toThrow(diagnostic);
+      expect(resolve).not.toHaveBeenCalled();
+    } finally {
+      error.mockRestore(); exit.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("rejects credentials, path escapes, unsafe refs and privileged account selection", () => {
     for (const invalid of [
       { repository: "file:///tmp/repo" }, { repository: "https://user:secret@example.com/repo" },
@@ -305,12 +341,12 @@ import {workspace,host,platforms} from ${JSON.stringify(sdk)};
 export default workspace({inputs:{},hosts:[host("desktop",platforms.windows(),({windows})=>{
   windows.package({id:"Microsoft.WSL",version:"3.0.5"}); windows.wsl();
   windows.wsl.distro("NixOS",{source:"nixos-wsl",installLocation:"C:/WSL/NixOS",setup:${JSON.stringify(setup)}});
-})]});`);
+}),host("linux",platforms.nixos(),[{nixos:{users:{users:{alice:{isNormalUser:true}}}}}])]});`);
       const image = (architecture: "x64" | "arm64") => ({
         source: "nixos-wsl" as const, architecture, version: "2605.7.2", sha256: "f".repeat(64),
         url: `https://github.com/nix-community/NixOS-WSL/releases/download/2605.7.2/${architecture === "x64" ? "nixos.wsl" : "nixos.aarch64.wsl"}`,
       });
-      await applyWorkspace(dir, { dry: true, diff: false, resolveWindowsWslImage: image, resolveWindowsWslRepository: () => revision });
+      await applyWorkspace(dir, { host: "desktop", dry: true, diff: false, resolveWindowsWslImage: image, resolveWindowsWslRepository: () => revision });
       await expect(readFile(join(dir, "winix-windows.lock"))).rejects.toMatchObject({ code: "ENOENT" });
       await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsWslImage: image, resolveWindowsWslRepository: () => revision });
       const saved = await readFile(join(dir, "winix-windows.lock"), "utf8");

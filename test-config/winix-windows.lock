@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-18T00:00:00.000Z",
+  "packages": {},
+  "modules": {
+    "microsoft.windows.settings@approved/f5e2f1ebf4827afdeda477f1cc0f030647fb9140f5b709035fc6084aa17c75b1": {
+      "repository": "approved",
+      "repositoryUri": "https://packages.example.com/powershell/v3/index.json",
+      "version": "0.1.1-alpha",
+      "resolvedAt": "2026-11-18T00:00:00.000Z"
+    }
+  }
+}

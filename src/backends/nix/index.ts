@@ -489,7 +489,7 @@ function validateWorkspaceInputs(
   return warnings;
 }
 
-function hasHomeManagerImport(host: EvaluatedHost): boolean {
+export function hasHomeManagerImport(host: EvaluatedHost): boolean {
   return [
     ...getImports(host.nixos),
     ...getImports(host.darwin),

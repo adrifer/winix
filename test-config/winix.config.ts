@@ -13,7 +13,7 @@ const inputs = defineInputs({
 });
 
 // --- Features ---
-const wsl = feature("wsl", () => ({
+const wsl = feature("nixos-wsl", () => ({
   nixos: {
     imports: ["inputs.nixos-wsl.nixosModules.wsl"],
     wsl: {
