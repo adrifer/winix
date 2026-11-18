@@ -23,14 +23,14 @@ interface CheckOptions {
 
 export async function check(cwd: string, opts: CheckOptions): Promise<void> {
   try {
-    const { workspace } = await loadWorkspace(cwd);
+    const { workspace, configDir } = await loadWorkspace(cwd);
     const duplicateHosts = findDuplicateHosts(workspace);
-    const evaluated = evaluate(workspace);
+    const evaluated = evaluate(workspace, { configDir });
     for (const host of evaluated) validateWindowsWslResources(host.windows as WindowsOptions);
     validateWindowsWslSetupTargets(workspace, evaluated, evaluated);
     const output = generateNix(workspace, evaluated);
     validateGeneratedNixSyntax(output);
-    const analyses = analyzeWorkspace(workspace);
+    const analyses = analyzeWorkspace(workspace, { configDir });
     const conflicts = detectConflicts(analyses);
     const suspiciousReferences = collectSuspiciousNixReferences(analyses);
     const ignoredFragments = collectIgnoredFragments(analyses, evaluated);

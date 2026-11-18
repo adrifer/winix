@@ -1,5 +1,6 @@
 import type { Fragment, NixExpr } from "../core/types.ts";
 import { escapeNixDoubleQuoted, nixStringLiteral } from "../nix/serialize.ts";
+import { windowsBin } from "./wsl-interop.ts";
 
 type NixValue = unknown;
 type NixCondition = boolean | string | NixExpr;
@@ -72,6 +73,20 @@ export interface NixNamespace {
    * @see {@link BinaryReleaseOpts} for the full options interface
    */
   binaryRelease(opts: BinaryReleaseOpts): NixExpr;
+  /** Helpers for NixOS-WSL hosts reaching into Windows. */
+  wsl: {
+    /**
+     * Package with `bin/<name>`: a shim that runs the first existing Windows
+     * executable among `paths`. Paths are absolute (`C:\\...`) or start with
+     * an environment variable (`%LOCALAPPDATA%\\...`), resolved through interop
+     * on each run, so no Windows user name or drive is hard-coded.
+     *
+     * @example
+     * home.packages(nix.wsl.windowsBin("code-insiders",
+     *   "%LOCALAPPDATA%\\Programs\\Microsoft VS Code Insiders\\bin\\code-insiders"));
+     */
+    windowsBin(name: string, paths: string | readonly string[]): NixExpr;
+  };
   lib: {
     mkDefault(value: NixValue): NixExpr;
     mkForce(value: NixValue): NixExpr;
@@ -250,6 +265,7 @@ export const nix: NixNamespace = {
   isDarwin: expr("pkgs.stdenv.isDarwin"),
   isLinux: expr("pkgs.stdenv.isLinux"),
   binaryRelease,
+  wsl: { windowsBin },
   lib: {
     mkDefault: (value: NixValue): NixExpr => nixLibCall("mkDefault", value),
     mkForce: (value: NixValue): NixExpr => nixLibCall("mkForce", value),

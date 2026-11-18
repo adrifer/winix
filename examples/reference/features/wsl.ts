@@ -12,7 +12,7 @@ const bin = (packageName: string, executable: string) => ({
 });
 
 /**
- * @description NixOS-WSL host: WSL config, extraBin, nix-ld libraries, and PATH glue for Windows VS Code Insiders
+ * @description NixOS-WSL host: WSL config, extraBin, nix-ld libraries, and shims for Windows VS Code Insiders and Git Credential Manager
  * @category platform
  */
 export const wsl = feature("wsl", () => [
@@ -21,9 +21,9 @@ export const wsl = feature("wsl", () => [
   // the shape close to what you'd write in Nix while still letting the
   // surrounding code stay typed.
   nixos({
-    imports: ["inputs.nixos-wsl.nixosModules.wsl"],
+    // platforms.wsl() already imports the NixOS-WSL module and sets
+    // wsl.enable; this feature only tunes it.
     wsl: {
-      enable: true,
       wslConf: {
         interop: {
           enabled: true,
@@ -43,27 +43,6 @@ export const wsl = feature("wsl", () => [
         bin("su", "usermod"),
       ],
     },
-    environment: {
-      // Derive the Windows username from $HOME (no cmd.exe shell-out)
-      // and add VS Code Insiders to PATH if Windows has it installed.
-      // This is the canonical 'shell out to Nix when TypeScript would
-      // be uglier than the original Bash' moment.
-      interactiveShellInit: nix.script(`
-        win_home="$(wslpath -w "$HOME")"
-        win_home_slash="''\${win_home//\\\\//}"
-        win_user="''\${win_home_slash##*/}"
-
-        user_bin="/mnt/c/Users/$win_user/AppData/Local/Programs/Microsoft VS Code Insiders/bin"
-        if [ -d "$user_bin" ]; then
-          case ":$PATH:" in
-            *":$user_bin:"*) ;;
-            *) PATH="$PATH:$user_bin" ;;
-          esac
-        fi
-
-        export PATH
-      `),
-    },
   }),
 
   // Lets you paste/copy across Windows + Linux apps via the Wayland
@@ -82,18 +61,16 @@ export const wsl = feature("wsl", () => [
   // breaks the WSL interop assumptions wslu relies on.
   home.packages(nix.pkg.stable("wslu")),
 
-  // GitHub-credential-manager-on-Windows trick: write a tiny wrapper
-  // that shells out to the Windows install of GCM. This way we don't
-  // depend on any work-only credential helpers.
-  home.program("git", {
-    settings: {
-      credential: {
-        helper: nix.str`${nix.expr(`pkgs.writeShellScriptBin "git-credential-manager-windows" ''
-          "/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe" "$@"
-        ''`)}/bin/git-credential-manager-windows`,
-      },
-    },
-  }),
+  // Windows apps reached through interop. The shims resolve the Windows
+  // user profile at run time, so no Windows user name is hard-coded.
+  home.packages(
+    nix.wsl.windowsBin(
+      "code-insiders",
+      "%LOCALAPPDATA%\\Programs\\Microsoft VS Code Insiders\\bin\\code-insiders",
+    ),
+  ),
+  // Use Git for Windows' Credential Manager as the git credential helper.
+  home.wsl.gitCredentialManager(),
 
   playwright(),
 ]);

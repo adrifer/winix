@@ -486,6 +486,23 @@ function validateWorkspaceInputs(
       "home-manager module import detected but workspace inputs do not include home-manager"
     );
   }
+  const missing = new Map<string, Set<string>>();
+  for (const host of hosts) {
+    for (const imp of [...getImports(host.nixos), ...getImports(host.darwin), ...getImports(host.homeManager)]) {
+      const name = typeof imp === "string" ? /^inputs\.([A-Za-z_][A-Za-z0-9_'-]*)\./.exec(imp.trim())?.[1] : undefined;
+      if (!name || name === "home-manager" || hasInput(workspace, name)) continue;
+      if (!missing.has(name)) missing.set(name, new Set());
+      missing.get(name)!.add(host.name);
+    }
+  }
+  for (const [name, hostNames] of missing) {
+    const hint = name === "nixos-wsl"
+      ? ` (e.g. nixosWsl: input("github:nix-community/NixOS-WSL", { follows: { nixpkgs: "nixpkgs" } }))`
+      : "";
+    warnings.push(
+      `${[...hostNames].join(", ")}: module import uses inputs.${name}, but workspace inputs do not include ${name}${hint}`
+    );
+  }
   return warnings;
 }
 

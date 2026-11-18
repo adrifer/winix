@@ -1,5 +1,5 @@
 import { platform, getOptionalEvalContext } from "../sdk/index.ts";
-import type { PlatformFactory } from "../core/types.ts";
+import type { Fragment, PlatformFactory } from "../core/types.ts";
 
 export interface NixosPlatformOpts {
   system?: string;
@@ -18,6 +18,14 @@ export interface DarwinPlatformOpts {
   hostname?: string | false;
 }
 
+export interface WslPlatformOpts extends NixosPlatformOpts {
+  /**
+   * Nix input name providing NixOS-WSL, as it appears in `inputs.<name>`.
+   * Defaults to "nixos-wsl" (the kebab-case name of a `nixosWsl` input).
+   */
+  input?: string;
+}
+
 export interface WindowsPlatformOpts {
   /** Hostname override; falls back to the host name from eval context. */
   hostname?: string | false;
@@ -25,35 +33,59 @@ export interface WindowsPlatformOpts {
 
 export interface PlatformsHelper {
   nixos: PlatformFactory<[opts?: NixosPlatformOpts]>;
+  /**
+   * NixOS running under WSL: imports the NixOS-WSL module and enables it.
+   * The host is still a NixOS host, so `platforms.nixos.isActive` is also
+   * true; `platforms.wsl.isActive` is true only for WSL hosts.
+   */
+  wsl: PlatformFactory<[opts?: WslPlatformOpts]>;
   darwin: PlatformFactory<[opts?: DarwinPlatformOpts]>;
   windows: PlatformFactory<[opts?: WindowsPlatformOpts]>;
 }
 
-export const platforms: PlatformsHelper = {
-  nixos: platform("nixos", (opts: NixosPlatformOpts = {}) => {
-    const ctx = getOptionalEvalContext();
-    const hostname = opts.hostname === false ? undefined : opts.hostname ?? ctx?.hostname;
-    const useHomeManager = opts.homeManager ?? true;
+function nixosPlatform(opts: NixosPlatformOpts): Fragment {
+  const ctx = getOptionalEvalContext();
+  const hostname = opts.hostname === false ? undefined : opts.hostname ?? ctx?.hostname;
+  const useHomeManager = opts.homeManager ?? true;
 
+  return {
+    nixos: {
+      ...(useHomeManager && { imports: ["inputs.home-manager.nixosModules.home-manager"] }),
+      nixpkgs: {
+        hostPlatform: opts.system ?? "x86_64-linux",
+        config: { allowUnfree: opts.allowUnfree ?? true },
+      },
+      nix: { settings: { experimentalFeatures: ["nix-command", "flakes"] } },
+      ...(hostname && { networking: { hostName: hostname } }),
+      ...(opts.stateVersion && { system: { stateVersion: opts.stateVersion } }),
+      ...(useHomeManager && {
+        homeManager: {
+          useGlobalPkgs: true,
+          useUserPackages: true,
+        },
+      }),
+    },
+  };
+}
+
+export const platforms: PlatformsHelper = {
+  nixos: platform("nixos", (opts: NixosPlatformOpts = {}) => nixosPlatform(opts)),
+
+  wsl: platform("nixos", (opts: WslPlatformOpts = {}) => {
+    const { input = "nixos-wsl", ...nixosOpts } = opts;
+    if (typeof input !== "string" || !/^[A-Za-z_][A-Za-z0-9_'-]*$/.test(input)) {
+      throw new Error("platforms.wsl input must be a Nix input name, e.g. \"nixos-wsl\"");
+    }
+    const base = nixosPlatform(nixosOpts);
+    const imports = (base.nixos?.imports as string[] | undefined) ?? [];
     return {
       nixos: {
-        ...(useHomeManager && { imports: ["inputs.home-manager.nixosModules.home-manager"] }),
-        nixpkgs: {
-          hostPlatform: opts.system ?? "x86_64-linux",
-          config: { allowUnfree: opts.allowUnfree ?? true },
-        },
-        nix: { settings: { experimentalFeatures: ["nix-command", "flakes"] } },
-        ...(hostname && { networking: { hostName: hostname } }),
-        ...(opts.stateVersion && { system: { stateVersion: opts.stateVersion } }),
-        ...(useHomeManager && {
-          homeManager: {
-            useGlobalPkgs: true,
-            useUserPackages: true,
-          },
-        }),
+        ...base.nixos,
+        imports: [...imports, `inputs.${input}.nixosModules.wsl`],
+        wsl: { enable: true },
       },
     };
-  }),
+  }, { variant: "wsl" }),
 
   darwin: platform("darwin", (opts: DarwinPlatformOpts = {}) => {
     const ctx = getOptionalEvalContext();

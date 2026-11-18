@@ -96,6 +96,12 @@ export interface WinWslDistro {
   host?: string;
   /** First-run setup for Winix-created distros; never run for adopted distros. */
   setup?: WinWslSetup;
+  /**
+   * Internal: setup.ref was inferred from the config checkout's branch, so it
+   * is excluded from the completed-setup fingerprint (switching branches must
+   * not invalidate an already-completed distro).
+   */
+  setupRefFromCheckout?: boolean;
 }
 
 export interface WinWslSetup {

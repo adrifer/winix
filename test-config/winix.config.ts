@@ -1,5 +1,5 @@
 // Realistic test config: minimal WSL NixOS host
-import { account, feature, home, host, input, defineInputs, nixos, platforms, profile, workspace } from "../src/index.ts";
+import { account, feature, home, host, input, defineInputs, nix, nixos, platforms, profile, workspace } from "../src/index.ts";
 
 // --- Inputs ---
 const inputs = defineInputs({
@@ -13,14 +13,11 @@ const inputs = defineInputs({
 });
 
 // --- Features ---
-const wsl = feature("nixos-wsl", () => ({
-  nixos: {
-    imports: ["inputs.nixos-wsl.nixosModules.wsl"],
-    wsl: {
-      enable: true,
-    },
-  },
-}));
+// WSL interop: Windows Git Credential Manager and VS Code from NixOS-WSL.
+const windowsInterop = feature("windows-interop", ({ home }) => {
+  home.wsl.gitCredentialManager();
+  home.packages(nix.wsl.windowsBin("code", "%LOCALAPPDATA%/Programs/Microsoft VS Code/bin/code"));
+});
 
 const workSysctl = feature("work-sysctl", () =>
   nixos.sysctl({
@@ -53,8 +50,8 @@ const developer = profile("developer", [
 export default workspace({
   inputs,
   hosts: [
-    host("wsl-work", platforms.nixos({ stateVersion: "25.05" }), [
-      wsl(),
+    host("wsl-work", platforms.wsl({ stateVersion: "25.05" }), [
+      windowsInterop(),
       account.user("adrifer", () => ({ admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }))(),
       workSysctl(),
       nixos.packages("socat", "bubblewrap"),

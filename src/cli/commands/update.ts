@@ -57,8 +57,8 @@ export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
   // `winix update` resolves the Nix flake lock. A Windows-only workspace has
   // no flake.nix, so there is nothing to update; fail clearly instead of
   // letting `nix flake update` error out generically.
-  const { workspace } = await loadWorkspace(cwd);
-  const evaluated = evaluate(workspace);
+  const { workspace, configDir } = await loadWorkspace(cwd);
+  const evaluated = evaluate(workspace, { configDir });
   const hasNixHost = evaluated.some((host) => platformForEvaluatedHost(host) !== "windows");
   if (!hasNixHost) {
     throw new Error(
@@ -100,7 +100,7 @@ export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
 
 async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void> {
   const { workspace, configDir } = await loadWorkspace(cwd);
-  const evaluated = evaluate(workspace);
+  const evaluated = evaluate(workspace, { configDir });
   const windowsHosts = evaluated.filter(isWindowsHost);
   if (windowsHosts.length === 0) {
     throw new Error("`winix update --windows` found no Windows hosts in this workspace.");

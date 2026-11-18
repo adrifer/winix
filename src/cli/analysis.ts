@@ -6,9 +6,9 @@ import type {
   NixExpr,
   RawModuleRef,
   WorkspaceDef,
-  EvalContext,
+  EvaluateOptions,
 } from "../core/types.ts";
-import { collectActiveIds, type EvaluatedHost } from "../evaluator/index.ts";
+import { collectActiveIds, hostEvalContext, type EvaluatedHost } from "../evaluator/index.ts";
 import { restoreEvalContext, setEvalContext } from "../sdk/index.ts";
 import { hasHomeManagerImport } from "../backends/nix/index.ts";
 
@@ -50,8 +50,8 @@ export interface SuspiciousNixReference {
   recommendation: string;
 }
 
-export function analyzeWorkspace(workspace: WorkspaceDef): HostAnalysis[] {
-  return workspace.hosts.map((host) => analyzeHost(host));
+export function analyzeWorkspace(workspace: WorkspaceDef, options: EvaluateOptions = {}): HostAnalysis[] {
+  return workspace.hosts.map((host) => analyzeHost(host, options));
 }
 
 export function findDuplicateHosts(workspace: WorkspaceDef): string[] {
@@ -174,11 +174,10 @@ export function collectSuspiciousNixReferences(
   return items;
 }
 
-function analyzeHost(host: HostDef): HostAnalysis {
+function analyzeHost(host: HostDef, options: EvaluateOptions): HostAnalysis {
   const platform = host.platform.__id;
-  const activeIds = collectActiveIds(host);
-  const ctx: EvalContext = { platform, hostname: host.name, activeIds };
-  const prev = setEvalContext(ctx);
+  const activeIds = collectActiveIds(host, options);
+  const prev = setEvalContext(hostEvalContext(host, activeIds, options));
   const fragments: FragmentRecord[] = [];
 
   try {

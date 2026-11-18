@@ -8,7 +8,7 @@ import type { EvaluatedHost } from "../../evaluator/index.ts";
 import type { WindowsOptions, WinWslSetup } from "../../types/index.ts";
 
 interface Request { setup: WinWslSetup; revision: string; fingerprint: string }
-interface Plan { user: string; home: string; checkout: string; host: string }
+export interface Plan { user: string; home: string; checkout: string; host: string }
 interface State { version: 1; fingerprint: string; revision: string; step: "initial" | "prepared" | "placed" | "account" | "activated"; plan?: Plan }
 interface CommandOptions { cwd?: string; user?: string; home?: string; env?: NodeJS.ProcessEnv }
 export type SetupRunner = (command: string, args: string[], options?: CommandOptions) => string;
@@ -79,9 +79,24 @@ function selectWslSetupUser(host: EvaluatedHost, user?: string): string {
   return selected;
 }
 
-export function validateWindowsWslSetupTargets(
+export interface WindowsWslSetupTarget {
+  windowsHost: string;
+  distro: string;
+  setup: WinWslSetup;
+  /** Linux account, home and checkout the first-run setup will use. */
+  plan: Plan;
+}
+
+/**
+ * Validate every Windows WSL distro setup against its Linux host offline and
+ * return the account/checkout plan each would use. Catches host/user typos,
+ * a missing NixOS-WSL module, ambiguous accounts and checkouts outside the
+ * account's home before any distro is created.
+ */
+export function windowsWslSetupTargets(
   workspace: WorkspaceDef, evaluated: EvaluatedHost[], windowsHosts: EvaluatedHost[],
-): void {
+): WindowsWslSetupTarget[] {
+  const targets: WindowsWslSetupTarget[] = [];
   for (const host of windowsHosts) {
     for (const resource of (host.windows as WindowsOptions).dsc ?? []) {
       if (resource.winix?.kind !== "wsl-distro") continue;
@@ -95,7 +110,6 @@ export function validateWindowsWslSetupTargets(
         const available = workspace.hosts.filter((entry) => entry.platform.__id === "nixos").map((entry) => entry.name);
         throw new Error(`${context}: ${(error as Error).message}. Available NixOS hosts: ${available.join(", ") || "(none)"}.`, { cause: error });
       }
-      if (distro.setup.user === undefined) continue;
       const linuxHost = evaluated[workspace.hosts.indexOf(target)];
       try {
         selectWslSetupUser(linuxHost, distro.setup.user);
@@ -104,8 +118,25 @@ export function validateWindowsWslSetupTargets(
         const normal = Object.keys(users).filter((name) => object(users[name]).isNormalUser === true && name !== "root");
         throw new Error(`${context}: ${(error as Error).message}. Normal users declared by "${target.name}": ${normal.join(", ") || "(none)"}.`, { cause: error });
       }
+      const hostPlatform = object(linuxHost.nixos.nixpkgs).hostPlatform;
+      try {
+        if (hostPlatform !== "x86_64-linux" && hostPlatform !== "aarch64-linux") {
+          throw new Error("Linux host platform must be x86_64-linux or aarch64-linux");
+        }
+        const { plan } = createWslAccountPlan(linuxHost, distro.setup, hostPlatform);
+        targets.push({ windowsHost: host.name, distro: distro.name, setup: distro.setup, plan });
+      } catch (error) {
+        throw new Error(`${context}, Linux host "${target.name}": ${(error as Error).message}`, { cause: error });
+      }
     }
   }
+  return targets;
+}
+
+export function validateWindowsWslSetupTargets(
+  workspace: WorkspaceDef, evaluated: EvaluatedHost[], windowsHosts: EvaluatedHost[],
+): void {
+  windowsWslSetupTargets(workspace, evaluated, windowsHosts);
 }
 
 export function createWslAccountPlan(
@@ -131,7 +162,7 @@ export function createWslAccountPlan(
     (entry): entry is string => typeof entry === "string" && /^inputs\.[a-z0-9._-]+\.nixosModules\.wsl$/i.test(entry)
   ) : [];
   if (object(host.nixos.wsl).enable !== true || wslImports.length !== 1 || typeof object(host.nixos.system).stateVersion !== "string") {
-    throw new Error("Setup host must explicitly enable NixOS-WSL, import its input module, and declare system.stateVersion");
+    throw new Error("Setup host must explicitly enable NixOS-WSL, import its input module, and declare system.stateVersion (platforms.wsl({ stateVersion }) does all three)");
   }
   const { packages: _packages, ...bootstrapUser } = account;
   const groupNames = [...(Array.isArray(account.extraGroups) ? account.extraGroups : []),
@@ -175,7 +206,7 @@ export async function prepareWslAccount(
   const workspace = (await import(pathToFileURL(join(configDirectory, configName[0])).href)).default as WorkspaceDef;
   if (!workspace || !Array.isArray(workspace.hosts)) throw new Error("Invalid Winix workspace");
   const target = selectWslSetupHost(workspace.hosts, setup.host);
-  const [evaluated] = sdk.evaluate({ ...workspace, hosts: [target] });
+  const [evaluated] = sdk.evaluate({ ...workspace, hosts: [target] }, { configDir: configDirectory });
   const architecture = process.arch === "x64" ? "x86_64-linux" : process.arch === "arm64" ? "aarch64-linux" : "";
   const { plan, accountHost } = createWslAccountPlan(evaluated, setup, architecture);
   const output = sdk.generateNix(workspace, [accountHost]);

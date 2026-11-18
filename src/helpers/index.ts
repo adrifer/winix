@@ -9,7 +9,7 @@ export type {
   AccountUserRef,
 } from "./account.ts";
 export { platforms } from "./platforms.ts";
-export type { DarwinPlatformOpts, NixosPlatformOpts, WindowsPlatformOpts, PlatformsHelper } from "./platforms.ts";
+export type { DarwinPlatformOpts, NixosPlatformOpts, WindowsPlatformOpts, WslPlatformOpts, PlatformsHelper } from "./platforms.ts";
 export { nix } from "./nix.ts";
 export type {
   BinaryReleaseArch,
@@ -51,6 +51,7 @@ export type {
   WinStartupNamespace,
   WinOptionalFeatureOpts,
   WinWslDistroSpec,
+  WinWslSetupSpec,
   WinWslOpts,
   WinWslNamespace,
 } from "./windows.ts";

@@ -161,8 +161,13 @@ Use one platform factory as the second argument to each host:
 - \`platforms.nixos({ system, stateVersion, allowUnfree, homeManager, hostname })\`
 - \`platforms.darwin({ system, stateVersion, allowUnfree, homeManager, homebrew, hostname })\`
 - \`platforms.windows({ hostname })\`
+- \`platforms.wsl({ stateVersion, input, ... })\` is NixOS under WSL: the NixOS
+  options plus the NixOS-WSL module import (\`inputs.nixos-wsl\` unless \`input\`
+  names another Nix input) and \`wsl.enable = true\`. Declare the input, e.g.
+  \`nixosWsl: input("github:nix-community/NixOS-WSL", { follows: { nixpkgs: "nixpkgs" } })\`.
 
-The platform factories also expose \`.isActive\` during evaluation.
+The platform factories also expose \`.isActive\` during evaluation. A WSL host is
+still NixOS: \`platforms.nixos.isActive\` and \`platforms.wsl.isActive\` are both true.
 
 ## Fragment and merge rules
 
@@ -243,7 +248,11 @@ Available helpers:
 - \`home.env()\` for \`home.sessionVariables\`
 - \`home.path()\` for \`home.sessionPath\`
 - \`home.files()\`, \`home.configFile()\`, and \`home.configFiles()\`
-- \`home.symlink()\` for out-of-store symlink file values
+- \`home.symlink()\` for out-of-store symlink file values: \`~/\` paths are
+  home-relative, \`./\` and \`../\` paths are relative to winix.config.ts (like
+  Windows file sources), e.g. \`home.symlink("../nvim/.config/nvim")\`
+- \`home.wsl.gitCredentialManager({ paths })\` enables git and points
+  credential.helper at a shim for Git for Windows' Credential Manager
 - \`home.activation(name, { after, script })\`
 - \`home.raw()\` as a last-resort raw Nix escape hatch
 
@@ -381,6 +390,14 @@ Resources return handles that can be passed through \`dependsOn\`.
   { repository: "https://github.com/example/dotfiles.git", ref: "main",
     configDirectory: "winix", host: "wsl-work", user: "alice",
     checkout: "/home/alice/dotfiles" }.
+  Prefer values over matching strings: host accepts the value returned by
+  host(...) and user the account.user(...) factory. repository: "self" clones the
+  checkout holding winix.config.ts: its tracked remote (SSH converted to HTTPS),
+  current upstream branch as ref (commit when detached; excluded from the
+  completed-setup fingerprint) and config path as configDirectory. winix check
+  validates the whole setup plan offline (host, account, NixOS-WSL module,
+  stateVersion, checkout inside the home). After switch, Winix prints the
+  command that applies later Linux changes inside each distro.
   Repository URLs must be HTTPS without credentials; authentication must already
   work inside Linux. Commit flake.lock in configDirectory; npm-based Winix also
   requires package.json/package-lock.json and a released SDK supporting setup.
@@ -530,6 +547,10 @@ Import \`nix\` at file scope. It builds values and does not declare fragments:
   \`nix.optionalString()\` build common expressions.
 - \`nix.isDarwin\` and \`nix.isLinux\` are Nix-side conditions.
 - \`nix.binaryRelease()\` builds a package for a prebuilt CLI release.
+- \`nix.wsl.windowsBin(name, paths)\` builds a package whose bin/<name> runs the
+  first existing Windows executable among paths (\`C:\\\\...\` or
+  \`%LOCALAPPDATA%\\\\...\`), resolved through interop at run time, e.g.
+  \`home.packages(nix.wsl.windowsBin("code", "%LOCALAPPDATA%\\\\Programs\\\\Microsoft VS Code\\\\bin\\\\code"))\`.
 - \`nix.lib.mkDefault()\`, \`nix.lib.mkForce()\`, \`nix.lib.mkBefore()\`,
   \`nix.lib.mkAfter()\`, \`nix.lib.optionalAttrs()\`, and
   \`nix.lib.optionalString()\` expose common library operations.

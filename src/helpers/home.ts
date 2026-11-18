@@ -1,4 +1,7 @@
+import { posix as pathPosix } from "node:path";
 import { normalizeArgs } from "./utils.ts";
+import { getOptionalEvalContext } from "../sdk/index.ts";
+import { GIT_CREDENTIAL_MANAGER_PATHS, windowsBin } from "./wsl-interop.ts";
 import type { ProgramOptions, ServiceOptions } from "./options.ts";
 import type { Fragment, NixExpr } from "../core/types.ts";
 import { escapeNixDoubleQuoted, nixStringLiteral } from "../nix/serialize.ts";
@@ -36,9 +39,29 @@ export interface HomeHelper {
   files(files: Record<string, HomeFile>): Fragment;
   configFile(name: string, opts: HomeFile): Fragment;
   configFiles(files: Record<string, HomeFile>): Fragment;
+  /**
+   * Out-of-store symlink source. `~/` paths are home-relative; `./` and
+   * `../` paths are relative to the directory holding winix.config.ts.
+   */
   symlink(path: string, opts?: Omit<HomeFile, "source" | "text">): HomeFile;
   raw(config: string): Fragment;
   activation(name: string, opts: ActivationOpts): Fragment;
+  /** Home Manager helpers for NixOS-WSL hosts. */
+  wsl: HomeWslHelper;
+}
+
+export interface HomeWslHelper {
+  /**
+   * Use the Windows Git Credential Manager from WSL: enables
+   * `programs.git` and sets `credential.helper` to a shim that finds
+   * Git for Windows' GCM at run time.
+   */
+  gitCredentialManager(opts?: HomeWslGitCredentialManagerOpts): Fragment;
+}
+
+export interface HomeWslGitCredentialManagerOpts {
+  /** Windows paths to try, in order. Defaults to Git for Windows' ucrt64/mingw64 GCM. */
+  paths?: readonly string[];
 }
 
 type ProgramOpts = Record<string, unknown>;
@@ -94,6 +117,25 @@ export const home: HomeHelper = Object.assign(
       },
     }),
     raw: (config: string): Fragment => ({ homeManager: { __raw: [config] } }),
+    wsl: {
+      gitCredentialManager: (opts: HomeWslGitCredentialManagerOpts = {}): Fragment => {
+        const shim = windowsBin("git-credential-manager", opts.paths ?? GIT_CREDENTIAL_MANAGER_PATHS);
+        return {
+          homeManager: {
+            programs: {
+              git: {
+                enable: true,
+                settings: {
+                  credential: {
+                    helper: { __winixNixExpr: true, expr: `"\${${shim.expr}}/bin/git-credential-manager"` } as NixExpr,
+                  },
+                },
+              },
+            },
+          },
+        };
+      },
+    },
     activation: (name: string, opts: ActivationOpts): Fragment => {
       const after = opts.after ?? ["writeBoundary"];
       const afterList = after.map((s) => nixStringLiteral(s)).join(" ");
@@ -117,5 +159,25 @@ function homePathToNixString(path: string): string {
   if (path.startsWith("~/")) {
     return '"${config.home.homeDirectory}/' + escapeNixDoubleQuoted(path.slice(2)) + '"';
   }
+  if (path.startsWith("./") || path.startsWith("../")) {
+    return nixStringLiteral(configRelativePath(path));
+  }
   return nixStringLiteral(path);
+}
+
+/**
+ * Resolve a "./" or "../" path against the directory holding winix.config.ts,
+ * matching how Windows file sources resolve. The result is an absolute POSIX
+ * path into the checkout, so out-of-store symlinks follow the working tree.
+ */
+function configRelativePath(path: string): string {
+  const configDir = getOptionalEvalContext()?.configDir;
+  if (!configDir) {
+    throw new Error(
+      `home.symlink("${path}"): config-relative paths need the config directory; ` +
+        "evaluate the workspace through the Winix CLI"
+    );
+  }
+  const base = configDir.replace(/\\/g, "/");
+  return pathPosix.normalize(pathPosix.join(base, path)).replace(/\/+$/, "");
 }

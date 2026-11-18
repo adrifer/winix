@@ -63,13 +63,16 @@ export function getOptionalEvalContext(): EvalContext | null {
 
 export function platform<T extends unknown[]>(
   id: string,
-  factory: (...args: T) => Fragment
+  factory: (...args: T) => Fragment,
+  options: { variant?: string } = {}
 ): PlatformFactory<T> {
+  const { variant } = options;
   const fn = ((...args: T): PlatformLazyFragment => {
     return {
       __lazy: true,
       __id: id,
       __platform: true,
+      ...(variant === undefined ? {} : { __variant: variant }),
       __resolve: () => {
         const result = factory(...args);
         return { ...result, __id: id, __platform: true };
@@ -78,7 +81,10 @@ export function platform<T extends unknown[]>(
   }) as PlatformFactory<T>;
 
   Object.defineProperty(fn, "isActive", {
-    get: () => getCtx().platform === id,
+    get: () => {
+      const ctx = getCtx();
+      return ctx.platform === id && (variant === undefined || ctx.variant === variant);
+    },
     configurable: true,
     enumerable: false,
   });
@@ -365,14 +371,16 @@ function normalizeRawModulePath(path: string): string {
 // --- Testing helper ---
 
 export function withContext<R>(
-  ctx: { platform: string; hostname?: string; features?: string[] },
+  ctx: { platform: string; variant?: string; hostname?: string; features?: string[]; configDir?: string },
   fn: () => R
 ): R {
   const prev = G.__winixEvalContext ?? null;
   G.__winixEvalContext = {
     platform: ctx.platform,
+    ...(ctx.variant === undefined ? {} : { variant: ctx.variant }),
     hostname: ctx.hostname ?? "test",
     activeIds: new Set(ctx.features ?? []),
+    ...(ctx.configDir === undefined ? {} : { configDir: ctx.configDir }),
   };
   try {
     return fn();

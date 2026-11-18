@@ -33,7 +33,7 @@ export default workspace({
   inputs,
 
   hosts: [
-    host("wsl", platforms.nixos({ stateVersion: "25.05" }), [
+    host("wsl", platforms.wsl({ stateVersion: "25.05" }), [
       linuxProfile(),
       wsl(),
     ]),

@@ -341,7 +341,7 @@ import {workspace,host,platforms} from ${JSON.stringify(sdk)};
 export default workspace({inputs:{},hosts:[host("desktop",platforms.windows(),({windows})=>{
   windows.package({id:"Microsoft.WSL",version:"3.0.5"}); windows.wsl();
   windows.wsl.distro("NixOS",{source:"nixos-wsl",installLocation:"C:/WSL/NixOS",setup:${JSON.stringify(setup)}});
-}),host("linux",platforms.nixos(),[{nixos:{users:{users:{alice:{isNormalUser:true}}}}}])]});`);
+}),host("linux",platforms.wsl({stateVersion:"25.05"}),[{nixos:{users:{users:{alice:{isNormalUser:true}}}}}])]});`);
       const image = (architecture: "x64" | "arm64") => ({
         source: "nixos-wsl" as const, architecture, version: "2605.7.2", sha256: "f".repeat(64),
         url: `https://github.com/nix-community/NixOS-WSL/releases/download/2605.7.2/${architecture === "x64" ? "nixos.wsl" : "nixos.aarch64.wsl"}`,

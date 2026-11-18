@@ -4,7 +4,10 @@
 // naming of the `nixos.*` / `darwin.*` namespaces. Additional helpers
 // (env, path, file, dsc, wsl, programs) land in follow-up milestones.
 
-import type { Fragment, ResourceHandle, ResourceRef } from "../core/types.ts";
+import type { Fragment, HostDef, ResourceHandle, ResourceRef } from "../core/types.ts";
+import type { AccountUserRef } from "./account.ts";
+import { getOptionalEvalContext } from "../sdk/index.ts";
+import { inferWslSetupRepository } from "./wsl-repository.ts";
 import { resolve, win32, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 import { powerShellLiteral as psSingleQuoted } from "./utils.ts";
@@ -110,8 +113,33 @@ export interface WinOptionalFeatureOpts {
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
-export interface WinWslDistroSpec extends Omit<WinWslDistro, "name" | "default"> {
+/**
+ * Authoring form of a distro's first-run `setup`. Accepts host/account values
+ * instead of matching strings, and `repository: "self"` to clone the
+ * checkout that holds winix.config.ts.
+ */
+export interface WinWslSetupSpec extends Omit<WinWslSetup, "repository" | "configDirectory" | "host" | "user"> {
+  /**
+   * HTTPS Git URL, or "self": use the tracked remote of the checkout holding
+   * winix.config.ts (SSH remotes are converted to HTTPS). With "self", `ref`
+   * defaults to the current upstream branch (or commit when detached) and
+   * `configDirectory` to the config's path within the repository.
+   */
+  repository: string;
+  /** Required unless `repository` is "self". */
+  configDirectory?: string;
+  /** Linux host to activate: its name, or the value returned by `host(...)`. */
+  host: string | HostDef;
+  /** Linux account: its name, or the factory returned by `account.user(...)`. */
+  user?: string | AccountUserRef;
+}
+
+export interface WinWslDistroSpec extends Omit<WinWslDistro, "name" | "default" | "host" | "setup" | "setupRefFromCheckout"> {
   default?: boolean;
+  /** Expected Linux hostname for adoption (a name or `host(...)` value); defaults to setup.host. */
+  host?: string | HostDef;
+  /** First-run setup for Winix-created distros; never run for adopted distros. */
+  setup?: WinWslSetupSpec;
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -1437,18 +1465,20 @@ export const windows: WindowsHelper = {
             (spec.default !== undefined && typeof spec.default !== "boolean")) {
           throw new Error("windows.wsl.distro requires source 'nixos-wsl', an absolute/environment/known-folder installLocation, and an optional boolean default");
         }
-        if (spec.host !== undefined && (typeof spec.host !== "string" ||
-            !/^[a-z0-9][a-z0-9._-]*$/i.test(spec.host))) {
+        const expectedHost = spec.host === undefined ? undefined : hostName(spec.host, "windows.wsl.distro host");
+        if (expectedHost !== undefined && !/^[a-z0-9][a-z0-9._-]*$/i.test(expectedHost)) {
           throw new Error("windows.wsl.distro host must be a valid expected Linux hostname");
         }
+        const setup = spec.setup === undefined ? undefined : resolveWslSetupSpec(spec.setup);
         return dscHandle(withDscMetadata(withDscToken({
           resourceType: POWERSHELL_SCRIPT_RESOURCE,
           name: `WSL distro ${name}`,
           dependsOn: resolveDependsOn(spec.dependsOn),
         }), { kind: "wsl-distro", distro: {
           name, source: spec.source, installLocation: spec.installLocation, default: spec.default ?? false,
-          ...(spec.host === undefined ? {} : { host: spec.host }),
-          ...(spec.setup === undefined ? {} : { setup: normalizeWslSetup(spec.setup) }),
+          ...(expectedHost === undefined ? {} : { host: expectedHost }),
+          ...(setup === undefined ? {} : { setup: setup.setup }),
+          ...(setup?.refFromCheckout ? { setupRefFromCheckout: true } : {}),
         } }));
       },
     },
@@ -1557,6 +1587,50 @@ export const windows: WindowsHelper = {
       dscHandle(normalizeFileRemove(target, opts)),
   },
 };
+
+function hostName(value: string | HostDef, label: string): string {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && typeof value.name === "string" && value.platform) return value.name;
+  throw new Error(`${label} must be a host name or a host(...) value`);
+}
+
+/**
+ * Resolve the authoring form of a WSL setup into its normalized, concrete
+ * shape. `repository: "self"` reads the config checkout (local Git only).
+ */
+export function resolveWslSetupSpec(spec: WinWslSetupSpec): { setup: WinWslSetup; refFromCheckout: boolean } {
+  if (!spec || typeof spec !== "object" || Array.isArray(spec)) {
+    throw new Error("windows.wsl.distro setup must be an object");
+  }
+  const host = hostName(spec.host, "WSL setup host");
+  let user: string | undefined;
+  if (spec.user === undefined || typeof spec.user === "string") user = spec.user;
+  else if ((typeof spec.user === "object" || typeof spec.user === "function") &&
+      spec.user.kind === "account.user" && typeof spec.user.name === "string") user = spec.user.name;
+  else throw new Error("WSL setup user must be a Linux account name or an account.user(...) value");
+  let { repository, ref, configDirectory } = spec;
+  let refFromCheckout = false;
+  if (repository === "self") {
+    const configDir = getOptionalEvalContext()?.configDir;
+    if (!configDir) {
+      throw new Error('WSL setup repository "self" needs the config directory; evaluate the workspace through the Winix CLI');
+    }
+    const inferred = inferWslSetupRepository(configDir);
+    repository = inferred.repository;
+    refFromCheckout = ref === undefined;
+    ref ??= inferred.ref;
+    configDirectory ??= inferred.configDirectory;
+  }
+  if (configDirectory === undefined) {
+    throw new Error('WSL setup configDirectory is required unless repository is "self"');
+  }
+  return {
+    setup: normalizeWslSetup({
+      ...spec, repository, ref, configDirectory, host, ...(user === undefined ? {} : { user }),
+    } as WinWslSetup),
+    refFromCheckout,
+  };
+}
 
 export function normalizeWslSetup(setup: WinWslSetup): WinWslSetup {
   if (!setup || typeof setup !== "object" || Array.isArray(setup)) {

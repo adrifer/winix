@@ -36,12 +36,22 @@ export const resolveWslRepository: WindowsWslRepositoryResolver = (repository, r
   if (/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(ref)) return ref;
   const refsToLookup = ref.startsWith("refs/") ? [ref, `${ref}^{}`] :
     ref === "HEAD" ? ["HEAD"] : [`refs/heads/${ref}`, `refs/tags/${ref}`, `refs/tags/${ref}^{}`];
-  const output = execFileSync("git", [
-    "ls-remote", "--exit-code", "--", repository, ...refsToLookup,
-  ], {
-    encoding: "utf8", timeout: 45000, stdio: ["ignore", "pipe", "pipe"],
-    env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "Never" },
-  });
+  let output: string;
+  try {
+    output = execFileSync("git", [
+      "ls-remote", "--exit-code", "--", repository, ...refsToLookup,
+    ], {
+      encoding: "utf8", timeout: 45000, stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "Never" },
+    });
+  } catch (error) {
+    const failure = error as { status?: number; stderr?: string | Buffer };
+    const detail = String(failure.stderr ?? "").trim().split(/\r?\n/)[0];
+    const reason = failure.status === 2
+      ? `ref "${ref}" was not found on the remote; push it or set setup.ref to a published branch, tag or commit`
+      : detail || (error as Error).message;
+    throw new Error(`Could not resolve WSL setup repository ${repository} at "${ref}": ${reason}`, { cause: error });
+  }
   const refs = new Map<string, string>();
   for (const line of output.trim().split(/\r?\n/)) {
     const [sha, name] = line.split(/\s+/);
@@ -54,12 +64,23 @@ export const resolveWslRepository: WindowsWslRepositoryResolver = (repository, r
   return [...revisions][0];
 };
 
-export function wslSetupPrelude(setup: WinWslSetup, pin: WindowsLockWslRepository): string[] {
+/**
+ * Fingerprint recorded when setup completes; a later mismatch refuses to touch
+ * the distro. A ref inferred from the config checkout's branch is excluded, so
+ * switching branches on Windows does not invalidate a completed setup.
+ */
+export function wslSetupFingerprint(setup: WinWslSetup, refFromCheckout = false): string {
+  // Keep the original key order: existing completion records hash `setup` as is.
+  const { ref: _ref, ...withoutRef } = setup;
+  return createHash("sha256").update(JSON.stringify(refFromCheckout ? withoutRef : setup)).digest("hex");
+}
+
+export function wslSetupPrelude(setup: WinWslSetup, pin: WindowsLockWslRepository, refFromCheckout = false): string[] {
   setup = normalizeWslSetup(setup);
   if (!validWslRepository(pin) || pin.repository !== setup.repository || pin.ref !== setup.ref) {
     throw new Error("Missing/mismatched WSL repository pin. Run winix update --windows wsl-setup.");
   }
-  const fingerprint = createHash("sha256").update(JSON.stringify(setup)).digest("hex");
+  const fingerprint = wslSetupFingerprint(setup, refFromCheckout);
   const request = Buffer.from(JSON.stringify({ setup, revision: pin.revision, fingerprint })).toString("base64");
   const standalone = standaloneRuntime();
   let launch: string[];

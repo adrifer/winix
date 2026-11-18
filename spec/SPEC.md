@@ -521,6 +521,8 @@ home.env({ EDITOR: "nvim", BROWSER: "wslview" })
 home.path("$HOME/.local/bin", "$HOME/go/bin")
 home.packages("neovim", "ripgrep")
 home.files({ ".zshenv": home.symlink("~/dotfiles/zsh/.zshenv") })
+home.configFiles({ nvim: home.symlink("../nvim/.config/nvim") })  // relative to winix.config.ts
+home.wsl.gitCredentialManager()                                   // WSL: Windows GCM shim
 home.configFile("nvim/init.lua", { text: "vim.o.number = true" })
 home.imports("inputs.hunk.homeManagerModules.default")
 home.activation("ensureNpmrc", { script: "mkdir -p \"$HOME/.config/npm\"" })
@@ -772,6 +774,51 @@ They depend on `Microsoft.PowerShell` when that
 package is declared. Registered repository discovery uses PowerShell 7 with PSResourceGet.
 Profile imports are separate from installation: an unversioned import still
 selects PowerShell's normal installed version, not necessarily the locked one.
+
+#### Hybrid Windows ↔ WSL
+
+- `platforms.wsl(opts)` is a NixOS platform variant: `platforms.nixos(opts)`
+  plus `imports = [ inputs.<input>.nixosModules.wsl ]` (input defaults to
+  `nixos-wsl`) and `wsl.enable = true`. The platform id stays `nixos`; the
+  evaluation context carries `variant: "wsl"`, so `platforms.nixos.isActive` is
+  true and `platforms.wsl.isActive` is true only on WSL hosts.
+- The Nix backend warns for any module import `inputs.<name>.…` whose input is
+  not declared by the workspace.
+- `evaluate(workspace, { configDir })` records the directory holding
+  winix.config.ts in the evaluation context. The CLI always passes it. It
+  enables `home.symlink("./…" | "../…")` (an absolute POSIX path resolved
+  against configDir at generation time, so out-of-store links follow the
+  checkout) and WSL setup `repository: "self"`. Both fail with an explicit
+  error when no configDir is known.
+- WSL distro `setup.host` / distro `host` accept a `HostDef`; `setup.user`
+  accepts an `AccountUserRef`. They normalize to names at evaluation time.
+- `setup.repository: "self"` runs local, read-only Git in configDir: the
+  repository root gives `configDirectory`. The current branch's configured
+  upstream (remote and merge ref) gives the repository and `ref`; otherwise
+  `origin` and the branch name. A detached HEAD gives the commit. The remote is
+  converted to HTTPS (scp/ssh forms, Azure DevOps SSH, userinfo stripped).
+  An inferred `ref` sets the internal `setupRefFromCheckout` marker and is
+  excluded from the completed-setup fingerprint. Explicit refs, and setups
+  that do not use `"self"`, keep the original fingerprint byte for byte.
+- Every check/apply validates each WSL setup against its Linux host offline,
+  using the same plan the first-run coordinator computes (host, NixOS-WSL
+  module, `system.stateVersion`, account selection, checkout inside home).
+  Architecture is checked against the host's own `nixpkgs.hostPlatform`. The
+  distro's actual architecture is checked again at setup.
+- After a Windows `switch`, the CLI prints, per distro, the command that
+  applies later Linux changes: `wsl.exe -d <distro> --cd <checkout>/<configDirectory>
+  -- <winix> switch --host <host>`. Here `<winix>` is `npm exec -- winix`, or the
+  standalone runtime path. Linux activation stays manual; there is no
+  `--with-wsl`.
+- `nix.wsl.windowsBin(name, paths)` emits `pkgs.writeShellScriptBin`. The shim
+  expands `%VAR%` paths through interop `cmd.exe` (run from its own
+  directory to avoid UNC working directories), converts them with `wslpath`
+  (`/bin/wslpath`, else PATH) and execs the first existing file, or exits 127
+  with the list it tried. Paths must be absolute or start with `%VAR%\` and
+  must not contain quotes or cmd metacharacters.
+- `home.wsl.gitCredentialManager({ paths? })` sets `programs.git.enable` and
+  `programs.git.settings.credential.helper` to such a shim. It defaults to Git
+  for Windows' ucrt64 and mingw64 GCM.
 
 Windows-side WSL provisioning uses `windows.optionalFeature(name,
 { enabled?, dependsOn? })`, `windows.wsl({ config?, backup?, force?, dependsOn? })`, and

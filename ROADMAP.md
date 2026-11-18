@@ -15,6 +15,17 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Hybrid Windows ↔ WSL authoring** — `platforms.wsl()` NixOS variant (module
+  import, `wsl.enable`, `platforms.wsl.isActive`); missing-input warnings for
+  module imports; WSL setup `host`/`user` take host and account values;
+  `repository: "self"` infers remote/branch/config directory from the checkout
+  with a branch-independent completion fingerprint; full offline setup-plan
+  validation on check/apply; config-relative `home.symlink("../…")`;
+  `nix.wsl.windowsBin()` interop shims and `home.wsl.gitCredentialManager()`;
+  post-switch Linux next-step commands. `switch --with-wsl` (driving Linux
+  activation from Windows) and a cross-side `winix status` remain deferred;
+  real first-run activation of a `"self"` setup is unverified.
+
 - **Workspace validation** — check flags wholly ignored fragments and validates
   WSL setup host/user targets offline. WSL account defaults now follow the
   merged NixOS config rather than the profile name.

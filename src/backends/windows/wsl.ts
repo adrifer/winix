@@ -220,7 +220,7 @@ export function wslDistroProperties(
   if (distro.setup) {
     const pin = repositories[wslRepositoryKey(distro.setup)];
     if (!pin) throw new Error("Missing WSL setup repository pin. Run winix update --windows wsl-setup.");
-    prelude.push(...wslSetupPrelude(distro.setup, pin));
+    prelude.push(...wslSetupPrelude(distro.setup, pin, distro.setupRefFromCheckout === true));
   }
   return {
     getScript: [

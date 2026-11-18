@@ -1,6 +1,6 @@
 // Evaluator: takes a workspace config, evaluates fragments per host, produces merged IR
 
-import type { Fragment, FragmentEntry, HostDef, LazyFragment, NixExpr, RawModuleRef, WorkspaceDef, EvalContext } from "../core/types.ts";
+import type { Fragment, FragmentEntry, HostDef, LazyFragment, NixExpr, RawModuleRef, WorkspaceDef, EvalContext, EvaluateOptions } from "../core/types.ts";
 import { setEvalContext, restoreEvalContext } from "../sdk/index.ts";
 import { nix } from "../helpers/nix.ts";
 import { powerShellRepositoryPolicyIdentity, validateWindowsPowerShellPolicy } from "../helpers/windows-repositories.ts";
@@ -20,24 +20,33 @@ export interface EvaluatedHost {
 /**
  * Evaluate a workspace: process each host's fragments and merge them.
  */
-export function evaluate(workspace: WorkspaceDef): EvaluatedHost[] {
-  return workspace.hosts.map((host) => evaluateHost(host));
+export function evaluate(workspace: WorkspaceDef, options: EvaluateOptions = {}): EvaluatedHost[] {
+  return workspace.hosts.map((host) => evaluateHost(host, options));
 }
 
-function evaluateHost(host: HostDef): EvaluatedHost {
+/** Build the evaluation context for one host. */
+export function hostEvalContext(
+  host: HostDef, activeIds: Set<string>, options: EvaluateOptions = {}
+): EvalContext {
+  return {
+    platform: host.platform.__id,
+    ...(host.platform.__variant === undefined ? {} : { variant: host.platform.__variant }),
+    hostname: host.name,
+    activeIds,
+    ...(options.configDir === undefined ? {} : { configDir: options.configDir }),
+  };
+}
+
+function evaluateHost(host: HostDef, options: EvaluateOptions): EvaluatedHost {
   // The platform is always host.platform (exactly one, guaranteed by type system)
   const platformEntry = host.platform;
   const allEntries: FragmentEntry[] = [platformEntry, ...host.fragments];
 
   const platformId = platformEntry.__id;
-  const activeIds = collectActiveIds(host);
+  const activeIds = collectActiveIds(host, options);
 
   // Pass 2: set context → resolve lazy fragments (now .isActive works)
-  const ctx: EvalContext = {
-    platform: platformId,
-    hostname: host.name,
-    activeIds,
-  };
+  const ctx = hostEvalContext(host, activeIds, options);
 
   const prevCtx = setEvalContext(ctx);
 
@@ -131,7 +140,7 @@ function isLazy(entry: unknown): entry is LazyFragment {
   return typeof entry === "object" && entry !== null && "__lazy" in entry && (entry as any).__lazy === true;
 }
 
-export function collectActiveIds(host: HostDef): Set<string> {
+export function collectActiveIds(host: HostDef, options: EvaluateOptions = {}): Set<string> {
   const activeIds = new Set<string>([host.platform.__id]);
   let previousSize = -1;
   let iterations = 0;
@@ -146,12 +155,7 @@ export function collectActiveIds(host: HostDef): Set<string> {
       );
     }
 
-    const ctx: EvalContext = {
-      platform: host.platform.__id,
-      hostname: host.name,
-      activeIds,
-    };
-    const prevCtx = setEvalContext(ctx);
+    const prevCtx = setEvalContext(hostEvalContext(host, activeIds, options));
     try {
       collectIds(host.platform, activeIds);
       for (const entry of host.fragments) {

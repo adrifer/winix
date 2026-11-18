@@ -111,6 +111,8 @@ export interface LazyFragment {
  */
 export interface PlatformLazyFragment extends LazyFragment {
   __platform: true;
+  /** Platform variant within the platform id (e.g. "wsl" for NixOS-WSL hosts). */
+  __variant?: string;
 }
 
 /**
@@ -169,6 +171,21 @@ export interface HostDef {
  */
 export interface EvalContext {
   platform: string;
+  /** Platform variant, e.g. "wsl" for `platforms.wsl()` hosts (platform stays "nixos"). */
+  variant?: string;
   hostname: string;
   activeIds: Set<string>;
+  /** Directory containing the evaluated winix.config.ts, when known. */
+  configDir?: string;
+}
+
+/**
+ * Options for evaluating a workspace.
+ */
+export interface EvaluateOptions {
+  /**
+   * Directory containing winix.config.ts. Enables config-relative helpers such
+   * as `home.symlink("../nvim")` and WSL setup `repository: "self"`.
+   */
+  configDir?: string;
 }

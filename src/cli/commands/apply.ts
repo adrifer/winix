@@ -63,7 +63,7 @@ export async function applyWorkspace(
   opts: ApplyOptions
 ): Promise<ApplyResult> {
   const { workspace, configDir } = await loadWorkspace(cwd);
-  const allHosts = evaluate(workspace);
+  const allHosts = evaluate(workspace, { configDir });
   let evaluated = allHosts;
 
   if (opts.host) {

@@ -2,8 +2,8 @@ import { analyzeWorkspace } from "../analysis.ts";
 import { loadWorkspace } from "../loader.ts";
 
 export async function inspect(cwd: string): Promise<void> {
-  const { workspace, configPath } = await loadWorkspace(cwd);
-  const analyses = analyzeWorkspace(workspace);
+  const { workspace, configPath, configDir } = await loadWorkspace(cwd);
+  const analyses = analyzeWorkspace(workspace, { configDir });
 
   console.log(`Config: ${configPath}`);
   console.log(`Hosts: ${analyses.length}`);

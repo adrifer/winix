@@ -1,6 +1,6 @@
 // Public API: what users import from "@adrifer/winix"
 
-export type { Fragment, ResourceHandle, FragmentFactory, PlatformFactory, ProfileFactory, LazyFragment, PlatformLazyFragment, FragmentEntry, FragmentResult, NixExpr, RawModuleRef, ImportRef, InputDef, InputWithOptions, WorkspaceDef, HostDef, EvalContext } from "./core/types.ts";
+export type { Fragment, ResourceHandle, FragmentFactory, PlatformFactory, ProfileFactory, LazyFragment, PlatformLazyFragment, FragmentEntry, FragmentResult, NixExpr, RawModuleRef, ImportRef, InputDef, InputWithOptions, WorkspaceDef, HostDef, EvalContext, EvaluateOptions } from "./core/types.ts";
 export type {
   Attrs,
   BootOptions,
@@ -85,6 +85,6 @@ export type { NixOutput } from "./backends/nix/index.ts";
 export { generateWindows, isWindowsHost } from "./backends/windows/index.ts";
 export type { WindowsOutput, WindowsHostOutput } from "./backends/windows/index.ts";
 export { account, darwin, home, nix, nixos, overlay, platforms, windows } from "./helpers/index.ts";
-export type { WinPowerShellModuleOpts, WinStartupCommandSpec, WinStartupNamespace, WinOptionalFeatureOpts, WinWslDistroSpec, WinWslOpts, WinWslNamespace } from "./helpers/index.ts";
+export type { WinPowerShellModuleOpts, WinStartupCommandSpec, WinStartupNamespace, WinOptionalFeatureOpts, WinWslDistroSpec, WinWslSetupSpec, WinWslOpts, WinWslNamespace } from "./helpers/index.ts";
 export type { WinWslConfig, WinWslDistro, WinWslSetup } from "./types/index.ts";
-export type { AccountGroupFactory, AccountGroupMember, AccountGroupOpts, AccountNamespace, AccountOpts, AccountUserFactory, AccountUserRef, ActivationOpts, BinaryReleaseArch, BinaryReleaseCompletions, BinaryReleaseFormat, BinaryReleaseMeta, BinaryReleaseOpts, BinaryReleasePlatform, DarwinHelper, DarwinPlatformOpts, DarwinProgramOptions, DarwinServiceOptions, HomeHelper, HomeProgramOptions, HomeServiceOptions, LaunchdHelper, NixNamespace, NixosHelper, NixosPlatformOpts, NixosProgramOptions, NixosServiceOptions, OverlayHelper, PkgHelper, PlatformsHelper, ScriptHelper, SysctlSettings, SystemdHelper, VirtualisationHelper, WindowsHelper, WindowsPlatformOpts, WinEnvNamespace, WinEnvOpts, WinEnvScope, WinFileEncoding, WinFileNamespace, WinFileOpts, WinPackageArg, WinPackageSpec, WinPathNamespace, WinRawCommandArg, WinRawCommandSpec, WinSettingOpts } from "./helpers/index.ts";
+export type { AccountGroupFactory, AccountGroupMember, AccountGroupOpts, AccountNamespace, AccountOpts, AccountUserFactory, AccountUserRef, ActivationOpts, BinaryReleaseArch, BinaryReleaseCompletions, BinaryReleaseFormat, BinaryReleaseMeta, BinaryReleaseOpts, BinaryReleasePlatform, DarwinHelper, DarwinPlatformOpts, DarwinProgramOptions, DarwinServiceOptions, HomeHelper, HomeProgramOptions, HomeServiceOptions, LaunchdHelper, NixNamespace, NixosHelper, NixosPlatformOpts, NixosProgramOptions, NixosServiceOptions, OverlayHelper, PkgHelper, PlatformsHelper, ScriptHelper, SysctlSettings, SystemdHelper, VirtualisationHelper, WindowsHelper, WindowsPlatformOpts, WslPlatformOpts, WinEnvNamespace, WinEnvOpts, WinEnvScope, WinFileEncoding, WinFileNamespace, WinFileOpts, WinPackageArg, WinPackageSpec, WinPathNamespace, WinRawCommandArg, WinRawCommandSpec, WinSettingOpts } from "./helpers/index.ts";

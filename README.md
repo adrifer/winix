@@ -418,6 +418,15 @@ const shell = feature("shell", ({ home, platforms }) =>
 );
 ```
 
+`platforms.wsl({ stateVersion, ... })` is NixOS running under WSL. It takes the
+same options as `platforms.nixos()`, imports the NixOS-WSL module and sets
+`wsl.enable`, so a WSL host needs no module boilerplate. Declare the input
+(`nixosWsl: input("github:nix-community/NixOS-WSL", { follows: { nixpkgs: "nixpkgs" } })`);
+`winix check` warns when an imported module's input is missing. Pass
+`input: "<name>"` if your NixOS-WSL input has another Nix name. A WSL host is
+still NixOS, so `platforms.nixos.isActive` stays true there and
+`platforms.wsl.isActive` tells WSL hosts apart.
+
 ### Account helpers
 
 `account.user()` wires together platform users and Home Manager users.
@@ -433,7 +442,7 @@ const adrifer = account.user("adrifer", () => ({
   wslDefault: true,
 }));
 
-host("wsl", platforms.nixos({ stateVersion: "25.05" }), [
+host("wsl", platforms.wsl({ stateVersion: "25.05" }), [
   adrifer(),
 ]);
 ```
@@ -451,7 +460,7 @@ nixos.users({ users: { root: { shell: nix.pkg("bash") } } })
 nixos.system({ stateVersion: "25.05" })
 
 home.program("zsh", { enableCompletion: true })
-home.configFiles({ nvim: home.symlink("~/dotfiles/nvim/.config/nvim") })
+home.configFiles({ nvim: home.symlink("../nvim/.config/nvim") })
 home.activation("ensureNpmrc", { script: "mkdir -p \"$HOME/.config/npm\"" })
 
 darwin.defaults({ dock: { autohide: true } })
@@ -829,13 +838,81 @@ and dependency authentication must already be available inside Linux; credential
 are never provisioned by this helper.
 
 The Linux host must explicitly enable NixOS-WSL, import its input module, declare
-`system.stateVersion`, and match the distro architecture. `user` selects an
+`system.stateVersion`, and match the distro architecture; `platforms.wsl({
+stateVersion })` does all of that. `user` selects an
 already-declared normal account, not a second account definition. Omit it when
 Home Manager or the sole normal account identifies the user unambiguously.
-`winix check` validates offline that `setup.host` names one NixOS host in the
-workspace and that an explicit `setup.user` is a normal account on that host.
+`winix check` (and every apply) validates the whole setup plan offline, before
+any distro exists: `setup.host` names one NixOS host, the NixOS-WSL module and
+`system.stateVersion` are declared, the account is a normal user on that host and
+the checkout stays inside its home. Errors name the Windows host and distro.
 Home Manager's username/home must agree with the selected account. `checkout`
 defaults to `<declared-home>/dotfiles` and must stay inside that home.
+
+#### Pair a Windows host with its WSL host
+
+Strings that must match across hosts drift. Hold the Linux host in a variable and
+pass values instead; `repository: "self"` reuses the checkout you run Winix from:
+
+```ts
+const alice = account.user("alice", () => ({ admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }));
+
+const wslWork = host("wsl-work", platforms.wsl({ stateVersion: "25.05" }), [alice(), devTools()]);
+
+const desktop = host("DESKTOP", platforms.windows(), ({ windows }) => {
+  windows.wsl();
+  windows.wsl.distro("NixOS", {
+    source: "nixos-wsl",
+    installLocation: windows.knownFolder.localAppData("Winix\\WSL\\NixOS"),
+    default: true,
+    setup: { repository: "self", host: wslWork, user: alice },
+  });
+});
+
+export default workspace({ inputs, hosts: [desktop, wslWork] });
+```
+
+- `host` accepts the value returned by `host(...)` (or its name), and `user`
+  the `account.user(...)` factory (or its name). A distro's adoption `host`
+  accepts a host value too.
+- `repository: "self"` reads the Git checkout holding `winix.config.ts` (local
+  Git only): the current branch's tracked remote (else `origin`; SSH remotes
+  such as `git@github.com:me/dotfiles.git` become HTTPS), its upstream branch as
+  `ref` (the commit when detached) and the config's path as `configDirectory`.
+  The commit is still pinned in `wslRepositories`; push the branch first, since
+  the pin is resolved on the remote. An inferred `ref` is left out of the
+  completed-setup fingerprint, so switching branches on Windows never trips the
+  "settings changed" guard on finished distros. Any other change to a setup
+  declaration, including moving to `"self"` without the same explicit `ref`,
+  still changes the fingerprint, and completed distros then refuse activation.
+  Keep the existing `ref` and `checkout` explicit when migrating machines that
+  were already provisioned.
+- After `winix switch` on Windows, Winix prints how to apply later Linux changes
+  in each distro, e.g. `wsl.exe -d NixOS --cd /home/alice/dotfiles/winix --
+  npm exec -- winix switch --host wsl-work`.
+
+#### Reach Windows from WSL
+
+Avoid hard-coding the Windows user or drive in Linux config. These helpers find
+Windows programs through interop each time they run:
+
+```ts
+feature("windows-interop", ({ home }) => {
+  // bin/code-insiders runs the Windows VS Code Insiders CLI.
+  home.packages(nix.wsl.windowsBin("code-insiders",
+    "%LOCALAPPDATA%\\Programs\\Microsoft VS Code Insiders\\bin\\code-insiders"));
+  // git uses Git for Windows' Credential Manager.
+  home.wsl.gitCredentialManager();
+});
+```
+
+`nix.wsl.windowsBin(name, paths)` builds a package whose `bin/<name>` runs the
+first existing path from a list. Paths are absolute (`C:\...`) or start with an
+environment variable (`%LOCALAPPDATA%\...`); variables are expanded with
+`cmd.exe` and converted with `wslpath`, which costs about 50ms per run. The shim exits 127
+with the paths it tried when none exist. `home.wsl.gitCredentialManager({ paths? })`
+enables `programs.git` and points `credential.helper` at such a shim for Git for
+Windows' ucrt64/mingw64 GCM.
 
 First apply locks the repository ref (default `HEAD`) to a commit in
 `wslRepositories`. `winix update --windows wsl-setup` refreshes these pins;

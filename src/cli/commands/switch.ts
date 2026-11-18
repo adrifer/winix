@@ -1,5 +1,9 @@
 import { hostname } from "node:os";
-import { join } from "node:path";
+import { join, posix } from "node:path";
+import type { WorkspaceDef } from "../../core/types.ts";
+import type { EvaluatedHost } from "../../evaluator/index.ts";
+import { windowsWslSetupTargets } from "../../backends/windows/wsl-setup-runtime.ts";
+import { standaloneRuntime } from "../../runtime.ts";
 import { createHash } from "node:crypto";
 import type { WindowsOptions } from "../../types/index.ts";
 import {
@@ -33,7 +37,7 @@ interface SwitchOptions {
 
 export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<void> {
   const { workspace, configDir } = await loadWorkspace(cwd);
-  const evaluated = evaluate(workspace);
+  const evaluated = evaluate(workspace, { configDir });
   const hostName = selectHost(evaluated.map((host) => host.name), opts.host);
   const selected = evaluated.find((host) => host.name === hostName);
   if (!selected) throw new Error(`Host "${hostName}" not found`);
@@ -175,6 +179,40 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
   };
   if (statePath) await withWindowsStateLock(statePath, opts.dry, performSwitch);
   else await performSwitch();
+  if (platform === "windows") {
+    for (const line of wslNextSteps(workspace, evaluated, selected)) console.log(line);
+  }
+}
+
+/**
+ * The Linux side of a Windows host's WSL distros is activated separately.
+ * Tell the user exactly how, using the setup plan when there is one.
+ */
+export function wslNextSteps(
+  workspace: WorkspaceDef, evaluated: EvaluatedHost[], windowsHost: EvaluatedHost,
+): string[] {
+  const distros = ((windowsHost.windows as WindowsOptions).dsc ?? [])
+    .flatMap((resource) => resource.winix?.kind === "wsl-distro" ? [resource.winix.distro] : []);
+  if (distros.length === 0) return [];
+  const planned = new Map(windowsWslSetupTargets(workspace, evaluated, [windowsHost]).map((target) => [target.distro, target]));
+  const standalone = standaloneRuntime();
+  const winix = standalone ? `/var/lib/winix/runtime/${standalone.version}/winix` : "npm exec -- winix";
+  const lines = ["", "WSL: Linux hosts are activated separately from Windows."];
+  for (const distro of distros) {
+    const target = planned.get(distro.name);
+    if (target) {
+      const directory = posix.join(target.plan.checkout, target.setup.configDirectory);
+      lines.push(
+        `  ${distro.name} → ${target.plan.host}: apply Linux changes inside the distro with`,
+        `    wsl.exe -d ${distro.name} --cd ${directory} -- ${winix} switch --host ${target.plan.host}`,
+      );
+    } else if (distro.host) {
+      lines.push(`  ${distro.name} → ${distro.host}: from the distro's checkout, run ${winix} switch --host ${distro.host}`);
+    } else {
+      lines.push(`  ${distro.name}: Linux activation is manual (no setup declared)`);
+    }
+  }
+  return lines;
 }
 
 export function selectHost(
