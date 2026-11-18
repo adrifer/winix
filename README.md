@@ -646,8 +646,8 @@ replace existing pins. Network access is still needed for installation.
 
 `windows.powershell.module(name, { repository?, prerelease?, dependsOn? })` defaults to
 the host repository policy, otherwise PSGallery, selects stable releases, and installs the exact locked version for
-the current user. PowerShell 7 with PSResourceGet must already be available for
-resolution. Installation is idempotent and runs directly in DSC's
+the current user. Registered feeds are queried with PowerShell 7 and PSResourceGet.
+Installation is idempotent and runs directly in DSC's
 `Microsoft.DSC.Transitional/PowerShellScript` resource; a declared `Microsoft.PowerShell` package is an
 automatic dependency. Other versions are not removed. Profiles still import
 modules themselves; an unversioned `Import-Module` can load a newer installed
@@ -687,13 +687,16 @@ PowerShell installers, not raw commands, generic DSC, npm, NuGet, or WSL.
 Personal hosts without this feature retain PSGallery.
 Conflicting policies in one host fail instead of silently widening its allowlist.
 
-Named feeds use HTTPS URLs without embedded credentials. Version resolution
-registers a missing feed for the current user; activation also ensures registration
-before module installation. A same-name registration with a different URI is an
-error, never overwritten. Registration persists, but global priorities and permanent
-trust are unchanged. Authenticate separately using the organization's supported
-PSResourceGet setup; do not put secrets in config or locks. `--dry` does not write
-the lock or activate resources, but resolving missing versions can register a feed.
+Named feeds use HTTPS URLs without embedded credentials. Lock resolution reuses an
+existing registration only when its name and URI match. Otherwise, it queries the
+declared NuGet v3 feed's `PackageBaseAddress` anonymously, without following
+redirects. Feeds that require authentication or do not expose this v3 endpoint
+need a matching registration configured separately through PSResourceGet.
+PSGallery uses its public v2 endpoint if no matching registration exists.
+Lock resolution never creates or modifies registrations, including during `--dry`.
+Activation ensures registration before module installation and rejects a same-name
+registration with a different URI. Global priorities and permanent trust are
+unchanged. Do not put secrets in config or locks.
 Pins distinguish module name, repository name, and configured URI across hosts;
 a new source resolves its own pin. Existing matching installed versions are reused,
 not reinstalled to attest their original source. Settings retains its existing

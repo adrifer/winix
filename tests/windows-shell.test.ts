@@ -186,37 +186,37 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
     expect(output).toContain("STABLE_MODULE_OK");
   });
 
-  it("adds pins without changing package pins, reuses them offline, and explicitly updates them", () => {
+  it("adds pins without changing package pins, reuses them offline, and explicitly updates them", async () => {
     const lock: WindowsLock = {
       ...emptyWindowsLock(),
       packages: { "Git.Git": { source: "winget", version: "2.0", resolvedAt: "old" } },
     };
     const resolve = vi.fn(() => "0.11.0");
-    const first = resolveWindowsModuleLockEntries(lock, [module], resolve);
+    const first = await resolveWindowsModuleLockEntries(lock, [module], resolve);
     expect(first.lock.modules?.["terminal-icons"]).toMatchObject({ repository: "PSGallery", version: "0.11.0" });
     expect(first.lock.packages).toEqual(lock.packages);
     expect(lock.modules).toBeUndefined();
     const offline = () => { throw new Error("must not query repository"); };
-    expect(resolveWindowsModuleLockEntries(first.lock, [module], offline, new Date(), true).lock).toBe(first.lock);
-    const next = resolveWindowsModuleLockEntries(first.lock, [module], () => "0.12.0");
+    expect((await resolveWindowsModuleLockEntries(first.lock, [module], offline, new Date(), true)).lock).toBe(first.lock);
+    const next = await resolveWindowsModuleLockEntries(first.lock, [module], async () => "0.12.0");
     expect(next.resolutions[0]).toMatchObject({ previousVersion: "0.11.0", version: "0.12.0", status: "updated" });
     const packageUpdate = resolveWindowsLockEntries(next.lock, [{ id: "Git.Git", source: "winget" }], () => "3.0");
     expect(packageUpdate.lock.modules).toEqual(next.lock.modules);
     expect(reconcileInlinePins(next.lock, hosts([])).modules).toEqual(next.lock.modules);
   });
 
-  it("rejects conflicting repositories within a host and pins new sources independently", () => {
+  it("rejects conflicting repositories within a host and pins new sources independently", async () => {
     expect(() => collectWindowsModules(hosts([
       windows.powershell.module("Terminal-Icons"),
       windows.powershell.module("terminal-icons", { repository: "Other" }),
     ]))).toThrow(/conflicting repositories/);
-    const changed = resolveWindowsModuleLockEntries(
+    const changed = await resolveWindowsModuleLockEntries(
       { ...emptyWindowsLock(), modules: { "terminal-icons": pin } },
       [{ ...module, repository: "Other" }], () => "0.12.0", new Date(), true
     );
     expect(changed.lock.modules?.["terminal-icons"]).toEqual(pin);
     expect(changed.lock.modules?.["terminal-icons@other"]?.version).toBe("0.12.0");
-    expect(() => resolveWindowsModuleLockEntries(emptyWindowsLock(), [module], () => "0.12.0-beta")).toThrow(/allowed version/);
+    await expect(resolveWindowsModuleLockEntries(emptyWindowsLock(), [module], () => "0.12.0-beta")).rejects.toThrow(/allowed version/);
   });
 
   describe("host PowerShell repository policy", () => {
@@ -245,12 +245,12 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
       }));
     }
 
-    it("applies after merging shared profile effects, without leaking into personal hosts", () => {
+    it("applies after merging shared profile effects, without leaking into personal hosts", async () => {
       const evaluated = workAndPersonal();
       const modules = collectWindowsModules(evaluated);
       expect(modules.size).toBe(4);
       const resolve = vi.fn(() => "0.11.0");
-      const { lock } = resolveWindowsModuleLockEntries(emptyWindowsLock(), modules.values(), resolve);
+      const { lock } = await resolveWindowsModuleLockEntries(emptyWindowsLock(), modules.values(), resolve);
       expect(resolve).toHaveBeenCalledWith("Terminal-Icons", "approved", uri, false);
       expect(resolve).toHaveBeenCalledWith("Microsoft.Windows.Settings", "approved", uri, true);
       const docs = generateWindows(evaluated, lock).hosts;
@@ -296,19 +296,19 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
 
     it("round-trips both source pins, reuses them offline, and does not reuse pins after a URI change", async () => {
       const modules = [...collectWindowsModules(workAndPersonal()).values()];
-      const { lock } = resolveWindowsModuleLockEntries(emptyWindowsLock(), modules, () => "0.11.0");
+      const { lock } = await resolveWindowsModuleLockEntries(emptyWindowsLock(), modules, () => "0.11.0");
       const dir = await mkdtemp(join(tmpdir(), "winix-source-lock-"));
       try {
         await writeFile(join(dir, "winix-windows.lock"), serializeWindowsLock(lock));
         const read = readWindowsLock(dir)!;
         expect(read).toEqual(lock);
         const offline = vi.fn(() => { throw new Error("offline"); });
-        expect(resolveWindowsModuleLockEntries(read, modules, offline, new Date(), true).changed).toBe(false);
+        expect((await resolveWindowsModuleLockEntries(read, modules, offline, new Date(), true)).changed).toBe(false);
         expect(offline).not.toHaveBeenCalled();
         const workModule = modules.find((module) => module.repository === "approved")!;
         const moved = { ...workModule, repositoryUri: "https://other.example.com/v3/index.json" };
         expect(windowsModuleKey(moved)).not.toBe(windowsModuleKey(workModule));
-        expect(() => resolveWindowsModuleLockEntries(read, [moved], offline, new Date(), true)).toThrow("offline");
+        await expect(resolveWindowsModuleLockEntries(read, [moved], offline, new Date(), true)).rejects.toThrow("offline");
         const badLock = structuredClone(lock);
         badLock.modules![windowsModuleKey(workModule)].repositoryUri = moved.repositoryUri;
         await writeFile(join(dir, "winix-windows.lock"), JSON.stringify(badLock));
@@ -346,9 +346,9 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
   `)).toContain("REPOSITORY_OK");
     });
 
-    it.skipIf(!hasPowerShell7)("installs only the exact Settings prerelease from the approved feed and reuses it", () => {
+    it.skipIf(!hasPowerShell7)("installs only the exact Settings prerelease from the approved feed and reuses it", async () => {
       const evaluated = workAndPersonal();
-      const { lock } = resolveWindowsModuleLockEntries(
+      const { lock } = await resolveWindowsModuleLockEntries(
         emptyWindowsLock(), collectWindowsModules(evaluated).values(),
         (name) => name === "Microsoft.Windows.Settings" ? "0.1.0-alpha.6" : "0.11.0"
       );
@@ -383,14 +383,103 @@ if ($script:installs -ne 1) { throw 'Settings installation was not idempotent' }
 `)).toContain("SETTINGS_REPOSITORY_OK");
     });
 
-    it("uses the same named feed and URI during version resolution, with no public fallback", () => {
-      expect(resolvePowerShellModuleVersion("Terminal-Icons", "approved", uri, (script) => {
-        expect(script).toContain("Register-PSResourceRepository -Name $repositoryName -Uri $repositoryUri");
+    const flat = "https://packages.example.com/powershell/v3/flat/";
+    const serviceIndex = { resources: [{ "@type": "PackageBaseAddress/3.0.0", "@id": flat }] };
+    const noRegistration = () => "null";
+    const noMutation = /(?:Register|Set|Unregister)-PSResourceRepository|Install-PSResource/;
+
+    it("resolves an unregistered policy feed anonymously by exact lowercased ID", async () => {
+      const run = vi.fn((script: string) => {
+        expect(script).not.toMatch(noMutation);
         expect(script).toContain(uri);
-        expect(script).toContain("Find-PSResource -Name 'Terminal-Icons' -Repository 'approved'");
         expect(script).not.toContain("PSGallery");
-        return '"0.11.0"';
-      })).toBe("0.11.0");
+        return "null";
+      });
+      const fetchFeed = vi.fn<typeof fetch>()
+        .mockResolvedValueOnce(Response.json(serviceIndex))
+        .mockResolvedValueOnce(Response.json({ versions: ["0.9.0", "0.12.0-beta", "0.11.0"] }));
+      await expect(resolvePowerShellModuleVersion("Terminal-Icons", "approved", uri, false, { run, fetch: fetchFeed })).resolves.toBe("0.11.0");
+      expect(run).toHaveBeenCalledTimes(1);
+      expect(fetchFeed.mock.calls.map(([url]) => url)).toEqual([uri, `${flat}terminal-icons/index.json`]);
+      for (const [, options] of fetchFeed.mock.calls) {
+        expect(options).toMatchObject({ credentials: "omit", redirect: "manual", headers: { Accept: "application/json" } });
+      }
+    });
+
+    it.skipIf(!hasPowerShell7)("reuses only a matching registration and never initializes a missing store", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "winix-resolver-store-"));
+      const store = join(dir, "PSResourceRepository.xml");
+      try {
+        const run = (script: string) => {
+          expect(script).not.toMatch(noMutation);
+          return runPowerShell7(`
+function Get-PSResourceRepository {
+  [CmdletBinding()] param()
+  if (-not (Test-Path -LiteralPath ${powerShellLiteral(store)})) { throw 'Tried to initialize the store' }
+  [pscustomobject]@{ Name = 'APPROVED'; Uri = [uri]'https://unrelated.example.com/v3/index.json' }
+  [pscustomobject]@{ Name = 'APPROVED2'; Uri = [uri]'${uri}/' }
+}
+function Find-PSResource {
+  [CmdletBinding()] param([string]$Name, [string]$Repository, [switch]$Prerelease)
+  if ($Repository -cne 'approved2' -or -not $Prerelease) { throw 'Wrong module source or options' }
+  [pscustomobject]@{ Name = 'TERMINAL-ICONS'; Version = [version]'0.11.0'; Prerelease = 'beta.2' }
+}
+${script.replace(/^\$store = .*$/m, () => `$store = ${powerShellLiteral(store)}`)}
+`);
+        };
+        const fetchFeed = vi.fn<typeof fetch>()
+          .mockImplementation(async (url) => Response.json(url === uri ? serviceIndex : { versions: ["0.10.0"] }));
+        await expect(resolvePowerShellModuleVersion("Terminal-Icons", "approved2", uri, true, { run, fetch: fetchFeed })).resolves.toBe("0.10.0");
+        await expect(readFile(store)).rejects.toMatchObject({ code: "ENOENT" });
+        await writeFile(store, "<configuration/>");
+        await expect(resolvePowerShellModuleVersion("Terminal-Icons", "approved", uri, true, { run, fetch: fetchFeed })).resolves.toBe("0.10.0");
+        fetchFeed.mockClear();
+        await expect(resolvePowerShellModuleVersion("Terminal-Icons", "approved2", uri, true, { run, fetch: fetchFeed })).resolves.toBe("0.11.0-beta.2");
+        expect(fetchFeed).not.toHaveBeenCalled();
+        expect(await readFile(store, "utf8")).toBe("<configuration/>");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    it.each([
+      [false, ["0.9.0", "0.10.0.1", "0.10.0", "0.11.0-beta"], "0.10.0.1"],
+      [true, ["0.11.0-beta.9", "0.10.0", "0.11.0-beta.10", "0.11.0-beta.2"], "0.11.0-beta.10"],
+      [true, ["0.11.0-rc", "0.11.0", "0.11.0-beta"], "0.11.0"],
+    ])("chooses the newest allowed NuGet version (prerelease: %s)", async (prerelease, versions, expected) => {
+      const fetchFeed = vi.fn<typeof fetch>()
+        .mockResolvedValueOnce(Response.json(serviceIndex))
+        .mockResolvedValueOnce(Response.json({ versions }));
+      await expect(resolvePowerShellModuleVersion("Terminal-Icons", "approved", uri, prerelease, { run: noRegistration, fetch: fetchFeed })).resolves.toBe(expected);
+    });
+
+    it.each([
+      [Response.json({ versions: ["1.0.0+build"] }), "valid module versions"],
+      [Response.json({ versions: ["1.0.0-preview"] }), "no stable module releases"],
+      [new Response("", { status: 503 }), "HTTP 503"],
+    ])("reports feed failures with the module and source", async (response, reason) => {
+      const fetchFeed = vi.fn<typeof fetch>()
+        .mockResolvedValueOnce(Response.json(serviceIndex))
+        .mockResolvedValueOnce(response);
+      const result = resolvePowerShellModuleVersion("Terminal-Icons", "approved", uri, false, { run: noRegistration, fetch: fetchFeed });
+      await expect(result).rejects.toThrow(`"Terminal-Icons" from "approved" (${uri})`);
+      await expect(result).rejects.toThrow(reason);
+    });
+
+    it("reports network failures and rejects unsafe resource URLs or redirects without following them", async () => {
+      for (const [response, reason] of [
+        [Response.json({ resources: [{ "@type": "PackageBaseAddress/3.0.0", "@id": "http://insecure.example.com/v3" }] }), "HTTPS without"],
+        [Response.redirect("http://insecure.example.com/v3"), "HTTP 302"],
+        [undefined, "network unavailable"],
+      ] as const) {
+        const fetchFeed = vi.fn<typeof fetch>();
+        if (response) fetchFeed.mockResolvedValueOnce(response);
+        else fetchFeed.mockRejectedValueOnce(new Error(reason));
+        const result = resolvePowerShellModuleVersion("Terminal-Icons", "approved", uri, false, { run: noRegistration, fetch: fetchFeed });
+        await expect(result).rejects.toThrow(`"Terminal-Icons" from "approved" (${uri})`);
+        await expect(result).rejects.toThrow(reason);
+        expect(fetchFeed).toHaveBeenCalledTimes(1);
+      }
     });
   });
 
@@ -409,28 +498,58 @@ if ($script:installs -ne 1) { throw 'Settings installation was not idempotent' }
     }
   });
 
-  it("resolves stable Gallery versions through structured output and surfaces errors", () => {
-    expect(resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", (script) => {
+  it("resolves stable Gallery versions through structured output and surfaces errors", async () => {
+    await expect(resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", undefined, false, { run: (script) => {
       expect(script).toContain("Find-PSResource -Name 'Terminal-Icons' -Repository 'PSGallery'");
       expect(script).not.toContain("-Prerelease");
       return '"0.11.0"';
-    })).toBe("0.11.0");
+    } })).resolves.toBe("0.11.0");
     for (const result of ['"0.12.0-beta"', "warning\n0.11.0", '""']) {
-      expect(() => resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", () => result)).toThrow(/Failed to resolve/);
+      await expect(resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", undefined, false, { run: () => result })).rejects.toThrow(/Failed to resolve/);
     }
-    expect(() => resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", () => {
+    await expect(resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", undefined, false, { run: () => {
       throw new Error("network unavailable");
-    })).toThrow(/network unavailable/);
+    } })).rejects.toThrow(/network unavailable/);
+  });
+
+  it("surfaces the transport cause when a direct feed request fails", async () => {
+    const cause = Object.assign(new Error("sslv3 alert handshake failure\nstack detail"), { code: "ERR_SSL_SSLV3_ALERT_HANDSHAKE_FAILURE" });
+    await expect(resolvePowerShellModuleVersion("Terminal-Icons", "approved", "https://feed.example.com/v3/index.json", false, {
+      run: () => "null",
+      fetch: async () => { throw new TypeError("fetch failed", { cause }); },
+    })).rejects.toThrow(/https:\/\/feed\.example\.com\/v3\/index\.json failed \(fetch failed: ERR_SSL_SSLV3_ALERT_HANDSHAKE_FAILURE: sslv3 alert handshake failure\)/);
+  });
+
+  it.skipIf(!hasPowerShell7)("queries the built-in Gallery v2 endpoint without creating a store", async () => {
+    const run = vi.fn((script: string) => {
+      expect(script).not.toMatch(/(?:Register|Set|Unregister)-PSResourceRepository|Install-PSResource/);
+      if (script.includes("Find-PSResource")) return "null";
+      return runPowerShell7(`
+function Invoke-WebRequest {
+  param([uri]$Uri, [int]$MaximumRedirection, [int]$TimeoutSec)
+  if ($Uri.Host -cne 'www.powershellgallery.com' -or
+      $Uri.AbsolutePath -cne '/api/v2/FindPackagesById()' -or
+      $Uri.Query -notlike '*IsLatestVersion*' -or $MaximumRedirection -ne 0) { throw 'Wrong Gallery query' }
+  @{ Content = @'
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices">
+  <entry><m:properties><d:Id>terminal-icons</d:Id><d:Version>0.11.0</d:Version></m:properties></entry>
+</feed>
+'@ }
+}
+${script}`);
+    });
+    await expect(resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", undefined, false, { run })).resolves.toBe("0.11.0");
+    expect(run).toHaveBeenCalledTimes(2);
   });
 
   it("resolves and round-trips prereleases only for modules that explicitly allow them", async () => {
     const prereleaseModule = { ...module, prerelease: true };
-    const version = resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", (script) => {
+    const version = await resolvePowerShellModuleVersion("Terminal-Icons", "PSGallery", undefined, true, { run: (script) => {
       expect(script).toContain("-Prerelease");
       expect(script).toContain("$version += '-' + $found[0].Prerelease");
       return '"0.12.0-beta.2"';
-    }, true);
-    const { lock } = resolveWindowsModuleLockEntries(emptyWindowsLock(), [prereleaseModule], () => version);
+    } });
+    const { lock } = await resolveWindowsModuleLockEntries(emptyWindowsLock(), [prereleaseModule], () => version);
     const directory = await mkdtemp(join(tmpdir(), "winix-module-prerelease-"));
     try {
       await writeFile(join(directory, "winix-windows.lock"), serializeWindowsLock(lock));
@@ -438,9 +557,9 @@ if ($script:installs -ne 1) { throw 'Settings installation was not idempotent' }
       const properties = powerShellModuleProperties(prereleaseModule, lock.modules!["terminal-icons"]);
       expect(properties.testScript).toContain("$prerelease = 'beta.2'");
       expect(properties.setScript).toContain("-Version $version -Repository 'PSGallery' -Prerelease");
-      expect(() => resolveWindowsModuleLockEntries(emptyWindowsLock(), [module], () => version)).toThrow("allowed version");
+      await expect(resolveWindowsModuleLockEntries(emptyWindowsLock(), [module], () => version)).rejects.toThrow("allowed version");
       const stable = vi.fn(() => "0.11.0");
-      expect(resolveWindowsModuleLockEntries(lock, [module], stable, new Date(), true).changed).toBe(true);
+      expect((await resolveWindowsModuleLockEntries(lock, [module], stable, new Date(), true)).changed).toBe(true);
       expect(stable).toHaveBeenCalledTimes(1);
     } finally { await rm(directory, { recursive: true, force: true }); }
   });

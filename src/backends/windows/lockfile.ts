@@ -52,7 +52,7 @@ export interface WindowsLockModule {
 
 export type WindowsModuleVersionResolver = (
   name: string, repository: string, repositoryUri?: string, prerelease?: boolean
-) => string;
+) => string | Promise<string>;
 
 export function windowsModuleKey(module: ResolvedPowerShellModule): string {
   const name = module.name.toLowerCase();
@@ -370,13 +370,13 @@ export function resolveWindowsWslRepositories(
   return { lock: changed ? { ...lock, generatedAt: now.toISOString(), wslRepositories: repositories } : lock, changed };
 }
 
-export function resolveWindowsModuleLockEntries(
+export async function resolveWindowsModuleLockEntries(
   lock: WindowsLock,
   modules: Iterable<ResolvedPowerShellModule>,
   resolveVersion: WindowsModuleVersionResolver,
   now = new Date(),
   missingOnly = false
-): { lock: WindowsLock; resolutions: Omit<WindowsLockResolution, "source">[]; changed: boolean } {
+): Promise<{ lock: WindowsLock; resolutions: Omit<WindowsLockResolution, "source">[]; changed: boolean }> {
   const next = { ...lock, modules: { ...lock.modules } };
   const resolutions: Omit<WindowsLockResolution, "source">[] = [];
   let changed = false;
@@ -386,9 +386,10 @@ export function resolveWindowsModuleLockEntries(
     if (missingOnly && previous) {
       continue;
     }
-    const version = resolveVersion(module.name, module.repository, module.repositoryUri, !!module.prerelease);
+    const version = await resolveVersion(module.name, module.repository, module.repositoryUri, !!module.prerelease);
     if (!powerShellModuleVersion.test(version) || (!module.prerelease && version.includes("-"))) {
-      throw new Error(`PowerShell module "${module.name}" resolver did not return an allowed version: ${version}`);
+      const source = module.repositoryUri ? ` (${module.repositoryUri})` : "";
+      throw new Error(`PowerShell module "${module.name}" resolver for "${module.repository}"${source} did not return an allowed version: ${version}`);
     }
     const unchanged = previous?.version === version &&
       previous.repository.toLowerCase() === module.repository.toLowerCase();

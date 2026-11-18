@@ -100,8 +100,10 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   targets, config-relative copy/symlink sources (including optional file URLs),
   and PowerShell 7 modules pinned alongside packages in `winix-windows.lock`.
 - **Host-scoped PowerShell feeds** — composable work-profile repository policy,
-  strict allowlists without public fallback, named HTTPS registration for resolution
-  and activation, Settings installer selection, and source-aware module pins.
+  strict allowlists without public fallback, named HTTPS registration during
+  activation, Settings installer selection, and source-aware module pins.
+- **Read-only PowerShell lock resolution** — reuse matching registrations or
+  query feeds directly, with no repository changes even on a dry run.
 - **PowerShell 7 execution** — file/PATH/module scripts use DSC's native
   PowerShellScript resource without a nested shell; raw command strings default
   to `pwsh`. Native Registry environment handling remains unchanged.

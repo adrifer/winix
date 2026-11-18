@@ -754,18 +754,22 @@ the same module. Conflicting sources within a host fail.
 host-scoped named HTTPS feeds and selection policy, resolved after fragment merge.
 Omitted module repositories and the automatic Settings installer inherit the
 default; explicit disallowed repositories fail without fallback. This does not
-govern raw/generic DSC commands or other package ecosystems. Named registrations
-are ensured for current-user resolution and as dependencies during activation.
-Conflicting existing registration URIs fail instead of being overwritten; global
-priorities and permanent trust are not changed. Resolution, including missing-pin
-resolution during `--dry`, can register feeds. Credentials stay in separately
-configured PSResourceGet authentication, never config URLs or locks.
+govern raw/generic DSC commands or other package ecosystems. Lock resolution
+queries an existing registration only if its name and URI match the policy;
+otherwise it reads the declared NuGet v3 `PackageBaseAddress` over HTTPS without
+credentials or redirects. Other feed protocols and authenticated feeds require
+a matching PSResourceGet registration. Built-in PSGallery can be queried directly
+over HTTPS using its public v2 API if no matching registration exists.
+Lock resolution never creates or modifies registrations, including during `--dry`.
+Activation ensures named registrations as module dependencies and fails on
+conflicting existing URIs rather than overwriting them. Global priorities and
+permanent trust are not changed. Credentials stay out of config URLs and locks.
 Conflicting policies in a single host fail rather than merging their allowlists.
 
 Module resources install only the locked version, retain other versions, and
 run get/test/set directly through `Microsoft.DSC.Transitional/PowerShellScript`.
 They depend on `Microsoft.PowerShell` when that
-package is declared. PowerShell 7 with PSResourceGet is a resolution prerequisite.
+package is declared. Registered repository discovery uses PowerShell 7 with PSResourceGet.
 Profile imports are separate from installation: an unversioned import still
 selects PowerShell's normal installed version, not necessarily the locked one.
 

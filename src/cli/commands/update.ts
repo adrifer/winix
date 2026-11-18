@@ -152,7 +152,7 @@ async function updateWindowsLock(cwd: string, opts: UpdateOptions): Promise<void
   const resolved = resolveWindowsLockEntries(lock, selected.values(), resolveVersion, now);
   lock = resolved.lock;
   changed = changed || resolved.changed;
-  const resolvedModules = resolveWindowsModuleLockEntries(
+  const resolvedModules = await resolveWindowsModuleLockEntries(
     lock, selectedModules, opts.resolveWindowsModuleVersion ?? resolvePowerShellModuleVersion, now
   );
   lock = resolvedModules.lock;

@@ -188,7 +188,7 @@ async function prepareWindowsLock(
     resolveVersion,
     now
   );
-  const modules = resolveWindowsModuleLockEntries(
+  const modules = await resolveWindowsModuleLockEntries(
     resolved.lock, collectWindowsModules(windowsHosts).values(), resolveModuleVersion, now, true
   );
   const images = hasWindowsWslDistros(windowsHosts)
