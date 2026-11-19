@@ -14,6 +14,12 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Merge fixes for Nix lists and tmpfiles** — array merges dedupe equal Nix
+  expressions (two `nix.pkg("icu")`); `winix check` explains that a list written
+  as one expression (`nix.withPkgs`) replaces the other and suggests an array;
+  `nixos.systemd.tmpfiles.link(path, target)` emits keyed
+  `systemd.tmpfiles.settings`, and raw `tmpfiles()` rules accept `nix.str`.
+
 - **Docs and agent experience** — task guides in `docs/guides` (cross-platform
   feature, pairing Windows and WSL, sharing git config, PowerShell and Terminal)
   built on the runnable, tested `examples/cross-platform`; README gets a Guides

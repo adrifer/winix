@@ -230,9 +230,8 @@ export function deepMerge(
 
     if (Array.isArray(sourceVal)) {
       if (Array.isArray(targetVal)) {
-        // Append + dedupe
-        const merged = [...targetVal, ...sourceVal];
-        result[key] = [...new Set(merged)];
+        // Append + dedupe (Nix expressions by their text, e.g. two nix.pkg("icu"))
+        result[key] = dedupe([...targetVal, ...sourceVal]);
       } else {
         result[key] = sourceVal;
       }
@@ -249,6 +248,16 @@ export function deepMerge(
   }
 
   return result;
+}
+
+function dedupe(values: unknown[]): unknown[] {
+  const seen = new Set<unknown>();
+  return values.filter((value) => {
+    const key = isNixExpr(value) ? `nix-expr:${value.expr}` : value;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function isPlainObject(val: unknown): val is Record<string, unknown> {

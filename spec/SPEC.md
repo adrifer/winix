@@ -477,7 +477,7 @@ cover common patterns; `.raw()` is reserved for raw Nix strings.
 ```ts
 nixos({ networking: { hostName: "wsl" } })
 nixos.imports("inputs.nixos-wsl.nixosModules.wsl")
-nixos.program("nix-ld", { libraries: nix.withPkgs(["icu", "zlib"]) })
+nixos.program("nix-ld", { libraries: [nix.pkg("icu"), nix.pkg("zlib")] })  // arrays append across features
 nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
 nixos.packages("ripgrep", "fd", "jq")
 nixos.nix({ gc: { automatic: true, dates: "weekly" } })
@@ -493,6 +493,7 @@ nixos.security({ rtkit: { enable: true } })
 nixos.virtualisation.ociContainer("demo", { image: "docker.io/library/nginx" })
 nixos.sysctl({ "fs.inotify.max_user_watches": 1048576 })
 nixos.systemd.service("backup", { script: nix.script`echo backup` })
+nixos.systemd.tmpfiles.link("/usr/bin/bash", "/run/current-system/sw/bin/bash")
 nixos.raw("environment.variables.FOO = \"bar\";")
 
 darwin({ homebrew: { enable: true } })

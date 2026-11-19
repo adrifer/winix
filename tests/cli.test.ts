@@ -159,6 +159,41 @@ describe("CLI analysis", () => {
     ]);
   });
 
+  it("hints at arrays when Nix list expressions replace each other", async () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl", nixos(), [
+          { nixos: { programs: { "nix-ld": { libraries: nix.withPkgs(["icu", "zlib"]) } } }, __id: "base" },
+          { nixos: { programs: { "nix-ld": { libraries: nix.withPkgs(["icu"]) } } }, __id: "dotnet" },
+          { nixos: { networking: { hostName: "first" } }, __id: "one" },
+          { nixos: { networking: { hostName: "second" } }, __id: "two" },
+        ]),
+      ],
+    });
+
+    const conflicts = detectConflicts(analyzeWorkspace(ws));
+    expect(conflicts.find((c) => c.path === "programs.nix-ld.libraries")?.hint)
+      .toContain('[nix.pkg("icu")]');
+    expect(conflicts.find((c) => c.path === "networking.hostName")?.hint).toBeUndefined();
+  });
+
+  it("appends package arrays and dedupes equal Nix expressions", () => {
+    const [evaluated] = evaluate(workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl", nixos(), [
+          { nixos: { programs: { "nix-ld": { libraries: [nix.pkg("icu"), nix.pkg("zlib")] } } } },
+          { nixos: { programs: { "nix-ld": { libraries: [nix.pkg("stdenv.cc.cc.lib"), nix.pkg("icu")] } } } },
+        ]),
+      ],
+    }));
+    const libraries = (evaluated.nixos as { programs: { "nix-ld": { libraries: { expr: string }[] } } })
+      .programs["nix-ld"].libraries;
+    expect(libraries.map((library) => library.expr))
+      .toEqual(["pkgs.icu", "pkgs.zlib", "pkgs.stdenv.cc.cc.lib"]);
+  });
+
   it("reports raw blocks, raw modules, and escape expressions before merge", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },

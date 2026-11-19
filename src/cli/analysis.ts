@@ -33,6 +33,16 @@ export interface Conflict {
   secondFragment: string;
   firstValue: string;
   secondValue: string;
+  /** How to make the definitions combine instead of replacing each other. */
+  hint?: string;
+}
+
+const NIX_LIST_EXPRESSION = /^\s*(with\s+pkgs\s*;\s*)?\[/;
+
+function isNixListExpression(value: unknown): boolean {
+  return typeof value === "object" && value !== null &&
+    (value as NixExpr).__winixNixExpr === true &&
+    NIX_LIST_EXPRESSION.test((value as NixExpr).expr);
 }
 
 export interface EscapeReportItem {
@@ -130,6 +140,12 @@ export function detectConflicts(analyses: HostAnalysis[]): Conflict[] {
               secondFragment: record.label,
               firstValue: previous.formatted,
               secondValue: formatted,
+              ...(isNixListExpression(previous.value) || isNixListExpression(leaf.value)
+                ? {
+                  hint: "A list written as one Nix expression (nix.withPkgs, nix.expr) replaces the other; " +
+                    "write an array such as [nix.pkg(\"icu\")] so definitions append.",
+                }
+                : {}),
             });
           } else if (!previous) {
             seen.set(key, { fragment: record.label, value: leaf.value, formatted });

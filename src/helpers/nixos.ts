@@ -1,6 +1,6 @@
 import { normalizeArgs } from "./utils.ts";
 import type { ProgramOptions, ServiceOptions } from "./options.ts";
-import type { Fragment } from "../core/types.ts";
+import type { Fragment, NixExpr } from "../core/types.ts";
 import type { BootOptions, EnvironmentOptions, FontsOptions, I18nOptions, NetworkingOptions, NixOptions, NixosOptions, NixosSecurityOptions, NixosSystemOptions, OciContainerOptions, PackageRef, SystemdOptions, SystemdService, SystemdTimer, TimeOptions, UsersOptions, VirtualisationOptions } from "../types/index.ts";
 
 export type SysctlSettings = Record<string, number | string | boolean>;
@@ -31,7 +31,37 @@ export interface SystemdHelper {
   service(name: string, config: SystemdService): Fragment;
   userService(name: string, config: SystemdService): Fragment;
   timer(name: string, config: SystemdTimer): Fragment;
-  tmpfiles(rules: string[]): Fragment;
+  tmpfiles: TmpfilesHelper;
+}
+
+export interface TmpfilesLinkOptions {
+  /** Replace whatever is at the path (`L+`, the default); `false` only creates a missing link (`L`). */
+  replace?: boolean;
+}
+
+export interface TmpfilesHelper {
+  /** Raw tmpfiles.d lines for `systemd.tmpfiles.rules`. */
+  (rules: (string | NixExpr)[]): Fragment;
+  /**
+   * Keep a symlink at `path` pointing to `target`, via
+   * `systemd.tmpfiles.settings.winix."<path>"."L+".argument`.
+   *
+   * @example nixos.systemd.tmpfiles.link("/usr/bin/bash", "/run/current-system/sw/bin/bash")
+   */
+  link(path: string, target: string | NixExpr, options?: TmpfilesLinkOptions): Fragment;
+}
+
+function tmpfilesLink(path: string, target: string | NixExpr, options: TmpfilesLinkOptions = {}): Fragment {
+  if (typeof path !== "string" || !path.startsWith("/") || /[\s]/.test(path)) {
+    throw new Error(`nixos.systemd.tmpfiles.link: path must be an absolute path without whitespace, got ${JSON.stringify(path)}`);
+  }
+  if (typeof target === "string" && (target === "" || /[\r\n]/.test(target))) {
+    throw new Error(`nixos.systemd.tmpfiles.link: target for ${path} must be a non-empty single line`);
+  }
+  const type = options.replace === false ? "L" : "L+";
+  return {
+    nixos: { systemd: { tmpfiles: { settings: { winix: { [path]: { [type]: { argument: target } } } } } } },
+  };
 }
 
 export interface NixosHelper {
@@ -156,9 +186,12 @@ export const nixos: NixosHelper = Object.assign(
         timer: (name: string, config: SystemdTimer): Fragment => ({
           nixos: { systemd: { timers: { [name]: config } } },
         }),
-        tmpfiles: (rules: string[]): Fragment => ({
-          nixos: { systemd: { tmpfiles: { rules } } },
-        }),
+        tmpfiles: Object.assign(
+          (rules: (string | NixExpr)[]): Fragment => ({
+            nixos: { systemd: { tmpfiles: { rules } } },
+          }),
+          { link: tmpfilesLink },
+        ),
       }
     ),
     raw: (config: string): Fragment => ({ nixos: { __raw: [config] } }),

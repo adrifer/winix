@@ -915,6 +915,29 @@ describe("curated helpers", () => {
     expect(hostNix).toContain('systemd.tmpfiles.rules = [ "d /srv/demo 0755 root root -" ];');
   });
 
+  it("nixos.systemd.tmpfiles.link() emits keyed symlink settings", () => {
+    const ws = workspace({
+      inputs: { nixpkgs: "nixos-unstable" },
+      hosts: [
+        host("wsl-work", nixos(), [
+          nixosHelpers.systemd.tmpfiles.link("/usr/bin/bash", "/run/current-system/sw/bin/bash"),
+          nixosHelpers.systemd.tmpfiles.link("/usr/local/bin/zsh", nix.pkgPath("zsh", "bin/zsh"), { replace: false }),
+          nixosHelpers.systemd.tmpfiles([nix.str`L+ /opt/sh - - - - ${nix.pkgPath("bash", "bin/sh")}`]),
+        ]),
+      ],
+    });
+
+    const [evaluated] = evaluate(ws);
+    const hostNix = generateNix(ws, [evaluated]).hosts["wsl-work.nix"];
+    expect(hostNix).toContain(
+      'systemd.tmpfiles.settings.winix."/usr/bin/bash"."L+".argument = "/run/current-system/sw/bin/bash";',
+    );
+    expect(hostNix).toContain('systemd.tmpfiles.settings.winix."/usr/local/bin/zsh".L.argument = "${pkgs.zsh}/bin/zsh";');
+    expect(hostNix).toContain('systemd.tmpfiles.rules = [ "L+ /opt/sh - - - - ${"${pkgs.bash}/bin/sh"}" ];');
+    expect(() => nixosHelpers.systemd.tmpfiles.link("usr/bin/bash", "/bin/bash")).toThrow("absolute path");
+    expect(() => nixosHelpers.systemd.tmpfiles.link("/usr/bin/bash", "")).toThrow("non-empty");
+  });
+
   it("darwin.defaults() emits system defaults", () => {
     const ws = workspace({
       inputs: { nixpkgs: "nixos-unstable" },

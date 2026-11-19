@@ -27,6 +27,9 @@ nixos.systemd.service("demo", { serviceConfig: { Type: "oneshot" }, script: "ech
 nixos.systemd.timer("demo", { wantedBy: ["timers.target"] });
 nixos.systemd.userService("demo", { description: "User Demo" });
 nixos.systemd.tmpfiles(["d /srv/demo 0755 root root -"]);
+nixos.systemd.tmpfiles([nix.str`L+ /opt/sh - - - - ${nix.pkgPath("bash", "bin/sh")}`]);
+nixos.systemd.tmpfiles.link("/usr/bin/bash", "/run/current-system/sw/bin/bash");
+nixos.systemd.tmpfiles.link("/usr/local/bin/zsh", nix.pkgPath("zsh", "bin/zsh"), { replace: false });
 
 // Fallback: unknown program name still works with Record<string, unknown>
 nixos.program("my-custom-program", { someSetting: true });

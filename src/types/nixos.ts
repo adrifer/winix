@@ -108,7 +108,7 @@ export interface SystemdTimer extends Record<string, unknown> {
 export interface SystemdOptions extends Record<string, unknown> {
   services?: Record<string, SystemdService>;
   timers?: Record<string, SystemdTimer>;
-  tmpfiles?: { rules?: string[] } & Record<string, unknown>;
+  tmpfiles?: { rules?: (string | NixExpr)[] } & Record<string, unknown>;
   mounts?: Record<string, unknown>[];
 }
 

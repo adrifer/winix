@@ -477,6 +477,7 @@ nixos.imports("inputs.nixos-wsl.nixosModules.wsl")
 nixos.networking({ hostName: "server", firewall: { allowedTCPPorts: [22, 443] } })
 nixos.service("openssh", { settings: { PermitRootLogin: "no" } })
 nixos.systemd.service("backup", { script: "echo backup" })
+nixos.systemd.tmpfiles.link("/usr/bin/bash", "/run/current-system/sw/bin/bash")
 nixos.users({ users: { root: { shell: nix.pkg("bash") } } })
 nixos.system({ stateVersion: "25.05" })
 

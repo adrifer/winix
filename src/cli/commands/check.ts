@@ -56,6 +56,7 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
           `${conflict.firstFragment} (${conflict.firstValue}) -> ` +
           `${conflict.secondFragment} (${conflict.secondValue})`
         );
+        if (conflict.hint) console.warn(`    ${conflict.hint}`);
       }
     }
 

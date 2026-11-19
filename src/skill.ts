@@ -189,7 +189,10 @@ const limits = feature("limits", () => ({
 \`\`\`
 
 Winix merges objects recursively, appends arrays, and uses the last value for
-scalar conflicts. Keep fragment ordering intentional.
+scalar conflicts. Keep fragment ordering intentional. A Nix expression is a
+scalar, so a list option several features add to (\\\`programs.nix-ld.libraries\\\`)
+should be an array such as \\\`[nix.pkg("icu"), nix.pkg("zlib")]\\\`, not
+\\\`nix.withPkgs([...])\\\`; equal \\\`nix.pkg()\\\` entries are deduped.
 
 Nix option keys pass through unchanged. Write the real Nix key, such as
 \`"experimental-features"\`, when an option uses punctuation. Winix does not
@@ -234,7 +237,10 @@ curated helpers are:
 - \`nixos.sysctl()\`
 - \`nixos.systemd()\`, \`nixos.systemd.service()\`,
   \`nixos.systemd.userService()\`, \`nixos.systemd.timer()\`, and
-  \`nixos.systemd.tmpfiles()\`
+  \`nixos.systemd.tmpfiles()\` (raw lines; strings or \`nix.str\`)
+- \`nixos.systemd.tmpfiles.link(path, target, { replace? })\` for a symlink, e.g.
+  \`link("/usr/bin/bash", "/run/current-system/sw/bin/bash")\`; it is keyed by
+  path, so two features linking one path show up as a conflict in \`winix check\`
 - \`nixos.raw()\` as a last-resort raw Nix escape hatch
 
 Mirror Nix's parent namespace rather than inventing aliases. For example, use
