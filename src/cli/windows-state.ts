@@ -226,15 +226,72 @@ async function saveState(path: string, state: AppliedState): Promise<void> {
   }
 }
 
-export async function withWindowsStateLock<T>(path: string, dry: boolean, action: () => Promise<T>): Promise<T> {
+const LOCK_OWNER = "owner.json";
+
+interface LockOwner {
+  pid: number;
+  startedAt: string;
+}
+
+/** Whether a process with this id exists (signal 0 only checks). */
+export function processAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // EPERM: it exists but belongs to someone else.
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+async function readLockOwner(lockPath: string): Promise<LockOwner | undefined> {
+  try {
+    const owner = JSON.parse(await readFile(join(lockPath, LOCK_OWNER), "utf8")) as Partial<LockOwner>;
+    return Number.isInteger(owner.pid) && typeof owner.startedAt === "string" ? owner as LockOwner : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Hold the applied-state lock (a directory, created atomically) while `action`
+ * runs. The lock records its process; a lock whose process has exited was left
+ * by an interrupted activation and is removed. The state file itself is only
+ * ever replaced atomically, so an interrupted activation leaves it consistent.
+ */
+export async function withWindowsStateLock<T>(
+  path: string, dry: boolean, action: () => Promise<T>, alive: (pid: number) => boolean = processAlive,
+): Promise<T> {
   const lockPath = `${path}.lock`;
   if (!dry) {
     await mkdir(dirname(path), { recursive: true });
-    try {
+    const acquire = async () => {
       await mkdir(lockPath);
+      const owner: LockOwner = { pid: process.pid, startedAt: new Date().toISOString() };
+      await writeFile(join(lockPath, LOCK_OWNER), JSON.stringify(owner) + "\n");
+    };
+    try {
+      await acquire();
     } catch (error) {
-      throw new Error(`Cannot lock Windows applied state at ${lockPath}. Another activation may be running; ` +
-        "after an interrupted activation, inspect the inventory before manually removing the stale lock.", { cause: error });
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      const owner = await readLockOwner(lockPath);
+      if (!owner) {
+        throw new Error(`Cannot lock Windows applied state at ${lockPath}: another activation may be running. ` +
+          "If none is (no winix, winget or dsc process), it is left over from an interrupted activation " +
+          "and safe to delete; the applied-state file is always written atomically.", { cause: error });
+      }
+      if (owner.pid !== process.pid && alive(owner.pid)) {
+        throw new Error(`Cannot lock Windows applied state: another activation is running ` +
+          `(process ${owner.pid}, started ${owner.startedAt}). Wait for it to finish.`, { cause: error });
+      }
+      console.warn(`Removing a stale Windows applied-state lock from an interrupted activation ` +
+        `(process ${owner.pid}, started ${owner.startedAt}, no longer running).`);
+      await rm(lockPath, { recursive: true, force: true });
+      try {
+        await acquire();
+      } catch (retry) {
+        throw new Error(`Cannot lock Windows applied state at ${lockPath}: another activation took the lock.`, { cause: retry });
+      }
     }
   }
   try {

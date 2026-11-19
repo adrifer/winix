@@ -10,8 +10,8 @@ import { wslDistroProperties } from "../src/backends/windows/wsl.ts";
 import { wslRepositoryKey } from "../src/backends/windows/wsl-setup.ts";
 import { unifiedDiff } from "../src/cli/diff.ts";
 import {
-  formatWindowsPlan, nativeWindowsPlanChecker, parseDscTestOutput, parseProbeOutput, parseRunningOutput,
-  planWindowsResources, type WindowsPlanChecker,
+  formatWindowsPlan, installElevation, nativeWindowsPlanChecker, parseDscTestOutput, parseProbeOutput, parseRunningOutput,
+  planWindowsResources, upgradeElevation, type WindowsPlanChecker,
 } from "../src/cli/windows-plan.ts";
 import { inspectResources, parsePackageInventory, type WindowsStateAdapter } from "../src/cli/windows-state.ts";
 import { lockGapWarnings } from "../src/cli/commands/check.ts";
@@ -209,6 +209,50 @@ describe("Windows plan", () => {
     const failing: WindowsPlanChecker = { ...checker, running: vi.fn(async () => { throw new Error("no pwsh"); }) };
     const quiet = await planWindowsResources(resources, inventory, failing);
     expect(quiet.some((entry) => entry.running)).toBe(false);
+  });
+
+  it("lists packages that will ask for UAC", async () => {
+    const resources = [pkg("Machine.Upgrade", "2.0"), pkg("User.Upgrade", "2.0"), pkg("Machine.Install", "1.0"), pkg("Same.App", "1.0")];
+    const inventory = new Map([
+      ["Machine.Upgrade", { version: "1.0" }], ["User.Upgrade", { version: "1.0" }], ["Machine.Install", null], ["Same.App", { version: "1.0" }],
+    ]);
+    const elevation = vi.fn(async () => new Map([
+      ["Machine.Upgrade", "installed machine-wide"], ["Machine.Install", "no per-user installer"],
+    ]));
+    const checker: WindowsPlanChecker = { scripts: vi.fn(async () => new Map()), dsc: vi.fn(async () => new Map()), elevation };
+    const planned = await planWindowsResources(resources, inventory, checker);
+    expect(elevation).toHaveBeenCalledWith([
+      { id: "Machine.Upgrade", source: "winget", action: "upgrade", version: "2.0" },
+      { id: "User.Upgrade", source: "winget", action: "upgrade", version: "2.0" },
+      { id: "Machine.Install", source: "winget", action: "install", version: "1.0" },
+    ]);
+    expect(formatWindowsPlan("desktop", planned, { live: true })).toContain(
+      "  ! 2 package(s) will ask for administrator approval (UAC); approve the prompt, or run switch from an elevated shell: " +
+      "Machine.Upgrade (installed machine-wide), Machine.Install (no per-user installer)");
+  });
+
+  it("reads installed scope and installer choice from winget output", () => {
+    const details = "Neovim [Neovim.Neovim]\r\nVersion: 0.12.6\r\nInstaller Category: msi\r\nInstalled Scope: Machine\r\n";
+    expect(upgradeElevation(details)).toBe("installed machine-wide");
+    expect(upgradeElevation(details.replace("Machine", "User"))).toBeUndefined();
+    expect(upgradeElevation("No installed package found matching input criteria.")).toBeUndefined();
+
+    const show = (url: string) => ({ code: 0, stdout: `Found x [X]\nInstaller Type: wix\nInstaller Url: ${url}\n` });
+    const none = { code: 2316632084, stdout: "No applicable installer found; see logs for more details.\n" };
+    expect(installElevation(show("https://e/x.msi"), none)).toBe("no per-user installer");
+    expect(installElevation(show("https://e/x.msi"), show("https://e/x.zip"))).toBe("winget picks its machine-wide installer");
+    expect(installElevation(show("https://e/x.zip"), show("https://e/x.zip"))).toBeUndefined();
+    // Unparseable output (another language, an error) reports nothing.
+    expect(installElevation({ code: 1, stdout: "Fehler" }, none)).toBeUndefined();
+  });
+
+  it.runIf(process.platform === "win32" && !!process.env.WINIX_WINGET_INTEGRATION)("asks winget about real packages", async () => {
+    const prompts = await nativeWindowsPlanChecker.elevation!([
+      { id: "Neovim.Neovim", source: "winget", action: "install" },
+      { id: "JesseDuffield.lazygit", source: "winget", action: "install" },
+    ]);
+    expect(prompts.get("Neovim.Neovim")).toBe("no per-user installer");
+    expect(prompts.has("JesseDuffield.lazygit")).toBe(false);
   });
 
   it("parses running-process probe output", () => {

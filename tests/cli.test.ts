@@ -1140,7 +1140,8 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
     const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async () => { activated = true; });
     const running = vi.fn(async (ids: string[]) => new Map(ids.includes("Example.App")
       ? [["Example.App", [{ name: "example.exe", pid: 7 }]]] : []));
-    const planChecker = { scripts: async () => new Map(), dsc: async () => new Map(), running };
+    const elevation = vi.fn(async () => new Map([["Example.App", "installed machine-wide"]]));
+    const planChecker = { scripts: async () => new Map(), dsc: async () => new Map(), running, elevation };
     try {
       await writeConfig(dir, 'host("desktop", platforms.windows(), [windows.package("Example.App"), windows.package("Current.App")])');
       await writeFile(join(dir, "winix-windows.lock"), JSON.stringify({
@@ -1167,6 +1168,10 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
       running.mockResolvedValue(new Map());
       await switchCommand(dir, { host: "desktop", dry: false, windowsState, planChecker });
       expect(runner).toHaveBeenCalledTimes(1);
+      expect(elevation).toHaveBeenLastCalledWith([{ id: "Example.App", source: "winget", action: "upgrade", version: "8" }]);
+      expect(log).toHaveBeenCalledWith(expect.stringContaining(
+        "Windows will ask for administrator approval (UAC) once; the switch waits until you answer"));
+      expect(log).toHaveBeenCalledWith(expect.stringContaining("  Example.App: installed machine-wide"));
     } finally {
       log.mockRestore(); runner.mockRestore();
       await rm(dir, { recursive: true, force: true });

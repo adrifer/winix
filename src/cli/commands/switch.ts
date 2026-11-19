@@ -14,8 +14,8 @@ import {
   type WindowsStateAdapter,
 } from "../windows-state.ts";
 import {
-  formatWindowsPlan, nativeWindowsPlanChecker, planWindowsResources, runningPackages, runningPackagesError,
-  type WindowsPlanChecker,
+  elevationNotice, elevationPrompts, formatWindowsPlan, nativeWindowsPlanChecker, planWindowsResources,
+  runningPackages, runningPackagesError, type ElevationRequest, type WindowsPlanChecker,
 } from "../windows-plan.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { loadWorkspace } from "../loader.ts";
@@ -158,12 +158,20 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         const tracked = managedWindowsResources(selected)
           .filter((resource) => resource.kind === "package" && !anyVersionPackages.has(resourceKey(resource)));
         const inventory = await inspectResources(adapter, tracked);
+        const declared = (selected.windows as WindowsOptions).packages ?? {};
         const upgrades: string[] = [];
+        const changes: ElevationRequest[] = [];
+        // Presence-only packages are only installed when missing.
+        for (const [id, snapshot] of packageInventory) {
+          if (snapshot === null && declared[id]?.anyVersion) changes.push({ id, source: declared[id].source, action: "install" });
+        }
         for (const resource of tracked) {
           if (resource.kind !== "package") continue;
           const key = resourceKey(resource);
           const current = inventory.get(key) ?? null;
-          if (current !== null) {
+          if (current === null) {
+            changes.push({ id: resource.id, source: resource.source, action: "install", version: activationVersions[key] });
+          } else {
             if (!("version" in current)) throw new Error(`Invalid package snapshot: ${resource.id}`);
             effectiveWindowsPackageVersion(resource.id, requirements[key], current.version);
             if (!requirements[key].exact && !unknownVersions.has(key) &&
@@ -175,13 +183,16 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
                 isComparableWindowsPackageVersion(activationVersions[key]) &&
                 compareWindowsPackageVersions(resource.id, current.version, activationVersions[key]) < 0) {
               upgrades.push(resource.id);
+              changes.push({ id: resource.id, source: resource.source, action: "upgrade", version: activationVersions[key] });
             }
           }
         }
-        const running = await runningPackages(
-          opts.planChecker ?? (opts.windowsState ? undefined : nativeWindowsPlanChecker), upgrades,
-        );
+        const checker = opts.planChecker ?? (opts.windowsState ? undefined : nativeWindowsPlanChecker);
+        const [running, prompts] = await Promise.all([
+          runningPackages(checker, upgrades), elevationPrompts(checker, changes),
+        ]);
         if (running.size > 0) throw new Error(runningPackagesError(running));
+        if (prompts.size > 0) console.log(elevationNotice(prompts));
       }
       if (windowsDry) return;
       await runCommand(command[0], command.slice(1), { dry: opts.dry });

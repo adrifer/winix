@@ -14,6 +14,12 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **UAC prompts and interrupted switches** — `winix plan` lists installs and
+  upgrades that will ask for administrator approval (machine-wide installs,
+  packages without a per-user installer), and `winix switch` names them before
+  it starts. The applied-state lock records its process, so a lock left by an
+  interrupted switch is removed automatically.
+
 - **Running apps block upgrades** — `winix plan` warns when a package it would
   upgrade is running from a winget portable install, and `winix switch` stops
   before applying until it is closed (winget cannot replace it in place, and the

@@ -1262,6 +1262,7 @@ Plan for desktop (checked against this machine):
   ? check    Enable Windows features Microsoft-Windows-Subsystem-Linux, VirtualMachinePlatform  (needs an elevated shell to check)
   = 31 unchanged (packages: 21, files: 4, settings: 2, ...)
   i 4 package(s) newer than locked; switch keeps them and offers to update the lock: Neovim.Neovim, ...
+  ! 2 package(s) will ask for administrator approval (UAC); approve the prompt, or run switch from an elevated shell: Git.Git (installed machine-wide), DEVCOM.JetBrainsMonoNerdFont (no per-user installer)
   ! JesseDuffield.lazygit is running (lazygit.exe, pid 12156); close it before switch: winget cannot upgrade a running portable app, and a failed upgrade can remove its command.
   ! Enable Windows features ... can require a Windows restart; Winix never restarts Windows.
   Summary: 20 to change, 2 not checked, 31 unchanged.
@@ -1284,6 +1285,19 @@ Would run: winget configure -f ...\configuration.winget --accept-configuration-a
   winget replaces those files in place, so an upgrade fails while one runs and
   can leave its command removed from `WinGet\Links`. The plan warns, and
   `winix switch` stops before applying anything until you close them.
+- Installs and upgrades that will ask for administrator approval (UAC) are
+  listed: upgrades keep the scope a package was installed with
+  (`winget list --details` reports `Installed Scope: Machine`), and installs use
+  whichever installer winget picks (compared with its per-user one).
+  `winix switch` names them again before it starts, because winget waits
+  silently until the prompt is answered and the prompt can open behind other
+  windows. To get per-user installers where packages offer them, set winget's
+  `installBehavior.preferences` (`"scope": "user"` and, since many manifests
+  declare no scope, `"installerTypes": ["portable", "zip"]`).
+- Switch holds a lock next to the applied-state file and records its process.
+  If a switch is interrupted (closed terminal, killed process), the next one
+  removes the lock once that process is gone; the state file is only ever
+  replaced atomically.
 - Machine checks need native Windows with `dsc` and PowerShell 7. Elsewhere (for
   example `plan` for a Windows host from WSL) it lists what the host declares.
 - It is also the drift check: anything changed outside Winix shows up as `~`.

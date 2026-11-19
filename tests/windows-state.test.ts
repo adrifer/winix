@@ -6,7 +6,7 @@ import { createInterface } from "node:readline/promises";
 import { describe, expect, it, vi } from "vitest";
 import {
   parseAppliedState, reconcileWindows, resourceKey, forgetWindowsResource, confirmWindowsRemovals, nativeWindowsStateAdapter,
-  listWindowsOwners, migrateWindowsOwner, windowsOwnerId,
+  listWindowsOwners, migrateWindowsOwner, windowsOwnerId, withWindowsStateLock, processAlive,
   type ManagedResource, type ResourceSnapshot,
 } from "../src/cli/windows-state.ts";
 import type { WindowsPackageRequirement } from "../src/cli/windows-package-versions.ts";
@@ -378,4 +378,47 @@ describe("Windows applied-state reconciliation", () => {
     await mkdir(f.statePath + ".lock");
     await expect(f.apply([])).rejects.toThrow("Cannot lock");
   }));
+});
+
+describe("applied-state lock", () => {
+  async function withDir(run: (path: string) => Promise<void>) {
+    const dir = await mkdtemp(join(tmpdir(), "winix-state-lock-"));
+    try { await run(join(dir, "applied.json")); } finally { await rm(dir, { recursive: true, force: true }); }
+  }
+  const owner = (pid: number) => JSON.stringify({ pid, startedAt: "2026-11-18T22:13:30.000Z" });
+
+  it("records its process and releases the lock", () => withDir(async (path) => {
+    await withWindowsStateLock(path, false, async () => {
+      expect(JSON.parse(await readFile(join(path + ".lock", "owner.json"), "utf8")).pid).toBe(process.pid);
+    });
+    await expect(readFile(join(path + ".lock", "owner.json"), "utf8")).rejects.toThrow();
+  }));
+
+  it("removes a lock whose process exited, and refuses a live one", () => withDir(async (path) => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await mkdir(path + ".lock");
+      await writeFile(join(path + ".lock", "owner.json"), owner(424242));
+      const action = vi.fn(async () => "done");
+      await expect(withWindowsStateLock(path, false, action, () => false)).resolves.toBe("done");
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("Removing a stale Windows applied-state lock"));
+
+      await mkdir(path + ".lock");
+      await writeFile(join(path + ".lock", "owner.json"), owner(424242));
+      await expect(withWindowsStateLock(path, false, action, () => true))
+        .rejects.toThrow("another activation is running (process 424242");
+      expect(action).toHaveBeenCalledTimes(1);
+    } finally { warn.mockRestore(); }
+  }));
+
+  it("explains a lock without an owner (from older versions) instead of guessing", () => withDir(async (path) => {
+    await mkdir(path + ".lock");
+    await expect(withWindowsStateLock(path, false, async () => {}, () => false))
+      .rejects.toThrow("safe to delete; the applied-state file is always written atomically");
+  }));
+
+  it("checks whether a process exists", () => {
+    expect(processAlive(process.pid)).toBe(true);
+    expect(processAlive(2 ** 30)).toBe(false);
+  });
 });

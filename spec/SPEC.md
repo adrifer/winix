@@ -1298,7 +1298,13 @@ the Windows drift check. Packages about to upgrade are matched against running
 processes from winget portable installs (`WinGet\Packages\<id>_*`, through
 `WinGet\Links`); the plan warns about them and a real switch stops before
 activation until they are closed, because winget cannot replace a running
-portable app and a failed upgrade removes its command link.
+portable app and a failed upgrade removes its command link. Installs and
+upgrades that will prompt for UAC are listed (upgrades: `Installed Scope:
+Machine` from `winget list --details`; installs: winget's chosen installer
+differs from its `--scope user` one, or there is none), and a real switch prints
+them before activation, since winget waits silently on the prompt. The
+applied-state lock records its process; a lock whose process has exited is
+removed by the next switch.
 
 Activation by platform:
 

@@ -16,6 +16,16 @@ export interface PlannedResource {
   detail?: string;
   /** Processes running from this package's portable install (upgrades only). */
   running?: RunningProcess[];
+  /** Why installing or upgrading this package will ask for administrator approval (UAC). */
+  elevation?: string;
+}
+
+export interface ElevationRequest {
+  id: string;
+  source: string;
+  action: "install" | "upgrade";
+  /** Version to install; omitted for presence-only packages. */
+  version?: string;
 }
 
 export interface RunningProcess {
@@ -37,6 +47,32 @@ export interface WindowsPlanChecker {
    * one fails and can leave its command link removed.
    */
   running?(packageIds: string[]): Promise<Map<string, RunningProcess[]>>;
+  /**
+   * Packages whose install or upgrade will ask for administrator approval
+   * (UAC), with the reason, keyed by package id. Upgrades keep the installed
+   * scope; installs use the installer winget picks.
+   */
+  elevation?(requests: ElevationRequest[]): Promise<Map<string, string>>;
+}
+
+/** Ask the checker which installs/upgrades will prompt for UAC; advisory, so failures report nothing. */
+export async function elevationPrompts(
+  checker: WindowsPlanChecker | undefined, requests: ElevationRequest[],
+): Promise<Map<string, string>> {
+  if (!checker?.elevation || requests.length === 0) return new Map();
+  try {
+    return await checker.elevation(requests);
+  } catch {
+    return new Map();
+  }
+}
+
+export function elevationNotice(prompts: Map<string, string>): string {
+  return [
+    `Windows will ask for administrator approval (UAC) ${prompts.size === 1 ? "once" : `${prompts.size} times`}; ` +
+      "the switch waits until you answer, and the prompt can open behind other windows (look for a flashing shield in the taskbar):",
+    ...[...prompts].map(([id, reason]) => `  ${id}: ${reason}`),
+  ].join("\n");
 }
 
 /** Ask the checker which packages are running; advisory, so failures report nothing. */
@@ -100,10 +136,21 @@ export async function planWindowsResources(
     return check.ok ? { resource, state: "ok", action: "keep" } : { resource, state: "change", action: "apply" };
   });
   const upgrades = planned.filter((entry) => entry.resource.package && entry.action === "upgrade");
-  const running = await runningPackages(checker, upgrades.map((entry) => entry.resource.package!.id));
+  const changing = planned.filter((entry) => entry.resource.package && (entry.action === "upgrade" || entry.action === "install"));
+  const [running, prompts] = await Promise.all([
+    runningPackages(checker, upgrades.map((entry) => entry.resource.package!.id)),
+    elevationPrompts(checker, changing.map((entry) => {
+      const pkg = entry.resource.package!;
+      return { id: pkg.id, source: pkg.source, action: entry.action as "install" | "upgrade", version: pkg.version };
+    })),
+  ]);
   for (const entry of upgrades) {
     const processes = running.get(entry.resource.package!.id);
     if (processes?.length) entry.running = processes;
+  }
+  for (const entry of changing) {
+    const reason = prompts.get(entry.resource.package!.id);
+    if (reason) entry.elevation = reason;
   }
   return planned;
 }
@@ -180,6 +227,11 @@ export function formatWindowsPlan(
   if (elevated.length > 0) {
     lines.push(`  ! ${elevated.length} ${opts.live ? "change(s)" : "resource(s)"} run elevated; run switch from an elevated shell: ` +
       elevated.map((entry) => entry.resource.package?.id ?? entry.resource.label).join(", "));
+  }
+  const prompting = pending.filter((entry) => entry.elevation);
+  if (prompting.length > 0) {
+    lines.push(`  ! ${prompting.length} package(s) will ask for administrator approval (UAC); approve the prompt, or run switch from an elevated shell: ` +
+      prompting.map((entry) => `${entry.resource.package!.id} (${entry.elevation})`).join(", "));
   }
   for (const entry of pending.filter((candidate) => candidate.running?.length)) {
     lines.push(`  ! ${entry.resource.package!.id} is running (${describeRunning(entry.running!)}); close it before switch: ` +
@@ -274,7 +326,64 @@ export const nativeWindowsPlanChecker: WindowsPlanChecker = {
     ], Buffer.from(JSON.stringify(packageIds)).toString("base64"), 60000);
     return parseRunningOutput(output);
   },
+  async elevation(requests) {
+    const prompts = new Map<string, string>();
+    // winget serializes its own work; ask one package at a time.
+    for (const request of requests) {
+      const reason = request.action === "upgrade"
+        ? upgradeElevation((await runWinget(["list", "--id", request.id, "--exact", "--details", "--source", request.source])).stdout)
+        : installElevation(
+          await runWinget(showArgs(request)),
+          await runWinget([...showArgs(request), "--scope", "user"]),
+        );
+      if (reason) prompts.set(request.id, reason);
+    }
+    return prompts;
+  },
 };
+
+function showArgs(request: ElevationRequest): string[] {
+  return ["show", "--id", request.id, "--exact", "--source", request.source,
+    ...(request.version ? ["--version", request.version] : [])];
+}
+
+async function runWinget(args: string[]): Promise<{ code: number | null; stdout: string }> {
+  return run("winget", [...args, "--disable-interactivity", "--accept-source-agreements"], 120000);
+}
+
+/** Upgrades keep the installed scope, so a machine-wide install asks for UAC again. */
+export function upgradeElevation(listDetails: string): string | undefined {
+  const scope = /^\s*Installed Scope:\s*(\S+)/m.exec(listDetails)?.[1];
+  return scope?.toLowerCase() === "machine" ? "installed machine-wide" : undefined;
+}
+
+/**
+ * Installs use the installer winget picks; compare it with the per-user one.
+ * `show` output without an installer line (another language, an error) reports nothing.
+ */
+export function installElevation(
+  chosen: { code: number | null; stdout: string }, user: { code: number | null; stdout: string },
+): string | undefined {
+  const url = (output: string) => /^\s*Installer Url:\s*(\S+)/m.exec(output)?.[1];
+  const chosenUrl = url(chosen.stdout);
+  if (!chosenUrl) return undefined;
+  const userUrl = url(user.stdout);
+  if (!userUrl) return /No applicable installer/i.test(user.stdout) ? "no per-user installer" : undefined;
+  return userUrl === chosenUrl ? undefined : "winget picks its machine-wide installer";
+}
+
+/** Run a command to completion, resolving its exit code and stdout. */
+function run(command: string, args: string[], timeout: number): Promise<{ code: number | null; stdout: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+    let stdout = "";
+    const timer = setTimeout(() => { child.kill(); reject(new Error(`${command} timed out`)); }, timeout);
+    child.stdout.setEncoding("utf8").on("data", (chunk: string) => { stdout += chunk; });
+    child.stderr.resume();
+    child.on("error", (error) => { clearTimeout(timer); reject(error); });
+    child.on("close", (code) => { clearTimeout(timer); resolve({ code, stdout }); });
+  });
+}
 
 const RUNNING_MARKER = "WINIX-RUNNING:";
 
