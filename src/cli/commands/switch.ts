@@ -14,7 +14,8 @@ import {
   type WindowsStateAdapter,
 } from "../windows-state.ts";
 import {
-  formatWindowsPlan, nativeWindowsPlanChecker, planWindowsResources, type WindowsPlanChecker,
+  formatWindowsPlan, nativeWindowsPlanChecker, planWindowsResources, runningPackages, runningPackagesError,
+  type WindowsPlanChecker,
 } from "../windows-plan.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { loadWorkspace } from "../loader.ts";
@@ -157,6 +158,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         const tracked = managedWindowsResources(selected)
           .filter((resource) => resource.kind === "package" && !anyVersionPackages.has(resourceKey(resource)));
         const inventory = await inspectResources(adapter, tracked);
+        const upgrades: string[] = [];
         for (const resource of tracked) {
           if (resource.kind !== "package") continue;
           const key = resourceKey(resource);
@@ -169,8 +171,17 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
                 compareWindowsPackageVersions(resource.id, current.version, activationVersions[key]) > 0) {
               throw new Error(`Package ${resource.id} updated during switch. Rerun switch to keep ${current.version}; refusing stale activation.`);
             }
+            if (!unknownVersions.has(key) && isComparableWindowsPackageVersion(current.version) &&
+                isComparableWindowsPackageVersion(activationVersions[key]) &&
+                compareWindowsPackageVersions(resource.id, current.version, activationVersions[key]) < 0) {
+              upgrades.push(resource.id);
+            }
           }
         }
+        const running = await runningPackages(
+          opts.planChecker ?? (opts.windowsState ? undefined : nativeWindowsPlanChecker), upgrades,
+        );
+        if (running.size > 0) throw new Error(runningPackagesError(running));
       }
       if (windowsDry) return;
       await runCommand(command[0], command.slice(1), { dry: opts.dry });

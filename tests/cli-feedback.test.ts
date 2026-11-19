@@ -10,7 +10,8 @@ import { wslDistroProperties } from "../src/backends/windows/wsl.ts";
 import { wslRepositoryKey } from "../src/backends/windows/wsl-setup.ts";
 import { unifiedDiff } from "../src/cli/diff.ts";
 import {
-  formatWindowsPlan, parseDscTestOutput, parseProbeOutput, planWindowsResources, type WindowsPlanChecker,
+  formatWindowsPlan, nativeWindowsPlanChecker, parseDscTestOutput, parseProbeOutput, parseRunningOutput,
+  planWindowsResources, type WindowsPlanChecker,
 } from "../src/cli/windows-plan.ts";
 import { inspectResources, parsePackageInventory, type WindowsStateAdapter } from "../src/cli/windows-state.ts";
 import { lockGapWarnings } from "../src/cli/commands/check.ts";
@@ -189,6 +190,38 @@ describe("Windows plan", () => {
       "Plan for desktop (not checked against a machine: machine checks need native Windows):",
       "  Declares packages: 1, files: 1.",
     ]);
+  });
+
+  it("warns when a package to upgrade is running, and only asks about upgrades", async () => {
+    const resources = [pkg("Tool.Busy", "2.0"), pkg("Tool.Idle", "2.0"), pkg("Tool.Same", "1.0"), pkg("Tool.New", "1.0")];
+    const inventory = new Map([
+      ["Tool.Busy", { version: "1.0" }], ["Tool.Idle", { version: "1.0" }], ["Tool.Same", { version: "1.0" }], ["Tool.New", null],
+    ]);
+    const running = vi.fn(async () => new Map([["Tool.Busy", [{ name: "busy.exe", pid: 42 }, { name: "busy.exe", pid: 43 }]]]));
+    const checker: WindowsPlanChecker = { scripts: vi.fn(async () => new Map()), dsc: vi.fn(async () => new Map()), running };
+    const planned = await planWindowsResources(resources, inventory, checker);
+    expect(running).toHaveBeenCalledWith(["Tool.Busy", "Tool.Idle"]);
+    expect(formatWindowsPlan("desktop", planned, { live: true })).toContain(
+      "  ! Tool.Busy is running (busy.exe, pid 42; busy.exe, pid 43); close it before switch: " +
+      "winget cannot upgrade a running portable app, and a failed upgrade can remove its command.");
+
+    // Advisory: a failing probe reports nothing instead of failing the plan.
+    const failing: WindowsPlanChecker = { ...checker, running: vi.fn(async () => { throw new Error("no pwsh"); }) };
+    const quiet = await planWindowsResources(resources, inventory, failing);
+    expect(quiet.some((entry) => entry.running)).toBe(false);
+  });
+
+  it("parses running-process probe output", () => {
+    expect(parseRunningOutput('WINIX-RUNNING:[{"id":"A","name":"a.exe","pid":1},{"id":"A","name":"a.exe","pid":2},{"id":"B","name":"b.exe","pid":3}]'))
+      .toEqual(new Map([["A", [{ name: "a.exe", pid: 1 }, { name: "a.exe", pid: 2 }]], ["B", [{ name: "b.exe", pid: 3 }]]]));
+    expect(parseRunningOutput('WINIX-RUNNING:{"id":"A","name":"a.exe","pid":1}')).toEqual(new Map([["A", [{ name: "a.exe", pid: 1 }]]]));
+    expect(parseRunningOutput("WINIX-RUNNING:[]")).toEqual(new Map());
+    expect(() => parseRunningOutput("nothing")).toThrow("no result");
+  });
+
+  it.runIf(process.platform === "win32")("probes running processes natively without failing on unknown ids", async () => {
+    const running = await nativeWindowsPlanChecker.running!(["Winix.Test.NotInstalled", "Another.Missing"]);
+    expect(running).toEqual(new Map());
   });
 
   it("parses probe and dsc test output", () => {

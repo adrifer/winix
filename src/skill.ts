@@ -665,6 +665,8 @@ object to \`%USERPROFILE%\\.gitconfig\` with \`windows.file.text\`. Recipes live
 - \`winix plan [--host NAME]\` (same as \`switch --dry\`) shows what a Windows switch
   would change, checked against the machine (+ install, ~ change, ! conflict,
   ? not checked), plus removals. Prefer it over reading \`apply --dry\` output.
+  It warns when a portable package to upgrade is running; switch then stops
+  before applying until the user closes it.
   \`--offline\` fails on missing lock pins; \`--locked\` also fails if the lock
   would change.
 - \`winix switch [--host NAME] [--dry] [--yes]\` generates and activates one host, automatically cleaning up unused owned Windows packages and startup commands.

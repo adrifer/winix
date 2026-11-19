@@ -14,6 +14,13 @@ export interface PlannedResource {
   /** Short verb: install, upgrade, apply, run, keep, check... */
   action: string;
   detail?: string;
+  /** Processes running from this package's portable install (upgrades only). */
+  running?: RunningProcess[];
+}
+
+export interface RunningProcess {
+  name: string;
+  pid: number;
 }
 
 export type ScriptCheck = { ok: boolean } | { error: string };
@@ -24,6 +31,35 @@ export interface WindowsPlanChecker {
   scripts(resources: WindowsResourceSummary[]): Promise<Map<string, ScriptCheck>>;
   /** `dsc config test` for non-script resources, keyed by resource name. */
   dsc(resources: WindowsResourceSummary[]): Promise<Map<string, ScriptCheck>>;
+  /**
+   * Processes started from winget portable installs of these packages, keyed by
+   * package id. winget replaces portable files in place, so upgrading a running
+   * one fails and can leave its command link removed.
+   */
+  running?(packageIds: string[]): Promise<Map<string, RunningProcess[]>>;
+}
+
+/** Ask the checker which packages are running; advisory, so failures report nothing. */
+export async function runningPackages(
+  checker: WindowsPlanChecker | undefined, packageIds: string[],
+): Promise<Map<string, RunningProcess[]>> {
+  if (!checker?.running || packageIds.length === 0) return new Map();
+  try {
+    return await checker.running(packageIds);
+  } catch {
+    return new Map();
+  }
+}
+
+export function describeRunning(processes: RunningProcess[]): string {
+  return processes.map((process) => `${process.name}, pid ${process.pid}`).join("; ");
+}
+
+export function runningPackagesError(running: Map<string, RunningProcess[]>): string {
+  return [
+    "Close these programs before switching; winget cannot upgrade a portable app while it runs, and a failed upgrade can remove its command:",
+    ...[...running].map(([id, processes]) => `  ${id}: ${describeRunning(processes)}`),
+  ].join("\n");
 }
 
 /**
@@ -44,7 +80,7 @@ export async function planWindowsResources(
     checker && scripts.length > 0 ? checker.scripts(scripts) : new Map<string, ScriptCheck>(),
     checker && others.length > 0 ? checker.dsc(others) : new Map<string, ScriptCheck>(),
   ]);
-  return resources.map((resource): PlannedResource => {
+  const planned = resources.map((resource): PlannedResource => {
     if (resource.package) {
       if (!packages) return { resource, state: "unknown", action: "check", detail: "not checked" };
       return packagePlan(resource, packages.has(resource.package.id) ? packages.get(resource.package.id)! : undefined);
@@ -63,6 +99,13 @@ export async function planWindowsResources(
     }
     return check.ok ? { resource, state: "ok", action: "keep" } : { resource, state: "change", action: "apply" };
   });
+  const upgrades = planned.filter((entry) => entry.resource.package && entry.action === "upgrade");
+  const running = await runningPackages(checker, upgrades.map((entry) => entry.resource.package!.id));
+  for (const entry of upgrades) {
+    const processes = running.get(entry.resource.package!.id);
+    if (processes?.length) entry.running = processes;
+  }
+  return planned;
 }
 
 function packagePlan(resource: WindowsResourceSummary, snapshot: ResourceSnapshot | undefined): PlannedResource {
@@ -137,6 +180,10 @@ export function formatWindowsPlan(
   if (elevated.length > 0) {
     lines.push(`  ! ${elevated.length} ${opts.live ? "change(s)" : "resource(s)"} run elevated; run switch from an elevated shell: ` +
       elevated.map((entry) => entry.resource.package?.id ?? entry.resource.label).join(", "));
+  }
+  for (const entry of pending.filter((candidate) => candidate.running?.length)) {
+    lines.push(`  ! ${entry.resource.package!.id} is running (${describeRunning(entry.running!)}); close it before switch: ` +
+      "winget cannot upgrade a running portable app, and a failed upgrade can remove its command.");
   }
   const reboot = pending.filter((entry) => entry.resource.reboot);
   if (reboot.length > 0) {
@@ -221,7 +268,72 @@ export const nativeWindowsPlanChecker: WindowsPlanChecker = {
     }
     return results;
   },
+  async running(packageIds) {
+    const output = await capture("pwsh", [
+      "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(RUNNING_PROBE, "utf16le").toString("base64"),
+    ], Buffer.from(JSON.stringify(packageIds)).toString("base64"), 60000);
+    return parseRunningOutput(output);
+  },
 };
+
+const RUNNING_MARKER = "WINIX-RUNNING:";
+
+/**
+ * winget portable installs live in <root>\WinGet\Packages\<id>_<source>, and their
+ * commands are symlinks in ...\WinGet\Links. Match running processes (through
+ * those links) against each package's directories.
+ */
+const RUNNING_PROBE = `$ErrorActionPreference = 'Stop'
+$ids = @([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([Console]::In.ReadToEnd())) | ConvertFrom-Json)
+$roots = @(
+  (Join-Path $env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages'),
+  (Join-Path $env:ProgramFiles 'WinGet\\Packages'),
+  (Join-Path \${env:ProgramFiles(x86)} 'WinGet\\Packages')
+) | Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Container) }
+$directories = @(foreach ($id in $ids) {
+  foreach ($root in $roots) {
+    foreach ($entry in @(Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue)) {
+      if ($entry.Name.StartsWith($id + '_', [StringComparison]::OrdinalIgnoreCase)) {
+        [pscustomobject]@{ id = $id; path = $entry.FullName.TrimEnd('\\') + '\\' }
+      }
+    }
+  }
+})
+$found = @()
+if ($directories.Count -gt 0) {
+  $found = @(foreach ($process in @(Get-Process -ErrorAction SilentlyContinue)) {
+    $path = $null
+    try { $path = $process.Path } catch { }
+    if (-not $path) { continue }
+    try {
+      $item = Get-Item -LiteralPath $path -Force -ErrorAction Stop
+      if ($item.LinkType -eq 'SymbolicLink' -and $item.Target) {
+        $target = @($item.Target)[0]
+        $path = if ([IO.Path]::IsPathRooted($target)) { $target } else { Join-Path $item.DirectoryName $target }
+      }
+    } catch { }
+    foreach ($directory in $directories) {
+      if ($path.StartsWith($directory.path, [StringComparison]::OrdinalIgnoreCase)) {
+        [pscustomobject]@{ id = $directory.id; name = [IO.Path]::GetFileName($path); pid = $process.Id }
+      }
+    }
+  })
+}
+'${RUNNING_MARKER}' + (ConvertTo-Json -InputObject $found -Compress -Depth 3)`;
+
+export function parseRunningOutput(output: string): Map<string, RunningProcess[]> {
+  const line = output.split(/\r?\n/).map((candidate) => candidate.trim())
+    .find((candidate) => candidate.startsWith(RUNNING_MARKER));
+  if (!line) throw new Error("running-process probe printed no result");
+  const parsed = JSON.parse(line.slice(RUNNING_MARKER.length)) as unknown;
+  const items = Array.isArray(parsed) ? parsed : parsed === null ? [] : [parsed];
+  const running = new Map<string, RunningProcess[]>();
+  for (const item of items as { id?: unknown; name?: unknown; pid?: unknown }[]) {
+    if (typeof item?.id !== "string" || typeof item.name !== "string" || typeof item.pid !== "number") continue;
+    running.set(item.id, [...(running.get(item.id) ?? []), { name: item.name, pid: item.pid }]);
+  }
+  return running;
+}
 
 /** Run a command with stdin, resolving stdout; errors carry stderr. */
 function capture(command: string, args: string[], input: string, timeout: number): Promise<string> {

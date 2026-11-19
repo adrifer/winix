@@ -1257,10 +1257,12 @@ anything:
 Plan for desktop (checked against this machine):
   + install  DEVCOM.JetBrainsMonoNerdFont  (3.3.0)
   ~ upgrade  Git.Git  (2.55.0.3 -> 2.56.0.4)
+  ~ upgrade  JesseDuffield.lazygit  (0.64.0 -> 0.66.1)
   ~ apply    link localAppData\nvim -> ../nvim/.config/nvim
   ? check    Enable Windows features Microsoft-Windows-Subsystem-Linux, VirtualMachinePlatform  (needs an elevated shell to check)
   = 31 unchanged (packages: 21, files: 4, settings: 2, ...)
   i 4 package(s) newer than locked; switch keeps them and offers to update the lock: Neovim.Neovim, ...
+  ! JesseDuffield.lazygit is running (lazygit.exe, pid 12156); close it before switch: winget cannot upgrade a running portable app, and a failed upgrade can remove its command.
   ! Enable Windows features ... can require a Windows restart; Winix never restarts Windows.
   Summary: 20 to change, 2 not checked, 31 unchanged.
 
@@ -1277,6 +1279,11 @@ Would run: winget configure -f ...\configuration.winget --accept-configuration-a
   own test script, each isolated so one failure (often a missing elevation)
   only marks that resource `?`. Raw `windows.raw` commands always show as
   `~ run`, because they run on every switch.
+- Packages about to upgrade are checked for running processes from winget's
+  portable installs (zip/exe tools such as lazygit, under `WinGet\Packages`).
+  winget replaces those files in place, so an upgrade fails while one runs and
+  can leave its command removed from `WinGet\Links`. The plan warns, and
+  `winix switch` stops before applying anything until you close them.
 - Machine checks need native Windows with `dsc` and PowerShell 7. Elsewhere (for
   example `plan` for a Windows host from WSL) it lists what the host declares.
 - It is also the drift check: anything changed outside Winix shows up as `~`.

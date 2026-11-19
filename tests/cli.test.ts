@@ -1133,6 +1133,46 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
     }
   });
 
+  it("stops before activation when a package it would upgrade is running", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-running-upgrade-"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    let activated = false;
+    const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async () => { activated = true; });
+    const running = vi.fn(async (ids: string[]) => new Map(ids.includes("Example.App")
+      ? [["Example.App", [{ name: "example.exe", pid: 7 }]]] : []));
+    const planChecker = { scripts: async () => new Map(), dsc: async () => new Map(), running };
+    try {
+      await writeConfig(dir, 'host("desktop", platforms.windows(), [windows.package("Example.App"), windows.package("Current.App")])');
+      await writeFile(join(dir, "winix-windows.lock"), JSON.stringify({
+        version: 1,
+        packages: {
+          "Example.App": { version: "8", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" },
+          "Current.App": { version: "2", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" },
+        },
+      }));
+      const windowsState = {
+        path: join(dir, "inventory.json"),
+        adapter: {
+          inspect: async (resource: { id?: string }) => ({
+            version: resource.id === "Example.App" ? (activated ? "8" : "7") : "2",
+          }),
+          remove: async () => { throw new Error("Must not uninstall"); },
+        },
+      };
+      await expect(switchCommand(dir, { host: "desktop", dry: false, windowsState, planChecker }))
+        .rejects.toThrow("Example.App: example.exe, pid 7");
+      expect(running).toHaveBeenCalledWith(["Example.App"]);
+      expect(runner).not.toHaveBeenCalled();
+
+      running.mockResolvedValue(new Map());
+      await switchCommand(dir, { host: "desktop", dry: false, windowsState, planChecker });
+      expect(runner).toHaveBeenCalledTimes(1);
+    } finally {
+      log.mockRestore(); runner.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it.each(["accept", "decline", "dry"] as const)("keeps a newer package in activation output and %s the optional lock update", async (mode) => {
     const dir = await mkdtemp(join(tmpdir(), "winix-package-upgrade-"));
     const logs: string[] = [];

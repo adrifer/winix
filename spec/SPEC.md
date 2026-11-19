@@ -1294,7 +1294,11 @@ command. On native Windows it is checked against the machine: one batched
 in one PowerShell process (each isolated, so one failure marks only that
 resource), and a batched `dsc config test` for other DSC resources (retried one
 by one if the batch aborts). Elsewhere it lists what the host declares. It is
-the Windows drift check.
+the Windows drift check. Packages about to upgrade are matched against running
+processes from winget portable installs (`WinGet\Packages\<id>_*`, through
+`WinGet\Links`); the plan warns about them and a real switch stops before
+activation until they are closed, because winget cannot replace a running
+portable app and a failed upgrade removes its command link.
 
 Activation by platform:
 

@@ -14,6 +14,11 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Running apps block upgrades** — `winix plan` warns when a package it would
+  upgrade is running from a winget portable install, and `winix switch` stops
+  before applying until it is closed (winget cannot replace it in place, and the
+  failed upgrade removed its command link).
+
 - **Merge fixes for Nix lists and tmpfiles** — array merges dedupe equal Nix
   expressions (two `nix.pkg("icu")`); `winix check` explains that a list written
   as one expression (`nix.withPkgs`) replaces the other and suggests an array;
