@@ -1474,12 +1474,12 @@ export interface WindowsHelper {
   package(arg: WinPackageArg, opts?: WinPackageOpts): ResourceHandle;
 
   /**
-   * Run an arbitrary command on every Windows apply via DSC v3's
-   * `Microsoft.DSC.Transitional/RunCommandOnSet` resource.
+   * Run an arbitrary command on every Windows switch as a
+   * command resource.
    *
-   * This is an escape hatch, not a declarative/idempotent helper:
-   * `RunCommandOnSet` has no real test phase, so the command runs on every
-   * `winget configure` apply. Prefer typed helpers when available.
+   * This is an escape hatch, not a declarative/idempotent helper: a raw
+   * command has no test phase, so it runs on every `winix switch`. Prefer
+   * typed helpers when available.
    * Command strings run in PowerShell 7 (`pwsh`); explicit executables are preserved.
    *
    * ```ts

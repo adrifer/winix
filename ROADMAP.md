@@ -14,6 +14,15 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Fast Windows switch** — `winix switch` no longer runs `winget configure`.
+  Hosts generate `resources.json`; switch plans against the machine and applies
+  only what is out of date (packages through `winget install`/`upgrade`,
+  scripts in one PowerShell runner, other DSC resources through `dsc config
+  set`), in dependency order, skipping only the dependents of a failure.
+  Everything needing administrator rights runs in one elevated step (one UAC
+  prompt). A no-change switch takes about as long as the plan instead of
+  10–30 minutes. The bootstrap no longer enables WinGet configuration.
+
 - **UAC prompts and interrupted switches** — `winix plan` lists installs and
   upgrades that will ask for administrator approval (machine-wide installs,
   packages without a per-user installer), and `winix switch` names them before

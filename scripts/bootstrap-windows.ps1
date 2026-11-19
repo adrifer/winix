@@ -3,9 +3,9 @@
 .SYNOPSIS
 Checks/installs Winix prerequisites, or prepares a trusted repository and confirms host activation.
 .PARAMETER Check
-Only inspect prerequisites. No installation or configuration enablement is performed.
+Only inspect prerequisites. Nothing is installed.
 .PARAMETER Yes
-Accept prerequisite installation and WinGet configuration enablement without prompting.
+Accept prerequisite installation without prompting.
 .PARAMETER UseNvm
 Install/select Node LTS through NVM for Windows instead of standalone Node.js.
 .PARAMETER Standalone
@@ -109,10 +109,6 @@ function Get-WinixBootstrapTools {
 
 function Test-WinixBootstrapCapabilities {
     param([string]$WinGet, [switch]$Standalone)
-    $help = (Invoke-WinixBootstrapNative $WinGet @('configure', '--help')) -join "`n"
-    if ($help -notmatch '--enable\b') {
-        throw 'Update App Installer from Microsoft Store: this WinGet lacks configuration enablement support.'
-    }
     if (-not $Standalone) {
         $npm = Get-WinixBootstrapApplication 'npm.cmd'
         if (-not $npm) { throw 'npm.cmd is unavailable. Repair the Node.js installation or open a new terminal, then rerun.' }
@@ -190,7 +186,7 @@ Then rerun this bootstrap. No prerequisites have been installed.
         if ($node -and $UseNvm -and $node.Path -and -not $nvm) {
             throw 'Existing Node.js needs upgrading but NVM is absent. Repair/upgrade the existing Node installation or deliberately remove it before choosing -UseNvm.'
         }
-        Write-Host 'This will install/upgrade only NEEDED packages and enable WinGet configuration support (requires Store access).'
+        Write-Host 'This will install/upgrade only NEEDED packages (requires Store access).'
         if ($node -and $UseNvm) {
             Write-Host 'Node.js will use CoreyButler.NVMforWindows plus nvm install lts / nvm use lts; selecting Node may require elevation.'
         }
@@ -198,7 +194,7 @@ Then rerun this bootstrap. No prerequisites have been installed.
         if (-not $Yes) {
             if ([Console]::IsInputRedirected) { throw 'Noninteractive bootstrap requires -Yes; use -Check for inspection only.' }
             $answer = Read-Host 'Continue with bootstrap? [y/N]'
-            if ($answer.Trim() -notmatch '^(?i:y|yes)$') { throw 'Bootstrap cancelled. No installation or enablement was performed.' }
+            if ($answer.Trim() -notmatch '^(?i:y|yes)$') { throw 'Bootstrap cancelled. Nothing was installed.' }
         }
         foreach ($tool in $pending) {
             if ($tool.Command -eq 'node.exe' -and $UseNvm) {
@@ -227,9 +223,6 @@ Then rerun this bootstrap. No prerequisites have been installed.
                 throw "Installation did not make $($tool.Command) ready. Open a new terminal or restart if requested, then rerun."
             }
         }
-        Invoke-WinixBootstrapNative $winget @('configure', '--enable') |
-            ForEach-Object { Write-Host $_ }
-        Update-WinixBootstrapPath
     }
     Test-WinixBootstrapCapabilities $winget -Standalone:$Standalone
     Write-Host 'Prerequisite checks passed. No Winix host was activated.'

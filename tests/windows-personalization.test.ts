@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { windowsText } from "./helpers/windows-text.ts";
 import { describe, expect, it } from "vitest";
 import { evaluate, feature, host, platforms, windows, workspace } from "../src/index.ts";
 import { generateWindows } from "../src/backends/windows/index.ts";
@@ -50,7 +51,7 @@ describe("Windows personalization authoring", () => {
     });
     const hosts = evaluate(workspace({ inputs: {}, hosts: [host("desktop", platforms.windows(), [declarations()])] }));
     expect(hosts[0].windows.dsc).toHaveLength(3);
-    const yaml = generateWindows(hosts, emptyWindowsLock(), "D:\\config\\winix").hosts.desktop["configuration.winget"];
+    const yaml = windowsText(generateWindows(hosts, emptyWindowsLock(), "D:\\config\\winix"), "desktop");
     expect(yaml).toContain("D:\\config\\images\\desktop.jpg");
     expect(yaml).toContain("D:\\\\config\\\\fonts\\\\font.ttf");
     expect(yaml).toContain("SystemParametersInfo");

@@ -1,5 +1,5 @@
 import { hostname } from "node:os";
-import { join, posix } from "node:path";
+import { posix } from "node:path";
 import type { WorkspaceDef } from "../../core/types.ts";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
 import { windowsWslSetupTargets } from "../../backends/windows/wsl-setup-runtime.ts";
@@ -14,9 +14,12 @@ import {
   type WindowsStateAdapter,
 } from "../windows-state.ts";
 import {
-  elevationNotice, elevationPrompts, formatWindowsPlan, nativeWindowsPlanChecker, planWindowsResources,
+  elevationPrompts, formatWindowsPlan, nativeWindowsPlanChecker, planWindowsResources,
   runningPackages, runningPackagesError, type ElevationRequest, type WindowsPlanChecker,
 } from "../windows-plan.ts";
+import {
+  applyWindowsBatches, formatApplySummary, nativeWindowsBatchRunner, planApplyBatches, type WindowsBatchRunner,
+} from "../windows-apply.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { loadWorkspace } from "../loader.ts";
 import { runCommand } from "../run.ts";
@@ -40,8 +43,10 @@ interface SwitchOptions {
   offline?: boolean;
   locked?: boolean;
   windowsState?: { path: string; adapter: WindowsStateAdapter };
-  /** Live checks for the dry-run plan; defaults to native checks unless the state adapter is replaced. */
+  /** Live checks for the plan; defaults to native checks unless the state adapter is replaced. */
   planChecker?: WindowsPlanChecker;
+  /** Applies Windows changes; defaults to the native PowerShell runner. */
+  windowsRunner?: WindowsBatchRunner;
 }
 
 export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<void> {
@@ -127,29 +132,29 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
       } : undefined,
     });
 
-    const activationTarget =
-      platform === "windows"
-        ? windowsConfigurationForHost(result.outDir, hostName)
-        : flakeRefForHost(result.outDir, hostName);
-    const command = activationCommand(platform, activationTarget);
-
-    if (windowsDry) {
-      const summaries = result.windowsOutput?.resources[hostName] ?? [];
-      const live = statePath !== undefined;
-      const checker = live ? opts.planChecker ?? (opts.windowsState ? undefined : nativeWindowsPlanChecker) : undefined;
-      const planned = await planWindowsResources(summaries, live ? packageInventory : undefined, checker);
-      // Activation keeps newer installs, so the generated version is the installed one; show the lock.
+    const command = platform === "windows" ? undefined : activationCommand(platform, flakeRefForHost(result.outDir, hostName));
+    const summaries = result.windowsOutput?.resources[hostName] ?? [];
+    const checker = opts.planChecker ?? (opts.windowsState ? undefined : nativeWindowsPlanChecker);
+    /** Show the lock for packages switch keeps newer than locked (generation uses the installed version). */
+    const showKept = (planned: Awaited<ReturnType<typeof planWindowsResources>>) => {
       for (const entry of planned) {
         const kept = newer.find((candidate) => candidate.id === entry.resource.package?.id);
         if (kept && entry.state === "ok") {
           entry.detail = `${kept.installed} (locked ${kept.locked}; switch offers to update the lock)`;
         }
       }
+    };
+    let dryChanges = 0;
+    if (windowsDry) {
+      const live = statePath !== undefined;
+      const planned = await planWindowsResources(summaries, live ? packageInventory : undefined, live ? checker : undefined);
+      showKept(planned);
+      dryChanges = planned.filter((entry) => entry.state !== "ok").length;
       console.log("");
       for (const line of formatWindowsPlan(hostName, planned, {
         live, reason: live ? undefined : "machine checks need native Windows",
       })) console.log(line);
-    } else {
+    } else if (command) {
       console.log(`\nRunning: ${command.join(" ")}`);
     }
     const ownership: string[] = [];
@@ -187,14 +192,36 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
             }
           }
         }
-        const checker = opts.planChecker ?? (opts.windowsState ? undefined : nativeWindowsPlanChecker);
         const [running, prompts] = await Promise.all([
           runningPackages(checker, upgrades), elevationPrompts(checker, changes),
         ]);
         if (running.size > 0) throw new Error(runningPackagesError(running));
-        if (prompts.size > 0) console.log(elevationNotice(prompts));
+
+        // Plan against the machine as it is now, then apply only what is out of date.
+        const current = new Map(packageInventory);
+        for (const resource of tracked) {
+          if (resource.kind === "package") current.set(resource.id, inventory.get(resourceKey(resource)) ?? null);
+        }
+        const planned = await planWindowsResources(summaries, current, checker);
+        showKept(planned);
+        const batches = planApplyBatches(planned, prompts);
+        console.log("");
+        for (const line of formatWindowsPlan(hostName, planned, { live: true })) console.log(line);
+        if (batches.length === 0) {
+          console.log("\nNothing to change.");
+          return;
+        }
+        console.log("");
+        const outcome = await applyWindowsBatches(batches, opts.windowsRunner ?? nativeWindowsBatchRunner);
+        const labels = new Map(summaries.map((resource) => [resource.name, resource.package?.id ?? resource.label]));
+        console.log("");
+        for (const line of formatApplySummary(outcome, labels)) console.log(line);
+        if (outcome.failed.length > 0) {
+          throw new Error(`${outcome.failed.length} Windows change(s) did not apply; fix the errors above and rerun winix switch.`);
+        }
+        return;
       }
-      if (windowsDry) return;
+      if (opts.dry || !command) return;
       await runCommand(command[0], command.slice(1), { dry: opts.dry });
     };
     if (statePath) {
@@ -261,6 +288,10 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         console.log("\nRemovals and ownership (Winix applied-state inventory):");
         for (const line of ownership) console.log(`  ${line}`);
       }
+      console.log(dryChanges === 0
+        ? "\nwinix switch would change nothing."
+        : `\nwinix switch would apply only these ${dryChanges} change(s); work that needs administrator rights runs in one elevated step (one UAC prompt).`);
+    } else if (opts.dry && command) {
       console.log(`\nWould run: ${command.join(" ")}`);
     }
   };
@@ -330,8 +361,4 @@ export function selectHost(
 
 export function flakeRefForHost(outDir: string, hostName: string): string {
   return `path:${outDir.replace(/\\/g, "/")}#${hostName}`;
-}
-
-export function windowsConfigurationForHost(outDir: string, hostName: string): string {
-  return join(outDir, hostName, "configuration.winget");
 }

@@ -282,8 +282,11 @@ Available helpers:
 
 ## Windows helpers
 
-Windows hosts generate a DSC v3 configuration for \`winget configure\`.
-Resources return handles that can be passed through \`dependsOn\`.
+Windows hosts generate \`.winix/out/<host>/resources.json\`; \`winix switch\` plans
+against the machine and applies only out-of-date resources, with everything
+needing administrator rights in one elevated step (one UAC prompt). Run switch
+as the normal user, not elevated. Resources return handles that can be passed
+through \`dependsOn\`.
 
 - \`windows.npm.registries({ registries: { work: {
   uri: "https://packages.example.com/npm/" } }, default: "work",
@@ -520,7 +523,7 @@ checks and later removal confirmation. It does not evaluate config or activate.
 For fresh Windows prerequisites, \`scripts/bootstrap-windows.ps1\` runs in built-in
 Windows PowerShell 5.1 or PowerShell 7. App Installer/WinGet is the initial
 prerequisite. \`-Check\` is read-only; install mode confirms missing/outdated
-Git/Node/PowerShell/DSC installation and enables WinGet configuration support.
+Git/Node/PowerShell/DSC installation.
 \`-Standalone\` skips all Node/npm checks and installations for executable users;
 it cannot be combined with \`-UseNvm\`. Release executables embed the SDK/runtime,
 load local TS/JS imports and Node builtins without node_modules, and never
@@ -668,8 +671,8 @@ object to \`%USERPROFILE%\\.gitconfig\` with \`windows.file.text\`. Recipes live
   ? not checked), plus removals. Prefer it over reading \`apply --dry\` output.
   It warns when a portable package to upgrade is running; switch then stops
   before applying until the user closes it. It also lists installs/upgrades
-  that will ask for UAC; tell the user to watch for (and approve) those
-  prompts, because switch waits on them silently.
+  that need administrator rights; switch applies them in one elevated step, so
+  tell the user to expect (and approve) one UAC prompt.
   \`--offline\` fails on missing lock pins; \`--locked\` also fails if the lock
   would change.
 - \`winix switch [--host NAME] [--dry] [--yes]\` generates and activates one host, automatically cleaning up unused owned Windows packages and startup commands.
@@ -683,7 +686,7 @@ object to \`%USERPROFILE%\\.gitconfig\` with \`windows.file.text\`. Recipes live
 
 On native Windows, real NixOS and nix-darwin activation is unsupported. Dry
 runs still print commands with forward-slash flake references. Windows hosts
-activate through \`winget configure\`.
+are applied by Winix itself (plan, then only what changed).
 
 ## Editing rules for agents
 

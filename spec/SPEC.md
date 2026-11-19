@@ -689,31 +689,31 @@ windows.raw(
 - The handle is opaque to user code; only the emitter reads it to resolve
   dependency references to names.
 
-#### Emitted DSC v3
+#### Emitted resources
 
-The emitter assigns each resource a stable `name` and translates captured
-handles into `dependsOn` lookups. DSC v3 (schema 2023/08) restricts an instance
-`name` to `^[a-zA-Z0-9 ]+$` (letters, numbers, spaces), and `dependsOn` entries
-must be `[resourceId('<type>', '<name>')]`. Therefore:
+The emitter writes `.winix/out/<host>/resources.json`, assigning each resource
+a stable `name` (letters, numbers, spaces) and translating captured handles
+into `dependsOn` name lists:
 
 - **Packages:** `name` is the **sanitized** id (`Git.Git` → `Git Git`); the
-  real id is preserved in `properties.id`, which is what winget installs.
+  real id, source and version are in `package`.
 - **Resources without a natural id** (`raw`): a sanitized explicit `name` when
   given, else a generated `command N` per-host counter.
-- Collisions get a ` N` suffix so instance names stay unique.
+- Collisions get a ` N` suffix so names stay unique.
 
-```yaml
-resources:
-  - type: Microsoft.WinGet/Package
-    name: OpenJS NodeJS
-    properties:
-      id: OpenJS.NodeJS
-  - type: Microsoft.DSC.Transitional/RunCommandOnSet
-    name: command 1
-    dependsOn:
-      - "[resourceId('Microsoft.WinGet/Package', 'OpenJS NodeJS')]"
-    properties: { /* ... */ }
+```json
+{ "host": "desktop", "resources": [
+  { "name": "OpenJS NodeJS", "type": "winget/package", "category": "package",
+    "dependsOn": [], "elevated": false,
+    "package": { "id": "OpenJS.NodeJS", "source": "winget", "version": "22.12.0", "anyVersion": false, "exact": false } },
+  { "name": "command 1", "type": "command", "category": "command",
+    "dependsOn": ["OpenJS NodeJS"], "elevated": false,
+    "command": { "executable": "npm", "arguments": ["install", "--global", "typescript"] } }
+] }
 ```
+
+PowerShell script resources carry `shell`, `testScript` and `setScript`; other
+DSC resources carry their `type` and `properties`.
 
 The Windows backend also exposes typed environment, PATH, file, settings, and
 PowerShell module helpers, plus `windows.dsc(...)` for generic resources.
@@ -956,7 +956,7 @@ Registry resources, with their existing user/machine permission boundaries.
 Node, or Winix. `-Check` only inspects versions and capabilities, failing when
 not ready. Install mode confirms the prerequisite plan (`-Yes` for automation),
 installs/upgrades missing/outdated Git, Node LTS, PowerShell 7, and DSC via exact
-WinGet IDs/source, enables WinGet configuration support, then verifies npm,
+WinGet IDs/source, then verifies npm,
 Node TypeScript support, PSResourceGet commands, and required DSC resources.
 Supported stable npm runtimes are Node 22.13+ (22.x), 24.x and 26.x; installed LTS
 must pass the same check. The npm launcher/checkout handoff and bootstrap probe
@@ -1314,6 +1314,19 @@ Activation by platform:
 | NixOS | `sudo nixos-rebuild switch --flake .winix/out` |
 | nix-darwin | `sudo darwin-rebuild switch --flake .winix/out` |
 | Home Manager only | `home-manager switch --flake .winix/out` |
+| Windows | Winix applies the plan itself (below) |
+
+Windows hosts generate `.winix/out/<host>/resources.json` (each resource with
+its category, dependencies, elevation and how to check and apply it). `winix
+switch` plans against the machine and applies only out-of-date resources in
+dependency order: packages through `winget install`/`upgrade`, PowerShell
+script resources in one PowerShell 7 runner (test, set, test again; Windows
+PowerShell scripts in `powershell.exe`), other DSC resources through `dsc
+config set`, raw commands on every run. Work needing administrator rights
+(machine-wide or per-user-less package installs, features, machine
+environment, settings, `elevate: true`) is batched into as few elevated runs
+as dependencies allow, normally one UAC prompt. A failure skips its
+dependents only and fails the switch after reporting every result.
 
 #### `winix inspect`
 

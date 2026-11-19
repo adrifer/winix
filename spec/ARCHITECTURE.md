@@ -37,7 +37,7 @@ Standalone builds embed Bun and share one SDK/evaluator context.
 
 The native applied-state adapter currently starts a synchronous
 `dsc resource get --resource Microsoft.WinGet/Package` process per package
-inspection, in addition to WinGet configuration's own checks. Measure inspection
+inspection, in addition to the plan's own checks. Measure inspection
 count and elapsed time separately for desired-resource inventory before
 activation, removal planning, activation itself, desired-resource inventory after
 activation, immediate pre-removal inspection, removal and post-removal verification.
@@ -84,7 +84,7 @@ src/
 │   ├── nix/
 │   │   └── index.ts          # IR → Nix string emission
 │   └── windows/
-│       └── index.ts          # IR → DSC v3 winget Configuration (MVP)
+│       └── index.ts          # IR → resources.json (what switch plans and applies)
 └── cli/
     ├── index.ts              # CLI entry point (parseArgs)
     ├── loader.ts             # locates and imports winix.config.ts

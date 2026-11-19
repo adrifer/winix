@@ -98,7 +98,7 @@ export default workspace({ inputs: {}, hosts: [
       expect(output).toContain("nixos.aarch64.wsl");
       expect(run(directory, ["update", "--windows", "nixos-wsl", "--dry"])).toContain("NixOS-WSL images");
       await expect(readFile(join(directory, "winix-windows.lock"))).rejects.toMatchObject({ code: "ENOENT" });
-      await expect(readFile(join(directory, ".winix", "out", "test", "configuration.winget"))).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(readFile(join(directory, ".winix", "out", "test", "resources.json"))).rejects.toMatchObject({ code: "ENOENT" });
       const lockPath = join(directory, "winix-windows.lock");
       const previous = JSON.stringify({
         version: 1, generatedAt: "2026-01-01T00:00:00.000Z", packages: {},

@@ -2,6 +2,15 @@
 
 > **Status:** `in-progress`
 > **Owner:** unassigned
+>
+> **Update (v0.3.0-preview.17):** Winix no longer hands a configuration to
+> `winget configure`. Hosts generate `resources.json`, and `winix switch` plans
+> against the machine and applies only out-of-date resources itself (packages via
+> `winget install`/`upgrade`, scripts in one PowerShell runner, other DSC
+> resources via `dsc config set`), with elevated work in one UAC prompt. A full
+> `winget configure` run spent minutes on per-resource DSC discovery even when
+> nothing changed, and needed one UAC prompt per machine-wide package. The
+> design below is kept for history.
 
 ## Motivation
 

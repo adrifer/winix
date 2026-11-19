@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { windowsText } from "./helpers/windows-text.ts";
 import { describe, expect, it } from "vitest";
 import example from "../examples/cross-platform/winix.config.ts";
 import { gitConfig } from "../examples/cross-platform/features/git.ts";
@@ -48,7 +49,7 @@ describe("cross-platform example (docs/guides)", () => {
       "[alias]", "\tlg = log --graph --oneline --decorate",
       '[includeIf "gitdir:~/work/"]', "\tpath = ~/.gitconfig-work", "",
     ].join("\n"));
-    const doc = output.hosts.DESKTOP["configuration.winget"];
+    const doc = windowsText(output, "DESKTOP");
     expect(doc).toContain(resolve(configDir, "dotfiles", "lazygit", "config.yml"));
   });
 

@@ -5,9 +5,12 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
+import { windowsText } from "./helpers/windows-text.ts";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { evaluate, feature, host, platforms, profile, windows, workspace, type Fragment } from "../src/index.ts";
 import { generateWindows } from "../src/backends/windows/index.ts";
+import { nativeWindowsPlanChecker, planWindowsResources } from "../src/cli/windows-plan.ts";
+import { applyWindowsBatches, nativeWindowsBatchRunner, planApplyBatches } from "../src/cli/windows-apply.ts";
 import {
   collectWindowsModules, emptyWindowsLock, readWindowsLock, reconcileInlinePins,
   resolveWindowsLockEntries, resolveWindowsModuleLockEntries, serializeWindowsLock,
@@ -104,7 +107,7 @@ describe("Windows shell primitives", () => {
     }));
     expect(collectWindowsModules(evaluated).size).toBe(1);
     const lock: WindowsLock = { ...emptyWindowsLock(), modules: { "terminal-icons": pin } };
-    const doc = generateWindows(evaluated, lock, "D:\\dotfiles\\winix").hosts.desktop["configuration.winget"];
+    const doc = windowsText(generateWindows(evaluated, lock, "D:\\dotfiles\\winix"), "desktop");
     expect(doc).toContain("dependsOn: [\"PowerShell module Terminal Icons\", \"Winix PowerShell helpers\"]");
     expect(doc).toContain("Microsoft PowerShell");
     expect(doc).not.toContain("kind:");
@@ -135,7 +138,7 @@ describe("Windows shell primitives", () => {
         });
       })],
     }));
-    const doc = generateWindows(evaluated).hosts.desktop["configuration.winget"];
+    const doc = windowsText(generateWindows(evaluated), "desktop");
     expect(doc).toContain('name: "Startup Example"');
     expect(doc).toContain('dependsOn: ["Example App"]');
     expect(doc).toContain("GetFolderPath('Startup')");
@@ -254,10 +257,10 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
       const { lock } = await resolveWindowsModuleLockEntries(emptyWindowsLock(), modules.values(), resolve);
       expect(resolve).toHaveBeenCalledWith("Terminal-Icons", "approved", uri, false);
       expect(resolve).toHaveBeenCalledWith("Microsoft.Windows.Settings", "approved", uri, true);
-      const docs = generateWindows(evaluated, lock).hosts;
-      expect(docs.personal["configuration.winget"]).toContain("-Repository 'PSGallery'");
-      expect(docs.personal["configuration.winget"]).not.toContain(uri);
-      const work = docs.work["configuration.winget"];
+      const output = generateWindows(evaluated, lock);
+      expect(windowsText(output, "personal")).toContain("-Repository 'PSGallery'");
+      expect(windowsText(output, "personal")).not.toContain(uri);
+      const work = windowsText(output, "work");
       expect(work).not.toContain("PSGallery");
       expect(work).toContain(uri);
       expect(work).toContain("-Repository 'approved'");
@@ -353,10 +356,8 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
         emptyWindowsLock(), collectWindowsModules(evaluated).values(),
         (name) => name === "Microsoft.Windows.Settings" ? "0.1.0-alpha.6" : "0.11.0"
       );
-      const doc = generateWindows(evaluated, lock).hosts.work["configuration.winget"];
-      const section = doc.split('  - name: "Ensure Microsoft Windows Settings module"')[1].split("  - name:")[0];
-      const script = section.split("      setScript: |-\n")[1].split("\n")
-        .filter((line) => line.startsWith("        ")).map((line) => line.slice(8)).join("\n");
+      const script = generateWindows(evaluated, lock).resources.work
+        .find((resource) => resource.name === "Ensure Microsoft Windows Settings module")!.setScript!;
       expect(runPowerShell7(`
 $script:installed = 'alpha.5'
 $script:installs = 0
@@ -791,8 +792,8 @@ $link.Save()
     expect(runPowerShell7(`[Environment]::GetEnvironmentVariable('${name}', 'User')`)).toBe("");
   }, 120000);
 
-  it("applies a generated PowerShell 7 bundle through winget using only temporary state", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "winix-pwsh-winget-"));
+  it("applies a generated PowerShell 7 host through the Winix runner using only temporary state", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-pwsh-apply-"));
     const name = `WINIX_PWSH_PROBE_${randomUUID().replaceAll("-", "")}`;
     const remove = windows.env.remove(name).windows!.dsc![0];
     try {
@@ -813,13 +814,13 @@ $link.Save()
         ...emptyWindowsLock(),
         modules: { "microsoft.powershell.utility": { ...pin, version: "7.0.0.0" } },
       };
-      const bundle = generateWindows(evaluated, lock, dir).hosts.probe;
-      const config = join(dir, "configuration.winget");
-      await writeFile(config, bundle["configuration.winget"]);
-      execFileSync("winget", [
-        "configure", "--file", config,
-        "--accept-configuration-agreements", "--disable-interactivity",
-      ], { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 90000 });
+      const resources = generateWindows(evaluated, lock, dir).resources.probe;
+      const planned = await planWindowsResources(resources, new Map(), nativeWindowsPlanChecker);
+      const outcome = await applyWindowsBatches(planApplyBatches(planned), nativeWindowsBatchRunner, () => {});
+      expect(outcome.failed).toEqual([]);
+      // A second switch finds everything in place except the raw command, which always runs.
+      const again = planApplyBatches(await planWindowsResources(resources, new Map(), nativeWindowsPlanChecker));
+      expect(again.flatMap((batch) => batch.steps.map((step) => step.kind))).toEqual(["command"]);
       expect(await readFile(source, "utf8")).toBe("caf\u00e9 \u{1f680}\n");
       expect(await readlink(link)).toBe(source);
       expect(await readFile(rawOutput, "utf8")).toBe("Core:7");

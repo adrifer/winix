@@ -72,7 +72,7 @@ On the Windows machine:
 ```powershell
 winix check                   # validates the whole setup plan offline
 winix plan --host DESKTOP     # what switch would change, checked against the machine
-winix switch --host DESKTOP   # from an elevated shell the first time (Windows features)
+winix switch --host DESKTOP   # applies what changed; one UAC prompt for Windows features
 ```
 
 `check` fails before any distro exists if `setup.host` isn't a NixOS-WSL host,

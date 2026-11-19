@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { windowsText } from "./helpers/windows-text.ts";
 import { describe, expect, it, vi } from "vitest";
 import { evaluate, host, platforms, windows, workspace, type Fragment } from "../src/index.ts";
 import { generateWindows, validateWindowsWslResources } from "../src/backends/windows/index.ts";
@@ -97,7 +98,7 @@ print("WINIX_IDENTITY_SUCCESS")
       }),
     ] }));
     expect(evaluated[0].windows.dsc).toHaveLength(3);
-    const text = generateWindows(evaluated, { ...emptyWindowsLock(), wslImages: pins }).hosts.desktop["configuration.winget"];
+    const text = windowsText(generateWindows(evaluated, { ...emptyWindowsLock(), wslImages: pins }), "desktop");
     expect(text).toContain("$expectedHostname = 'wsl-work'");
     expect(text).toContain("dependsOn: [\"Windows features Microsoft Windows Subsystem Linux VirtualMachinePlatform\", \"WSL configuration\", \"Microsoft WSL\"]");
     expect(text).not.toContain("git rev-parse");
@@ -158,8 +159,8 @@ describe("Windows WSL SDK and backend", () => {
       expect(evaluated[0].windows.packages).toEqual({
         "Microsoft.WSL": { id: "Microsoft.WSL", source: "winget", version: "2.6.1", elevated: true },
       });
-      const output = generateWindows(evaluated).hosts.desktop["configuration.winget"];
-      expect(output.match(/id: Microsoft.WSL/g)).toHaveLength(1);
+      const output = windowsText(generateWindows(evaluated), "desktop");
+      expect(output.match(/package: Microsoft.WSL /g)).toHaveLength(1);
     }
   });
 
@@ -176,14 +177,14 @@ describe("Windows WSL SDK and backend", () => {
       ...emptyWindowsLock(now), wslImages: pins,
       packages: { "Microsoft.WSL": { source: "winget", version: "2.6.1", resolvedAt: now.toISOString() } },
     };
-    const output = generateWindows(evaluated, lock).hosts.desktop["configuration.winget"];
+    const output = windowsText(generateWindows(evaluated, lock), "desktop");
     expect(output).toContain("Windows features Microsoft Windows Subsystem Linux VirtualMachinePlatform");
     expect(output).toContain("dependsOn: [\"Windows features Microsoft Windows Subsystem Linux VirtualMachinePlatform\", \"WSL configuration\", \"Microsoft WSL\"]");
     expect(output).toContain("[wsl2]");
     expect(output).toContain("memory=16GB");
     expect(output).toContain("processors=8");
     expect(output).toContain("Restart WSL manually");
-    expect(output).toContain("securityContext: elevated");
+    expect(output).toContain("elevated: true");
     expect(output).not.toContain("kind:");
     expect(output).not.toContain("--unregister");
     expect(output).not.toContain("--shutdown");
@@ -380,7 +381,9 @@ $trackingResult = if ([IO.File]::Exists($recordPath)) { [IO.File]::ReadAllText($
 `;
   try {
     const output = execFileSync("pwsh", [
-      "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "& ([scriptblock]::Create([Console]::In.ReadToEnd()))",
+      // Console encodings default to the OEM code page; the harness and its output are UTF-8.
+      "-NoLogo", "-NoProfile", "-NonInteractive", "-Command",
+      "[Console]::InputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false); & ([scriptblock]::Create([Console]::In.ReadToEnd()))",
     ], { encoding: "utf8", input: harness, stdio: ["pipe", "pipe", "pipe"], timeout: 30000 });
     const result = output.split(/\r?\n/).find((line) => line.startsWith("WINIX_RESULT:"));
     if (!result) throw new Error(output);

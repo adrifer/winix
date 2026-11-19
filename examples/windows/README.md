@@ -21,7 +21,7 @@ host("desktop", platforms.windows(), [
   windows.package("Fastfetch-cli.Fastfetch"),                       // locked in winix-windows.lock
   windows.package({ source: "msstore", id: "9NKSQGP7F2NH" }),       // msstore
   windows.package({ id: "Microsoft.VisualStudioCode", version: "1.90.1" }), // pinned
-  // windows.package({ id: "Some.Driver", elevated: true }),        // admin context
+  // windows.package({ id: "Some.Driver", elevated: true }),        // always in the elevated step
 ])
 ```
 
@@ -38,16 +38,14 @@ reproducible generation. Until `winix update --windows` lands in phase 2,
 add new floating packages to that lockfile manually or give them an inline
 `version`.
 
-This writes the bundle to `.winix/out/desktop/`:
-
-- `configuration.winget` — native DSC v3 document
-- `apply.ps1` — thin entry point that calls `winget configure`
+This writes `.winix/out/desktop/resources.json`: every resource with its
+name, dependencies, elevation, and how `winix switch` checks and applies it.
 
 ## Raw commands and ordering
 
-`windows.raw(...)` runs an arbitrary command on every apply (via DSC v3's
-`Microsoft.DSC.Transitional/RunCommandOnSet`). It accepts a command string or
-an explicit `{ executable, arguments }` object.
+`windows.raw(...)` runs an arbitrary command on every switch. It accepts a
+command string (run in PowerShell 7) or an explicit `{ executable, arguments }`
+object.
 
 Every `windows.*` resource helper returns a **handle**. Capture
 it only when something must be applied after it, and pass it to `dependsOn`
@@ -85,16 +83,16 @@ host("desktop", platforms.windows(), ({ windows }) => {
 - **Scopes.** The default is `scope: "user"` (`HKCU\Environment`), which does
   not require elevation. Use `scope: "machine"` for machine-wide values
   (`HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment`), which
-  requires an elevated apply.
+  switch applies in its elevated step.
 - **PATH is idempotent and surgical.** `windows.path.add(...)` appends the
   requested entry only when missing, and `windows.path.remove(...)` removes only
   that exact entry. Winix does not de-duplicate, reorder, trim, or normalize the
   rest of PATH.
 
 When no typed helper exists, `windows.dsc(...)` declares any DSC v3 resource by
-`type` + `properties`. The properties object is emitted verbatim as YAML, so it
-targets native DSC v3 resources (or any PSDSC resource via the adapter)
-directly:
+`type` + `properties`. Switch checks it with `dsc config test` and applies it
+with `dsc config set`, passing the properties verbatim, so it targets native
+DSC v3 resources (or any PSDSC resource via the adapter) directly:
 
 ```ts
 windows.dsc({
@@ -106,12 +104,11 @@ windows.dsc({
 `windows.dsc(...)` also returns a handle, so generic resources participate in
 `dependsOn` ordering like every other helper.
 
-In the emitted DSC v3 document, each resource gets a name that satisfies the
-schema's `^[a-zA-Z0-9 ]+$` rule: a package's name is its **sanitized** id
-(`OpenJS.NodeJS` → `OpenJS NodeJS`) with the real id kept in `properties.id`
-(what winget reads), and an id-less raw command gets a generated `command N`.
-`dependsOn` is rendered as `[resourceId('<type>', '<name>')]`. A handle from one
-host passed to another host's `dependsOn` is a hard error at generation time.
+Each resource gets a stable name of letters, numbers and spaces: a package's
+name is its **sanitized** id (`OpenJS.NodeJS` → `OpenJS NodeJS`) with the real
+id kept in `package.id`, and an id-less raw command gets a generated
+`command N`. `dependsOn` lists those names. A handle from one host passed to
+another host's `dependsOn` is a hard error at generation time.
 
 ## Apply (on a Windows machine)
 
@@ -121,19 +118,16 @@ Run:
 winix switch --host desktop
 ```
 
-That invokes `winget configure` on the generated configuration. You can also
-run the generated entry point directly:
-
-```powershell
-pwsh -File .\.winix\out\desktop\apply.ps1
-```
+Switch checks every resource against the machine and applies only what is out
+of date. Work that needs administrator rights runs in one elevated step (one
+UAC prompt). Preview it first with `winix plan --host desktop`.
 
 ## Notes
 
-- **Elevation is opt-in.** Packages install in the current user context by
-  default. Add `elevated: true` only for packages that need admin (machine-wide
-  installers, drivers). Defaulting to elevated makes `winget configure` fail
-  from a non-elevated shell.
-- **Determinism.** Packages are emitted sorted by id and versions come from
-  `winix-windows.lock`, so the document is stable regardless of declaration
+- **Elevation is detected.** Machine-wide installs and packages without a
+  per-user installer join switch's elevated step automatically. Add
+  `elevated: true` only for installers that need admin without saying so
+  (drivers, system services).
+- **Determinism.** Packages are listed sorted by id and versions come from
+  `winix-windows.lock`, so `resources.json` is stable regardless of declaration
   order.

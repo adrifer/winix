@@ -627,7 +627,8 @@ host("desktop", platforms.windows(), ({ windows }) => {
 });
 ```
 
-This generates a DSC v3 document that `winget configure` applies. Typed helpers
+`winix switch` checks each resource against the machine and applies only what
+is out of date (see [Previewing and applying Windows changes](#previewing-and-applying-windows-changes)). Typed helpers
 also cover environment variables, PATH, files, Windows settings, and PowerShell
 modules:
 
@@ -1079,8 +1080,8 @@ are kept; standalone installs use `Git.Git`, `OpenJS.NodeJS.LTS`,
 `Microsoft.PowerShell`, and `Microsoft.DSC` from the exact WinGet source/IDs.
 `-UseNvm` installs `CoreyButler.NVMforWindows` if needed and selects Node LTS
 through NVM instead. It refuses to introduce standalone Node alongside an
-existing NVM installation when Node needs setup. Install mode also enables
-WinGet configuration components (requires Store access); `-Check` does not.
+existing NVM installation when Node needs setup. Installation needs Store
+access; `-Check` installs nothing.
 
 Only the process PATH/NVM environment is refreshed; no persistent policy or
 environment values are written by the script itself. Installers can change
@@ -1249,7 +1250,7 @@ These helpers emit idempotent DSC PowerShell resources. Native desktop/font
 activation has not been rehearsed on a shared machine; automated checks cover
 authoring, locking, generated scripts and isolated archive handling.
 
-### Previewing Windows changes
+### Previewing and applying Windows changes
 
 `winix plan --host <name>` (the same as `winix switch --dry`) shows what a switch
 would change, checked against the current machine. It never installs or writes
@@ -1264,7 +1265,7 @@ Plan for desktop (checked against this machine):
   ? check    Enable Windows features Microsoft-Windows-Subsystem-Linux, VirtualMachinePlatform  (needs an elevated shell to check)
   = 31 unchanged (packages: 21, files: 4, settings: 2, ...)
   i 4 package(s) newer than locked; switch keeps them and offers to update the lock: Neovim.Neovim, ...
-  ! 2 package(s) will ask for administrator approval (UAC); approve the prompt, or run switch from an elevated shell: Git.Git (installed machine-wide), DEVCOM.JetBrainsMonoNerdFont (no per-user installer)
+  ! 2 package(s) need administrator rights; switch asks once (UAC) for all of them: Git.Git (installed machine-wide), DEVCOM.JetBrainsMonoNerdFont (no per-user installer)
   ! JesseDuffield.lazygit is running (lazygit.exe, pid 12156); close it before switch: winget cannot upgrade a running portable app, and a failed upgrade can remove its command.
   ! Enable Windows features ... can require a Windows restart; Winix never restarts Windows.
   Summary: 20 to change, 2 not checked, 31 unchanged.
@@ -1272,8 +1273,31 @@ Plan for desktop (checked against this machine):
 Removals and ownership (Winix applied-state inventory):
   Would remove: ["package","winget","old.app"]
 
-Would run: winget configure -f ...\configuration.winget --accept-configuration-agreements --disable-interactivity
+winix switch would apply only these 20 change(s); work that needs administrator rights runs in one elevated step (one UAC prompt).
 ```
+
+`winix switch` makes the same plan and then applies **only what is out of
+date**, in dependency order:
+
+- packages with `winget install` / `winget upgrade` (exact id, source and version);
+- PowerShell script resources (files, links, Startup shortcuts, PATH, modules,
+  WSL...) in one PowerShell 7 runner: check, apply, check again;
+- other DSC resources (registry environment variables, Windows settings,
+  `windows.dsc(...)`) with `dsc config set`, one resource at a time;
+- raw `windows.raw` commands, on every switch.
+
+Everything that needs administrator rights (machine-wide installs, packages
+without a per-user installer, Windows features, machine environment variables,
+Windows settings, `elevate: true`) runs in **one elevated step**: one UAC prompt
+per switch, none when nothing machine-wide changes. Run `winix switch` as your
+normal user; per-user packages and some DSC resources fail when the whole
+switch runs elevated. A failed step only skips what depends on it; switch
+reports every failure, exits non-zero, and the next switch retries. When
+nothing is out of date, a switch takes about as long as the plan.
+
+Generated output per Windows host is `.winix/out/<host>/resources.json`: each
+resource with its name, category, dependencies, elevation, and how to check
+and apply it.
 
 - `+` install, `~` change, `!` conflict (for example an exact pin older than the
   installed version: switch fails rather than downgrade), `?` could not be
@@ -1287,13 +1311,11 @@ Would run: winget configure -f ...\configuration.winget --accept-configuration-a
   winget replaces those files in place, so an upgrade fails while one runs and
   can leave its command removed from `WinGet\Links`. The plan warns, and
   `winix switch` stops before applying anything until you close them.
-- Installs and upgrades that will ask for administrator approval (UAC) are
-  listed: upgrades keep the scope a package was installed with
-  (`winget list --details` reports `Installed Scope: Machine`), and installs use
-  whichever installer winget picks (compared with its per-user one).
-  `winix switch` names them again before it starts, because winget waits
-  silently until the prompt is answered and the prompt can open behind other
-  windows. To get per-user installers where packages offer them, set winget's
+- Installs and upgrades that need administrator rights are listed: upgrades
+  keep the scope a package was installed with (`winget list --details` reports
+  `Installed Scope: Machine`), and installs use whichever installer winget
+  picks (compared with its per-user one). They join switch's elevated step; the
+  UAC prompt can open behind other windows. To get per-user installers where packages offer them, set winget's
   `installBehavior.preferences` (`"scope": "user"` and, since many manifests
   declare no scope, `"installerTypes": ["portable", "zip"]`).
 - Switch holds a lock next to the applied-state file and records its process.
@@ -1413,9 +1435,8 @@ Package removal requires an exact installed-version match and uses exact ID,
 source, and version selection.
 
 Dry Windows switches inspect and report removals without changing inventory,
-system resources, or generated output. `apply`, running generated
-scripts directly, or invoking `winget configure` yourself does not record
-ownership or perform cleanup. A failed/interrupted activation never grants new
+system resources, or generated output. `apply`, or running generated
+scripts yourself, does not record ownership or perform cleanup. A failed/interrupted activation never grants new
 ownership; partial installations can remain unmanaged. Removal progress is saved
 after each successful removal so failures can be retried conservatively.
 Concurrent switches are refused. After a crash, inspect the inventory and

@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
@@ -11,8 +11,12 @@ import { wslRepositoryKey } from "../src/backends/windows/wsl-setup.ts";
 import { unifiedDiff } from "../src/cli/diff.ts";
 import {
   formatWindowsPlan, installElevation, nativeWindowsPlanChecker, parseDscTestOutput, parseProbeOutput, parseRunningOutput,
-  planWindowsResources, upgradeElevation, type WindowsPlanChecker,
+  planWindowsResources, upgradeElevation, type PlannedResource, type WindowsPlanChecker,
 } from "../src/cli/windows-plan.ts";
+import {
+  applyWindowsBatches, formatApplySummary, nativeWindowsBatchRunner, orderBatches, parseApplyResults, planApplyBatches,
+  type ApplyBatch, type ApplyStep, type StepResult,
+} from "../src/cli/windows-apply.ts";
 import { inspectResources, parsePackageInventory, type WindowsStateAdapter } from "../src/cli/windows-state.ts";
 import { lockGapWarnings } from "../src/cli/commands/check.ts";
 import { inspectHost } from "../src/cli/commands/inspect.ts";
@@ -83,7 +87,8 @@ describe("generated Windows output size", () => {
         windows.file.text("%USERPROFILE%\\d", "hello"),
       ])],
     }));
-    const doc = generateWindows(evaluated, emptyWindowsLock()).hosts.desktop["configuration.winget"];
+    const resources = generateWindows(evaluated, emptyWindowsLock()).resources.desktop;
+    const doc = resources.map((resource) => [resource.testScript ?? "", resource.setScript ?? ""].join("\n")).join("\n");
     for (const fn of ["function Set-WinixSymlink", "function Test-WinixCopy", "function Get-WinixTextBytes", "function Move-WinixExistingTarget"]) {
       expect(doc.split(fn).length - 1).toBe(1);
     }
@@ -178,7 +183,7 @@ describe("Windows plan", () => {
       "  ~ run    setup  (raw commands run on every switch)",
       "  ~ apply  machine thing",
       "  = 2 unchanged (files: 1, environment: 1)",
-      "  ! 1 change(s) run elevated; run switch from an elevated shell: machine thing",
+      "  ! 1 change(s) need administrator rights; switch asks once (UAC): machine thing",
       "  ! Enable Windows features X can require a Windows restart; Winix never restarts Windows.",
       "  Summary: 3 to change, 2 not checked, 2 unchanged.",
     ]);
@@ -227,7 +232,7 @@ describe("Windows plan", () => {
       { id: "Machine.Install", source: "winget", action: "install", version: "1.0" },
     ]);
     expect(formatWindowsPlan("desktop", planned, { live: true })).toContain(
-      "  ! 2 package(s) will ask for administrator approval (UAC); approve the prompt, or run switch from an elevated shell: " +
+      "  ! 2 package(s) need administrator rights; switch asks once (UAC) for all of them: " +
       "Machine.Upgrade (installed machine-wide), Machine.Install (no per-user installer)");
   });
 
@@ -307,6 +312,138 @@ describe("Windows plan", () => {
     expect([features.reboot, features.needsElevationToCheck]).toEqual([true, true]);
     expect(resources.find((resource) => resource.category === "winix")?.label).toBe("Winix PowerShell helpers (used by file resources)");
   });
+});
+
+describe("Windows apply (switch)", () => {
+  const planned = (resource: WindowsResourceSummary, state: PlannedResource["state"], action: string): PlannedResource =>
+    ({ resource, state, action });
+  const script = (name: string, overrides: Partial<WindowsResourceSummary> = {}) => summary({
+    name, label: name, category: "file", shell: "pwsh", testScript: "$false", setScript: "'set'", ...overrides,
+  });
+
+  it("applies only what the plan found out of date, waiting only on pending dependencies", () => {
+    const batches = planApplyBatches([
+      planned(pkg("Same.App", "1.0"), "ok", "keep"),
+      planned(pkg("New.App", "1.0"), "change", "install"),
+      planned(script("helpers"), "ok", "keep"),
+      planned(script("config", { dependsOn: ["helpers", "New App"] }), "change", "apply"),
+      planned(script("check later", { needsElevationToCheck: true }), "unknown", "check"),
+      planned(summary({ name: "always", category: "command", command: { executable: "cmd", arguments: ["/c", "ver"] } }), "change", "run"),
+      planned(summary({ name: "registry", type: "Microsoft.Windows/Registry", category: "environment", properties: { keyPath: "HKCU\\X" } }), "change", "apply"),
+    ].map((entry) => entry.resource.package ? { ...entry, resource: { ...entry.resource, name: entry.resource.package.id.replace(".", " ") } } : entry));
+    expect(batches).toHaveLength(1);
+    const steps = batches[0].steps;
+    expect(steps.map((step) => [step.name, step.kind])).toEqual([
+      ["New App", "package"], ["check later", "script"], ["always", "command"], ["registry", "dsc"], ["config", "script"],
+    ]);
+    // "helpers" is already in place, so config only waits for the package being installed.
+    expect(steps.find((step) => step.name === "config")?.dependsOn).toEqual(["New App"]);
+    expect(steps[0].package).toEqual({ id: "New.App", source: "winget", version: "1.0", action: "install" });
+    expect(steps.find((step) => step.name === "registry")?.dsc).toEqual({ type: "Microsoft.Windows/Registry", properties: { keyPath: "HKCU\\X" } });
+  });
+
+  it("refuses conflicts before applying anything", () => {
+    expect(() => planApplyBatches([
+      planned(pkg("Exact.App", "1.0", { exact: true }), "conflict", "conflict"),
+    ].map((entry) => ({ ...entry, detail: "installed 1.2, exact pin 1.0" })))).toThrow("Exact.App: installed 1.2, exact pin 1.0");
+  });
+
+  it("collects elevated work into one batch, ordered around what it depends on", () => {
+    const steps: ApplyStep[] = [
+      { name: "user pkg", label: "u", kind: "package", elevated: false, dependsOn: [] },
+      { name: "machine pkg", label: "m", kind: "package", elevated: true, dependsOn: [] },
+      { name: "feature", label: "f", kind: "script", elevated: true, dependsOn: ["user pkg"] },
+      { name: "link", label: "l", kind: "script", elevated: false, dependsOn: ["machine pkg"] },
+      { name: "settings", label: "s", kind: "dsc", elevated: false, dependsOn: [] },
+    ];
+    expect(orderBatches(steps).map((batch) => [batch.elevated, batch.steps.map((step) => step.name)])).toEqual([
+      [false, ["user pkg", "settings"]],
+      [true, ["machine pkg", "feature"]],
+      [false, ["link"]],
+    ]);
+    expect(() => orderBatches([
+      { name: "a", label: "a", kind: "script", elevated: false, dependsOn: ["b"] },
+      { name: "b", label: "b", kind: "script", elevated: false, dependsOn: ["a"] },
+    ])).toThrow("dependency cycle: a, b");
+  });
+
+  it("marks machine-wide packages from the elevation check as elevated", () => {
+    const [batch] = planApplyBatches([planned(pkg("Machine.App", "2.0"), "change", "upgrade")],
+      new Map([["Machine.App", "installed machine-wide"]]));
+    expect(batch.elevated).toBe(true);
+  });
+
+  it("skips dependents of a failure, also in later batches, and summarizes", async () => {
+    const batches: ApplyBatch[] = [
+      { elevated: false, steps: [
+        { name: "a", label: "A", kind: "script", elevated: false, dependsOn: [] },
+        { name: "b", label: "B", kind: "script", elevated: false, dependsOn: [] },
+      ] },
+      { elevated: true, steps: [
+        { name: "c", label: "C", kind: "package", elevated: true, dependsOn: ["a"] },
+        { name: "d", label: "D", kind: "package", elevated: true, dependsOn: ["b"] },
+      ] },
+    ];
+    const run = vi.fn(async (batch: ApplyBatch) => batch.steps.map((step): StepResult => step.name === "a"
+      ? { name: "a", status: "failed", error: "boom" } : { name: step.name, status: step.name === "b" ? "unchanged" : "applied" }));
+    const lines: string[] = [];
+    const outcome = await applyWindowsBatches(batches, { run }, (line) => lines.push(line));
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run.mock.calls[1][0].steps.map((step) => step.name)).toEqual(["d"]);
+    expect(outcome.results).toEqual([
+      { name: "a", status: "failed", error: "boom" }, { name: "b", status: "unchanged" },
+      { name: "c", status: "skipped", error: "a dependency failed" }, { name: "d", status: "applied" },
+    ]);
+    expect(lines).toContain("Applying 1 change(s) that need administrator rights; approve the UAC prompt (it can open behind other windows).");
+    expect(formatApplySummary(outcome, new Map([["a", "A"], ["c", "C"]]))).toEqual([
+      "Applied 1, already in place 1, failed 1, skipped 1.", "  ✗ A: boom", "  ✗ C: a dependency failed",
+    ]);
+  });
+
+  it("reports a declined UAC prompt (or any runner error) as failures of that batch", async () => {
+    const outcome = await applyWindowsBatches(
+      [{ elevated: true, steps: [{ name: "m", label: "M", kind: "package", elevated: true, dependsOn: [] }] }],
+      { run: async () => { throw new Error("the administrator approval (UAC) was declined"); } }, () => {});
+    expect(outcome.failed).toEqual([{ name: "m", status: "failed", error: "the administrator approval (UAC) was declined" }]);
+  });
+
+  it("parses runner results", () => {
+    expect(parseApplyResults('WINIX-APPLY:[{"name":"a","status":"applied"},{"name":"b","status":"failed","error":"x"}]')).toEqual([
+      { name: "a", status: "applied" }, { name: "b", status: "failed", error: "x" },
+    ]);
+    expect(parseApplyResults('WINIX-APPLY:{"name":"a","status":"unchanged"}')).toEqual([{ name: "a", status: "unchanged" }]);
+    expect(() => parseApplyResults("nothing")).toThrow("no results");
+    expect(() => parseApplyResults('WINIX-APPLY:[{"name":"a","status":"weird"}]')).toThrow("invalid result");
+  });
+
+  it.runIf(process.platform === "win32")("runs scripts natively: test, set, verify; failures skip dependents", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-runner-"));
+    const file = join(dir, "out.txt").replaceAll("'", "''");
+    try {
+      const steps: ApplyStep[] = [
+        { name: "write", label: "write", kind: "script", elevated: false, dependsOn: [], shell: "pwsh",
+          testScript: `(Test-Path -LiteralPath '${file}')`, setScript: `Set-Content -LiteralPath '${file}' -Value 'hi'; Write-Host 'wrote it'` },
+        { name: "broken", label: "broken", kind: "script", elevated: false, dependsOn: [], shell: "pwsh",
+          testScript: "$false", setScript: "'no-op'" },
+        { name: "after", label: "after", kind: "script", elevated: false, dependsOn: ["broken"], shell: "pwsh",
+          testScript: "$false", setScript: "'never'" },
+        { name: "winps", label: "winps", kind: "script", elevated: false, dependsOn: [], shell: "powershell",
+          testScript: "$PSVersionTable.PSEdition -eq 'Desktop'", setScript: "throw 'not reached'" },
+      ];
+      const lines: string[] = [];
+      const results = await nativeWindowsBatchRunner.run({ elevated: false, steps }, (line) => lines.push(line));
+      expect(results).toEqual([
+        { name: "write", status: "applied" },
+        { name: "broken", status: "failed", error: "still not in the desired state after applying" },
+        { name: "after", status: "skipped", error: "a dependency failed" },
+        { name: "winps", status: "unchanged" },
+      ]);
+      expect(await readFile(join(dir, "out.txt"), "utf8")).toContain("hi");
+      expect(lines.join("\n")).toContain("wrote it");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 60000);
 });
 
 describe("batched Windows inventory", () => {

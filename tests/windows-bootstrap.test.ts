@@ -242,7 +242,7 @@ try {
     expect(run(shell, "", "-Standalone -UseNvm").error).toContain("cannot be combined");
   });
 
-  it("installs only missing tools, upgrades outdated ones, then enables configuration", () => {
+  it("installs only missing tools and upgrades outdated ones", () => {
     const result = run(shell, "$script:versions.Remove('dsc.exe'); $script:versions['node.exe'] = '22.0.0'");
     expect(result.ok).toBe(true);
     const installations = result.calls.filter((call) => ["install", "upgrade"].includes(call.args[0]));
@@ -251,7 +251,8 @@ try {
     ]);
     expect(installations.every((call) => call.args.includes("--exact") && call.args.includes("--source") &&
       call.args.includes("winget") && call.args.includes("--disable-interactivity"))).toBe(true);
-    expect(result.calls.some((call) => call.args.join(" ") === "configure --enable")).toBe(true);
+    // Winix applies Windows hosts itself; winget configuration support is not needed.
+    expect(result.calls.some((call) => call.args[0] === "configure")).toBe(false);
     expect(result.calls.some((call) => call.args.includes("--file"))).toBe(false);
   });
 

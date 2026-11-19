@@ -1,22 +1,12 @@
 export type ActivationPlatform = "nixos" | "darwin" | "windows";
 
+/** The Nix activation command. Windows hosts are applied by Winix itself (see windows-apply.ts). */
 export function activationCommand(
-  platform: ActivationPlatform,
+  platform: Exclude<ActivationPlatform, "windows">,
   flake: string,
   isRoot = isCurrentProcessRoot(),
   osPlatform: NodeJS.Platform = process.platform
 ): string[] {
-  if (platform === "windows") {
-    return [
-      "winget",
-      "configure",
-      "-f",
-      flake,
-      "--accept-configuration-agreements",
-      "--disable-interactivity",
-    ];
-  }
-
   const command =
     platform === "darwin"
       ? ["darwin-rebuild", "switch", "--flake", flake]
@@ -32,10 +22,7 @@ export function assertActivationSupported(
 ): void {
   if (platform === "windows") {
     if (osPlatform === "win32") return;
-    throw new Error(
-      "Windows activation is only supported on native Windows. " +
-      "`winget configure` only runs on Windows."
-    );
+    throw new Error("Windows activation is only supported on native Windows.");
   }
 
   if (osPlatform !== "win32") return;

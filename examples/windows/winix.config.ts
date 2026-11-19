@@ -19,7 +19,7 @@
  *     type + properties when no typed helper exists.
  *   - `dependsOn` orders resources using the handle returned by each helper.
  *
- * Generate the `configuration.winget` with:
+ * Generate `.winix/out/desktop/resources.json` with:
  *
  *   winix apply --host desktop
  *

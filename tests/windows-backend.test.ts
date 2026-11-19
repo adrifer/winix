@@ -21,6 +21,13 @@ import {
 } from "../src/backends/windows/lockfile.ts";
 import type { WindowsOptions } from "../src/types/windows.ts";
 import { WINIX_FILE_MODULE } from "../src/helpers/windows.ts";
+import type { WindowsOutput, WindowsResourceSummary } from "../src/backends/windows/index.ts";
+
+function named(out: WindowsOutput, name: string, hostName = "desktop"): WindowsResourceSummary {
+  const resource = out.resources[hostName]?.find((candidate) => candidate.name === name);
+  if (!resource) throw new Error(`no resource named ${name} in ${hostName}: ${(out.resources[hostName] ?? []).map((r) => r.name).join(", ")}`);
+  return resource;
+}
 
 const inputs = defineInputs({
   nixpkgs: "github:NixOS/nixpkgs/nixos-unstable",
@@ -201,7 +208,7 @@ describe("generateWindows() emitter", () => {
     expect(out.hosts).toEqual({});
   });
 
-  it("emits a stable configuration.winget + apply.ps1 for a windows host", () => {
+  it("emits a stable resources.json for a windows host", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -227,6 +234,8 @@ describe("generateWindows() emitter", () => {
     }));
     expect(out.warnings).toEqual([]);
     expect(Object.keys(out.hosts)).toEqual(["desktop"]);
+    expect(Object.keys(out.hosts.desktop)).toEqual(["resources.json"]);
+    expect(JSON.parse(out.hosts.desktop["resources.json"])).toEqual({ host: "desktop", resources: out.resources.desktop });
     expect(out.hosts.desktop).toMatchSnapshot();
   });
 
@@ -244,12 +253,11 @@ describe("generateWindows() emitter", () => {
       "CoreyButler.NVMforWindows": { source: "winget", version: "1.2.2" },
       "Microsoft.VisualStudioCode": { source: "winget", version: "1.90.1" },
     });
-    const doc = generateWindows(evaluate(ws), lock, undefined, {
+    const out = generateWindows(evaluate(ws), lock, undefined, {
       presenceOnlyPackages: new Set(["CoreyButler.NVMforWindows", "Microsoft.VisualStudioCode"]),
-    }).hosts.desktop["configuration.winget"];
-    const nvm = doc.slice(doc.indexOf("id: CoreyButler.NVMforWindows"), doc.indexOf("id: Microsoft.VisualStudioCode"));
-    expect(nvm).not.toContain("version:");
-    expect(doc).toContain('version: "1.90.1"');
+    });
+    expect(named(out, "CoreyButler NVMforWindows").package?.version).toBeUndefined();
+    expect(named(out, "Microsoft VisualStudioCode").package?.version).toBe("1.90.1");
     // Presence-only still requires the package to be locked.
     expect(() => generateWindows(evaluate(ws), windowsLock({
       "Microsoft.VisualStudioCode": { source: "winget", version: "1.90.1" },
@@ -262,10 +270,10 @@ describe("generateWindows() emitter", () => {
       hosts: [host("blank", platforms.windows(), [])],
     });
     const out = generateWindows(evaluate(ws));
-    expect(out.hosts.blank["configuration.winget"]).toContain("resources: []");
+    expect(JSON.parse(out.hosts.blank["resources.json"])).toEqual({ host: "blank", resources: [] });
   });
 
-  it("renders packages first, then raw commands in declaration order", () => {
+  it("lists packages first, then raw commands in declaration order", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -277,24 +285,20 @@ describe("generateWindows() emitter", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({
+    const out = generateWindows(evaluate(ws), windowsLock({
       "Git.Git": { source: "winget", version: "2.44.0" },
       "ZedIndustries.Zed": { source: "winget", version: "0.190.0" },
-    })).hosts.desktop["configuration.winget"];
+    }));
 
-    expect(doc.indexOf('name: "Git Git"')).toBeLessThan(doc.indexOf('name: "ZedIndustries Zed"'));
-    expect(doc.indexOf('name: "ZedIndustries Zed"')).toBeLessThan(
-      doc.indexOf('name: "command 1"')
-    );
-    expect(doc.indexOf('name: "command 1"')).toBeLessThan(
-      doc.indexOf('name: "command 2"')
-    );
-    expect(doc).toContain("type: Microsoft.DSC.Transitional/RunCommandOnSet");
-    expect(doc).toContain('arguments: ["/c", "echo", "first"]');
-    expect(doc).toContain('arguments: ["/c", "echo", "second"]');
+    expect(out.resources.desktop.map((resource) => [resource.name, resource.type])).toEqual([
+      ["Git Git", "winget/package"], ["ZedIndustries Zed", "winget/package"],
+      ["command 1", "command"], ["command 2", "command"],
+    ]);
+    expect(named(out, "command 1").command).toEqual({ executable: "cmd", arguments: ["/c", "echo", "first"] });
+    expect(named(out, "command 2").command).toEqual({ executable: "cmd", arguments: ["/c", "echo", "second"] });
   });
 
-  it("omits securityContext unless a package opts into elevation", () => {
+  it("marks only packages that opt in as elevated", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -304,24 +308,15 @@ describe("generateWindows() emitter", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({
+    const out = generateWindows(evaluate(ws), windowsLock({
       "Fastfetch-cli.Fastfetch": { source: "winget", version: "2.45.0" },
       "Some.Driver": { source: "winget", version: "1.2.3" },
-    })).hosts.desktop["configuration.winget"];
-
-    // The non-elevated package block must not contain securityContext.
-    const fastfetchBlock = doc.slice(
-      doc.indexOf('name: "Fastfetch cli Fastfetch"'),
-      doc.indexOf('name: "Some Driver"')
-    );
-    expect(fastfetchBlock).not.toContain("securityContext");
-
-    // The elevated package block must contain it.
-    const driverBlock = doc.slice(doc.indexOf('name: "Some Driver"'));
-    expect(driverBlock).toContain("securityContext: elevated");
+    }));
+    expect(named(out, "Fastfetch cli Fastfetch").elevated).toBe(false);
+    expect(named(out, "Some Driver").elevated).toBe(true);
   });
 
-  it("sanitizes resource ids into schema-valid instance names", () => {
+  it("names resources with letters, numbers and spaces, keeping the real package id", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -331,24 +326,13 @@ describe("generateWindows() emitter", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({
+    const out = generateWindows(evaluate(ws), windowsLock({
       "Git.Git": { source: "winget", version: "2.44.0" },
       "Fastfetch-cli.Fastfetch": { source: "winget", version: "2.45.0" },
-    })).hosts.desktop["configuration.winget"];
-
-    // Dots/dashes collapse to spaces; the real id stays in properties.id.
-    expect(doc).toContain('name: "Git Git"');
-    expect(doc).toContain("      id: Git.Git");
-    expect(doc).toContain('name: "Fastfetch cli Fastfetch"');
-    expect(doc).toContain("      id: Fastfetch-cli.Fastfetch");
-
-    // Every emitted instance name must satisfy the DSC v3 name grammar.
-    for (const line of doc.split("\n")) {
-      const m = line.match(/^  - name: (?:"([^"]+)"|(.+))$/);
-      if (!m) continue;
-      const name = m[1] ?? m[2];
-      expect(name).toMatch(/^[a-zA-Z0-9 ]+$/);
-    }
+    }));
+    expect(named(out, "Git Git").package?.id).toBe("Git.Git");
+    expect(named(out, "Fastfetch cli Fastfetch").package?.id).toBe("Fastfetch-cli.Fastfetch");
+    for (const resource of out.resources.desktop) expect(resource.name).toMatch(/^[a-zA-Z0-9 ]+$/);
   });
 
   it("disambiguates colliding sanitized names with a numeric suffix", () => {
@@ -362,13 +346,11 @@ describe("generateWindows() emitter", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({
+    const out = generateWindows(evaluate(ws), windowsLock({
       "Foo.Bar": { source: "winget", version: "1.0.0" },
       "Foo-Bar": { source: "winget", version: "2.0.0" },
-    })).hosts.desktop["configuration.winget"];
-
-    expect(doc).toContain('name: "Foo Bar"');
-    expect(doc).toContain('name: "Foo Bar 2"');
+    }));
+    expect(out.resources.desktop.map((resource) => resource.name).sort()).toEqual(["Foo Bar", "Foo Bar 2"]);
   });
 
   it("emits dependsOn referencing a package handle by resource name", () => {
@@ -386,13 +368,10 @@ describe("generateWindows() emitter", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({
+    const out = generateWindows(evaluate(ws), windowsLock({
       "Git.Git": { source: "winget", version: "2.44.0" },
-    })).hosts.desktop["configuration.winget"];
-
-    // WinGet's dscv3 processor resolves dependencies by resource name.
-    const cmdBlock = doc.slice(doc.indexOf('name: "clone repos"'));
-    expect(cmdBlock).toContain(`dependsOn: ["Git Git"]`);
+    }));
+    expect(named(out, "clone repos").dependsOn).toEqual(["Git Git"]);
   });
 
   it("emits dependsOn referencing a raw command handle", () => {
@@ -409,12 +388,10 @@ describe("generateWindows() emitter", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({
+    const out = generateWindows(evaluate(ws), windowsLock({
       "Git.Git": { source: "winget", version: "2.44.0" },
-    })).hosts.desktop["configuration.winget"];
-
-    const pkgBlock = doc.slice(doc.indexOf('name: "Git Git"'));
-    expect(pkgBlock).toContain(`dependsOn: ["prep"]`);
+    }));
+    expect(named(out, "Git Git").dependsOn).toEqual(["prep"]);
   });
 
   it("accepts a single handle (not an array) in dependsOn", () => {
@@ -433,12 +410,10 @@ describe("generateWindows() emitter", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({
+    const out = generateWindows(evaluate(ws), windowsLock({
       "Git.Git": { source: "winget", version: "2.44.0" },
-    })).hosts.desktop["configuration.winget"];
-
-    const cmdBlock = doc.slice(doc.indexOf('name: "clone repos"'));
-    expect(cmdBlock).toContain(`dependsOn: ["Git Git"]`);
+    }));
+    expect(named(out, "clone repos").dependsOn).toEqual(["Git Git"]);
   });
 
   it("throws when dependsOn references a resource from another host", () => {
@@ -806,6 +781,10 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
 });
 
 describe("generateWindows() emitter: dsc / env / path", () => {
+  /** All script text of a host, unescaped, for substring checks. */
+  const scriptsOf = (out: WindowsOutput, hostName = "desktop") => out.resources[hostName]
+    .flatMap((resource) => [resource.testScript ?? "", resource.setScript ?? ""]).join("\n");
+
   it("emits a generic dsc resource verbatim", () => {
     const ws = workspace({
       inputs,
@@ -818,11 +797,12 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
-    expect(doc).toContain("type: Microsoft.Windows/Service");
-    expect(doc).toContain("name: spooler");
-    expect(doc).toContain("startType: automatic");
-    expect(doc).toMatchSnapshot();
+    const out = generateWindows(evaluate(ws));
+    expect(out.resources.desktop).toEqual([expect.objectContaining({
+      type: "Microsoft.Windows/Service", category: "other", elevated: false,
+      properties: { name: "spooler", startType: "automatic" },
+    })]);
+    expect(out.resources.desktop[0].setScript).toBeUndefined();
   });
 
   it("emits env as Registry and path as PowerShellScript resources", () => {
@@ -835,18 +815,18 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
-    expect(doc).toContain("type: Microsoft.Windows/Registry");
-    expect(doc).toContain("type: Microsoft.DSC.Transitional/PowerShellScript");
-    expect(doc).not.toContain("type: PSDscResources/Environment");
-    expect(doc).not.toContain("type: Microsoft.DSC/PowerShell");
-    expect(doc).toContain("keyPath: \"HKCU\\\\Environment\"");
-    expect(doc).toContain("_exist: true");
-    expect(doc).toContain("$entries -contains $dir");
-    expect(doc).toMatchSnapshot();
+    const out = generateWindows(evaluate(ws));
+    expect(named(out, "Set EDITOR")).toMatchObject({
+      type: "Microsoft.Windows/Registry", category: "environment", elevated: false,
+      properties: { keyPath: "HKCU\\Environment", valueName: "EDITOR", _exist: true, valueData: { String: "nvim" } },
+    });
+    const path = out.resources.desktop.find((resource) => resource.category === "environment" && resource.shell);
+    expect(path).toMatchObject({ type: "Microsoft.DSC.Transitional/PowerShellScript", shell: "pwsh", elevated: false });
+    expect(path?.testScript).toContain("$entries -contains $dir");
+    expect(out.hosts.desktop).toMatchSnapshot();
   });
 
-  it("emits scoped env and path set/remove variants", () => {
+  it("emits scoped env and path set/remove variants; machine scope is elevated", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -860,14 +840,18 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
-    expect(doc).toContain("type: Microsoft.Windows/Registry");
-    expect(doc).toContain("type: Microsoft.DSC.Transitional/PowerShellScript");
-    expect(doc).toContain("keyPath: \"HKLM\\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\Session Manager\\\\Environment\"");
-    expect(doc).toContain("_exist: false");
-    expect(doc).toContain("$target = 'Machine'");
-    expect(doc).toContain("-not ($entries -contains $dir)");
-    expect(doc).toMatchSnapshot();
+    const out = generateWindows(evaluate(ws));
+    expect(named(out, "Set MACHINE VAR")).toMatchObject({
+      elevated: true,
+      properties: { keyPath: "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment" },
+    });
+    expect(named(out, "Set USER VAR").elevated).toBe(false);
+    expect(named(out, "Remove OLD USER VAR").properties).toMatchObject({ _exist: false });
+    expect(named(out, "Add C machine bin to PATH").elevated).toBe(true);
+    expect(named(out, "Add C user bin to PATH").elevated).toBe(false);
+    expect(scriptsOf(out)).toContain("$target = 'Machine'");
+    expect(scriptsOf(out)).toContain("-not ($entries -contains $dir)");
+    expect(out.hosts.desktop).toMatchSnapshot();
   });
 
   it("emits dependsOn referencing a dsc handle by resource name", () => {
@@ -880,11 +864,11 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
-    expect(doc).toContain(`dependsOn: ["Set EDITOR"]`);
+    const out = generateWindows(evaluate(ws));
+    expect(out.resources.desktop.find((resource) => resource.shell)?.dependsOn).toEqual(["Set EDITOR"]);
   });
 
-  it("emits WindowsSettings with an auto ensure-module dependency", () => {
+  it("emits WindowsSettings with an auto ensure-module dependency, applied elevated", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -894,92 +878,51 @@ describe("generateWindows() emitter: dsc / env / path", () => {
       ],
     });
     expect(() => generateWindows(evaluate(ws))).toThrow("no matching pin");
-    const doc = generateWindows(evaluate(ws), windowsLock({})).hosts.desktop["configuration.winget"];
-    expect(doc).toContain(`name: "Ensure Microsoft Windows Settings module"`);
-    expect(doc).toContain("type: Microsoft.DSC.Transitional/PowerShellScript");
-    expect(doc).toContain("$name = 'Microsoft.Windows.Settings'");
-    expect(doc).toContain("$version = '0.1.0-alpha.6'");
-    expect(doc).toContain("Install-PSResource -Name $name -Version $version");
-    expect(doc).toContain(`type: Microsoft.Windows.Settings/WindowsSettings`);
-    expect(doc).toContain("DeveloperMode: true");
-    expect(doc).toContain(`dependsOn: ["Ensure Microsoft Windows Settings module"]`);
-    expect(doc).not.toContain("securityContext: elevated");
-    expect(doc).toMatchSnapshot();
-  });
-
-  it("emits an elevated-shell warning for WindowsSettings resources", () => {
-    const ws = workspace({
-      inputs,
-      hosts: [
-        host("desktop", platforms.windows(), [
-          windows.setting({ DeveloperMode: true }),
-        ]),
-      ],
+    const out = generateWindows(evaluate(ws), windowsLock({}));
+    const ensure = named(out, "Ensure Microsoft Windows Settings module");
+    expect(ensure).toMatchObject({ type: "Microsoft.DSC.Transitional/PowerShellScript", elevated: false });
+    expect(ensure.setScript).toContain("$name = 'Microsoft.Windows.Settings'");
+    expect(ensure.setScript).toContain("$version = '0.1.0-alpha.6'");
+    expect(ensure.setScript).toContain("Install-PSResource -Name $name -Version $version");
+    // Developer Mode writes machine policy, so settings apply in the elevated step.
+    expect(named(out, "Windows Settings")).toMatchObject({
+      type: "Microsoft.Windows.Settings/WindowsSettings", elevated: true,
+      properties: { DeveloperMode: true }, dependsOn: ["Ensure Microsoft Windows Settings module"],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({})).hosts.desktop["configuration.winget"];
-    expect(doc).toContain("elevated shell");
+    expect(out.hosts.desktop).toMatchSnapshot();
   });
 
   it("emits every supported WindowsSettings property", () => {
+    const settings = {
+      AppColorMode: "Dark",
+      AutoColorization: true,
+      DesktopTaskbarBadges: true,
+      DesktopTaskbarMultiMon: true,
+      DesktopTaskbarMultiMonMode: "WindowOnly",
+      DeveloperMode: true,
+      EnableTransparency: false,
+      NotifyOnUsbErrors: true,
+      NotifyOnWeakCharger: false,
+      SetTimeZoneAutomatically: false,
+      ShowAccentColorOnStartAndTaskbar: true,
+      ShowAccentColorOnTitleBarsAndWindowBorders: true,
+      ShowRecentList: false,
+      ShowRecommendedList: true,
+      StartFolders: ["Documents", "Downloads", "Settings"],
+      SystemColorMode: "Light",
+      TaskbarAlignment: "Center",
+      TaskbarBadges: false,
+      TaskbarGroupingMode: "WhenFull",
+      TaskbarMultiMon: true,
+      TaskbarMultiMonMode: "Duplicate",
+      TimeZone: "Pacific Standard Time",
+    } as const;
     const ws = workspace({
       inputs,
-      hosts: [
-        host("desktop", platforms.windows(), [
-          windows.setting({
-            AppColorMode: "Dark",
-            AutoColorization: true,
-            DesktopTaskbarBadges: true,
-            DesktopTaskbarMultiMon: true,
-            DesktopTaskbarMultiMonMode: "WindowOnly",
-            DeveloperMode: true,
-            EnableTransparency: false,
-            NotifyOnUsbErrors: true,
-            NotifyOnWeakCharger: false,
-            SetTimeZoneAutomatically: false,
-            ShowAccentColorOnStartAndTaskbar: true,
-            ShowAccentColorOnTitleBarsAndWindowBorders: true,
-            ShowRecentList: false,
-            ShowRecommendedList: true,
-            StartFolders: ["Documents", "Downloads", "Settings"],
-            SystemColorMode: "Light",
-            TaskbarAlignment: "Center",
-            TaskbarBadges: false,
-            TaskbarGroupingMode: "WhenFull",
-            TaskbarMultiMon: true,
-            TaskbarMultiMonMode: "Duplicate",
-            TimeZone: "Pacific Standard Time",
-          }),
-        ]),
-      ],
+      hosts: [host("desktop", platforms.windows(), [windows.setting(settings)])],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({})).hosts.desktop["configuration.winget"];
-    for (const key of [
-      "AppColorMode",
-      "AutoColorization",
-      "DesktopTaskbarBadges",
-      "DesktopTaskbarMultiMon",
-      "DesktopTaskbarMultiMonMode",
-      "DeveloperMode",
-      "EnableTransparency",
-      "NotifyOnUsbErrors",
-      "NotifyOnWeakCharger",
-      "SetTimeZoneAutomatically",
-      "ShowAccentColorOnStartAndTaskbar",
-      "ShowAccentColorOnTitleBarsAndWindowBorders",
-      "ShowRecentList",
-      "ShowRecommendedList",
-      "StartFolders",
-      "SystemColorMode",
-      "TaskbarAlignment",
-      "TaskbarBadges",
-      "TaskbarGroupingMode",
-      "TaskbarMultiMon",
-      "TaskbarMultiMonMode",
-      "TimeZone",
-    ]) {
-      expect(doc).toContain(`${key}:`);
-    }
-    expect(doc).toMatchSnapshot();
+    const out = generateWindows(evaluate(ws), windowsLock({}));
+    expect(named(out, "Windows Settings").properties).toEqual(settings);
   });
 
   it("emits the WindowsSettings ensure-module step only once", () => {
@@ -992,10 +935,11 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({})).hosts.desktop["configuration.winget"];
-    expect(doc.match(/Ensure Microsoft Windows Settings module/g)).toHaveLength(3);
-    expect(doc.match(/Install-PSResource -Name \$name -Version \$version/g)).toHaveLength(1);
-    expect(doc.match(/type: Microsoft\.Windows\.Settings\/WindowsSettings/g)).toHaveLength(2);
+    const out = generateWindows(evaluate(ws), windowsLock({}));
+    expect(out.resources.desktop.filter((resource) => resource.name === "Ensure Microsoft Windows Settings module")).toHaveLength(1);
+    const settings = out.resources.desktop.filter((resource) => resource.type === "Microsoft.Windows.Settings/WindowsSettings");
+    expect(settings).toHaveLength(2);
+    for (const setting of settings) expect(setting.dependsOn).toEqual(["Ensure Microsoft Windows Settings module"]);
   });
 
   it("packages and raw commands can depend on a setting handle", () => {
@@ -1009,13 +953,11 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({
+    const out = generateWindows(evaluate(ws), windowsLock({
       "Git.Git": { source: "winget", version: "2.44.0" },
-    })).hosts.desktop["configuration.winget"];
-    expect(doc).toContain(`name: "Git Git"`);
-    expect(doc).toContain(`name: "after settings"`);
-    expect(doc).toContain(`dependsOn: ["Windows Settings"]`);
-    expect(doc).toMatchSnapshot();
+    }));
+    expect(named(out, "Git Git").dependsOn).toEqual(["Windows Settings"]);
+    expect(named(out, "after settings").dependsOn).toEqual(["Windows Settings"]);
   });
 
   it.each([false, true])("orders symlinks after declared Developer Mode without duplicating explicit dependencies (%s)", (explicit) => {
@@ -1032,17 +974,16 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     const evaluated = evaluate(workspace({
       inputs, hosts: [host("desktop", platforms.windows(), [links(), developerMode])],
     }));
-    const doc = generateWindows(evaluated, windowsLock({})).hosts.desktop["configuration.winget"];
-    const blocks = doc.split("\n  - name: ");
-    const link = blocks.find((block) => block.startsWith('"Link file USERPROFILE link"\n'));
-    expect(link).toContain('dependsOn: ["Write file USERPROFILE source", "Windows Settings", "Winix PowerShell helpers"]');
+    const out = generateWindows(evaluated, windowsLock({}));
+    expect(named(out, "Link file USERPROFILE link").dependsOn)
+      .toEqual(["Write file USERPROFILE source", "Windows Settings", "Winix PowerShell helpers"]);
     for (const name of ["Write file USERPROFILE source", "Copy file USERPROFILE copy"]) {
-      expect(blocks.find((block) => block.startsWith(`"${name}"\n`))).toContain('    dependsOn: ["Winix PowerShell helpers"]');
+      expect(named(out, name).dependsOn).toEqual(["Winix PowerShell helpers"]);
     }
     for (const name of ["Remove file USERPROFILE old", "Set EDITOR", "Winix PowerShell helpers"]) {
-      expect(blocks.find((block) => block.startsWith(`"${name}"\n`))).not.toContain("    dependsOn:");
+      expect(named(out, name).dependsOn).toEqual([]);
     }
-    expect(generateWindows(evaluated, windowsLock({})).hosts.desktop["configuration.winget"]).toBe(doc);
+    expect(generateWindows(evaluated, windowsLock({})).hosts.desktop["resources.json"]).toBe(out.hosts.desktop["resources.json"]);
     const resource = (evaluated[0].windows as WindowsOptions).dsc?.find((resource) =>
       resource.winix?.kind === "file" && resource.winix.action === "symlink");
     expect(resource?.dependsOn).toHaveLength(explicit ? 2 : 1);
@@ -1056,12 +997,12 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ...(developerMode === undefined ? [] : [windows.setting({ DeveloperMode: developerMode })]),
       ])],
     }));
-    const doc = generateWindows(evaluated, windowsLock({})).hosts.desktop["configuration.winget"];
-    const link = doc.split("\n  - name: ").find((block) => block.startsWith('"Link file USERPROFILE link"\n'));
-    expect(link).toContain('    dependsOn: ["Winix PowerShell helpers"]');
-    expect(link).toContain("Assert-WinixCanCreateSymlink");
-    expect(doc).toContain("requires elevation or Developer Mode");
-    expect(doc).not.toContain("DeveloperMode: true");
+    const out = generateWindows(evaluated, windowsLock({}));
+    const link = named(out, "Link file USERPROFILE link");
+    expect(link.dependsOn).toEqual(["Winix PowerShell helpers"]);
+    expect(link.setScript).toContain("Assert-WinixCanCreateSymlink");
+    expect(scriptsOf(out)).toContain("requires elevation or Developer Mode");
+    expect(out.resources.desktop.some((resource) => resource.properties?.DeveloperMode === true)).toBe(false);
   });
 
   it("keeps inferred Developer Mode dependencies within each host", () => {
@@ -1076,10 +1017,9 @@ describe("generateWindows() emitter: dsc / env / path", () => {
       ],
     }));
     const output = generateWindows(evaluated, windowsLock({}));
-    expect(output.hosts.enabled["configuration.winget"]).toContain('dependsOn: ["Windows Settings", "Winix PowerShell helpers"]');
-    expect(output.hosts.external["configuration.winget"]).not.toContain("type: Microsoft.Windows.Settings/WindowsSettings");
-    expect(output.hosts.external["configuration.winget"]).toContain('    dependsOn: ["Winix PowerShell helpers"]');
-    expect(output.hosts.external["configuration.winget"]).not.toContain('"Windows Settings"');
+    expect(named(output, "Link file USERPROFILE link", "enabled").dependsOn).toEqual(["Windows Settings", "Winix PowerShell helpers"]);
+    expect(output.resources.external.some((resource) => resource.type === "Microsoft.Windows.Settings/WindowsSettings")).toBe(false);
+    expect(named(output, "Link file USERPROFILE link", "external").dependsOn).toEqual(["Winix PowerShell helpers"]);
   });
 
   it("resolves Winix-managed env references in PATH entries", () => {
@@ -1092,10 +1032,10 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
-    expect(doc).toContain("$dir = '%USERPROFILE%\\.cargo\\bin'");
-    expect(doc).not.toContain("$dir = '%CARGO_HOME%\\bin'");
-    expect(doc).toContain(`dependsOn: ["Set CARGO HOME"]`);
+    const out = generateWindows(evaluate(ws));
+    expect(scriptsOf(out)).toContain("$dir = '%USERPROFILE%\\.cargo\\bin'");
+    expect(scriptsOf(out)).not.toContain("$dir = '%CARGO_HOME%\\bin'");
+    expect(out.resources.desktop.find((resource) => resource.shell)?.dependsOn).toEqual(["Set CARGO HOME"]);
   });
 
   it("resolves managed env chains in env values and PATH entries", () => {
@@ -1110,10 +1050,10 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
-    expect(doc).toContain(`String: "%USERPROFILE%\\\\.local"`);
-    expect(doc).toContain(`String: "%USERPROFILE%\\\\.local\\\\share"`);
-    expect(doc).toContain("$dir = '%USERPROFILE%\\.local\\share\\bin'");
+    const out = generateWindows(evaluate(ws));
+    expect(named(out, "Set LEVEL2").properties?.valueData).toEqual({ String: "%USERPROFILE%\\.local" });
+    expect(named(out, "Set LEVEL3").properties?.valueData).toEqual({ String: "%USERPROFILE%\\.local\\share" });
+    expect(scriptsOf(out)).toContain("$dir = '%USERPROFILE%\\.local\\share\\bin'");
   });
 
   it("leaves system-only PATH variables untouched", () => {
@@ -1125,8 +1065,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ]),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
-    expect(doc).toContain("$dir = '%USERPROFILE%\\.local\\bin'");
+    expect(scriptsOf(generateWindows(evaluate(ws)))).toContain("$dir = '%USERPROFILE%\\.local\\bin'");
   });
 
   it("matches managed env names case-insensitively while preserving system vars", () => {
@@ -1139,8 +1078,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws)).hosts.desktop["configuration.winget"];
-    expect(doc).toContain("$dir = '%USERPROFILE%\\.cargo\\bin\\%USERNAME%'");
+    expect(scriptsOf(generateWindows(evaluate(ws)))).toContain("$dir = '%USERPROFILE%\\.cargo\\bin\\%USERNAME%'");
   });
 
   it("rejects circular managed env references", () => {
@@ -1168,10 +1106,10 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws), windowsLock({
+    const out = generateWindows(evaluate(ws), windowsLock({
       "Git.Git": { source: "winget", version: "2.44.0" },
-    })).hosts.desktop["configuration.winget"];
-    expect(doc).toContain(`dependsOn: ["Set EDITOR"]`);
+    }));
+    expect(named(out, "Git Git").dependsOn).toEqual(["Set EDITOR"]);
   });
 
   it("emits file helpers as PowerShellScript resources with dependencies and elevation", () => {
@@ -1190,17 +1128,17 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         }),
       ],
     });
-    const doc = generateWindows(evaluate(ws), undefined, "C:\\config").hosts.desktop["configuration.winget"];
-    expect(doc).toContain(`name: "Write file USERPROFILE gitconfig"`);
-    expect(doc).toContain(`name: "Link file LOCALAPPDATA nvim"`);
-    expect(doc).toContain(`name: "Copy file APPDATA tool config json"`);
-    expect(doc).toContain(`name: "Remove file USERPROFILE oldrc"`);
-    expect(doc).toContain(`dependsOn: ["Write file USERPROFILE gitconfig", "Winix PowerShell helpers"]`);
-    expect(doc).toContain("securityContext: elevated");
+    const out = generateWindows(evaluate(ws), undefined, "C:\\config");
+    for (const name of ["Write file USERPROFILE gitconfig", "Copy file APPDATA tool config json", "Remove file USERPROFILE oldrc"]) {
+      expect(named(out, name)).toMatchObject({ shell: "pwsh", category: "file", elevated: false });
+    }
+    expect(named(out, "Link file LOCALAPPDATA nvim")).toMatchObject({
+      elevated: true, dependsOn: ["Write file USERPROFILE gitconfig", "Winix PowerShell helpers"],
+    });
     // The shared helpers are emitted once, in the module resource.
-    expect(doc.split("function Set-WinixSymlink").length - 1).toBe(1);
-    expect(doc.split("mklink $flag").length - 1).toBe(1);
-    expect(doc).toMatchSnapshot();
+    expect(scriptsOf(out).split("function Set-WinixSymlink").length - 1).toBe(1);
+    expect(scriptsOf(out).split("mklink $flag").length - 1).toBe(1);
+    expect(out.hosts.desktop).toMatchSnapshot();
   });
 });
 

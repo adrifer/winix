@@ -1,30 +1,18 @@
-// Windows backend: generates a winget Configuration bundle from evaluated host IR.
+// Windows backend: turns an evaluated host's `windows` IR into the resources
+// `winix switch` applies.
 //
-// MVP vertical slice: packages only, emitted as a WinGet Configuration document
-// (`configuration.winget`) in native DSC v3 form plus a thin `apply.ps1` entry
-// point.
+// Each host gets `resources.json`: every resource with a unique name, its
+// category and label (for plans and inspect), what it depends on, and how to
+// check and apply it:
 //
-// FORMAT: This emitter targets the native DSC v3 document shape, matching
-// Microsoft's own WindowsDeveloperConfig workloads
-// (github.com/microsoft/WindowsDeveloperConfig). That is:
+//   - packages:            winget id, source and the version to install
+//   - PowerShell scripts:  testScript / setScript, run by Winix's own runner
+//                          (pwsh, or Windows PowerShell for WindowsPowerShellScript)
+//   - raw commands:        executable and arguments, run on every switch
+//   - other DSC resources: type and properties, applied with `dsc config set`
 //
-//   $schema: .../PowerShell/DSC/main/schemas/2023/08/config/document.json
-//   metadata:
-//     winget:
-//       processor: dscv3
-//   resources:
-//     - name: <friendly name>
-//       type: Microsoft.WinGet/Package
-//       properties:
-//         id: <package id>
-//         source: winget
-//         acceptAgreements: true
-//       metadata:
-//         winget:
-//           securityContext: elevated
-//
-// `winget configure -f configuration.winget` runs this directly; the dscv3
-// processor is selected by the metadata block.
+// `winix switch` plans against the machine and applies only what is out of
+// date; work that needs administrator rights runs in one elevated step.
 
 import { win32 } from "node:path";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
@@ -37,7 +25,6 @@ import type {
   WinRawCommand,
   WindowsOptions,
 } from "../../types/index.ts";
-import { yamlEntry, yamlScalar, type YamlValue } from "./yaml.ts";
 import {
   emptyWindowsLock,
   reconcileInlinePins,
@@ -68,10 +55,8 @@ export { isWindowsHost } from "./host.ts";
  * Per-host generated output for the Windows backend.
  */
 export interface WindowsHostOutput {
-  /** The WinGet Configuration document (YAML, DSC v3). */
-  "configuration.winget": string;
-  /** Thin PowerShell entry point that invokes `winget configure`. */
-  "apply.ps1": string;
+  /** The host's resources as `winix switch` applies them (JSON). */
+  "resources.json": string;
 }
 
 /**
@@ -88,14 +73,15 @@ export type WindowsResourceCategory =
   | "package" | "file" | "startup" | "environment" | "settings" | "powershell"
   | "features" | "wsl" | "fonts" | "command" | "winix" | "other";
 
-/** One resource of a generated configuration, described for humans and live checks. */
+/** One resource of a host, with what plans, inspect and switch need to check and apply it. */
 export interface WindowsResourceSummary {
-  /** Instance name in configuration.winget. */
+  /** Unique within the host; dependsOn refers to it. */
   name: string;
+  /** `winget/package`, `command`, or the DSC resource type. */
   type: string;
   category: WindowsResourceCategory;
   label: string;
-  /** Applied in an elevated security context. */
+  /** Applied with administrator rights (in switch's one elevated step). */
   elevated: boolean;
   /** Changing it can require a Windows restart (Winix never restarts). */
   reboot: boolean;
@@ -103,16 +89,22 @@ export interface WindowsResourceSummary {
   needsElevationToCheck?: boolean;
   dependsOn: string[];
   package?: { id: string; source: string; version?: string; anyVersion: boolean; exact: boolean };
-  /** PowerShell script resources: the test script, for live plans. */
+  /** PowerShell script resources: which PowerShell runs them. */
+  shell?: "pwsh" | "powershell";
+  /** PowerShell script resources: returns $true when in the desired state. */
   testScript?: string;
-  /** Other resources: their DSC properties, for live plans. */
+  /** PowerShell script resources: brings the resource to the desired state. */
+  setScript?: string;
+  /** Raw commands: run on every switch. */
+  command?: { executable: string; arguments: string[] };
+  /** Other DSC resources: their properties, for `dsc config test` / `dsc config set`. */
   properties?: WinDscProperties;
 }
 
-const DSC_SCHEMA =
-  "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json";
-const WINGET_PACKAGE_TYPE = "Microsoft.WinGet/Package";
-const RUN_COMMAND_ON_SET_TYPE = "Microsoft.DSC.Transitional/RunCommandOnSet";
+export const WINGET_PACKAGE_TYPE = "winget/package";
+export const RAW_COMMAND_TYPE = "command";
+const POWERSHELL_SCRIPT_TYPE = "Microsoft.DSC.Transitional/PowerShellScript";
+const WINDOWS_POWERSHELL_SCRIPT_TYPE = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
 const WINDOWS_SETTINGS_MODULE_COMMAND_NAME = "Ensure Microsoft Windows Settings module";
 
 /**
@@ -142,27 +134,24 @@ export function generateWindows(
 
   for (const host of windowsHosts) {
     const win = host.windows as WindowsOptions;
-    const generated = generateConfiguration(host.name, win, resolvedLock, configDir, options.presenceOnlyPackages);
+    const summaries = generateResources(host.name, win, resolvedLock, configDir, options.presenceOnlyPackages);
     hosts[host.name] = {
-      "configuration.winget": generated.text,
-      "apply.ps1": generateApplyScript(),
+      "resources.json": JSON.stringify({ host: host.name, resources: summaries }, null, 2) + "\n",
     };
-    resources[host.name] = generated.resources;
+    resources[host.name] = summaries;
   }
 
   return { hosts, resources, warnings };
 }
 
-/**
- * Render the WinGet Configuration YAML document (DSC v3) for one host.
- */
-function generateConfiguration(
+/** Describe every resource of one host, with how to check and apply it. */
+function generateResources(
   hostName: string,
   win: WindowsOptions,
   lock: WindowsLock,
   configDir?: string,
   presenceOnlyPackages: ReadonlySet<string> = new Set()
-): { text: string; resources: WindowsResourceSummary[] } {
+): WindowsResourceSummary[] {
   validateWindowsWslResources(win);
   validateWindowsPowerShellPolicy(win);
   const packages = sortedPackages(win.packages ?? {});
@@ -257,25 +246,10 @@ function generateConfiguration(
     ...registrations.map((entry) => entry.resource), ...(fileModule ? [fileModule] : []), ...prepared.dscResources,
   ];
 
-  const lines: string[] = [];
-  lines.push(`# yaml-language-server: $schema=${DSC_SCHEMA}`);
-  lines.push(`# Generated by Winix for host "${hostName}". Do not edit.`);
-  lines.push(`$schema: ${DSC_SCHEMA}`);
-  lines.push("metadata:");
-  lines.push("  winget:");
-  lines.push("    processor: dscv3");
-
-  if (packages.length === 0 && commands.length === 0 && dscResources.length === 0) {
-    lines.push("resources: []");
-    return { text: lines.join("\n") + "\n", resources: [] };
-  }
-
-  // Two-pass: first assign every resource a schema-valid, unique name and build
-  // the ref → (type, name) map; then render, resolving each resource's
-  // `dependsOn` against that map.
+  // Two-pass: first assign every resource a unique name and build the
+  // ref → name map; then describe each resource, resolving its `dependsOn`.
   const naming = assignResourceNames(hostName, packages, commands, dscResources);
 
-  lines.push("resources:");
   const summaries: WindowsResourceSummary[] = [];
   for (const pkg of packages) {
     const plan = naming.packages.get(pkg)!;
@@ -286,7 +260,6 @@ function generateConfiguration(
     }
     const version = anyVersion ? undefined : lockedVersionForPackage(pkg, lock);
     const presenceOnly = anyVersion || (pkg.version === undefined && presenceOnlyPackages.has(pkg.id));
-    lines.push(...renderPackageResource(pkg, presenceOnly ? undefined : version, plan, naming));
     summaries.push({
       name: plan.name, type: plan.type, category: "package", label: pkg.id,
       elevated: pkg.elevated === true, reboot: false, dependsOn: resolveDependsOnRefs(pkg.dependsOn, naming),
@@ -298,30 +271,49 @@ function generateConfiguration(
   }
   for (const command of commands) {
     const plan = naming.commands.get(command)!;
-    lines.push(...renderRawCommandResource(command, plan, naming));
     summaries.push({
       name: plan.name, type: plan.type, category: "command",
       label: command.name ?? [command.executable, ...(command.arguments ?? [])].join(" "),
       elevated: false, reboot: false, dependsOn: resolveDependsOnRefs(command.dependsOn, naming),
+      command: { executable: command.executable, arguments: [...(command.arguments ?? [])] },
     });
   }
   for (const resource of dscResources) {
     const plan = naming.dsc.get(resource)!;
-    lines.push(...renderDscResource(resource, plan, naming));
     summaries.push(summarizeDscResource(resource, plan, naming));
   }
 
-  return { text: lines.join("\n") + "\n", resources: summaries };
+  return summaries;
 }
 
 function summarizeDscResource(resource: WinDscResource, plan: ResourcePlan, naming: NamingPlan): WindowsResourceSummary {
   const properties = resource.properties ?? {};
+  const scripted = resource.resourceType === POWERSHELL_SCRIPT_TYPE || resource.resourceType === WINDOWS_POWERSHELL_SCRIPT_TYPE;
+  if (scripted && (typeof properties.testScript !== "string" || typeof properties.setScript !== "string")) {
+    throw new Error(`${resource.resourceType} "${plan.name}" needs testScript and setScript`);
+  }
   return {
-    name: plan.name, type: plan.type, elevated: resource.elevated === true, reboot: false,
+    name: plan.name, type: plan.type, elevated: needsElevation(resource), reboot: false,
     dependsOn: resolveDependsOnRefs(resource.dependsOn, naming),
-    ...(typeof properties.testScript === "string" ? { testScript: properties.testScript } : { properties }),
+    ...(scripted ? {
+      shell: resource.resourceType === WINDOWS_POWERSHELL_SCRIPT_TYPE ? "powershell" as const : "pwsh" as const,
+      testScript: properties.testScript as string,
+      setScript: properties.setScript as string,
+    } : { properties }),
     ...describeWindowsDscResource(resource),
   };
+}
+
+/**
+ * Applied with administrator rights: declared `elevated`, machine-wide
+ * environment and PATH changes, and Windows settings (Developer Mode writes
+ * machine policy).
+ */
+function needsElevation(resource: WinDscResource): boolean {
+  const metadata = resource.winix;
+  return resource.elevated === true ||
+    ((metadata?.kind === "env" || metadata?.kind === "path") && metadata.scope === "machine") ||
+    metadata?.kind === "setting";
 }
 
 /** Category and human label of a declared DSC resource (shared by plans and inspect). */
@@ -644,11 +636,10 @@ interface NamingPlan {
 }
 
 /**
- * Convert an arbitrary identifier into a DSC v3 instance name, which the schema
- * restricts to `^[a-zA-Z0-9 ]+$` (letters, numbers, spaces only). Non-matching
- * characters (dots, slashes, dashes, underscores) collapse to single spaces;
- * the result is trimmed. Package ids like `Git.Git` become `Git Git`. The real
- * package id is preserved separately in `properties.id`, which winget reads.
+ * Turn an arbitrary identifier into a resource name: letters, numbers and
+ * single spaces (`Git.Git` → `Git Git`). Names are stable across runs and are
+ * what dependsOn and the plan refer to; the package id itself is kept in
+ * `package.id`.
  */
 function sanitizeName(raw: string): string {
   const cleaned = raw.replace(/[^a-zA-Z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
@@ -656,16 +647,14 @@ function sanitizeName(raw: string): string {
 }
 
 /**
- * Assign a unique, schema-valid name to every resource in a host and build the
- * lookup maps used to resolve `dependsOn` references.
+ * Assign a unique name to every resource in a host and build the lookup maps
+ * used to resolve `dependsOn` references.
  *
  * Naming rules:
- * - Packages default to the sanitized package id (`Git.Git` → `Git Git`), or an
- *   explicit `name` when one is later supported on packages.
+ * - Packages use the sanitized package id (`Git.Git` → `Git Git`).
  * - Commands use their explicit `name` (sanitized) when given, else a generated
  *   `command N` counter in declaration order.
- * - On a name collision, a ` N` suffix is appended to keep names unique, since
- *   DSC requires instance names to be unique within a document.
+ * - On a name collision, a ` N` suffix keeps names unique.
  */
 function assignResourceNames(
   hostName: string,
@@ -709,7 +698,7 @@ function assignResourceNames(
       ? sanitizeName(command.name)
       : `command ${commandCounter}`;
     const name = unique(base);
-    const rp: ResourcePlan = { type: RUN_COMMAND_ON_SET_TYPE, name };
+    const rp: ResourcePlan = { type: RAW_COMMAND_TYPE, name };
     plan.commands.set(command, rp);
     if (command.token) {
       plan.byCommandToken.set(command.token, rp);
@@ -734,13 +723,9 @@ function assignResourceNames(
 }
 
 /**
- * Resolve a resource's `dependsOn` references into WinGet Configuration
- * instance names. The underlying DSC v3 schema documents `resourceId(...)`
- * lookups, but `winget configure`'s dscv3 processor currently resolves
- * dependencies by simple resource name. Throws when a referenced resource is
- * not present in this host's naming plan, which happens if a handle from
- * another host is passed to `dependsOn` (cross-host ordering is not expressible
- * in a single document).
+ * Resolve a resource's `dependsOn` references into resource names. Throws when
+ * a referenced resource is not declared in this host, which happens if a
+ * handle from another host is passed to `dependsOn`.
  */
 function resolveDependsOnRefs(
   refs: ResourceRef[] | undefined,
@@ -774,136 +759,8 @@ function resolveDependsOnRefs(
 }
 
 /**
- * Render one package as a DSC v3 `Microsoft.WinGet/Package` resource.
- *
- * ```yaml
- *   - name: Git.Git
- *     type: Microsoft.WinGet/Package
- *     properties:
- *       id: Git.Git
- *       source: winget
- *       acceptAgreements: true
- *       version: "2.44.0"   # from winix-windows.lock
- *     metadata:
- *       winget:
- *         securityContext: elevated
- * ```
- */
-function renderPackageResource(
-  pkg: WinPackage,
-  version: string | undefined,
-  plan: ResourcePlan,
-  naming: NamingPlan
-): string[] {
-  const out: string[] = [];
-  out.push(`  - name: ${yamlScalar(plan.name)}`);
-  out.push(`    type: ${WINGET_PACKAGE_TYPE}`);
-  const deps = resolveDependsOnRefs(pkg.dependsOn, naming);
-  if (deps.length > 0) {
-    out.push(`    dependsOn: ${yamlStringArray(deps)}`);
-  }
-  out.push(`    properties:`);
-  out.push(`      id: ${yamlScalar(pkg.id)}`);
-  out.push(`      source: ${yamlScalar(pkg.source)}`);
-  out.push(`      acceptAgreements: true`);
-  // Quote versions so values like "1.0" are not parsed as numbers. Presence-only
-  // packages (non-comparable installed version) omit it deliberately.
-  if (version !== undefined) out.push(`      version: ${yamlQuoted(version)}`);
-  // Only request elevation when explicitly asked. Per-user packages install
-  // fine without it, and forcing elevation makes `winget configure` fail with
-  // an internal error when run from a non-elevated shell.
-  if (pkg.elevated) {
-    out.push(`    metadata:`);
-    out.push(`      winget:`);
-    out.push(`        securityContext: elevated`);
-  }
-  return out;
-}
-
-/**
- * Render one raw command as a DSC v3
- * `Microsoft.DSC.Transitional/RunCommandOnSet` resource.
- */
-function renderRawCommandResource(
-  command: WinRawCommand,
-  plan: ResourcePlan,
-  naming: NamingPlan
-): string[] {
-  const out: string[] = [];
-  out.push(`  - name: ${yamlScalar(plan.name)}`);
-  out.push(`    type: ${RUN_COMMAND_ON_SET_TYPE}`);
-  const deps = resolveDependsOnRefs(command.dependsOn, naming);
-  if (deps.length > 0) {
-    out.push(`    dependsOn: ${yamlStringArray(deps)}`);
-  }
-  out.push(`    properties:`);
-  out.push(`      executable: ${yamlScalar(command.executable)}`);
-  if (command.arguments !== undefined && command.arguments.length > 0) {
-    out.push(`      arguments: ${yamlStringArray(command.arguments)}`);
-  }
-  return out;
-}
-
-/**
- * Render one generic DSC resource (from `windows.dsc(...)` and typed helpers)
- * as a DSC v3 resource block. The `properties` object is serialized verbatim
- * via the YAML helper, so arbitrary nested DSC resource shapes round-trip
- * exactly.
- */
-function renderDscResource(
-  resource: WinDscResource,
-  plan: ResourcePlan,
-  naming: NamingPlan
-): string[] {
-  const out: string[] = [];
-  if (resource.winix?.kind === "setting") {
-    out.push("  # Some Windows settings (including DeveloperMode) require");
-    out.push("  # running winget configure from an elevated shell to change.");
-  }
-  out.push(`  - name: ${yamlScalar(plan.name)}`);
-  out.push(`    type: ${yamlScalar(resource.resourceType)}`);
-  const deps = resolveDependsOnRefs(resource.dependsOn, naming);
-  if (deps.length > 0) {
-    out.push(`    dependsOn: ${yamlStringArray(deps)}`);
-  }
-  const properties = resource.properties ?? {};
-  if (Object.keys(properties).length === 0) {
-    out.push(`    properties: {}`);
-  } else {
-    // Serialize properties at depth 0, then re-indent under `properties:` (2
-    // levels deep within the resource block: 4 spaces).
-    out.push(`    properties:`);
-    for (const [key, value] of Object.entries(properties)) {
-      const lines = yamlEntry(key, value as YamlValue, 0);
-      for (const line of lines) {
-        out.push(`      ${line}`);
-      }
-    }
-  }
-  if (resource.elevated) {
-    out.push(`    metadata:`);
-    out.push(`      winget:`);
-    out.push(`        securityContext: elevated`);
-  }
-  return out;
-}
-function generateApplyScript(): string {
-  return [
-    "# Generated by Winix. Do not edit.",
-    '$ErrorActionPreference = "Stop"',
-    "Set-Location -Path $PSScriptRoot",
-    "",
-    "winget configure `",
-    "    -f .\\configuration.winget `",
-    "    --accept-configuration-agreements `",
-    "    --disable-interactivity",
-    "",
-  ].join("\n");
-}
-
-/**
- * Stable ordering: packages sorted by id so the emitted document is
- * deterministic regardless of declaration/merge order.
+ * Stable ordering: packages sorted by id so the output is deterministic
+ * regardless of declaration/merge order.
  */
 function sortedPackages(packages: Record<string, WinPackage>): WinPackage[] {
   return Object.keys(packages)
@@ -927,22 +784,4 @@ function lockedVersionForPackage(pkg: WinPackage, lock: WindowsLock): string {
     );
   }
   return entry.version;
-}
-
-/**
- * Render a quoted YAML string for `dependsOn` array items, which are always
- * quoted because they contain `[`, `]`, `'`, and `(` (the `resourceId(...)`
- * expression). Reuses the shared scalar quoting via a forced-quote path.
- */
-function yamlQuoted(value: string): string {
-  // The shared yamlScalar would quote these anyway (they contain `[`), but be
-  // explicit: dependsOn ids are always emitted quoted.
-  const escaped = value
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"');
-  return `"${escaped}"`;
-}
-
-function yamlStringArray(values: string[]): string {
-  return `[${values.map((value) => yamlQuoted(value)).join(", ")}]`;
 }

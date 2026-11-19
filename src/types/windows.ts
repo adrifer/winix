@@ -160,19 +160,16 @@ export interface WinPackage {
   /** Catalogue the id resolves against. Defaults to "winget". */
   source: WinPackageSource;
   /**
-   * Absolute version pin. When present, this exact version is emitted to
-   * `configuration.winget` regardless of what is available upstream. When
-   * absent, the version floats (resolved at `winix update` time via the
-   * lockfile in a later milestone).
+   * Absolute version pin. When present, switch installs exactly this version
+   * regardless of what is available upstream. When absent, the version floats:
+   * winix-windows.lock records it and `winix update --windows` refreshes it.
    */
   version?: string;
   /**
-   * When true, the package is installed in an elevated (admin) security
-   * context via `metadata.winget.securityContext: elevated`. Required for
-   * machine-wide installers (drivers, system services). Defaults to false so
-   * per-user packages install without prompting for / requiring elevation,
-   * which also avoids the DSC cross-process elevation failure when
-   * `winget configure` is run from a non-elevated shell.
+   * When true, switch always installs/upgrades the package in its elevated
+   * step. Machine-wide installs are detected and elevated automatically; set
+   * this for installers that need administrator rights without saying so
+   * (drivers, system services).
    */
   elevated?: boolean;
   /**
@@ -241,8 +238,8 @@ export interface WinDscResource {
    */
   properties?: WinDscProperties;
   /**
-   * When true, the resource is applied in an elevated security context via
-   * `metadata.winget.securityContext: elevated`.
+   * When true, switch applies the resource in its elevated step (one UAC
+   * prompt for all elevated work).
    */
   elevated?: boolean;
   /**

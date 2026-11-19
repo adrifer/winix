@@ -51,10 +51,9 @@ describe('windows.package version: "any"', () => {
     });
     expect(() => reconcileInlinePins(emptyWindowsLock(), [mixed])).toThrow('both version "any" and version "1.0"');
     expect(() => generateWindows([mixed], emptyWindowsLock())).toThrow("Declare one version policy per package");
-    const doc = generateWindows([h], resolved.lock).hosts.desktop["configuration.winget"];
-    const steam = doc.slice(doc.indexOf("id: Valve.Steam"), doc.indexOf("id: Valve.Steam") + 200);
-    expect(steam).not.toContain("version:");
-    expect(doc).toMatch(/id: Git\.Git\r?\n(?:.*\r?\n){0,3}?\s*version: "7\.0"/);
+    const resources = generateWindows([h], resolved.lock).resources.desktop;
+    expect(resources.find((resource) => resource.package?.id === "Valve.Steam")?.package).toMatchObject({ anyVersion: true, version: undefined });
+    expect(resources.find((resource) => resource.package?.id === "Git.Git")?.package?.version).toBe("7.0");
   });
 });
 

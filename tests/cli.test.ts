@@ -31,7 +31,6 @@ import {
   flakeRefForHost,
   selectHost,
   switchCommand,
-  windowsConfigurationForHost,
 } from "../src/cli/commands/switch.js";
 import { assertUpdateSupported, update } from "../src/cli/commands/update.js";
 import {
@@ -45,8 +44,25 @@ import {
   workspace,
 } from "../src/index.js";
 import { authoringApiPaths, renderSkill } from "../src/skill.js";
-import * as commandRunner from "../src/cli/run.ts";
 import { loadWorkspace } from "../src/cli/loader.ts";
+import type { WindowsResourceSummary } from "../src/backends/windows/index.ts";
+import type { ApplyBatch, ApplyStep, WindowsBatchRunner } from "../src/cli/windows-apply.ts";
+
+/** The resources a Windows host's resources.json lists. */
+async function windowsResources(outDir: string, hostName: string): Promise<WindowsResourceSummary[]> {
+  const parsed = JSON.parse(await readFile(join(outDir, hostName, "resources.json"), "utf8")) as { resources: WindowsResourceSummary[] };
+  return parsed.resources;
+}
+
+/** Every script of a Windows host, unescaped, for substring checks. */
+async function windowsScripts(outDir: string, hostName: string): Promise<string> {
+  return (await windowsResources(outDir, hostName))
+    .map((resource) => [resource.testScript ?? "", resource.setScript ?? ""].join("\n")).join("\n");
+}
+
+function packageVersion(resources: WindowsResourceSummary[], id: string): string | undefined {
+  return resources.find((resource) => resource.package?.id === id)?.package?.version;
+}
 
 const nixos = platform("linux", () => ({
   nixos: {
@@ -360,16 +376,6 @@ describe("winix switch host selection", () => {
     );
   });
 
-  it("formats Windows configuration paths for activation", () => {
-    // Use path.join for the expected value so the assertion is OS-agnostic:
-    // on Windows the separator is "\\", on Linux/CI it is "/". The function
-    // itself uses path.join, which produces the right separator per platform
-    // (winget on Windows gets backslashes).
-    const outDir = join("D:\\winix\\test-config\\.winix\\out");
-    expect(windowsConfigurationForHost(outDir, "desktop")).toBe(
-      join(outDir, "desktop", "configuration.winget")
-    );
-  });
 });
 
 describe("activation commands", () => {
@@ -406,17 +412,6 @@ describe("activation commands", () => {
     ]);
   });
 
-  it("runs Windows activation through winget configure without sudo", () => {
-    expect(activationCommand("windows", "D:\\repo\\.winix\\out\\desktop\\configuration.winget")).toEqual([
-      "winget",
-      "configure",
-      "-f",
-      "D:\\repo\\.winix\\out\\desktop\\configuration.winget",
-      "--accept-configuration-agreements",
-      "--disable-interactivity",
-    ]);
-  });
-
   it("does not prefix activation commands with sudo when already root", () => {
     expect(activationCommand("darwin", "path:/repo/.winix/out#macbook-pro", true)).toEqual([
       "darwin-rebuild",
@@ -446,7 +441,7 @@ describe("activation commands", () => {
     );
     expect(() => assertActivationSupported("windows", "win32")).not.toThrow();
     expect(() => assertActivationSupported("windows", "linux")).toThrow(
-      "winget configure` only runs on Windows"
+      "Windows activation is only supported on native Windows"
     );
     expect(() => assertUpdateSupported("win32")).toThrow(
       "`winix update` is not supported from native Windows yet"
@@ -472,15 +467,12 @@ describe("winix apply Windows output", () => {
           resolveWindowsPackageVersion: () => "2.65.1",
         }
       );
-      const config = await readFile(
-        join(result.outDir, "desktop", "configuration.winget"),
-        "utf-8"
-      );
+      const config = await windowsResources(result.outDir, "desktop");
       const lock = JSON.parse(await readFile(join(dir, "winix-windows.lock"), "utf-8")) as {
         packages: Record<string, { version: string }>;
       };
 
-      expect(config).toContain('version: "2.65.1"');
+      expect(packageVersion(config, "Fastfetch-cli.Fastfetch")).toBe("2.65.1");
       expect(lock.packages["Fastfetch-cli.Fastfetch"].version).toBe("2.65.1");
     } finally {
       await rm(dir, { recursive: true, force: true });
@@ -525,13 +517,10 @@ describe("winix apply Windows output", () => {
           throw new Error("resolver must not be called for already-locked packages");
         },
       });
-      const config = await readFile(
-        join(result.outDir, "desktop", "configuration.winget"),
-        "utf-8"
-      );
+      const config = await windowsResources(result.outDir, "desktop");
 
       // Emits the locked version verbatim, no network call.
-      expect(config).toContain('version: "2.0.0"');
+      expect(packageVersion(config, "Fastfetch-cli.Fastfetch")).toBe("2.0.0");
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -570,7 +559,7 @@ describe("winix apply Windows output", () => {
     }
   });
 
-  it("writes configuration.winget, apply.ps1, and inline pins to the lock", async () => {
+  it("writes resources.json and inline pins to the lock", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-apply-windows-"));
     try {
       await writeConfig(dir, `
@@ -581,13 +570,12 @@ describe("winix apply Windows output", () => {
 
       const result = await applyWorkspace(dir, { dry: false, diff: false });
       const hostDir = join(result.outDir, "desktop");
-      const config = await readFile(join(hostDir, "configuration.winget"), "utf-8");
-      const applyScript = await readFile(join(hostDir, "apply.ps1"), "utf-8");
+      const config = await windowsResources(result.outDir, "desktop");
 
-      expect(config).toContain("processor: dscv3");
-      expect(config).toContain("type: Microsoft.WinGet/Package");
-      expect(config).toContain('version: "2.45.0"');
-      expect(applyScript).toContain("winget configure");
+      expect(config).toEqual([expect.objectContaining({ type: "winget/package", name: "Fastfetch cli Fastfetch" })]);
+      expect(packageVersion(config, "Fastfetch-cli.Fastfetch")).toBe("2.45.0");
+      expect(existsSync(join(hostDir, "configuration.winget"))).toBe(false);
+      expect(existsSync(join(hostDir, "apply.ps1"))).toBe(false);
       const lock = JSON.parse(await readFile(join(dir, "winix-windows.lock"), "utf-8")) as {
         packages?: Record<string, { version?: string }>;
       };
@@ -619,12 +607,9 @@ describe("winix apply Windows output", () => {
           throw new Error("already-locked packages must not be resolved");
         },
       });
-      const config = await readFile(
-        join(result.outDir, "desktop", "configuration.winget"),
-        "utf-8"
-      );
+      const config = await windowsResources(result.outDir, "desktop");
 
-      expect(config).toContain('version: "2.45.0"');
+      expect(packageVersion(config, "Fastfetch-cli.Fastfetch")).toBe("2.45.0");
       expect(calls).toEqual([]);
     } finally {
       await rm(dir, { recursive: true, force: true });
@@ -642,15 +627,11 @@ describe("winix apply Windows output", () => {
       `);
 
       const result = await applyWorkspace(dir, { dry: false, diff: false });
-      const windowsConfig = await readFile(
-        join(result.outDir, "desktop", "configuration.winget"),
-        "utf-8"
-      );
+      const windowsConfig = await windowsResources(result.outDir, "desktop");
       const nixHost = await readFile(join(result.outDir, "hosts", "server.nix"), "utf-8");
       const flake = await readFile(join(result.outDir, "flake.nix"), "utf-8");
 
-      expect(windowsConfig).toContain("processor: dscv3");
-      expect(windowsConfig).toContain("type: Microsoft.WinGet/Package");
+      expect(windowsConfig).toEqual([expect.objectContaining({ type: "winget/package" })]);
       expect(nixHost).toContain("Generated by Winix");
       expect(flake).toContain("nixosConfigurations.server");
       expect(flake).not.toContain("desktop");
@@ -871,7 +852,7 @@ describe("PowerShell module CLI locking", () => {
           key.startsWith("microsoft.windows.settings") ? "0.1.0-alpha.7" : pin.version);
       }
       await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsModuleVersion: offline });
-      const output = await readFile(join(dir, ".winix", "out", "work", "configuration.winget"), "utf8");
+      const output = await windowsScripts(join(dir, ".winix", "out"), "work");
       expect(output).toContain("$version = '0.1.0-alpha.7'");
       expect(output).toContain("-Repository 'approved'");
       expect(output).not.toContain("PSGallery");
@@ -918,7 +899,7 @@ describe("PowerShell module CLI locking", () => {
         host: "work", dry: false, diff: false,
         resolveWindowsModuleVersion: () => { throw new Error("offline"); },
       });
-      const output = await readFile(join(dir, ".winix", "out", "work", "configuration.winget"), "utf8");
+      const output = await windowsScripts(join(dir, ".winix", "out"), "work");
       expect(output).not.toContain("PSGallery");
       expect(output).toContain("-Repository 'approved'");
     } finally {
@@ -943,7 +924,7 @@ describe("PowerShell module CLI locking", () => {
       const original = readWindowsLock(dir)!;
       expect(original.modules?.["terminal-icons"].version).toBe("0.11.0");
       expect(original.packages["Git.Git"].version).toBe("2.44.0");
-      const output = await readFile(join(dir, ".winix", "out", "desktop", "configuration.winget"), "utf8");
+      const output = await windowsScripts(join(dir, ".winix", "out"), "desktop");
       expect(output).toContain(windowsSourcePath(join(dir, "..", "windows", "profile.ps1")));
       await applyWorkspace(dir, {
         dry: false, diff: false,
@@ -996,8 +977,21 @@ describe("PowerShell module CLI locking", () => {
   });
 });
 
+/** A batch runner that records what switch asks it to apply. */
+function fakeWindowsRunner(onStep: (step: ApplyStep) => void | Promise<void> = () => {}) {
+  const batches: ApplyBatch[] = [];
+  const runner: WindowsBatchRunner = {
+    run: vi.fn(async (batch: ApplyBatch) => {
+      batches.push(batch);
+      for (const step of batch.steps) await onStep(step);
+      return batch.steps.map((step) => ({ name: step.name, status: "applied" as const }));
+    }),
+  };
+  return { runner, batches, steps: () => batches.flatMap((batch) => batch.steps) };
+}
+
 describe("winix switch Windows dry run", () => {
-  it("runs winget configure for a Windows host", async () => {
+  it("prints a plan instead of the generated files", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-switch-windows-"));
     const logs: string[] = [];
     const logSpy = vi.spyOn(console, "log").mockImplementation((...args) => {
@@ -1018,18 +1012,9 @@ describe("winix switch Windows dry run", () => {
           adapter: { inspect: async () => null, remove: async () => { throw new Error("Dry run must not remove"); } },
         },
       });
-      const configPath = join(dir, ".winix", "out", "desktop", "configuration.winget");
       const output = logs.join("\n");
-      expect(output).toContain(
-        "Would run: " + [
-          "winget",
-          "configure",
-          "-f",
-          configPath,
-          "--accept-configuration-agreements",
-          "--disable-interactivity",
-        ].join(" ")
-      );
+      expect(output).toContain("winix switch would apply only these 1 change(s)");
+      expect(output).not.toContain("winget configure");
       // A plan, not the generated files. Machine checks need native Windows.
       if (process.platform === "win32") {
         expect(output).toContain("Plan for desktop (checked against this machine):");
@@ -1038,7 +1023,7 @@ describe("winix switch Windows dry run", () => {
         expect(output).toContain("Plan for desktop (not checked against a machine: machine checks need native Windows):");
         expect(output).toContain("Declares packages: 1.");
       }
-      expect(output).not.toContain("type: Microsoft.WinGet/Package");
+      expect(output).not.toContain('"resources"');
     } finally {
       logSpy.mockRestore();
       await rm(dir, { recursive: true, force: true });
@@ -1053,14 +1038,7 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const confirm = vi.spyOn(packageVersionPolicy, "confirmWindowsPackageLockUpdate");
-    const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async (_command, args) => {
-      if (!dry) {
-        const configuration = await readFile(args![args!.indexOf("-f") + 1], "utf8");
-        expect(configuration).toContain("id: Example.App");
-        // A locked version would make DSC report drift and reinstall on every run.
-        expect(configuration).not.toContain("version:");
-      }
-    });
+    const fake = fakeWindowsRunner();
     try {
       await writeConfig(dir, 'host("desktop", platforms.windows(), [windows.package("Example.App")])');
       await writeFile(join(dir, "winix-windows.lock"), JSON.stringify({
@@ -1072,23 +1050,21 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
         .mockResolvedValueOnce({ version: "Unknown" })
         .mockResolvedValueOnce({ version: "8" });
       await switchCommand(dir, {
-        host: "desktop", dry,
+        host: "desktop", dry, windowsRunner: fake.runner,
         windowsState: { path: join(dir, "applied.json"), adapter: { inspect, remove: vi.fn() } },
       });
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn).toHaveBeenCalledWith(expect.stringMatching(/Example\.App.*Unknown.*without enforcing locked version 7/));
-      if (dry) expect(runner).not.toHaveBeenCalled();
-      else expect(runner).toHaveBeenCalledWith("winget", expect.any(Array), { dry });
+      // Presence-only: installed, so nothing to apply (a locked version would reinstall on every run).
+      expect(fake.runner.run).not.toHaveBeenCalled();
       expect(confirm).not.toHaveBeenCalled();
       expect(readWindowsLock(dir)?.packages["Example.App"].version).toBe("7");
-      if (dry) {
-        const output = log.mock.calls.flat().join("\n");
-        // Presence-only: installed, kept, nothing to change.
-        expect(output).toContain("= 1 unchanged (packages: 1)");
-        expect(output).toContain("Summary: 0 to change, 1 unchanged.");
-      }
+      const output = log.mock.calls.flat().join("\n");
+      expect(output).toContain("= 1 unchanged (packages: 1)");
+      expect(output).toContain("Summary: 0 to change, 1 unchanged.");
+      if (!dry) expect(output).toContain("Nothing to change.");
     } finally {
-      log.mockRestore(); warn.mockRestore(); confirm.mockRestore(); runner.mockRestore();
+      log.mockRestore(); warn.mockRestore(); confirm.mockRestore();
       await rm(dir, { recursive: true, force: true });
     }
   });
@@ -1102,18 +1078,23 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
       await writeFile(join(dir, "winix-windows.lock"), JSON.stringify(lock));
       return true;
     });
-    const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async () => {
-      if (failure === "failed") throw new Error("activation failed");
-    });
+    const runner: WindowsBatchRunner = {
+      run: vi.fn(async (batch: ApplyBatch) => batch.steps.map((step) => failure === "failed"
+        ? { name: step.name, status: "failed" as const, error: "activation failed" }
+        : { name: step.name, status: "applied" as const })),
+    };
     let inspections = 0;
     try {
-      await writeConfig(dir, 'host("desktop", platforms.windows(), [windows.package("Example.App")])');
+      // The raw command runs on every switch, so there is always something to apply.
+      await writeConfig(dir, `host("desktop", platforms.windows(), [
+        windows.package("Example.App"), windows.raw({ name: "probe", executable: "cmd.exe" }),
+      ])`);
       await writeFile(join(dir, "winix-windows.lock"), JSON.stringify({
         version: 1, generatedAt: "2026-11-13T00:00:00Z",
         packages: { "Example.App": { version: "7", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" } },
       }));
       await expect(switchCommand(dir, {
-        host: "desktop", dry: false,
+        host: "desktop", dry: false, windowsRunner: runner,
         windowsState: {
           path: join(dir, "inventory.json"),
           adapter: {
@@ -1122,22 +1103,22 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
             remove: async () => { throw new Error("Must not uninstall"); },
           },
         },
-      })).rejects.toThrow(failure === "stale" ? "updated during switch" : failure === "failed" ? "activation failed" : "changed during switch");
+      })).rejects.toThrow(failure === "stale" ? "updated during switch" : failure === "failed" ? "did not apply" : "changed during switch");
       expect(readWindowsLock(dir)?.packages["Example.App"].version).toBe("7");
       if (failure !== "concurrent") expect(confirm).not.toHaveBeenCalled();
       else expect(readWindowsLock(dir)?.packages["Other.App"].version).toBe("2");
-      if (failure === "stale") expect(runner).not.toHaveBeenCalled();
+      if (failure === "stale") expect(runner.run).not.toHaveBeenCalled();
     } finally {
-      log.mockRestore(); confirm.mockRestore(); runner.mockRestore();
+      log.mockRestore(); confirm.mockRestore();
       await rm(dir, { recursive: true, force: true });
     }
   });
 
-  it("stops before activation when a package it would upgrade is running", async () => {
+  it("stops before activation when a package it would upgrade is running, then upgrades it in the elevated step", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-running-upgrade-"));
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     let activated = false;
-    const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async () => { activated = true; });
+    const fake = fakeWindowsRunner(() => { activated = true; });
     const running = vi.fn(async (ids: string[]) => new Map(ids.includes("Example.App")
       ? [["Example.App", [{ name: "example.exe", pid: 7 }]]] : []));
     const elevation = vi.fn(async () => new Map([["Example.App", "installed machine-wide"]]));
@@ -1160,35 +1141,32 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
           remove: async () => { throw new Error("Must not uninstall"); },
         },
       };
-      await expect(switchCommand(dir, { host: "desktop", dry: false, windowsState, planChecker }))
+      await expect(switchCommand(dir, { host: "desktop", dry: false, windowsState, planChecker, windowsRunner: fake.runner }))
         .rejects.toThrow("Example.App: example.exe, pid 7");
       expect(running).toHaveBeenCalledWith(["Example.App"]);
-      expect(runner).not.toHaveBeenCalled();
+      expect(fake.runner.run).not.toHaveBeenCalled();
 
       running.mockResolvedValue(new Map());
-      await switchCommand(dir, { host: "desktop", dry: false, windowsState, planChecker });
-      expect(runner).toHaveBeenCalledTimes(1);
+      await switchCommand(dir, { host: "desktop", dry: false, windowsState, planChecker, windowsRunner: fake.runner });
       expect(elevation).toHaveBeenLastCalledWith([{ id: "Example.App", source: "winget", action: "upgrade", version: "8" }]);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining(
-        "Windows will ask for administrator approval (UAC) once; the switch waits until you answer"));
-      expect(log).toHaveBeenCalledWith(expect.stringContaining("  Example.App: installed machine-wide"));
+      // Only the outdated package is applied, in one elevated batch.
+      expect(fake.batches).toEqual([{
+        elevated: true,
+        steps: [expect.objectContaining({ kind: "package", package: { id: "Example.App", source: "winget", version: "8", action: "upgrade" } })],
+      }]);
+      expect(log).toHaveBeenCalledWith(expect.stringContaining("need administrator rights; approve the UAC prompt"));
     } finally {
-      log.mockRestore(); runner.mockRestore();
+      log.mockRestore();
       await rm(dir, { recursive: true, force: true });
     }
   });
 
-  it.each(["accept", "decline", "dry"] as const)("keeps a newer package in activation output and %s the optional lock update", async (mode) => {
+  it.each(["accept", "decline", "dry"] as const)("keeps a newer package without reinstalling it and %s the optional lock update", async (mode) => {
     const dir = await mkdtemp(join(tmpdir(), "winix-package-upgrade-"));
     const logs: string[] = [];
     const log = vi.spyOn(console, "log").mockImplementation((...args) => { logs.push(args.join(" ")); });
     const confirm = vi.spyOn(packageVersionPolicy, "confirmWindowsPackageLockUpdate").mockResolvedValue(mode === "accept");
-    const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async (_command, args, opts) => {
-      if (!opts?.dry) {
-        const yaml = await readFile(args![args!.indexOf("-f") + 1], "utf8");
-        expect(yaml).toContain('version: "8"');
-      }
-    });
+    const fake = fakeWindowsRunner();
     try {
       await writeConfig(dir, 'host("desktop", platforms.windows(), [windows.package("Example.App")])');
       const lock = {
@@ -1198,12 +1176,13 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
       await writeFile(join(dir, "winix-windows.lock"), JSON.stringify(lock));
       const inventory = join(dir, "inventory.json");
       await switchCommand(dir, {
-        dry: mode === "dry", host: "desktop",
+        dry: mode === "dry", host: "desktop", windowsRunner: fake.runner,
         windowsState: {
           path: inventory,
           adapter: { inspect: async () => ({ version: "8" }), remove: async () => { throw new Error("Must not uninstall"); } },
         },
       });
+      expect(fake.runner.run).not.toHaveBeenCalled();
       expect(readWindowsLock(dir)?.packages["Example.App"].version).toBe(mode === "accept" ? "8" : "7");
       if (mode === "dry") {
         expect(confirm).not.toHaveBeenCalled();
@@ -1214,7 +1193,7 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
         expect(JSON.parse(await readFile(inventory, "utf8")).entries['["package","winget","example.app"]'].owned).toBe(false);
       }
     } finally {
-      log.mockRestore(); confirm.mockRestore(); runner.mockRestore();
+      log.mockRestore(); confirm.mockRestore();
       await rm(dir, { recursive: true, force: true });
     }
   });
@@ -1224,9 +1203,7 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
     let present = false;
     const snapshot = kind === "startup" ? { fingerprint: "a".repeat(64) } : { version: "1.0" };
     const key = kind === "startup" ? '["startup","probe"]' : '["package","winget","example.app"]';
-    const runner = vi.spyOn(commandRunner, "runCommand").mockImplementation(async (_command, _args, opts) => {
-      if (!opts?.dry) present = true;
-    });
+    const fake = fakeWindowsRunner(() => { present = true; });
     const logs = vi.spyOn(console, "log").mockImplementation(() => {});
     const remove = vi.fn(async () => { present = false; });
     const windowsState = {
@@ -1238,23 +1215,23 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
         ? 'windows.startup.command("probe", { executable: "pwsh.exe" })'
         : 'windows.package({ id: "Example.App", version: "1.0" })';
       await writeConfig(dir, `host("desktop", platforms.windows(), [${declaration}])`);
-      await switchCommand(dir, { dry: false, windowsState });
+      await switchCommand(dir, { dry: false, windowsState, windowsRunner: fake.runner });
       expect(present).toBe(true);
+      expect(fake.steps().map((step) => step.kind)).toEqual(kind === "startup" ? ["script"] : ["package"]);
       expect(JSON.parse(await readFile(windowsState.path, "utf8")).entries[key].owned).toBe(true);
       const loaded = await loadWorkspace(dir);
       loaded.workspace.hosts[0] = host("desktop", platforms.windows(), []);
-      await switchCommand(dir, { dry: true, windowsState });
+      await switchCommand(dir, { dry: true, windowsState, windowsRunner: fake.runner });
       expect(remove).not.toHaveBeenCalled();
       vi.stubGlobal("process", { ...process, stdin: { isTTY: false }, stdout: { isTTY: false } });
       try {
-        await expect(switchCommand(dir, { dry: false, windowsState })).rejects.toThrow("use --yes");
+        await expect(switchCommand(dir, { dry: false, windowsState, windowsRunner: fake.runner })).rejects.toThrow("use --yes");
       } finally { vi.unstubAllGlobals(); }
       expect(remove).not.toHaveBeenCalled();
-      await switchCommand(dir, { dry: false, yes: true, windowsState });
+      await switchCommand(dir, { dry: false, yes: true, windowsState, windowsRunner: fake.runner });
       expect(remove).toHaveBeenCalledTimes(1);
       expect(present).toBe(false);
     } finally {
-      runner.mockRestore();
       logs.mockRestore();
       await rm(dir, { recursive: true, force: true });
     }

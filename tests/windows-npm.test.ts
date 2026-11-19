@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { windowsText } from "./helpers/windows-text.ts";
 import { describe, expect, it } from "vitest";
 import { evaluate, generateWindows, host, platforms, windows, workspace } from "../src/index.ts";
 import { npmRegistryEntries } from "../src/helpers/windows-npm.ts";
@@ -26,7 +27,7 @@ describe("Windows npm registries", () => {
     expect(npmRegistryEntries(hosts[0].windows.npm!.registries!)).toEqual({
       registry: "https://packages.example.com/npm/", "@adrifer:registry": "https://registry.npmjs.org/",
     });
-    const output = generateWindows(hosts).hosts.work["configuration.winget"];
+    const output = windowsText(generateWindows(hosts), "work");
     expect(output).toContain("npm registries");
     expect(output).toContain("NPM_CONFIG_USERCONFIG");
     expect(output).not.toContain("Register-PSResourceRepository");

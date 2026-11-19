@@ -67,14 +67,6 @@ export async function elevationPrompts(
   }
 }
 
-export function elevationNotice(prompts: Map<string, string>): string {
-  return [
-    `Windows will ask for administrator approval (UAC) ${prompts.size === 1 ? "once" : `${prompts.size} times`}; ` +
-      "the switch waits until you answer, and the prompt can open behind other windows (look for a flashing shield in the taskbar):",
-    ...[...prompts].map(([id, reason]) => `  ${id}: ${reason}`),
-  ].join("\n");
-}
-
 /** Ask the checker which packages are running; advisory, so failures report nothing. */
 export async function runningPackages(
   checker: WindowsPlanChecker | undefined, packageIds: string[],
@@ -225,12 +217,12 @@ export function formatWindowsPlan(
   const pending = opts.live ? planned.filter((entry) => entry.state !== "ok") : planned;
   const elevated = pending.filter((entry) => entry.resource.elevated);
   if (elevated.length > 0) {
-    lines.push(`  ! ${elevated.length} ${opts.live ? "change(s)" : "resource(s)"} run elevated; run switch from an elevated shell: ` +
+    lines.push(`  ! ${elevated.length} ${opts.live ? "change(s)" : "resource(s)"} need administrator rights; switch asks once (UAC): ` +
       elevated.map((entry) => entry.resource.package?.id ?? entry.resource.label).join(", "));
   }
   const prompting = pending.filter((entry) => entry.elevation);
   if (prompting.length > 0) {
-    lines.push(`  ! ${prompting.length} package(s) will ask for administrator approval (UAC); approve the prompt, or run switch from an elevated shell: ` +
+    lines.push(`  ! ${prompting.length} package(s) need administrator rights; switch asks once (UAC) for all of them: ` +
       prompting.map((entry) => `${entry.resource.package!.id} (${entry.elevation})`).join(", "));
   }
   for (const entry of pending.filter((candidate) => candidate.running?.length)) {
@@ -283,7 +275,7 @@ export const nativeWindowsPlanChecker: WindowsPlanChecker = {
     const results = new Map<string, ScriptCheck>();
     const groups = new Map<string, WindowsResourceSummary[]>();
     for (const resource of resources) {
-      const shell = resource.type === "Microsoft.DSC.Transitional/WindowsPowerShellScript" ? "powershell" : "pwsh";
+      const shell = resource.shell ?? "pwsh";
       groups.set(shell, [...(groups.get(shell) ?? []), resource]);
     }
     await Promise.all([...groups].map(async ([shell, group]) => {
