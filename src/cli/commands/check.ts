@@ -7,7 +7,7 @@ import { generateNix, type NixOutput } from "../../backends/nix/index.ts";
 import { validateWindowsWslResources } from "../../backends/windows/index.ts";
 import { validateWindowsWslSetupTargets } from "../../backends/windows/wsl-setup-runtime.ts";
 import type { WindowsOptions } from "../../types/index.ts";
-import { readWindowsLock, windowsLockGaps } from "../../backends/windows/lockfile.ts";
+import { readWindowsLock, windowsLockPinGaps, type WindowsLockGap } from "../../backends/windows/lockfile.ts";
 import { platformForEvaluatedHost } from "../activation.ts";
 import {
   analyzeWorkspace,
@@ -77,12 +77,7 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
     }
 
     const windowsHosts = evaluated.filter((host) => platformForEvaluatedHost(host) === "windows");
-    const gaps = windowsLockGaps(readWindowsLock(configDir), windowsHosts);
-    if (gaps.length > 0) {
-      const ids = [...new Set(gaps.map((gap) => gap.id))];
-      console.warn(`Warning: ${ids.length} Windows package(s) not pinned in winix-windows.lock: ${ids.join(", ")}.`);
-      console.warn(`  The next apply resolves them with winget (network); a mistyped id fails there. Pin now with winix update --windows ${ids.join(" ")}, or find ids with winix package search <query>.`);
-    }
+    for (const line of lockGapWarnings(windowsLockPinGaps(readWindowsLock(configDir), windowsHosts))) console.warn(line);
 
     if (opts.escapeReport) {
       const report = collectEscapeReport(analyses);
@@ -102,6 +97,25 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
     console.error(`  ${(err as Error).message}`);
     process.exit(1);
   }
+}
+
+/**
+ * Missing pins make every apply/switch --dry resolve online and print
+ * "Would pin…" until someone commits the lock; say exactly that.
+ */
+export function lockGapWarnings(gaps: WindowsLockGap[]): string[] {
+  if (gaps.length === 0) return [];
+  const labels = [...new Set(gaps.map((gap) => gap.label))];
+  const selectors = [...new Set(gaps.map((gap) => gap.selector))];
+  const lines = [
+    `Warning: winix-windows.lock is missing ${labels.length} pin(s): ${labels.join(", ")}.`,
+    "  Until the lock contains them, every apply and switch resolves them online (\"Would pin…\" in dry runs), and --offline/--locked fail.",
+    `  Pin them now with winix update --windows ${selectors.join(" ")}, then commit winix-windows.lock.`,
+  ];
+  if (gaps.some((gap) => gap.kind === "package")) {
+    lines.push("  A mistyped package id fails at that point; find ids with winix package search <query>.");
+  }
+  return lines;
 }
 
 interface NixParseResult {

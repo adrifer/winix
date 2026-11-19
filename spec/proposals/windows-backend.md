@@ -823,8 +823,14 @@ Drift detected:
 
 This has no NixOS equivalent because Nix is reproducible-by-construction;
 drift detection is a Windows-specific affordance the backend can offer
-because DSC v3 makes it cheap. Deferred to future work; the MVP only stubs
-the command behind a "not implemented" message.
+because DSC v3 makes it cheap.
+
+Implemented as `winix plan` / `winix switch --dry` rather than `check` (which
+stays offline and machine-independent): packages come from one batched
+`dsc config get`, script resources run their test scripts in one PowerShell
+process, other resources use a batched `dsc config test`. A single
+`dsc config test` over the whole document is not usable, because one failing
+resource (for example Windows features without elevation) aborts the run.
 
 ## Versioning and lockfile
 

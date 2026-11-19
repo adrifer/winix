@@ -18,6 +18,7 @@ import {
   resolveWindowsWslImages,
   resolveWindowsWslRepositories,
   windowsLockChanged,
+  windowsLockPinGaps,
   writeWindowsLock,
   type WindowsLock,
   type WindowsPackageVersionResolver,
@@ -30,6 +31,7 @@ import { resolveWslRepository, type WindowsWslRepositoryResolver } from "../../b
 import { validateWindowsWslSetupTargets } from "../../backends/windows/wsl-setup-runtime.ts";
 import { platformForEvaluatedHost, type ActivationPlatform } from "../activation.ts";
 import { collectFontSources, resolveWindowsFonts, resolveFontSource, type WindowsFontResolver } from "../../backends/windows/fonts.ts";
+import { unifiedDiff } from "../diff.ts";
 
 interface ApplyOptions {
   resolveWindowsFont?: WindowsFontResolver;
@@ -43,6 +45,10 @@ interface ApplyOptions {
   host?: string;
   dry: boolean;
   diff: boolean;
+  /** Dry runs print the generated files unless false (switch --dry prints a plan instead). */
+  print?: boolean;
+  offline?: boolean;
+  locked?: boolean;
   windowsLockDry?: boolean;
   resolveWindowsPackageVersion?: WindowsPackageVersionResolver;
   resolveWindowsModuleVersion?: WindowsModuleVersionResolver;
@@ -56,6 +62,15 @@ export interface ApplyResult {
   hostNames: string[];
   hostPlatforms: Map<string, ActivationPlatform>;
   windowsLock?: WindowsLock;
+  windowsOutput?: WindowsOutput;
+}
+
+/** Network policy for winix-windows.lock resolution. */
+export interface LockPolicy {
+  /** Never resolve online; fail when the lock lacks a pin. */
+  offline?: boolean;
+  /** Fail when the lock would change at all (CI, reproducible switches). */
+  locked?: boolean;
 }
 
 export async function applyWorkspace(
@@ -90,7 +105,8 @@ export async function applyWorkspace(
       opts.resolveWindowsModuleVersion ?? resolvePowerShellModuleVersion,
       opts.resolveWindowsWslImage ?? resolveNixosWslImage,
       opts.resolveWindowsWslRepository ?? resolveWslRepository,
-      opts.resolveWindowsFont ?? resolveFontSource
+      opts.resolveWindowsFont ?? resolveFontSource,
+      { offline: opts.offline, locked: opts.locked },
     )
     : undefined;
   const nixOutput = nixHosts.length > 0 ? generateNix(workspace, nixHosts) : undefined;
@@ -114,13 +130,16 @@ export async function applyWorkspace(
   const outDir = join(configDir, ".winix", "out");
 
   if (opts.dry) {
-    printDryOutput(nixOutput, windowsOutput);
-    return { ...resultFor(configDir, outDir, evaluated), windowsLock };
+    if (opts.print !== false) {
+      printDryOutput(nixOutput, windowsOutput);
+      if (windowsOutput) console.warn("\nTip: winix switch --dry --host <name> shows what would change on this machine instead of the generated files.");
+    }
+    return { ...resultFor(configDir, outDir, evaluated), windowsLock, windowsOutput };
   }
 
   if (opts.diff) {
     await showDiff(configDir, outDir, nixOutput, windowsOutput);
-    return { ...resultFor(configDir, outDir, evaluated), windowsLock };
+    return { ...resultFor(configDir, outDir, evaluated), windowsLock, windowsOutput };
   }
 
   if (nixOutput) {
@@ -162,7 +181,7 @@ export async function applyWorkspace(
     }
   }
   printNextSteps(cwd, outDir, evaluated);
-  return { ...resultFor(configDir, outDir, evaluated), windowsLock };
+  return { ...resultFor(configDir, outDir, evaluated), windowsLock, windowsOutput };
 }
 
 export async function apply(cwd: string, opts: ApplyOptions): Promise<void> {
@@ -177,11 +196,26 @@ async function prepareWindowsLock(
   resolveModuleVersion: WindowsModuleVersionResolver,
   resolveWslImage: WindowsWslImageResolver,
   resolveRepository: WindowsWslRepositoryResolver,
-  resolveFont: WindowsFontResolver
+  resolveFont: WindowsFontResolver,
+  policy: LockPolicy = {},
 ): Promise<WindowsLock> {
   const now = new Date();
   const lock = readWindowsLock(configDir) ?? emptyWindowsLock(now);
+  if (policy.offline || policy.locked) {
+    const flag = policy.locked ? "--locked" : "--offline";
+    const gaps = windowsLockPinGaps(lock, windowsHosts);
+    if (gaps.length > 0) {
+      const labels = [...new Set(gaps.map((gap) => gap.label))];
+      const selectors = [...new Set(gaps.map((gap) => gap.selector))];
+      throw new Error(`${flag}: winix-windows.lock is missing ${labels.length} pin(s): ${labels.join(", ")}. ` +
+        `Resolve them with network access (winix update --windows ${selectors.join(" ")}), then commit winix-windows.lock.`);
+    }
+  }
   const reconciled = reconcileInlinePins(lock, windowsHosts, now);
+  if (policy.locked && windowsLockChanged(lock, reconciled)) {
+    throw new Error("--locked: inline Windows package versions differ from winix-windows.lock. " +
+      "Run winix apply without --locked to record them, then commit winix-windows.lock.");
+  }
   const resolved = resolveMissingWindowsLockEntries(
     reconciled,
     windowsHosts,
@@ -327,17 +361,19 @@ async function showDiff(
 
   let hasDiff = false;
   for (const [path, newContent] of files) {
+    let existing: string;
     try {
-      const existing = await readFile(path, "utf-8");
-      if (existing !== newContent) {
-        hasDiff = true;
-        console.log(`\n--- ${relative(process.cwd(), path)}`);
-        console.log(`+++ ${relative(process.cwd(), path)} (new)`);
-        console.log("(content differs)");
-      }
+      existing = await readFile(path, "utf-8");
     } catch {
       hasDiff = true;
-      console.log(`\n+++ ${relative(process.cwd(), path)} (new file)`);
+      console.log(`\n+++ ${displayPath(path)} (new file, ${lineCount(newContent)} lines)`);
+      continue;
+    }
+    const diff = unifiedDiff(existing, newContent, `${displayPath(path)} (current)`, `${displayPath(path)} (generated)`);
+    if (diff) {
+      hasDiff = true;
+      console.log("");
+      process.stdout.write(diff);
     }
   }
 
@@ -350,19 +386,27 @@ async function showDiff(
       const existing = await readFile(target);
       if (!sourceContent.equals(existing)) {
         hasDiff = true;
-        console.log(`\n--- ${relative(process.cwd(), target)}`);
-        console.log(`+++ ${relative(process.cwd(), target)} (new)`);
-        console.log("(content differs)");
+        console.log("");
+        process.stdout.write(unifiedDiff(existing.toString("utf8"), sourceContent.toString("utf8"),
+          `${displayPath(target)} (current)`, `${displayPath(target)} (generated)`));
       }
     } catch {
       hasDiff = true;
-      console.log(`\n+++ ${relative(process.cwd(), target)} (new file)`);
+      console.log(`\n+++ ${displayPath(target)} (new file)`);
     }
   }
 
   if (!hasDiff) {
     console.log("No changes. Output is up to date.");
   }
+}
+
+function displayPath(path: string): string {
+  return relative(process.cwd(), path).replaceAll("\\", "/");
+}
+
+function lineCount(text: string): number {
+  return text === "" ? 0 : text.split("\n").length - (text.endsWith("\n") ? 1 : 0);
 }
 
 async function copyRawModules(

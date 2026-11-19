@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile, readlink } from "node:fs/promi
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { evaluate, feature, host, platforms, profile, windows, workspace, type Fragment } from "../src/index.ts";
 import { generateWindows } from "../src/backends/windows/index.ts";
 import {
@@ -14,7 +14,7 @@ import {
   type WindowsLock,
 } from "../src/backends/windows/lockfile.ts";
 import { powerShellModuleProperties, powerShellRepositoryScripts, resolvePowerShellModuleVersion } from "../src/backends/windows/powershell.ts";
-import { resolveWindowsFileProperties } from "../src/helpers/windows.ts";
+import { resolveWindowsFileProperties, winixFileModuleProperties } from "../src/helpers/windows.ts";
 import { windowsSourcePath } from "../src/backends/windows/paths.ts";
 import { powerShellLiteral } from "../src/helpers/utils.ts";
 import type { WinDscProperties } from "../src/types/windows.ts";
@@ -104,7 +104,7 @@ describe("Windows shell primitives", () => {
     expect(collectWindowsModules(evaluated).size).toBe(1);
     const lock: WindowsLock = { ...emptyWindowsLock(), modules: { "terminal-icons": pin } };
     const doc = generateWindows(evaluated, lock, "D:\\dotfiles\\winix").hosts.desktop["configuration.winget"];
-    expect(doc).toContain("dependsOn: [\"PowerShell module Terminal Icons\"]");
+    expect(doc).toContain("dependsOn: [\"PowerShell module Terminal Icons\", \"Winix PowerShell helpers\"]");
     expect(doc).toContain("Microsoft PowerShell");
     expect(doc).not.toContain("kind:");
     expect(doc).toContain("D:\\dotfiles\\windows\\profile.ps1");
@@ -600,6 +600,14 @@ function runDsc(
 }
 
 describe.skipIf(process.platform !== "win32" || process.env.WINIX_DSC_INTEGRATION !== "1")("native Windows DSC execution", () => {
+  // File resources import the shared helpers module; generated configurations
+  // install it first through the "Winix PowerShell helpers" resource.
+  beforeAll(() => {
+    const module = winixFileModuleProperties();
+    runDsc("set", module);
+    expect(runDsc("test", module).inDesiredState).toBe(true);
+  }, 120000);
+
   it("manages Startup shortcuts without launching, preserves argv, and protects existing entries", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix startup's \u00e9 "));
     const name = "Winix-\u00e9";

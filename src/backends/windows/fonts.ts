@@ -171,7 +171,7 @@ export async function resolveWindowsFonts(
     fonts[key] = pin;
     changed = true;
   }
-  return { lock: changed ? { ...lock, fonts, generatedAt: now.toISOString() } : lock, changed };
+  return { lock: changed ? { ...lock, fonts } : lock, changed };
 }
 
 export function fontsProperties(sources: WinFontSource[], lock: WindowsLock, configDir?: string): WinDscProperties {

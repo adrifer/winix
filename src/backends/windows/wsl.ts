@@ -217,10 +217,14 @@ export function wslDistroProperties(
   ];
   const identity = wslIdentityProbe(distro.host ?? distro.setup?.host ?? "");
   prelude.push(...wslScriptInvocation("Invoke-WinixWslIdentity", identity, identity, "WSL identity validation"));
+  // The setup runtime is large; only the set script can activate, the test script only probes.
+  const setupProbe: string[] = [];
+  const setupActivate: string[] = [];
   if (distro.setup) {
     const pin = repositories[wslRepositoryKey(distro.setup)];
     if (!pin) throw new Error("Missing WSL setup repository pin. Run winix update --windows wsl-setup.");
-    prelude.push(...wslSetupPrelude(distro.setup, pin, distro.setupRefFromCheckout === true));
+    setupProbe.push(...wslSetupPrelude(distro.setup, pin, distro.setupRefFromCheckout === true, true));
+    setupActivate.push(...wslSetupPrelude(distro.setup, pin, distro.setupRefFromCheckout === true));
   }
   return {
     getScript: [
@@ -233,6 +237,7 @@ export function wslDistroProperties(
     ].join("\n"),
     testScript: [
       ...prelude,
+      ...setupProbe,
       "$registration = Get-WinixWslRegistration",
       "$record = Get-WinixWslTracking",
       "if ($null -eq $registration -and $null -ne $record) { throw 'Tracked WSL registration is missing; inspect tracking before creating a replacement' }",
@@ -245,6 +250,7 @@ export function wslDistroProperties(
     ].join("\n"),
     setScript: [
       ...prelude,
+      ...setupActivate,
       "$registration = Get-WinixWslRegistration",
       "$record = Get-WinixWslTracking",
       "if ($null -eq $registration -and $null -ne $record) { throw 'Tracked WSL registration is missing; inspect tracking before creating a replacement' }",

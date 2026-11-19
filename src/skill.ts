@@ -628,14 +628,21 @@ callers may need arguments or \`.isActive\`.
 - \`winix --skill\` prints these version-matched instructions. It has no side
   effects.
 - \`winix check [--strict] [--escape-report]\` validates the project.
-- \`winix apply [--host NAME] [--dry] [--diff]\` generates backend output.
+- \`winix apply [--host NAME] [--dry] [--diff] [--offline] [--locked]\` generates backend
+  output; \`--diff\` prints a unified diff against the current output.
+- \`winix plan [--host NAME]\` (same as \`switch --dry\`) shows what a Windows switch
+  would change, checked against the machine (+ install, ~ change, ! conflict,
+  ? not checked), plus removals. Prefer it over reading \`apply --dry\` output.
+  \`--offline\` fails on missing lock pins; \`--locked\` also fails if the lock
+  would change.
 - \`winix switch [--host NAME] [--dry] [--yes]\` generates and activates one host, automatically cleaning up unused owned Windows packages and startup commands.
   Prune is Windows-only and uninstalls unused Winix-owned packages.
 - \`winix state forget startup <name>\` / \`winix state forget package <source> <id>\`
   releases Windows removal ownership without deleting anything; accepts --dry.
 - \`winix update [INPUTS...] [--dry] [--windows]\` updates Nix inputs or
   Windows package locks.
-- \`winix inspect\` prints host composition and fragment information.
+- \`winix inspect [--host NAME]\` lists each feature once with its scopes, Nix keys,
+  and Windows resources with dependsOn edges; ignored features are marked.
 
 On native Windows, real NixOS and nix-darwin activation is unsupported. Dry
 runs still print commands with forward-slash flake references. Windows hosts

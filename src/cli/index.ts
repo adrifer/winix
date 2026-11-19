@@ -34,6 +34,8 @@ const { positionals, values } = parseArgs({
     dry: { type: "boolean", default: false },
     yes: { type: "boolean", short: "y", default: false },
     diff: { type: "boolean", default: false },
+    offline: { type: "boolean", default: false },
+    locked: { type: "boolean", default: false },
     windows: { type: "boolean", default: false },
     strict: { type: "boolean", default: false },
     force: { type: "boolean", default: false },
@@ -72,9 +74,10 @@ Commands:
   install skill Install the agent skill wrapper
   apply        Generate backend output in .winix/out/
   check        Validate configuration
+  plan         Show what switch would change on this machine (same as switch --dry)
   switch       Generate output and run the host activation command
   update       Update generated flake.lock and copy it to project root
-  inspect      Print host composition and fragment graph
+  inspect      Print each host's features and what they declare (--host to pick one)
   fonts search [query] --provider nerd-fonts  Search official font release IDs
   package search <query>  Search winget and show how to declare a package
   windows import [--host <name>]  Print declarations for installed, undeclared packages
@@ -87,7 +90,9 @@ Options:
   --prepare-only Stop bootstrap after validation/preview; no activation
   --dry           Preview generation, activation/cleanup, or owner migration
   -y, --yes       Confirm bootstrap, managed removals, or explicit owner migration
-  --diff          Show diff against current output (apply)
+  --diff          Show a unified diff against current output (apply)
+  --offline       Never resolve winix-windows.lock online; fail on missing pins (apply, switch, plan)
+  --locked        Fail if winix-windows.lock would change (apply, switch, plan)
   --windows       Resolve Windows package/module/WSL image lockfile (update)
   --strict        Treat conflicts as errors (check)
   --escape-report Show escape hatch usage (check)
@@ -105,6 +110,7 @@ Examples:
   winix apply --host wsl-work
   winix check --strict
   winix check --escape-report
+  winix plan --host desktop
   winix switch --host wsl-work
   winix update
 `);
@@ -114,6 +120,10 @@ Examples:
 const cwd = process.cwd();
 if (values["prepare-only"] && command !== "bootstrap") {
   console.error("--prepare-only is only supported by winix bootstrap.");
+  process.exit(2);
+}
+if ((values.offline || values.locked) && !["apply", "switch", "plan"].includes(command)) {
+  console.error("--offline and --locked are only supported by winix apply, switch and plan.");
   process.exit(2);
 }
 if (values.yes && command !== "switch" && command !== "bootstrap" &&
@@ -194,6 +204,8 @@ switch (command) {
         host: values.host as string | undefined,
         dry: values.dry as boolean,
         diff: values.diff as boolean,
+        offline: values.offline,
+        locked: values.locked,
       });
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
@@ -206,12 +218,15 @@ switch (command) {
       escapeReport: values["escape-report"] as boolean,
     });
     break;
+  case "plan":
   case "switch":
     try {
       await switchCommand(cwd, {
         host: values.host as string | undefined,
-        dry: values.dry as boolean,
+        dry: command === "plan" || values.dry,
         yes: values.yes as boolean,
+        offline: values.offline,
+        locked: values.locked,
       });
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
@@ -232,7 +247,7 @@ switch (command) {
     break;
   case "inspect":
     try {
-      await inspect(cwd);
+      await inspect(cwd, { host: values.host });
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
       process.exit(1);

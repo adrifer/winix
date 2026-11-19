@@ -20,6 +20,7 @@ import {
   type WindowsLock,
 } from "../src/backends/windows/lockfile.ts";
 import type { WindowsOptions } from "../src/types/windows.ts";
+import { WINIX_FILE_MODULE } from "../src/helpers/windows.ts";
 
 const inputs = defineInputs({
   nixpkgs: "github:NixOS/nixpkgs/nixos-unstable",
@@ -488,9 +489,9 @@ describe("winix-windows.lock", () => {
         })
       );
 
+      // generatedAt is legacy: still accepted, no longer carried or written.
       expect(readWindowsLock(dir)).toEqual({
         version: 1,
-        generatedAt: "2026-06-24T18:37:00.000Z",
         packages: {
           "Git.Git": {
             source: "winget",
@@ -530,7 +531,9 @@ describe("winix-windows.lock", () => {
         "Git.Git": { source: "winget", version: "2.44.0" },
       }));
 
-      await expect(readFile(join(dir, "winix-windows.lock"), "utf-8")).resolves.toMatchSnapshot();
+      const written = await readFile(join(dir, "winix-windows.lock"), "utf-8");
+      expect(written).toMatchSnapshot();
+      expect(written).not.toContain("generatedAt");
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -766,10 +769,12 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
     const props = frag.windows?.dsc?.[0].properties as Record<string, string>;
     expect(props.setScript).toContain("Assert-WinixCanCreateSymlink");
     expect(props.setScript).toContain("Set-WinixRecursiveSymlink $source $target $force $backup");
-    expect(props.setScript).toContain("mklink $flag");
-    expect(props.setScript).not.toContain("New-Item -ItemType SymbolicLink");
-    expect(props.setScript.indexOf("Move-WinixExistingTarget $Target $Force $Backup")).toBeLessThan(
-      props.setScript.indexOf("New-Item -ItemType Directory -Force -Path $Target")
+    expect(props.setScript).toContain("Import-Module -Name $winixModule");
+    expect(props.setScript).not.toContain("function Set-WinixSymlink");
+    expect(WINIX_FILE_MODULE).toContain("mklink $flag");
+    expect(WINIX_FILE_MODULE).not.toContain("New-Item -ItemType SymbolicLink");
+    expect(WINIX_FILE_MODULE.indexOf("Move-WinixExistingTarget $Target $Force $Backup")).toBeLessThan(
+      WINIX_FILE_MODULE.indexOf("New-Item -ItemType Directory -Force -Path $Target")
     );
   });
 
@@ -1030,8 +1035,11 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     const doc = generateWindows(evaluated, windowsLock({})).hosts.desktop["configuration.winget"];
     const blocks = doc.split("\n  - name: ");
     const link = blocks.find((block) => block.startsWith('"Link file USERPROFILE link"\n'));
-    expect(link).toContain('dependsOn: ["Write file USERPROFILE source", "Windows Settings"]');
-    for (const name of ["Write file USERPROFILE source", "Copy file USERPROFILE copy", "Remove file USERPROFILE old", "Set EDITOR"]) {
+    expect(link).toContain('dependsOn: ["Write file USERPROFILE source", "Windows Settings", "Winix PowerShell helpers"]');
+    for (const name of ["Write file USERPROFILE source", "Copy file USERPROFILE copy"]) {
+      expect(blocks.find((block) => block.startsWith(`"${name}"\n`))).toContain('    dependsOn: ["Winix PowerShell helpers"]');
+    }
+    for (const name of ["Remove file USERPROFILE old", "Set EDITOR", "Winix PowerShell helpers"]) {
       expect(blocks.find((block) => block.startsWith(`"${name}"\n`))).not.toContain("    dependsOn:");
     }
     expect(generateWindows(evaluated, windowsLock({})).hosts.desktop["configuration.winget"]).toBe(doc);
@@ -1050,8 +1058,9 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     }));
     const doc = generateWindows(evaluated, windowsLock({})).hosts.desktop["configuration.winget"];
     const link = doc.split("\n  - name: ").find((block) => block.startsWith('"Link file USERPROFILE link"\n'));
-    expect(link).not.toContain("    dependsOn:");
-    expect(link).toContain("requires elevation or Developer Mode");
+    expect(link).toContain('    dependsOn: ["Winix PowerShell helpers"]');
+    expect(link).toContain("Assert-WinixCanCreateSymlink");
+    expect(doc).toContain("requires elevation or Developer Mode");
     expect(doc).not.toContain("DeveloperMode: true");
   });
 
@@ -1067,9 +1076,10 @@ describe("generateWindows() emitter: dsc / env / path", () => {
       ],
     }));
     const output = generateWindows(evaluated, windowsLock({}));
-    expect(output.hosts.enabled["configuration.winget"]).toContain('dependsOn: ["Windows Settings"]');
+    expect(output.hosts.enabled["configuration.winget"]).toContain('dependsOn: ["Windows Settings", "Winix PowerShell helpers"]');
     expect(output.hosts.external["configuration.winget"]).not.toContain("type: Microsoft.Windows.Settings/WindowsSettings");
-    expect(output.hosts.external["configuration.winget"]).not.toContain("    dependsOn:");
+    expect(output.hosts.external["configuration.winget"]).toContain('    dependsOn: ["Winix PowerShell helpers"]');
+    expect(output.hosts.external["configuration.winget"]).not.toContain('"Windows Settings"');
   });
 
   it("resolves Winix-managed env references in PATH entries", () => {
@@ -1185,9 +1195,11 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(doc).toContain(`name: "Link file LOCALAPPDATA nvim"`);
     expect(doc).toContain(`name: "Copy file APPDATA tool config json"`);
     expect(doc).toContain(`name: "Remove file USERPROFILE oldrc"`);
-    expect(doc).toContain(`dependsOn: ["Write file USERPROFILE gitconfig"]`);
+    expect(doc).toContain(`dependsOn: ["Write file USERPROFILE gitconfig", "Winix PowerShell helpers"]`);
     expect(doc).toContain("securityContext: elevated");
-    expect(doc).toContain("mklink $flag");
+    // The shared helpers are emitted once, in the module resource.
+    expect(doc.split("function Set-WinixSymlink").length - 1).toBe(1);
+    expect(doc.split("mklink $flag").length - 1).toBe(1);
     expect(doc).toMatchSnapshot();
   });
 });

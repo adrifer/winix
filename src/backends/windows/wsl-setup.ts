@@ -75,7 +75,13 @@ export function wslSetupFingerprint(setup: WinWslSetup, refFromCheckout = false)
   return createHash("sha256").update(JSON.stringify(refFromCheckout ? withoutRef : setup)).digest("hex");
 }
 
-export function wslSetupPrelude(setup: WinWslSetup, pin: WindowsLockWslRepository, refFromCheckout = false): string[] {
+/**
+ * `probeOnly` omits the activation script (and the embedded setup runtime), for
+ * test scripts that only call `Invoke-WinixWslSetup $true`.
+ */
+export function wslSetupPrelude(
+  setup: WinWslSetup, pin: WindowsLockWslRepository, refFromCheckout = false, probeOnly = false,
+): string[] {
   setup = normalizeWslSetup(setup);
   if (!validWslRepository(pin) || pin.repository !== setup.repository || pin.ref !== setup.ref) {
     throw new Error("Missing/mismatched WSL repository pin. Run winix update --windows wsl-setup.");
@@ -146,16 +152,19 @@ export function wslSetupPrelude(setup: WinWslSetup, pin: WindowsLockWslRepositor
     'export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG$\'\\n\'}extra-experimental-features = nix-command flakes"',
     ...launch,
   ].join("\n");
-  return wslScriptInvocation("Invoke-WinixWslSetup", probe, activate);
+  return wslScriptInvocation("Invoke-WinixWslSetup", probe, probeOnly ? undefined : activate);
 }
 
 export function wslScriptInvocation(
-  name: string, probe: string, activate: string, operation = "WSL setup"
+  name: string, probe: string, activate: string | undefined, operation = "WSL setup"
 ): string[] {
+  const activation = activate === undefined
+    ? `throw ${ps(`${operation} activation is not available in this script`)}`
+    : ps(activate + "\n");
   return [
     `function ${name}([bool]$TestOnly) {`,
     `  $operation = ${ps(operation)}`,
-    `  $script = if ($TestOnly) { ${ps(probe + "\n")} } else { ${ps(activate + "\n")} }`,
+    `  $script = if ($TestOnly) { ${ps(probe + "\n")} } else { ${activation} }`,
     "  $start = [Diagnostics.ProcessStartInfo]::new('wsl.exe')",
     "  $start.UseShellExecute = $false",
     "  $start.RedirectStandardInput = $true; $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true",

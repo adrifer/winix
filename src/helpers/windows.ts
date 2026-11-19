@@ -9,6 +9,7 @@ import type { AccountUserRef } from "./account.ts";
 import { getOptionalEvalContext } from "../sdk/index.ts";
 import { inferWslSetupRepository } from "./wsl-repository.ts";
 import { resolve, win32, posix } from "node:path";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { powerShellLiteral as psSingleQuoted } from "./utils.ts";
 import type {
@@ -199,7 +200,7 @@ function validFilePath(value: WinFilePath): boolean {
   return true;
 }
 
-function filePathLabel(value: WinFilePath): string {
+export function filePathLabel(value: WinFilePath): string {
   return typeof value === "string" ? value : `${value.folder}\\${value.path}`;
 }
 
@@ -949,7 +950,7 @@ function buildFileTextScriptProperties(opts: {
       "if (Test-Path -LiteralPath $target -PathType Leaf) { [IO.File]::ReadAllText($target) } else { '' }",
     ].join("\n"),
     testScript: [
-      ...fileTextPrelude(),
+      ...winixFileModuleImport("test"),
       ...vars,
       "$desired = Get-WinixTextBytes $content $encoding",
       "if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { return $false }",
@@ -957,7 +958,7 @@ function buildFileTextScriptProperties(opts: {
       "Test-WinixBytesEqual $actual $desired",
     ].join("\n"),
     setScript: [
-      ...fileTextPrelude(),
+      ...winixFileModuleImport("set"),
       ...vars,
       "$desired = Get-WinixTextBytes $content $encoding",
       "if (Test-Path -LiteralPath $target -PathType Leaf) {",
@@ -987,17 +988,17 @@ function buildFileSymlinkScriptProperties(opts: {
   });
   return {
     getScript: [
-      ...fileSymlinkPrelude(),
+      ...filePathPrelude(),
       `$target = ${filePathExpression(opts.target)}`,
       "if (Test-Path -LiteralPath $target) { (Get-Item -LiteralPath $target -Force).LinkType } else { '' }",
     ].join("\n"),
     testScript: [
-      ...fileSymlinkPrelude(),
+      ...winixFileModuleImport("test"),
       ...vars,
       "if ($recursive) { Test-WinixRecursiveSymlink $source $target } else { Test-WinixSymlink $source $target }",
     ].join("\n"),
     setScript: [
-      ...fileSymlinkPrelude(),
+      ...winixFileModuleImport("set"),
       ...vars,
       "Assert-WinixCanCreateSymlink",
       "if (-not (Test-Path -LiteralPath $source)) { throw \"Source path does not exist: $source\" }",
@@ -1029,12 +1030,12 @@ function buildFileCopyScriptProperties(opts: {
       "if (Test-Path -LiteralPath $target) { $target } else { '' }",
     ].join("\n"),
     testScript: [
-      ...fileCopyPrelude(),
+      ...winixFileModuleImport("test"),
       ...vars,
       "Test-WinixCopy $source $target",
     ].join("\n"),
     setScript: [
-      ...fileCopyPrelude(),
+      ...winixFileModuleImport("set"),
       ...vars,
       "if (-not (Test-Path -LiteralPath $source)) { throw \"Source path does not exist: $source\" }",
       "if (Test-WinixCopy $source $target) { return }",
@@ -1089,27 +1090,6 @@ export function filePathPrelude(): string[] {
   ];
 }
 
-function fileTextPrelude(): string[] {
-  return [
-    ...filePathPrelude(),
-    "function Ensure-WinixParentDirectory([string]$Path) {",
-    "  $parent = Split-Path -Parent $Path",
-    "  if (-not [string]::IsNullOrEmpty($parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }",
-    "}",
-    "function Test-WinixBytesEqual([byte[]]$Actual, [byte[]]$Desired) {",
-    "  if ($Actual.Length -ne $Desired.Length) { return $false }",
-    "  for ($i = 0; $i -lt $Actual.Length; $i++) { if ($Actual[$i] -ne $Desired[$i]) { return $false } }",
-    "  return $true",
-    "}",
-    "function Get-WinixTextBytes([string]$Content, [string]$EncodingName) {",
-    "  if ($EncodingName -eq 'ascii') { return [byte[]][Text.Encoding]::ASCII.GetBytes($Content) }",
-    "  $encoder = [Text.UTF8Encoding]::new($EncodingName -eq 'utf8bom')",
-    "  return [byte[]]($encoder.GetPreamble() + $encoder.GetBytes($Content))",
-    "}",
-    ...fileMoveTargetPrelude(),
-  ];
-}
-
 function fileMoveTargetPrelude(): string[] {
   return [
     "function Move-WinixExistingTarget([string]$Path, [bool]$Force, [bool]$Backup) {",
@@ -1131,98 +1111,163 @@ function fileMoveTargetPrelude(): string[] {
   ];
 }
 
-function fileSymlinkPrelude(): string[] {
+/**
+ * Shared functions for file resources. Emitted once per configuration as a
+ * content-addressed module (see `winixFileModuleProperties`) instead of being
+ * repeated in every test/set script.
+ */
+const WINIX_FILE_FUNCTIONS: readonly string[] = [
+  ...filePathPrelude(),
+  "function Ensure-WinixParentDirectory([string]$Path) {",
+  "  $parent = Split-Path -Parent $Path",
+  "  if (-not [string]::IsNullOrEmpty($parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }",
+  "}",
+  "function Test-WinixBytesEqual([byte[]]$Actual, [byte[]]$Desired) {",
+  "  if ($Actual.Length -ne $Desired.Length) { return $false }",
+  "  for ($i = 0; $i -lt $Actual.Length; $i++) { if ($Actual[$i] -ne $Desired[$i]) { return $false } }",
+  "  return $true",
+  "}",
+  "function Get-WinixTextBytes([string]$Content, [string]$EncodingName) {",
+  "  if ($EncodingName -eq 'ascii') { return [byte[]][Text.Encoding]::ASCII.GetBytes($Content) }",
+  "  $encoder = [Text.UTF8Encoding]::new($EncodingName -eq 'utf8bom')",
+  "  return [byte[]]($encoder.GetPreamble() + $encoder.GetBytes($Content))",
+  "}",
+  ...fileMoveTargetPrelude(),
+  "function Get-WinixRelativePath([string]$Root, [string]$Path) {",
+  "  $prefix = $Root.TrimEnd('\\') + '\\'",
+  "  $Path.Substring($prefix.Length)",
+  "}",
+  "function Test-WinixSymlink([string]$Source, [string]$Target) {",
+  "  if (-not (Test-Path -LiteralPath $Target)) { return $false }",
+  "  $item = Get-Item -LiteralPath $Target -Force",
+  "  ($item.LinkType -eq 'SymbolicLink') -and [string]::Equals([string]$item.Target, $Source, [StringComparison]::OrdinalIgnoreCase)",
+  "}",
+  "function Invoke-WinixMklink([string]$Source, [string]$Target) {",
+  "  Ensure-WinixParentDirectory $Target",
+  "  $isDirectory = Test-Path -LiteralPath $Source -PathType Container",
+  "  $flag = if ($isDirectory) { '/D ' } else { '' }",
+  "  & $env:ComSpec /c \"mklink $flag`\"$Target`\" `\"$Source`\"\"",
+  "  if ($LASTEXITCODE -ne 0) { throw \"mklink failed with exit code $LASTEXITCODE\" }",
+  "}",
+  "function Set-WinixSymlink([string]$Source, [string]$Target, [bool]$Force, [bool]$Backup) {",
+  "  if (Test-WinixSymlink $Source $Target) { return }",
+  "  Move-WinixExistingTarget $Target $Force $Backup",
+  "  Invoke-WinixMklink $Source $Target",
+  "}",
+  "function Test-WinixRecursiveSymlink([string]$Source, [string]$Target) {",
+  "  if (-not (Test-Path -LiteralPath $Source -PathType Container)) { return $false }",
+  "  if (-not (Test-Path -LiteralPath $Target -PathType Container)) { return $false }",
+  "  $root = (Resolve-Path -LiteralPath $Source).ProviderPath",
+  "  foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {",
+  "    $relative = Get-WinixRelativePath $root $dir.FullName",
+  "    if (-not (Test-Path -LiteralPath (Join-Path $Target $relative) -PathType Container)) { return $false }",
+  "  }",
+  "  foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {",
+  "    $relative = Get-WinixRelativePath $root $file.FullName",
+  "    if (-not (Test-WinixSymlink $file.FullName (Join-Path $Target $relative))) { return $false }",
+  "  }",
+  "  return $true",
+  "}",
+  "function Set-WinixRecursiveSymlink([string]$Source, [string]$Target, [bool]$Force, [bool]$Backup) {",
+  "  if (-not (Test-Path -LiteralPath $Source -PathType Container)) { throw \"Recursive symlink source must be a directory: $Source\" }",
+  "  if (Test-WinixRecursiveSymlink $Source $Target) { return }",
+  "  Move-WinixExistingTarget $Target $Force $Backup",
+  "  New-Item -ItemType Directory -Force -Path $Target | Out-Null",
+  "  $root = (Resolve-Path -LiteralPath $Source).ProviderPath",
+  "  foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {",
+  "    New-Item -ItemType Directory -Force -Path (Join-Path $Target (Get-WinixRelativePath $root $dir.FullName)) | Out-Null",
+  "  }",
+  "  foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {",
+  "    Set-WinixSymlink $file.FullName (Join-Path $Target (Get-WinixRelativePath $root $file.FullName)) $Force $Backup",
+  "  }",
+  "}",
+  "function Assert-WinixCanCreateSymlink {",
+  "  $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()",
+  "  if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { return }",
+  "  $devMode = Get-ItemPropertyValue -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock' -Name AllowDevelopmentWithoutDevLicense -ErrorAction SilentlyContinue",
+  "  if ($devMode -eq 1) { return }",
+  "  throw 'Creating Windows symlinks requires elevation or Developer Mode. Enable Developer Mode in Windows Settings, or pass elevate: true.'",
+  "}",
+  "function Test-WinixCopy([string]$Source, [string]$Target) {",
+  "  if (-not (Test-Path -LiteralPath $Source) -or -not (Test-Path -LiteralPath $Target)) { return $false }",
+  "  if (Test-Path -LiteralPath $Source -PathType Leaf) {",
+  "    if (-not (Test-Path -LiteralPath $Target -PathType Leaf)) { return $false }",
+  "    return Test-WinixBytesEqual ([IO.File]::ReadAllBytes($Target)) ([IO.File]::ReadAllBytes($Source))",
+  "  }",
+  "  if (-not (Test-Path -LiteralPath $Target -PathType Container)) { return $false }",
+  "  $root = (Resolve-Path -LiteralPath $Source).ProviderPath",
+  "  foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {",
+  "    if (-not (Test-Path -LiteralPath (Join-Path $Target (Get-WinixRelativePath $root $dir.FullName)) -PathType Container)) { return $false }",
+  "  }",
+  "  foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {",
+  "    $targetFile = Join-Path $Target (Get-WinixRelativePath $root $file.FullName)",
+  "    if (-not (Test-Path -LiteralPath $targetFile -PathType Leaf)) { return $false }",
+  "    if (-not (Test-WinixBytesEqual ([IO.File]::ReadAllBytes($targetFile)) ([IO.File]::ReadAllBytes($file.FullName)))) { return $false }",
+  "  }",
+  "  return $true",
+  "}",
+];
+
+/** Module text; ASCII only, so every PowerShell edition reads it identically. */
+export const WINIX_FILE_MODULE = [
+  "# Generated by Winix. Shared functions for Winix file resources. Do not edit.",
+  ...WINIX_FILE_FUNCTIONS,
+  "Export-ModuleMember -Function *-Winix*",
+  "",
+].join("\n");
+const WINIX_FILE_MODULE_SHA256 = createHash("sha256").update(WINIX_FILE_MODULE, "utf8").digest("hex");
+/** Content-addressed, so workspaces on different Winix versions never overwrite each other's copy. */
+export const WINIX_FILE_MODULE_RELATIVE_PATH = `Winix\\powershell\\WinixFiles-${WINIX_FILE_MODULE_SHA256.slice(0, 16)}.psm1`;
+export const WINIX_FILE_MODULE_RESOURCE_NAME = "Winix PowerShell helpers";
+
+function winixFileModulePathLine(): string {
+  return `$winixModule = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) ${psSingleQuoted(WINIX_FILE_MODULE_RELATIVE_PATH)}`;
+}
+
+/**
+ * Load the shared file functions. A missing module means the helpers resource
+ * has not run yet: tests report "not in desired state" (so plans and drift checks
+ * still work on a fresh machine) and sets fail with the fix.
+ */
+function winixFileModuleImport(mode: "test" | "set"): string[] {
   return [
-    ...filePathPrelude(),
-    "function Ensure-WinixParentDirectory([string]$Path) {",
-    "  $parent = Split-Path -Parent $Path",
-    "  if (-not [string]::IsNullOrEmpty($parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }",
+    winixFileModulePathLine(),
+    "if (-not (Test-Path -LiteralPath $winixModule -PathType Leaf)) {",
+    mode === "test"
+      ? "  return $false"
+      : `  throw "Winix PowerShell helpers are missing: $winixModule. Run winix switch so the '${WINIX_FILE_MODULE_RESOURCE_NAME}' resource installs them first."`,
     "}",
-    ...fileMoveTargetPrelude(),
-    "function Test-WinixSymlink([string]$Source, [string]$Target) {",
-    "  if (-not (Test-Path -LiteralPath $Target)) { return $false }",
-    "  $item = Get-Item -LiteralPath $Target -Force",
-    "  ($item.LinkType -eq 'SymbolicLink') -and [string]::Equals([string]$item.Target, $Source, [StringComparison]::OrdinalIgnoreCase)",
-    "}",
-    "function Invoke-WinixMklink([string]$Source, [string]$Target) {",
-    "  Ensure-WinixParentDirectory $Target",
-    "  $isDirectory = Test-Path -LiteralPath $Source -PathType Container",
-    "  $flag = if ($isDirectory) { '/D ' } else { '' }",
-    "  & $env:ComSpec /c \"mklink $flag`\"$Target`\" `\"$Source`\"\"",
-    "  if ($LASTEXITCODE -ne 0) { throw \"mklink failed with exit code $LASTEXITCODE\" }",
-    "}",
-    "function Set-WinixSymlink([string]$Source, [string]$Target, [bool]$Force, [bool]$Backup) {",
-    "  if (Test-WinixSymlink $Source $Target) { return }",
-    "  Move-WinixExistingTarget $Target $Force $Backup",
-    "  Invoke-WinixMklink $Source $Target",
-    "}",
-    "function Get-WinixRelativePath([string]$Root, [string]$Path) {",
-    "  $prefix = $Root.TrimEnd('\\') + '\\'",
-    "  $Path.Substring($prefix.Length)",
-    "}",
-    "function Test-WinixRecursiveSymlink([string]$Source, [string]$Target) {",
-    "  if (-not (Test-Path -LiteralPath $Source -PathType Container)) { return $false }",
-    "  if (-not (Test-Path -LiteralPath $Target -PathType Container)) { return $false }",
-    "  $root = (Resolve-Path -LiteralPath $Source).ProviderPath",
-    "  foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {",
-    "    $relative = Get-WinixRelativePath $root $dir.FullName",
-    "    if (-not (Test-Path -LiteralPath (Join-Path $Target $relative) -PathType Container)) { return $false }",
-    "  }",
-    "  foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {",
-    "    $relative = Get-WinixRelativePath $root $file.FullName",
-    "    if (-not (Test-WinixSymlink $file.FullName (Join-Path $Target $relative))) { return $false }",
-    "  }",
-    "  return $true",
-    "}",
-    "function Set-WinixRecursiveSymlink([string]$Source, [string]$Target, [bool]$Force, [bool]$Backup) {",
-    "  if (-not (Test-Path -LiteralPath $Source -PathType Container)) { throw \"Recursive symlink source must be a directory: $Source\" }",
-    "  if (Test-WinixRecursiveSymlink $Source $Target) { return }",
-    "  Move-WinixExistingTarget $Target $Force $Backup",
-    "  New-Item -ItemType Directory -Force -Path $Target | Out-Null",
-    "  $root = (Resolve-Path -LiteralPath $Source).ProviderPath",
-    "  foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {",
-    "    New-Item -ItemType Directory -Force -Path (Join-Path $Target (Get-WinixRelativePath $root $dir.FullName)) | Out-Null",
-    "  }",
-    "  foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {",
-    "    Set-WinixSymlink $file.FullName (Join-Path $Target (Get-WinixRelativePath $root $file.FullName)) $Force $Backup",
-    "  }",
-    "}",
-    "function Assert-WinixCanCreateSymlink {",
-    "  $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()",
-    "  if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { return }",
-    "  $devMode = Get-ItemPropertyValue -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock' -Name AllowDevelopmentWithoutDevLicense -ErrorAction SilentlyContinue",
-    "  if ($devMode -eq 1) { return }",
-    "  throw 'Creating Windows symlinks requires elevation or Developer Mode. Enable Developer Mode in Windows Settings, or pass elevate: true.'",
-    "}",
+    "Import-Module -Name $winixModule -Force -DisableNameChecking",
   ];
 }
 
-function fileCopyPrelude(): string[] {
-  return [
-    ...fileTextPrelude(),
-    "function Get-WinixRelativePath([string]$Root, [string]$Path) {",
-    "  $prefix = $Root.TrimEnd('\\') + '\\'",
-    "  $Path.Substring($prefix.Length)",
-    "}",
-    "function Test-WinixCopy([string]$Source, [string]$Target) {",
-    "  if (-not (Test-Path -LiteralPath $Source) -or -not (Test-Path -LiteralPath $Target)) { return $false }",
-    "  if (Test-Path -LiteralPath $Source -PathType Leaf) {",
-    "    if (-not (Test-Path -LiteralPath $Target -PathType Leaf)) { return $false }",
-    "    return Test-WinixBytesEqual ([IO.File]::ReadAllBytes($Target)) ([IO.File]::ReadAllBytes($Source))",
-    "  }",
-    "  if (-not (Test-Path -LiteralPath $Target -PathType Container)) { return $false }",
-    "  $root = (Resolve-Path -LiteralPath $Source).ProviderPath",
-    "  foreach ($dir in Get-ChildItem -LiteralPath $root -Recurse -Force -Directory) {",
-    "    if (-not (Test-Path -LiteralPath (Join-Path $Target (Get-WinixRelativePath $root $dir.FullName)) -PathType Container)) { return $false }",
-    "  }",
-    "  foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {",
-    "    $targetFile = Join-Path $Target (Get-WinixRelativePath $root $file.FullName)",
-    "    if (-not (Test-Path -LiteralPath $targetFile -PathType Leaf)) { return $false }",
-    "    if (-not (Test-WinixBytesEqual ([IO.File]::ReadAllBytes($targetFile)) ([IO.File]::ReadAllBytes($file.FullName)))) { return $false }",
-    "  }",
-    "  return $true",
+/** Properties of the resource that installs the shared module before any file resource runs. */
+export function winixFileModuleProperties(): WinDscProperties {
+  const prelude = [
+    "$ErrorActionPreference = 'Stop'",
+    winixFileModulePathLine(),
+    `$expected = ${psSingleQuoted(WINIX_FILE_MODULE_SHA256)}`,
+    "function Test-WinixFileModule {",
+    "  if (-not (Test-Path -LiteralPath $winixModule -PathType Leaf)) { return $false }",
+    "  return (Get-FileHash -LiteralPath $winixModule -Algorithm SHA256).Hash.ToLowerInvariant() -ceq $expected",
     "}",
   ];
+  return {
+    getScript: [...prelude, "@{ Path = $winixModule; InDesiredState = (Test-WinixFileModule) }"].join("\n"),
+    testScript: [...prelude, "Test-WinixFileModule"].join("\n"),
+    setScript: [
+      ...prelude,
+      "if (Test-WinixFileModule) { return }",
+      `$content = ${psSingleQuoted(WINIX_FILE_MODULE)}`,
+      "New-Item -ItemType Directory -Force -Path (Split-Path -Parent $winixModule) | Out-Null",
+      "$staging = \"$winixModule.\" + [guid]::NewGuid().ToString('N')",
+      "try {",
+      "  [IO.File]::WriteAllText($staging, $content, [Text.UTF8Encoding]::new($false))",
+      "  Move-Item -LiteralPath $staging -Destination $winixModule -Force",
+      "} finally { Remove-Item -LiteralPath $staging -Force -ErrorAction SilentlyContinue }",
+      "if (-not (Test-WinixFileModule)) { throw \"Winix PowerShell helpers verification failed: $winixModule\" }",
+    ].join("\n"),
+  };
 }
 
 function psBoolean(value: boolean): string {

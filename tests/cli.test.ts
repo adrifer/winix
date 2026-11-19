@@ -984,8 +984,9 @@ describe("winix switch Windows dry run", () => {
         },
       });
       const configPath = join(dir, ".winix", "out", "desktop", "configuration.winget");
-      expect(logs).toContain(
-        [
+      const output = logs.join("\n");
+      expect(output).toContain(
+        "Would run: " + [
           "winget",
           "configure",
           "-f",
@@ -994,6 +995,15 @@ describe("winix switch Windows dry run", () => {
           "--disable-interactivity",
         ].join(" ")
       );
+      // A plan, not the generated files. Machine checks need native Windows.
+      if (process.platform === "win32") {
+        expect(output).toContain("Plan for desktop (checked against this machine):");
+        expect(output).toMatch(/\+ install\s+Fastfetch-cli\.Fastfetch\s+\(2\.45\.0\)/);
+      } else {
+        expect(output).toContain("Plan for desktop (not checked against a machine: machine checks need native Windows):");
+        expect(output).toContain("Declares packages: 1.");
+      }
+      expect(output).not.toContain("type: Microsoft.WinGet/Package");
     } finally {
       logSpy.mockRestore();
       await rm(dir, { recursive: true, force: true });
@@ -1032,13 +1042,15 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
       });
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn).toHaveBeenCalledWith(expect.stringMatching(/Example\.App.*Unknown.*without enforcing locked version 7/));
-      expect(runner).toHaveBeenCalledWith("winget", expect.any(Array), { dry });
+      if (dry) expect(runner).not.toHaveBeenCalled();
+      else expect(runner).toHaveBeenCalledWith("winget", expect.any(Array), { dry });
       expect(confirm).not.toHaveBeenCalled();
       expect(readWindowsLock(dir)?.packages["Example.App"].version).toBe("7");
       if (dry) {
         const output = log.mock.calls.flat().join("\n");
-        expect(output).toContain("id: Example.App");
-        expect(output).not.toContain("version:");
+        // Presence-only: installed, kept, nothing to change.
+        expect(output).toContain("= 1 unchanged (packages: 1)");
+        expect(output).toContain("Summary: 0 to change, 1 unchanged.");
       }
     } finally {
       log.mockRestore(); warn.mockRestore(); confirm.mockRestore(); runner.mockRestore();
@@ -1051,7 +1063,7 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const confirm = vi.spyOn(packageVersionPolicy, "confirmWindowsPackageLockUpdate").mockImplementation(async () => {
       const lock = readWindowsLock(dir)!;
-      lock.packages["Other.App"] = { version: "2", source: "winget", resolvedAt: lock.generatedAt };
+      lock.packages["Other.App"] = { version: "2", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" };
       await writeFile(join(dir, "winix-windows.lock"), JSON.stringify(lock));
       return true;
     });
@@ -1070,7 +1082,8 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
         windowsState: {
           path: join(dir, "inventory.json"),
           adapter: {
-            inspect: async () => ({ version: failure === "stale" && ++inspections >= 3 ? "9" : "8" }),
+            // The initial inventory is reused by reconciliation; the pre-activation check is the second inspection.
+            inspect: async () => ({ version: failure === "stale" && ++inspections >= 2 ? "9" : "8" }),
             remove: async () => { throw new Error("Must not uninstall"); },
           },
         },
@@ -1114,7 +1127,7 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
       expect(readWindowsLock(dir)?.packages["Example.App"].version).toBe(mode === "accept" ? "8" : "7");
       if (mode === "dry") {
         expect(confirm).not.toHaveBeenCalled();
-        expect(logs.some((line) => line.includes('version: "8"'))).toBe(true);
+        expect(logs.some((line) => line.includes("newer than locked") && line.includes("Example.App"))).toBe(true);
         expect(existsSync(inventory)).toBe(false);
       } else {
         expect(confirm).toHaveBeenCalledWith("Example.App", "8", "7");

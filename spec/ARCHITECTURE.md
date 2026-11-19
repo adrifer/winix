@@ -44,13 +44,16 @@ activation, immediate pre-removal inspection, removal and post-removal verificat
 Keep state-lock/load/save and package/startup timings separate so process startup
 cost is not confused with activation or filesystem work.
 
-A future optimization can batch desired-package inspection once per pre/post
-phase through a DSC configuration get, provided results are correlated by exact
-ID/source and missing, failed and ambiguous results remain distinguishable.
-Do not reuse inventory across activation, infer absence from a failed lookup, or
-remove immediate pre-removal drift checks/post-removal verification. Wrapping
-synchronous process calls in `Promise.all` does not provide batching. No batching
-optimization or performance improvement is claimed by this stabilization pass.
+Package inspection is batched once per phase (initial inventory, the
+pre-activation staleness check, the post-activation inventory) through one
+`dsc config get` (`WindowsStateAdapter.inspectMany`). Results are correlated by
+instance name and then validated against the exact ID/source; a missing result
+throws instead of being read as absence. Reconciliation reuses the initial
+inventory taken by the same switch (`knownSnapshots`) before activation; it is
+never reused across activation. Immediate pre-removal drift checks and
+post-removal verification still inspect one resource at a time. Measured on a
+31-package host: one `dsc resource get` takes about 7.5 s, while the batched
+call takes about 43 s for all 31.
 
 ## 2. Module layout
 

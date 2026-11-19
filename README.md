@@ -310,10 +310,11 @@ From a Winix project:
 npx @adrifer/winix check                  # validate winix.config.ts
 npx @adrifer/winix apply                  # generate .winix/out/
 npx @adrifer/winix apply --dry            # print generated Nix without writing files
-npx @adrifer/winix apply --diff           # show changes against current .winix/out/
+npx @adrifer/winix apply --diff           # unified diff against the current .winix/out/
+npx @adrifer/winix plan --host my-pc      # what switch would change on this Windows machine
 npx @adrifer/winix switch --host my-host  # generate and run nixos-rebuild/darwin-rebuild
 npx @adrifer/winix update                 # update generated flake.lock and copy it back
-npx @adrifer/winix inspect                # inspect host composition and fragments
+npx @adrifer/winix inspect --host my-pc   # each feature and what it declares
 npx @adrifer/winix --skill                # print version-matched agent instructions
 ```
 
@@ -698,7 +699,9 @@ export default workspace({ hosts: [
   prints paste-ready `windows.package(...)` lines for installed, undeclared apps.
   Shared runtimes such as VC++ redistributables are listed on one line, and
   declared packages that aren't installed are listed too. It is read-only.
-- `winix check` warns about floating packages missing from `winix-windows.lock`.
+- `winix check` warns about every pin missing from `winix-windows.lock`: floating
+  packages, PowerShell modules (including the implicit `Microsoft.Windows.Settings`
+  that `windows.setting` uses), NixOS-WSL images, WSL setup commits and fonts.
   Apply would resolve them online, and a typo would only fail there.
 
 #### Package versions
@@ -1252,6 +1255,59 @@ declaration leaves installed fonts and caches intact.
 These helpers emit idempotent DSC PowerShell resources. Native desktop/font
 activation has not been rehearsed on a shared machine; automated checks cover
 authoring, locking, generated scripts and isolated archive handling.
+
+### Previewing Windows changes
+
+`winix plan --host <name>` (the same as `winix switch --dry`) shows what a switch
+would change, checked against the current machine. It never installs or writes
+anything:
+
+```text
+Plan for desktop (checked against this machine):
+  + install  DEVCOM.JetBrainsMonoNerdFont  (3.3.0)
+  ~ upgrade  Git.Git  (2.55.0.3 -> 2.56.0.4)
+  ~ apply    link localAppData\nvim -> ../nvim/.config/nvim
+  ? check    Enable Windows features Microsoft-Windows-Subsystem-Linux, VirtualMachinePlatform  (needs an elevated shell to check)
+  = 31 unchanged (packages: 21, files: 4, settings: 2, ...)
+  i 4 package(s) newer than locked; switch keeps them and offers to update the lock: Neovim.Neovim, ...
+  ! Enable Windows features ... can require a Windows restart; Winix never restarts Windows.
+  Summary: 20 to change, 2 not checked, 31 unchanged.
+
+Removals and ownership (Winix applied-state inventory):
+  Would remove: ["package","winget","old.app"]
+
+Would run: winget configure -f ...\configuration.winget --accept-configuration-agreements --disable-interactivity
+```
+
+- `+` install, `~` change, `!` conflict (for example an exact pin older than the
+  installed version: switch fails rather than downgrade), `?` could not be
+  checked, `=` already in the desired state.
+- Packages come from one batched DSC inventory. Every other resource runs its
+  own test script, each isolated so one failure (often a missing elevation)
+  only marks that resource `?`. Raw `windows.raw` commands always show as
+  `~ run`, because they run on every switch.
+- Machine checks need native Windows with `dsc` and PowerShell 7. Elsewhere (for
+  example `plan` for a Windows host from WSL) it lists what the host declares.
+- It is also the drift check: anything changed outside Winix shows up as `~`.
+
+Related commands:
+
+- `winix apply --dry` still prints the full generated files; `apply --diff`
+  prints a unified diff against the last generated `.winix/out`.
+- `winix inspect --host <name>` lists each feature once, the scopes it targets
+  (`windows`, `homeManager`, ...), the Windows resources it declares and their
+  `dependsOn` edges, and marks features that contribute nothing on that platform.
+- `--offline` (apply, switch, plan) never resolves `winix-windows.lock` online and
+  fails, naming what is missing, when a pin is absent. `--locked` also fails when
+  the lock would change at all, including inline versions it does not record yet.
+  Use it in CI or on a machine that should only apply what is committed.
+- `winix-windows.lock` no longer has a top-level `generatedAt` timestamp, so
+  machines sharing one lock stop conflicting on it. Older lock files that still
+  contain it remain valid; it disappears on the next change.
+- File resources share one PowerShell module instead of repeating their helper
+  functions in every script. The first resource, `Winix PowerShell helpers`,
+  installs it to `%LOCALAPPDATA%\Winix\powershell\WinixFiles-<hash>.psm1`
+  (content-addressed, so workspaces on different Winix versions never clash).
 
 ### Windows removal and ownership
 

@@ -33,7 +33,27 @@ interface AppliedState {
 }
 export interface WindowsStateAdapter {
   inspect(resource: ManagedResource): Promise<ResourceSnapshot>;
+  /**
+   * Optional batched inventory, aligned with `resources`. The native adapter
+   * reads every package in one DSC process instead of one per package.
+   */
+  inspectMany?(resources: ManagedResource[]): Promise<ResourceSnapshot[]>;
   remove(resource: ManagedResource, snapshot: NonNullable<ResourceSnapshot>): Promise<void>;
+}
+
+/** Inspect several resources, batched when the adapter supports it; keyed by resourceKey. */
+export async function inspectResources(
+  adapter: WindowsStateAdapter, resources: ManagedResource[],
+): Promise<Map<string, ResourceSnapshot>> {
+  let snapshots: ResourceSnapshot[];
+  if (adapter.inspectMany && resources.length > 1) {
+    snapshots = await adapter.inspectMany(resources);
+    if (snapshots.length !== resources.length) throw new Error("Windows inventory returned an incomplete result");
+  } else {
+    snapshots = [];
+    for (const resource of resources) snapshots.push(await adapter.inspect(resource));
+  }
+  return new Map(resources.map((resource, index) => [resourceKey(resource), snapshots[index]]));
 }
 export interface ReconcileOptions {
   packageRequirements?: Record<string, WindowsPackageRequirement>;
@@ -50,6 +70,11 @@ export interface ReconcileOptions {
   report?(message: string): void;
   /** CLI switch holds this lock across backend generation as well as activation. */
   lockHeld?: boolean;
+  /**
+   * Snapshots this switch already took (by resourceKey), reused for the initial
+   * inventory. Activation-time checks and removals always inspect again.
+   */
+  knownSnapshots?: ReadonlyMap<string, ResourceSnapshot>;
 }
 
 export function resourceKey(resource: ManagedResource): string {
@@ -271,9 +296,13 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
   if (desired.size !== opts.desired.length) throw new Error("Duplicate managed Windows resources");
   const reconcile = async () => {
     const state = await loadState(opts.statePath);
+    const known = opts.knownSnapshots ?? new Map<string, ResourceSnapshot>();
+    const inventory = new Map([...known, ...await inspectResources(
+      opts.adapter, [...desired.values()].filter((resource) => !known.has(resourceKey(resource))),
+    )]);
     const before = new Map<string, ResourceSnapshot>();
     for (const [key, resource] of desired) {
-      const current = await opts.adapter.inspect(resource);
+      const current = inventory.get(key) ?? null;
       before.set(key, current);
       const entry = state.entries[key];
       const requirement = resource.kind === "package" ? opts.packageRequirements?.[key] : undefined;
@@ -321,16 +350,23 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
       }
     }
     const removals: [string, Entry, ResourceSnapshot][] = [];
+    const candidates: [string, Entry][] = [];
     for (const [key, entry] of Object.entries(state.entries)) {
       if (!entry.owners.includes(opts.owner) && entry.owners.length > 0) continue;
       if (desired.has(key)) continue;
       const others = entry.owners.filter((owner) => owner !== opts.owner);
       if (others.length > 0) continue;
+      candidates.push([key, entry]);
+    }
+    const removable = await inspectResources(
+      opts.adapter, candidates.filter(([, entry]) => entry.owned).map(([, entry]) => entry.resource),
+    );
+    for (const [key, entry] of candidates) {
       if (!entry.owned) {
         report(`Leaving externally owned resource untouched: ${key}`);
         continue;
       }
-      const current = await opts.adapter.inspect(entry.resource);
+      const current = removable.get(key) ?? null;
       if (entry.resource.kind === "package" && current && "version" in current) {
         assertRemovablePackageVersion(entry.resource.id, current.version);
       }
@@ -351,8 +387,9 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
     await opts.activate();
     // Capture all desired outcomes before committing any new ownership.
     const after = new Map<string, ResourceSnapshot>();
+    const activated = await inspectResources(opts.adapter, [...desired.values()]);
     for (const [key, resource] of desired) {
-      const current = await opts.adapter.inspect(resource);
+      const current = activated.get(key) ?? null;
       if (current === null) throw new Error(`Activation succeeded but managed resource is missing: ${key}`);
       const entry = state.entries[key];
       const requirement = resource.kind === "package" ? opts.packageRequirements?.[key] : undefined;
@@ -439,13 +476,56 @@ if (-not $root) { throw 'Windows Startup folder is unavailable' }
 $path = Join-Path $root ${powerShellLiteral(name + ".lnk")}`;
 }
 
-function packageState(resource: Extract<ManagedResource, { kind: "package" }>): ResourceSnapshot {
+type PackageResource = Extract<ManagedResource, { kind: "package" }>;
+
+function packageState(resource: PackageResource): ResourceSnapshot {
   const result: unknown = JSON.parse(execFileSync("dsc", [
     "resource", "get", "--resource", "Microsoft.WinGet/Package", "--file", "-",
   ], {
     encoding: "utf8", input: JSON.stringify({ id: resource.id, source: resource.source }),
     stdio: ["pipe", "pipe", "pipe"], timeout: 60000,
   }));
+  return parsePackageState(resource, result);
+}
+
+/**
+ * Read many packages in one `dsc config get` (one process and one WinGet
+ * session instead of one per package).
+ */
+export function packageStates(resources: PackageResource[]): ResourceSnapshot[] {
+  if (resources.length === 0) return [];
+  const document = {
+    $schema: "https://aka.ms/dsc/schemas/v3/bundled/config/document.json",
+    resources: resources.map((resource, index) => ({
+      name: `package ${index}`, type: "Microsoft.WinGet/Package",
+      properties: { id: resource.id, source: resource.source },
+    })),
+  };
+  const output: unknown = JSON.parse(execFileSync("dsc", ["config", "get", "--file", "-"], {
+    encoding: "utf8", input: JSON.stringify(document),
+    stdio: ["pipe", "pipe", "pipe"], timeout: 60000 + resources.length * 15000, maxBuffer: 64 * 1024 * 1024,
+  }));
+  return parsePackageInventory(resources, output);
+}
+
+export function parsePackageInventory(resources: PackageResource[], output: unknown): ResourceSnapshot[] {
+  if (!output || typeof output !== "object" || !("results" in output) || !Array.isArray(output.results)) {
+    throw new Error("Invalid package inventory response");
+  }
+  const byName = new Map<string, unknown>();
+  for (const entry of output.results as unknown[]) {
+    if (entry && typeof entry === "object" && "name" in entry && typeof entry.name === "string" && "result" in entry) {
+      byName.set(entry.name, entry.result);
+    }
+  }
+  return resources.map((resource, index) => {
+    const result = byName.get(`package ${index}`);
+    if (result === undefined) throw new Error(`Package inventory is missing ${resource.id}`);
+    return parsePackageState(resource, result);
+  });
+}
+
+function parsePackageState(resource: PackageResource, result: unknown): ResourceSnapshot {
   if (!result || typeof result !== "object" || !("actualState" in result) ||
       !result.actualState || typeof result.actualState !== "object") throw new Error("Invalid package inventory response");
   const state = result.actualState;
@@ -464,6 +544,15 @@ function packageState(resource: Extract<ManagedResource, { kind: "package" }>): 
 }
 
 export const nativeWindowsStateAdapter: WindowsStateAdapter = {
+  async inspectMany(resources) {
+    const packages = resources.filter((resource): resource is PackageResource => resource.kind === "package");
+    const states = new Map(packageStates(packages).map((snapshot, index) => [packages[index], snapshot]));
+    const out: ResourceSnapshot[] = [];
+    for (const resource of resources) {
+      out.push(resource.kind === "package" ? states.get(resource)! : await nativeWindowsStateAdapter.inspect(resource));
+    }
+    return out;
+  },
   async inspect(resource) {
     if (resource.kind === "package") return packageState(resource);
     const hash = powershell(`${startupPathScript(resource.name)}

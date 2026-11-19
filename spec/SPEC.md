@@ -1239,7 +1239,9 @@ Generate backend output files into `.winix/out/` (gitignored by default).
 winix apply                   # generate all hosts
 winix apply --host wsl-work   # generate a single host
 winix apply --dry             # print what would be generated, no writes
-winix apply --diff            # show diff against the current .winix/out/
+winix apply --diff            # unified diff against the current .winix/out/
+winix apply --offline         # never resolve winix-windows.lock online (also switch/plan)
+winix apply --locked          # fail if winix-windows.lock would change (also switch/plan)
 ```
 
 Output structure:
@@ -1269,6 +1271,17 @@ Equivalent to:
 winix apply && sudo nixos-rebuild switch --flake path:$(pwd)/.winix/out#<host>
 ```
 
+For Windows hosts, `winix switch --dry` (alias `winix plan`) prints a plan instead
+of the generated files: each resource's action (`+` install, `~` change, `!`
+conflict, `?` not checked), counts of unchanged resources, elevation and restart
+notes, planned removals from the applied-state inventory, and the activation
+command. On native Windows it is checked against the machine: one batched
+`dsc config get` for packages, every PowerShell-script resource's test script run
+in one PowerShell process (each isolated, so one failure marks only that
+resource), and a batched `dsc config test` for other DSC resources (retried one
+by one if the batch aborts). Elsewhere it lists what the host declares. It is
+the Windows drift check.
+
 Activation by platform:
 
 | Platform | Activation command |
@@ -1282,8 +1295,15 @@ Activation by platform:
 Introspection for debugging and agent consumption.
 
 ```bash
-winix inspect host wsl-work          # what composes this host
+winix inspect                        # every host
+winix inspect --host desktop         # one host
 ```
+
+Per host: platform, feature order, then each feature once with the scopes it
+contributes to (`nixos`, `homeManager`, `darwin`, `windows`), its Nix option
+keys, and its Windows resources (packages with their version policy, files,
+env, startup, modules, WSL...) with `dependsOn` edges. Features that contribute
+nothing on the host's platform are marked as ignored.
 
 The `--json` machine-readable variant is on the Agent DX roadmap; see
 [§ 12](#12-agent-dx).

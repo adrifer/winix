@@ -22,8 +22,20 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   dependencies; existing files/shortcuts backed up by default; personalization
   `colorMode`; optional `inputs` for Windows-only workspaces; check warns on
   unpinned packages; `winix package search` and read-only `winix windows
-  import`. A plan view, inventory batching and generated-output dedup (review
-  section 4) remain open.
+  import`.
+
+- **CLI feedback loop** — `winix plan` / `switch --dry` prints a plan for Windows
+  hosts (install/upgrade/apply/conflict/not-checked, elevation and restart
+  notes, removals), checked live against the machine; real unified diffs for
+  `apply --diff`; file resources share one content-addressed PowerShell module
+  and the WSL setup runtime is only embedded in the set script (generated
+  configuration of a real host: 385 KB to 164 KB); package inventory batched
+  through one `dsc config get` per phase and reused by reconciliation;
+  `inspect` shows each feature once with scopes, Windows resources and
+  `dependsOn` edges; `--offline`/`--locked` for apply/switch/plan; the lock
+  no longer writes `generatedAt`; `check` reports every missing pin kind,
+  including the implicit Settings module. Startup shortcut scripts still inline
+  their helpers (their definition hash is recorded in applied state).
 
 - **Hybrid Windows ↔ WSL authoring** — `platforms.wsl()` NixOS variant (module
   import, `wsl.enable`, `platforms.wsl.isActive`); missing-input warnings for
@@ -59,7 +71,7 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   and bootstrap agree on supported Node 22.13+/24/26 (26: erasable TypeScript only).
   Isolated regressions cover the Windows executable and real Node 22/24/26
   runtimes. Native Settings/side-by-side adapted discovery and fresh-machine
-  activation remain unverified; package-inspection batching is deferred.
+  activation remain unverified.
 - **Repository bootstrap and local SDK handoff** — Windows and Linux entrypoints
   clone/validate trusted HTTPS repositories, read exact SDK pins without evaluating
   config, verify matching standalone downloads, and separate no-change dry runs,

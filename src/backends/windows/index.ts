@@ -46,7 +46,9 @@ import {
   type WindowsLockModule,
 } from "./lockfile.ts";
 import { isWindowsHost } from "./host.ts";
-import { resolveWindowsFileProperties } from "../../helpers/windows.ts";
+import {
+  filePathLabel, resolveWindowsFileProperties, winixFileModuleProperties, WINIX_FILE_MODULE_RESOURCE_NAME,
+} from "../../helpers/windows.ts";
 import { powerShellModuleProperties, powerShellRepositoryScripts } from "./powershell.ts";
 import {
   powerShellRepositoryUri, resolvePowerShellModule, validateWindowsPowerShellPolicy, windowsSettingsModule,
@@ -77,7 +79,34 @@ export interface WindowsHostOutput {
  */
 export interface WindowsOutput {
   hosts: Record<string, WindowsHostOutput>;
+  /** What each host's configuration contains, for plans and inspect. */
+  resources: Record<string, WindowsResourceSummary[]>;
   warnings: string[];
+}
+
+export type WindowsResourceCategory =
+  | "package" | "file" | "startup" | "environment" | "settings" | "powershell"
+  | "features" | "wsl" | "fonts" | "command" | "winix" | "other";
+
+/** One resource of a generated configuration, described for humans and live checks. */
+export interface WindowsResourceSummary {
+  /** Instance name in configuration.winget. */
+  name: string;
+  type: string;
+  category: WindowsResourceCategory;
+  label: string;
+  /** Applied in an elevated security context. */
+  elevated: boolean;
+  /** Changing it can require a Windows restart (Winix never restarts). */
+  reboot: boolean;
+  /** Checking or changing it needs an elevated shell even when not declared elevated. */
+  needsElevationToCheck?: boolean;
+  dependsOn: string[];
+  package?: { id: string; source: string; version?: string; anyVersion: boolean; exact: boolean };
+  /** PowerShell script resources: the test script, for live plans. */
+  testScript?: string;
+  /** Other resources: their DSC properties, for live plans. */
+  properties?: WinDscProperties;
 }
 
 const DSC_SCHEMA =
@@ -106,19 +135,22 @@ export function generateWindows(
   options: GenerateWindowsOptions = {}
 ): WindowsOutput {
   const hosts: Record<string, WindowsHostOutput> = {};
+  const resources: Record<string, WindowsResourceSummary[]> = {};
   const warnings: string[] = [];
   const windowsHosts = evaluatedHosts.filter(isWindowsHost);
   const resolvedLock = reconcileInlinePins(lock, windowsHosts);
 
   for (const host of windowsHosts) {
     const win = host.windows as WindowsOptions;
+    const generated = generateConfiguration(host.name, win, resolvedLock, configDir, options.presenceOnlyPackages);
     hosts[host.name] = {
-      "configuration.winget": generateConfiguration(host.name, win, resolvedLock, configDir, options.presenceOnlyPackages),
+      "configuration.winget": generated.text,
       "apply.ps1": generateApplyScript(),
     };
+    resources[host.name] = generated.resources;
   }
 
-  return { hosts, warnings };
+  return { hosts, resources, warnings };
 }
 
 /**
@@ -130,7 +162,7 @@ function generateConfiguration(
   lock: WindowsLock,
   configDir?: string,
   presenceOnlyPackages: ReadonlySet<string> = new Set()
-): string {
+): { text: string; resources: WindowsResourceSummary[] } {
   validateWindowsWslResources(win);
   validateWindowsPowerShellPolicy(win);
   const packages = sortedPackages(win.packages ?? {});
@@ -157,6 +189,16 @@ function generateConfiguration(
     name: "npm registries",
     properties: npmRegistryProperties(npmRegistryEntries(win.npm.registries)),
   }] : [];
+  // File test/set scripts share one module instead of repeating their helpers.
+  const fileModule: WinDscResource | undefined = (win.dsc ?? []).some(
+    (resource) => resource.winix?.kind === "file" && resource.winix.action !== "remove",
+  ) ? {
+    name: WINIX_FILE_MODULE_RESOURCE_NAME,
+    resourceType: "Microsoft.DSC.Transitional/PowerShellScript",
+    properties: winixFileModuleProperties(),
+  } : undefined;
+  if (fileModule) Object.defineProperty(fileModule, "token", { value: Symbol("winix-file-module"), enumerable: false });
+  const fileModuleRefs: ResourceRef[] = fileModule ? [{ kind: "dsc", token: fileModule.token! }] : [];
   const resources = [...(win.dsc ?? []), ...npmResource].map((resource) => {
     const metadata = resource.winix;
     if (metadata?.kind === "fonts") {
@@ -170,9 +212,11 @@ function generateConfiguration(
       if (metadata.wslConfig && properties) {
         properties.setScript += "\nWrite-Warning 'WSL configuration changed. Restart WSL manually when safe; Winix will not stop running distros.'";
       }
-      return cloneDscResource(resource, properties, metadata.action === "symlink"
-        ? [...(resource.dependsOn ?? []), ...developerModeRefs]
-        : resource.dependsOn);
+      const moduleRefs = metadata.action === "remove" ? [] : fileModuleRefs;
+      const dependencies = [
+        ...(resource.dependsOn ?? []), ...(metadata.action === "symlink" ? developerModeRefs : []), ...moduleRefs,
+      ];
+      return cloneDscResource(resource, properties, dependencies.length > 0 ? dependencies : undefined);
     }
     if (metadata?.kind === "optional-features") {
       return cloneDscResource(resource, optionalFeatureProperties(metadata.names, metadata.enabled));
@@ -209,7 +253,9 @@ function generateConfiguration(
       ...packages.filter((pkg) => pkg.id.toLowerCase() === "microsoft.powershell")
         .map((pkg): ResourceRef => ({ kind: "package", id: pkg.id }))]);
   const commands = prepared.commands;
-  const dscResources = [...registrations.map((entry) => entry.resource), ...prepared.dscResources];
+  const dscResources = [
+    ...registrations.map((entry) => entry.resource), ...(fileModule ? [fileModule] : []), ...prepared.dscResources,
+  ];
 
   const lines: string[] = [];
   lines.push(`# yaml-language-server: $schema=${DSC_SCHEMA}`);
@@ -221,7 +267,7 @@ function generateConfiguration(
 
   if (packages.length === 0 && commands.length === 0 && dscResources.length === 0) {
     lines.push("resources: []");
-    return lines.join("\n") + "\n";
+    return { text: lines.join("\n") + "\n", resources: [] };
   }
 
   // Two-pass: first assign every resource a schema-valid, unique name and build
@@ -230,6 +276,7 @@ function generateConfiguration(
   const naming = assignResourceNames(hostName, packages, commands, dscResources);
 
   lines.push("resources:");
+  const summaries: WindowsResourceSummary[] = [];
   for (const pkg of packages) {
     const plan = naming.packages.get(pkg)!;
     // version: "any" is presence-only and never needs a lock pin.
@@ -240,17 +287,86 @@ function generateConfiguration(
     const version = anyVersion ? undefined : lockedVersionForPackage(pkg, lock);
     const presenceOnly = anyVersion || (pkg.version === undefined && presenceOnlyPackages.has(pkg.id));
     lines.push(...renderPackageResource(pkg, presenceOnly ? undefined : version, plan, naming));
+    summaries.push({
+      name: plan.name, type: plan.type, category: "package", label: pkg.id,
+      elevated: pkg.elevated === true, reboot: false, dependsOn: resolveDependsOnRefs(pkg.dependsOn, naming),
+      package: {
+        id: pkg.id, source: pkg.source, version: presenceOnly ? undefined : version,
+        anyVersion, exact: pkg.version !== undefined,
+      },
+    });
   }
   for (const command of commands) {
     const plan = naming.commands.get(command)!;
     lines.push(...renderRawCommandResource(command, plan, naming));
+    summaries.push({
+      name: plan.name, type: plan.type, category: "command",
+      label: command.name ?? [command.executable, ...(command.arguments ?? [])].join(" "),
+      elevated: false, reboot: false, dependsOn: resolveDependsOnRefs(command.dependsOn, naming),
+    });
   }
   for (const resource of dscResources) {
     const plan = naming.dsc.get(resource)!;
     lines.push(...renderDscResource(resource, plan, naming));
+    summaries.push(summarizeDscResource(resource, plan, naming));
   }
 
-  return lines.join("\n") + "\n";
+  return { text: lines.join("\n") + "\n", resources: summaries };
+}
+
+function summarizeDscResource(resource: WinDscResource, plan: ResourcePlan, naming: NamingPlan): WindowsResourceSummary {
+  const properties = resource.properties ?? {};
+  return {
+    name: plan.name, type: plan.type, elevated: resource.elevated === true, reboot: false,
+    dependsOn: resolveDependsOnRefs(resource.dependsOn, naming),
+    ...(typeof properties.testScript === "string" ? { testScript: properties.testScript } : { properties }),
+    ...describeWindowsDscResource(resource),
+  };
+}
+
+/** Category and human label of a declared DSC resource (shared by plans and inspect). */
+export function describeWindowsDscResource(resource: WinDscResource): {
+  category: WindowsResourceCategory; label: string; reboot?: boolean; needsElevationToCheck?: boolean;
+} {
+  const metadata = resource.winix;
+  switch (metadata?.kind) {
+    case "file": {
+      const target = filePathLabel(metadata.target).replaceAll("/", "\\");
+      const label = metadata.action === "symlink" ? `link ${target} -> ${metadata.source}`
+        : metadata.action === "copy" ? `copy ${metadata.source} -> ${target}`
+        : metadata.action === "text" ? `write ${target}`
+        : `remove ${target}`;
+      return { category: metadata.wslConfig ? "wsl" : "file", label };
+    }
+    case "startup": return { category: "startup", label: `Startup shortcut ${metadata.name}` };
+    case "env": return {
+      category: "environment",
+      label: metadata.action === "set" ? `${metadata.name}=${metadata.value ?? ""} (${metadata.scope})` : `unset ${metadata.name} (${metadata.scope})`,
+    };
+    case "path": return {
+      category: "environment", label: `PATH ${metadata.action === "add" ? "+" : "-"} ${metadata.value} (${metadata.scope})`,
+    };
+    case "setting": return { category: "settings", label: `Windows settings ${Object.keys(resource.properties ?? {}).join(", ")}`.trim() };
+    case "wallpaper": return { category: "settings", label: "Wallpaper" };
+    case "fonts": return { category: "fonts", label: `Fonts (${metadata.sources.length} source(s))` };
+    case "optional-features": return {
+      category: "features", reboot: metadata.enabled, needsElevationToCheck: true,
+      label: `${metadata.enabled ? "Enable" : "Disable"} Windows features ${metadata.names.join(", ")}`,
+    };
+    case "wsl-distro": {
+      const host = metadata.distro.host ?? metadata.distro.setup?.host;
+      return { category: "wsl", label: `WSL distro ${metadata.distro.name}${host ? ` (${host})` : ""}` };
+    }
+    case "powershell-module": return { category: "powershell", label: `PowerShell module ${metadata.module.name}` };
+  }
+  if (resource.name === WINIX_FILE_MODULE_RESOURCE_NAME) {
+    return { category: "winix", label: "Winix PowerShell helpers (used by file resources)" };
+  }
+  if (resource.name === WINDOWS_SETTINGS_MODULE_COMMAND_NAME || resource.name?.startsWith("Register PowerShell repository")) {
+    return { category: "powershell", label: resource.name };
+  }
+  if (resource.name === "Windows personalization") return { category: "settings", label: resource.name };
+  return { category: "other", label: resource.name ?? resource.resourceType };
 }
 
 const WSL_FEATURES = ["microsoft-windows-subsystem-linux", "virtualmachineplatform"];

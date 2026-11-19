@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { validFontPin, type WindowsFontPin } from "./fonts.ts";
+import { collectFontSources, validFontPin, type WindowsFontPin } from "./fonts.ts";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
@@ -25,7 +25,11 @@ export interface WindowsLockPackage {
 
 export interface WindowsLock {
   version: typeof WINDOWS_LOCK_VERSION;
-  generatedAt: string;
+  /**
+   * Legacy timestamp. No longer written: it changed on every resolution and
+   * caused merge conflicts between machines. Older lock files may carry it.
+   */
+  generatedAt?: string;
   packages: Record<string, WindowsLockPackage>;
   fonts?: Record<string, WindowsFontPin>;
   /** Source-qualified lowercase keys; legacy name-only entries remain readable. */
@@ -165,7 +169,6 @@ export function reconcileInlinePins(
   return {
     ...lock,
     version: WINDOWS_LOCK_VERSION,
-    generatedAt: changed ? resolvedAt : lock.generatedAt,
     packages,
   };
 }
@@ -187,12 +190,66 @@ export function windowsLockGaps(
   return gaps;
 }
 
-export function emptyWindowsLock(now = new Date()): WindowsLock {
-  return {
-    version: WINDOWS_LOCK_VERSION,
-    generatedAt: now.toISOString(),
-    packages: {},
-  };
+export interface WindowsLockGap {
+  host: string;
+  kind: "package" | "module" | "wsl-image" | "wsl-repository" | "font";
+  /** What is missing, for messages. */
+  label: string;
+  /** The `winix update --windows <selector>` argument that pins it. */
+  selector: string;
+}
+
+/**
+ * Every pin `apply` would have to resolve online: floating packages, PowerShell
+ * modules (including the implicit Microsoft.Windows.Settings used by
+ * `windows.setting`), NixOS-WSL images, WSL setup commits and remote fonts.
+ */
+export function windowsLockPinGaps(lock: WindowsLock | null, evaluatedWindowsHosts: EvaluatedHost[]): WindowsLockGap[] {
+  const pins = lock ?? emptyWindowsLock();
+  const gaps: WindowsLockGap[] = windowsLockGaps(lock, evaluatedWindowsHosts).map((gap) => ({
+    host: gap.host, kind: "package", label: `package ${gap.id}`, selector: gap.id,
+  }));
+  for (const host of evaluatedWindowsHosts) {
+    const win = host.windows as WindowsOptions;
+    for (const module of collectWindowsModules([host]).values()) {
+      if (windowsModulePin(pins, module)) continue;
+      const implicit = module.name.toLowerCase() === "microsoft.windows.settings" &&
+        !(win.dsc ?? []).some((resource) => resource.winix?.kind === "powershell-module" &&
+          resource.winix.module.name.toLowerCase() === "microsoft.windows.settings");
+      gaps.push({
+        host: host.name, kind: "module", selector: module.name,
+        label: `PowerShell module ${module.name}${implicit ? " (implicit, used by windows.setting)" : ""}`,
+      });
+    }
+    if (hasWindowsWslDistros([host])) {
+      for (const architecture of ["x64", "arm64"]) {
+        if (!pins.wslImages?.[`nixos-wsl/${architecture}`]) {
+          gaps.push({ host: host.name, kind: "wsl-image", label: `NixOS-WSL image (${architecture})`, selector: "nixos-wsl" });
+        }
+      }
+    }
+    for (const resource of win.dsc ?? []) {
+      if (resource.winix?.kind !== "wsl-distro" || !resource.winix.distro.setup) continue;
+      const setup = resource.winix.distro.setup;
+      if (pins.wslRepositories?.[wslRepositoryKey(setup)]) continue;
+      gaps.push({
+        host: host.name, kind: "wsl-repository", selector: "wsl-setup",
+        label: `WSL setup commit for ${setup.repository}#${setup.ref ?? "HEAD"}`,
+      });
+    }
+    for (const [key, source] of collectFontSources([host])) {
+      if (pins.fonts?.[key]) continue;
+      gaps.push({
+        host: host.name, kind: "font", selector: "fonts",
+        label: `font ${"provider" in source ? `${source.provider} ${source.family}` : source.url}`,
+      });
+    }
+  }
+  return gaps;
+}
+
+export function emptyWindowsLock(_now = new Date()): WindowsLock {
+  return { version: WINDOWS_LOCK_VERSION, packages: {} };
 }
 
 export function resolveMissingWindowsLockEntries(
@@ -232,7 +289,6 @@ export function resolveWindowsLockEntries(
   const next: WindowsLock = {
     ...lock,
     version: WINDOWS_LOCK_VERSION,
-    generatedAt: lock.generatedAt,
     packages: cloneLockPackages(lock.packages),
   };
   const resolutions: WindowsLockResolution[] = [];
@@ -256,7 +312,6 @@ export function resolveWindowsLockEntries(
       version,
       resolvedAt,
     };
-    next.generatedAt = resolvedAt;
     changed = true;
     resolutions.push({
       id: pkg.id,
@@ -277,7 +332,6 @@ export function windowsLockChanged(before: WindowsLock, after: WindowsLock): boo
 export function serializeWindowsLock(lock: WindowsLock): string {
   const sorted: WindowsLock = {
     version: WINDOWS_LOCK_VERSION,
-    generatedAt: lock.generatedAt,
     packages: {},
   };
 
@@ -361,7 +415,7 @@ export async function resolveWindowsWslImages(
     changed = true;
   }
   return {
-    lock: changed ? { ...lock, generatedAt: now.toISOString(), wslImages: images } : lock,
+    lock: changed ? { ...lock, wslImages: images } : lock,
     changed,
   };
 }
@@ -390,7 +444,7 @@ export function resolveWindowsWslRepositories(
       changed = true;
     }
   }
-  return { lock: changed ? { ...lock, generatedAt: now.toISOString(), wslRepositories: repositories } : lock, changed };
+  return { lock: changed ? { ...lock, wslRepositories: repositories } : lock, changed };
 }
 
 export async function resolveWindowsModuleLockEntries(
@@ -426,7 +480,6 @@ export async function resolveWindowsModuleLockEntries(
       ...(module.repositoryUri ? { repositoryUri: module.repositoryUri } : {}),
       version, resolvedAt: now.toISOString(),
     };
-    next.generatedAt = now.toISOString();
     changed = true;
   }
   return { lock: changed ? next : lock, resolutions, changed };
@@ -458,7 +511,7 @@ function validateWindowsLock(value: unknown): WindowsLock {
     );
   }
 
-  if (typeof value.generatedAt !== "string") {
+  if (value.generatedAt !== undefined && typeof value.generatedAt !== "string") {
     throw new Error(`${WINDOWS_LOCKFILE_NAME} generatedAt must be a string.`);
   }
 
@@ -548,7 +601,6 @@ function validateWindowsLock(value: unknown): WindowsLock {
   }
   return {
     version: WINDOWS_LOCK_VERSION,
-    generatedAt: value.generatedAt,
     packages,
     ...(value.fonts === undefined ? {} : { fonts }),
     ...(value.modules === undefined ? {} : { modules }),
