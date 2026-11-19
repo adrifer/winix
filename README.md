@@ -315,6 +315,7 @@ npx @adrifer/winix plan --host my-pc      # what switch would change on this Win
 npx @adrifer/winix switch --host my-host  # generate and run nixos-rebuild/darwin-rebuild
 npx @adrifer/winix update                 # update generated flake.lock and copy it back
 npx @adrifer/winix inspect --host my-pc   # each feature and what it declares
+npx @adrifer/winix scaffold feature lazygit  # features/lazygit.ts, home.* and windows.* side by side
 npx @adrifer/winix --skill                # print version-matched agent instructions
 ```
 
@@ -346,6 +347,21 @@ You can also run the generated flake manually:
 sudo nixos-rebuild switch --flake path:$(pwd)/.winix/out#my-host
 sudo darwin-rebuild switch --flake path:$(pwd)/.winix/out#macbook
 ```
+
+## Guides
+
+Task-focused recipes, built on the runnable
+[`examples/cross-platform`](examples/cross-platform) workspace. This README stays
+the reference for every option.
+
+- [Write a cross-platform feature](docs/guides/cross-platform-feature.md): one
+  feature per tool, with `home.*` and `windows.*` side by side.
+- [Pair a Windows host with its WSL host](docs/guides/pair-windows-and-wsl.md):
+  Windows creates a NixOS-WSL distro and sets it up from the same checkout.
+- [Share git config across Windows and WSL](docs/guides/share-git-config.md):
+  one settings object for Home Manager and Git for Windows.
+- [PowerShell profile and Windows Terminal](docs/guides/powershell-and-terminal.md):
+  profile, prompt and Terminal settings kept in the repo.
 
 ## Core concepts
 
@@ -403,6 +419,10 @@ const neovim = feature("neovim", () => [
 
 When a feature body composes other features, return them: a `feature()`/
 `profile()` call yields a lazy fragment that is not auto-collected.
+
+One feature can declare for every platform; each namespace only applies where
+it makes sense. See [Write a cross-platform feature](docs/guides/cross-platform-feature.md),
+or start one with `winix scaffold feature <name>`.
 
 ### Platform-aware configuration
 
@@ -647,6 +667,9 @@ else replaced it). Per resource:
 
 Before this default, replacement needed an explicit `backup: true` or
 `force: true`; configs that set `backup: true` everywhere can drop it.
+
+Guides: [PowerShell profile and Windows Terminal](docs/guides/powershell-and-terminal.md),
+[Share git config across Windows and WSL](docs/guides/share-git-config.md).
 
 #### Writing Windows config
 
@@ -958,71 +981,6 @@ the checkout stays inside its home. Errors name the Windows host and distro.
 Home Manager's username/home must agree with the selected account. `checkout`
 defaults to `<declared-home>/dotfiles` and must stay inside that home.
 
-#### Pair a Windows host with its WSL host
-
-Strings that must match across hosts drift. Hold the Linux host in a variable and
-pass values instead; `repository: "self"` reuses the checkout you run Winix from:
-
-```ts
-const alice = account.user("alice", () => ({ admin: true, shell: "zsh", stateVersion: "25.05", wslDefault: true }));
-
-const wslWork = host("wsl-work", platforms.wsl({ stateVersion: "25.05" }), [alice(), devTools()]);
-
-const desktop = host("DESKTOP", platforms.windows(), ({ windows }) => {
-  windows.wsl();
-  windows.wsl.distro("NixOS", {
-    source: "nixos-wsl",
-    installLocation: windows.knownFolder.localAppData("Winix\\WSL\\NixOS"),
-    default: true,
-    setup: { repository: "self", host: wslWork, user: alice },
-  });
-});
-
-export default workspace({ inputs, hosts: [desktop, wslWork] });
-```
-
-- `host` accepts the value returned by `host(...)` (or its name), and `user`
-  the `account.user(...)` factory (or its name). A distro's adoption `host`
-  accepts a host value too.
-- `repository: "self"` reads the Git checkout holding `winix.config.ts` (local
-  Git only): the current branch's tracked remote (else `origin`; SSH remotes
-  such as `git@github.com:me/dotfiles.git` become HTTPS), its upstream branch as
-  `ref` (the commit when detached) and the config's path as `configDirectory`.
-  The commit is still pinned in `wslRepositories`; push the branch first, since
-  the pin is resolved on the remote. An inferred `ref` is left out of the
-  completed-setup fingerprint, so switching branches on Windows never trips the
-  "settings changed" guard on finished distros. Any other change to a setup
-  declaration, including moving to `"self"` without the same explicit `ref`,
-  still changes the fingerprint, and completed distros then refuse activation.
-  Keep the existing `ref` and `checkout` explicit when migrating machines that
-  were already provisioned.
-- After `winix switch` on Windows, Winix prints how to apply later Linux changes
-  in each distro, e.g. `wsl.exe -d NixOS --cd /home/alice/dotfiles/winix --
-  npm exec -- winix switch --host wsl-work`.
-
-#### Reach Windows from WSL
-
-Avoid hard-coding the Windows user or drive in Linux config. These helpers find
-Windows programs through interop each time they run:
-
-```ts
-feature("windows-interop", ({ home }) => {
-  // bin/code-insiders runs the Windows VS Code Insiders CLI.
-  home.packages(nix.wsl.windowsBin("code-insiders",
-    "%LOCALAPPDATA%\\Programs\\Microsoft VS Code Insiders\\bin\\code-insiders"));
-  // git uses Git for Windows' Credential Manager.
-  home.wsl.gitCredentialManager();
-});
-```
-
-`nix.wsl.windowsBin(name, paths)` builds a package whose `bin/<name>` runs the
-first existing path from a list. Paths are absolute (`C:\...`) or start with an
-environment variable (`%LOCALAPPDATA%\...`); variables are expanded with
-`cmd.exe` and converted with `wslpath`, which costs about 50ms per run. The shim exits 127
-with the paths it tried when none exist. `home.wsl.gitCredentialManager({ paths? })`
-enables `programs.git` and points `credential.helper` at such a shim for Git for
-Windows' ucrt64/mingw64 GCM.
-
 First apply locks the repository ref (default `HEAD`) to a commit in
 `wslRepositories`. `winix update --windows wsl-setup` refreshes these pins;
 an update without names includes them too. Dry generation never clones or executes
@@ -1047,6 +1005,38 @@ restart WSL manually when safe if its new default-user setting needs it.
 Fresh-image end-to-end activation remains unverified.
 
 Without `setup`, repository installation and Linux activation remain manual.
+
+#### Pair a Windows host with its WSL host
+
+Walkthrough: [Pair a Windows host with its WSL host](docs/guides/pair-windows-and-wsl.md).
+Pass values instead of repeating names: `setup.host` (and a distro's adoption
+`host`) accept the value returned by `host(...)`, and `setup.user` the
+`account.user(...)` factory; names still work.
+
+`repository: "self"` reads the Git checkout holding `winix.config.ts` (local
+Git only): the current branch's tracked remote (else `origin`; SSH remotes such
+as `git@github.com:me/dotfiles.git` become HTTPS), its upstream branch as `ref`
+(the commit when detached) and the config's path as `configDirectory`. The
+commit is still pinned in `wslRepositories`; push the branch first, since the pin
+is resolved on the remote. An inferred `ref` is left out of the completed-setup
+fingerprint, so switching branches on Windows never trips the "settings changed"
+guard on finished distros. Any other change to a setup declaration, including
+moving to `"self"` without the same explicit `ref`, still changes the
+fingerprint, and completed distros then refuse activation. Keep the existing
+`ref` and `checkout` explicit when migrating machines that were already
+provisioned. After `winix switch` on Windows, Winix prints the command that
+applies later Linux changes inside each distro.
+
+#### Reach Windows from WSL
+
+`nix.wsl.windowsBin(name, paths)` builds a package whose `bin/<name>` runs the
+first existing Windows path from a list. Paths are absolute (`C:\...`) or start
+with an environment variable (`%LOCALAPPDATA%\...`); variables are expanded with
+`cmd.exe` and converted with `wslpath`, which costs about 50ms per run. The shim
+exits 127 with the paths it tried when none exist.
+`home.wsl.gitCredentialManager({ paths? })` enables `programs.git` and points
+`credential.helper` at such a shim for Git for Windows' ucrt64/mingw64 GCM.
+Example: [Reach Windows from WSL](docs/guides/pair-windows-and-wsl.md#reach-windows-from-wsl).
 
 ### Bootstrap a Windows machine
 

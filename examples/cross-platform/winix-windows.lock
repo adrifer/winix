@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "packages": {
+    "DEVCOM.JetBrainsMonoNerdFont": {
+      "source": "winget",
+      "version": "3.3.0",
+      "resolvedAt": "2026-11-18T00:00:00.000Z"
+    },
+    "Git.Git": {
+      "source": "winget",
+      "version": "2.51.0",
+      "resolvedAt": "2026-11-18T00:00:00.000Z"
+    },
+    "JesseDuffield.lazygit": {
+      "source": "winget",
+      "version": "0.55.1",
+      "resolvedAt": "2026-11-18T00:00:00.000Z"
+    },
+    "Microsoft.PowerShell": {
+      "source": "winget",
+      "version": "7.5.3.0",
+      "resolvedAt": "2026-11-18T00:00:00.000Z"
+    },
+    "Microsoft.WSL": {
+      "source": "winget",
+      "version": "2.6.1",
+      "resolvedAt": "2026-11-18T00:00:00.000Z"
+    },
+    "Microsoft.WindowsTerminal": {
+      "source": "winget",
+      "version": "1.23.12371.0",
+      "resolvedAt": "2026-11-18T00:00:00.000Z"
+    },
+    "Starship.Starship": {
+      "source": "winget",
+      "version": "1.23.0",
+      "resolvedAt": "2026-11-18T00:00:00.000Z"
+    }
+  },
+  "modules": {
+    "terminal-icons": {
+      "repository": "PSGallery",
+      "version": "0.11.0",
+      "resolvedAt": "2026-11-11T00:00:00.000Z"
+    }
+  },
+  "wslImages": {
+    "nixos-wsl/arm64": {
+      "source": "nixos-wsl",
+      "architecture": "arm64",
+      "version": "2605.7.2",
+      "url": "https://github.com/nix-community/NixOS-WSL/releases/download/2605.7.2/nixos.aarch64.wsl",
+      "sha256": "5453e74110f8b0ae4ee4fd2b2bb7a1a0e01f0682cca655715081438bdf8d91e7",
+      "resolvedAt": "2026-11-11T00:00:00.000Z"
+    },
+    "nixos-wsl/x64": {
+      "source": "nixos-wsl",
+      "architecture": "x64",
+      "version": "2605.7.2",
+      "url": "https://github.com/nix-community/NixOS-WSL/releases/download/2605.7.2/nixos.wsl",
+      "sha256": "e7180ad555fdcb8e1e057e2ef056de467603a5e502ff8531053738371be3f6b9",
+      "resolvedAt": "2026-11-11T00:00:00.000Z"
+    }
+  },
+  "wslRepositories": {
+    "37c9b0ba4bae962add83ad0620194e22924e446f7c8ea7b3788a063dc88e2c6f": {
+      "repository": "https://github.com/example/dotfiles.git",
+      "ref": "main",
+      "revision": "0123456789abcdef0123456789abcdef01234567",
+      "resolvedAt": "2026-11-18T00:00:00.000Z"
+    }
+  }
+}

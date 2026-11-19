@@ -103,6 +103,7 @@ const TSCONFIG = `{
     "strict": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "target": "esnext",
     "noEmit": true,
     "skipLibCheck": true

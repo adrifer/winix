@@ -20,6 +20,8 @@ export interface FragmentRecord {
 export interface HostAnalysis {
   name: string;
   platform: string;
+  /** Platform variant, e.g. "wsl" for platforms.wsl(). */
+  variant?: string;
   fragments: FragmentRecord[];
 }
 
@@ -67,17 +69,24 @@ export function findDuplicateHosts(workspace: WorkspaceDef): string[] {
 const scopes = ["nixos", "darwin", "homeManager", "windows"] as const;
 type Scope = typeof scopes[number];
 
+/** The scopes a host's platform applies; undefined when it has no platform fragment. */
+export function applicableScopes(analysis: HostAnalysis, evaluated: EvaluatedHost): Set<Scope> | undefined {
+  const platform = analysis.fragments.find(({ fragment }) => fragment.__platform)?.fragment;
+  if (!platform) return undefined;
+  const applicable = new Set(scopes.filter((scope) => platform[scope]));
+  if (!applicable.has("windows") &&
+      (hasHomeManagerImport(evaluated) || !["nixos", "darwin"].includes(analysis.platform))) {
+    applicable.add("homeManager");
+  }
+  return applicable;
+}
+
 export function collectIgnoredFragments(
   analyses: HostAnalysis[], evaluated: EvaluatedHost[],
 ): { host: string; fragment: string; scopes: Scope[] }[] {
   return analyses.flatMap((analysis, index) => {
-    const platform = analysis.fragments.find(({ fragment }) => fragment.__platform)?.fragment;
-    if (!platform) return [];
-    const applicable = new Set(scopes.filter((scope) => platform[scope]));
-    if (!applicable.has("windows") &&
-        (hasHomeManagerImport(evaluated[index]) || !["nixos", "darwin"].includes(analysis.platform))) {
-      applicable.add("homeManager");
-    }
+    const applicable = applicableScopes(analysis, evaluated[index]);
+    if (!applicable) return [];
 
     const byLabel = new Map<string, Set<Scope>>();
     for (const { label, fragment } of analysis.fragments) {
@@ -189,7 +198,7 @@ function analyzeHost(host: HostDef, options: EvaluateOptions): HostAnalysis {
     restoreEvalContext(prev);
   }
 
-  return { name: host.name, platform, fragments };
+  return { name: host.name, platform, ...(host.platform.__variant ? { variant: host.platform.__variant } : {}), fragments };
 }
 
 function resolveEntry(entry: unknown, label: string, out: FragmentRecord[]): void {

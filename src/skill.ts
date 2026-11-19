@@ -42,7 +42,8 @@ After editing, run the narrowest useful checks:
 
 \`\`\`bash
 winix check
-winix apply --dry
+winix inspect --host NAME   # what each feature contributes to that host
+winix apply --dry           # Nix hosts; for Windows hosts prefer: winix plan --host NAME
 \`\`\`
 
 Use the project package runner, such as \`npm exec winix -- check\`, when the
@@ -620,9 +621,34 @@ hosts/
 Export feature and profile factories, not already-instantiated fragments, when
 callers may need arguments or \`.isActive\`.
 
+For a tool used on several platforms with the same config, keep one feature
+with each platform's part side by side. Each namespace applies only where it
+makes sense (\`home.*\` on NixOS/WSL/macOS, \`windows.*\` on Windows), and hosts
+ignore the rest. Keep platform-only things (window managers, shell profiles, OS
+services, WSL interop) in their own features, and use separate features when a
+tool's setup differs so much per platform that one feature would mostly be
+\`platforms.*.isActive\` branches.
+
+\`\`\`ts
+export const lazygit = feature("lazygit", ({ home, windows }) => {
+  home.packages("lazygit");                  // nixpkgs attribute
+  windows.package("JesseDuffield.lazygit");  // winget id (winix package search)
+  home.configFiles({ "lazygit/config.yml": home.symlink("./dotfiles/lazygit/config.yml") });
+  windows.file.symlink(windows.knownFolder.localAppData("lazygit\\\\config.yml"), "./dotfiles/lazygit/config.yml");
+});
+\`\`\`
+
+\`winix scaffold feature NAME\` writes a template with both halves as TODOs. Git
+for Windows does not read Home Manager's git config: render the same settings
+object to \`%USERPROFILE%\\.gitconfig\` with \`windows.file.text\`. Recipes live in
+\`docs/guides\` of the Winix repository.
+
 ## Commands
 
 - \`winix init\` creates a project and installs the Winix skill wrapper.
+- \`winix scaffold feature NAME [--force]\` writes \`features/NAME.ts\` next to
+  \`winix.config.ts\` with the Home Manager and Windows halves as commented TODOs,
+  and prints the import to add.
 - \`winix install skill\` installs or refreshes the wrapper in an existing
   project. Use \`--force\` if a different file already occupies its path.
 - \`winix --skill\` prints these version-matched instructions. It has no side
@@ -652,7 +678,9 @@ activate through \`winget configure\`.
 
 - Make narrow structural edits. Add or change a feature, profile entry, host,
   or input instead of rewriting the workspace.
-- Reuse existing features before creating duplicates.
+- Reuse existing features before creating duplicates. When a shared tool
+  already has a feature for one platform, add the other platform's part to that
+  feature rather than to a separate per-platform file.
 - Keep filesystem paths separate from generated Nix paths. Generated Nix paths
   and flake references always use forward slashes.
 - Do not add classes, inheritance, global registries, or runtime dependencies

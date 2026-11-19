@@ -1,0 +1,6 @@
+# Shared lazygit config, linked on Linux, macOS and Windows.
+gui:
+  nerdFontsVersion: "3"
+git:
+  paging:
+    colorArg: always

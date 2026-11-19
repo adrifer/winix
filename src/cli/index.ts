@@ -19,6 +19,7 @@ import {
 import { findConfig } from "./loader.ts";
 import { nerdFontsCatalog } from "../backends/windows/fonts.ts";
 import { packageSearch, windowsImport } from "./commands/windows-packages.ts";
+import { scaffoldFeature, scaffoldNextSteps } from "./commands/scaffold.ts";
 
 if (process.argv[2] === "run") {
   try { await runCheckout(process.cwd(), process.argv.slice(3)); }
@@ -72,6 +73,7 @@ Commands:
   run <args>   Prefer checkout-local SDK, enforcing the checkout's exact Winix pin
   init         Scaffold a Winix project
   install skill Install the agent skill wrapper
+  scaffold feature <name>  Create features/<name>.ts with home.* and windows.* side by side
   apply        Generate backend output in .winix/out/
   check        Validate configuration
   plan         Show what switch would change on this machine (same as switch --dry)
@@ -96,13 +98,14 @@ Options:
   --windows       Resolve Windows package/module/WSL image lockfile (update)
   --strict        Treat conflicts as errors (check)
   --escape-report Show escape hatch usage (check)
-  --force         Overwrite files (init, install skill)
+  --force         Overwrite files (init, install skill, scaffold)
   --skill         Print version-matched agent instructions
   -h, --help      Show this help
   -v, --version   Show this binary/package version
 
 Examples:
   winix init
+  winix scaffold feature lazygit
   winix install skill
   winix --skill
   winix apply
@@ -160,6 +163,18 @@ switch (command) {
     try {
       if (positionals[1] !== "import" || positionals.length !== 2) throw new Error("Usage: winix windows import [--host <name>]");
       await windowsImport(cwd, { host: values.host });
+    } catch (err) {
+      console.error(`\u2717 Error: ${(err as Error).message}`);
+      process.exit(1);
+    }
+    break;
+
+  case "scaffold":
+    try {
+      if (positionals[1] !== "feature" || positionals.length !== 3) throw new Error("Usage: winix scaffold feature <name> [--force]");
+      const result = await scaffoldFeature(cwd, positionals[2], { force: values.force });
+      const config = findConfig(cwd)!;
+      for (const line of scaffoldNextSteps(dirname(config), result)) console.log(line);
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
       process.exit(1);

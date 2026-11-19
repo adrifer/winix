@@ -2,7 +2,7 @@ import type { Fragment, ResourceRef } from "../../core/types.ts";
 import type { WinDscResource, WinPackage, WindowsOptions } from "../../types/index.ts";
 import { describeWindowsDscResource } from "../../backends/windows/index.ts";
 import { evaluate } from "../../evaluator/index.ts";
-import { analyzeWorkspace, collectIgnoredFragments, type HostAnalysis } from "../analysis.ts";
+import { analyzeWorkspace, applicableScopes, collectIgnoredFragments, type HostAnalysis } from "../analysis.ts";
 import { loadWorkspace } from "../loader.ts";
 
 const NIX_SCOPES = ["nixos", "homeManager", "darwin"] as const;
@@ -20,7 +20,9 @@ export async function inspect(cwd: string, opts: { host?: string } = {}): Promis
   console.log(`Config: ${configPath}`);
   console.log(`Hosts: ${analyses.length}`);
   for (const analysis of selected) {
-    for (const line of inspectHost(analysis, ignored.filter((item) => item.host === analysis.name).map((item) => item.fragment))) {
+    const index = analyses.indexOf(analysis);
+    const ignoredLabels = ignored.filter((item) => item.host === analysis.name).map((item) => item.fragment);
+    for (const line of inspectHost(analysis, ignoredLabels, applicableScopes(analysis, evaluated[index]))) {
       console.log(line);
     }
   }
@@ -29,29 +31,40 @@ export async function inspect(cwd: string, opts: { host?: string } = {}): Promis
 /**
  * One host as a feature -> contributions tree. Effects of one feature are
  * grouped under it (a feature with 15 effects is listed once), each group says
- * which scopes it targets, and Windows resources show their dependsOn edges.
+ * which scopes apply on this host, and Windows resources show their dependsOn
+ * edges. Scopes the platform does not apply (the windows.* half of a
+ * cross-platform feature on Linux, say) are named but not expanded.
  */
-export function inspectHost(analysis: HostAnalysis, ignoredLabels: string[] = []): string[] {
+export function inspectHost(
+  analysis: HostAnalysis, ignoredLabels: string[] = [], applicable?: ReadonlySet<string>,
+): string[] {
   const groups = new Map<string, Fragment[]>();
   for (const { label, fragment } of analysis.fragments) {
     if (fragment.__platform) continue;
     groups.set(label, [...(groups.get(label) ?? []), fragment]);
   }
   const names = windowsResourceNames(analysis.fragments.map((record) => record.fragment));
-  const lines = ["", analysis.name, `  platform: ${analysis.platform}`];
+  const lines = ["", analysis.name, `  platform: ${analysis.platform}${analysis.variant ? ` (${analysis.variant})` : ""}`];
   lines.push(`  composition: ${[...groups.keys()].join(" > ") || "(empty)"}`);
   for (const [label, fragments] of groups) {
     const scopes: string[] = NIX_SCOPES.filter((scope) => fragments.some((fragment) => hasContent(fragment[scope])));
     const windowsLines = fragments.flatMap((fragment) => fragment.windows ? describeWindows(fragment.windows as WindowsOptions, names) : []);
     if (windowsLines.length > 0 || fragments.some((fragment) => hasContent(fragment.windows))) scopes.push("windows");
-    const note = ignoredLabels.includes(label) ? "  (no applicable configuration on this platform; ignored)" : "";
-    lines.push(`  ${label}  [${scopes.join(", ") || "empty"}]${note}`);
+    const applies = (scope: string) => !applicable || applicable.has(scope);
+    const used = scopes.filter(applies);
+    const skipped = scopes.filter((scope) => !applies(scope));
+    const note = ignoredLabels.includes(label)
+      ? "  (no applicable configuration on this platform; ignored)"
+      : skipped.length > 0 ? `  (not on this platform: ${skipped.join(", ")})` : "";
+    lines.push(`  ${label}  [${(ignoredLabels.includes(label) ? scopes : used).join(", ") || "empty"}]${note}`);
+    const expand = (scope: string) => applies(scope) || ignoredLabels.includes(label);
     for (const scope of NIX_SCOPES) {
+      if (!expand(scope)) continue;
       const keys = new Set<string>();
       for (const fragment of fragments) Object.keys(fragment[scope] ?? {}).forEach((key) => keys.add(key));
       if (keys.size > 0) lines.push(`    ${scope}: ${[...keys].join(", ")}`);
     }
-    for (const line of windowsLines) lines.push(`    ${line}`);
+    if (expand("windows")) for (const line of windowsLines) lines.push(`    ${line}`);
   }
   return lines;
 }

@@ -1210,6 +1210,19 @@ file contains skill metadata and tells the agent to run `winix --skill`.
 Keeping the full instructions in the executable prevents the wrapper from
 drifting away from the installed Winix API.
 
+#### `winix scaffold feature`
+
+```bash
+winix scaffold feature lazygit           # features/lazygit.ts next to winix.config.ts
+winix scaffold feature lazygit --force   # overwrite
+```
+
+Writes a feature factory named after the camel-cased name (`dev-tools` →
+`devTools`) with the Home Manager and Windows halves as commented TODOs and a
+`platforms.darwin.isActive` branch, then prints the import line. Names are
+lowercase words separated by dashes. The template evaluates as written; nothing
+is added to `winix.config.ts`.
+
 #### `winix check`
 
 Typecheck the workspace and validate fragments without side effects.

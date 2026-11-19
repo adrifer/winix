@@ -4,9 +4,8 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Next
 
-- **`winix scaffold feature <name>`** — generate a typed feature template ready for an LLM (or human) to fill in.
 - **Interactive `winix init` wizard** — guide users through platform, channel, Home Manager, example features, and Skill install with prompts (or skip with `--platform`, `--channel`, `--features`, `--skill` flags for power users).
-- **Starlight docs site** — replace the long README with a proper documentation site at [starlight.astro.build](https://starlight.astro.build).
+- **Starlight docs site** — replace the long README with a proper documentation site at [starlight.astro.build](https://starlight.astro.build). The Markdown guides in `docs/guides` (with title/description front matter) are laid out to move into it.
 - **Windows integration** *(in progress)* — bring NixOS-style declarative system management to Windows via winget + DSC v3. Packages, locking, resource ordering, files, environment, settings, PowerShell modules, prerequisite bootstrap, WSL provisioning and opt-in first-run Linux activation are implemented; fresh-machine activation rehearsal remains pending. See the [detailed phase-by-phase roadmap](./spec/proposals/windows-backend.md#implementation-roadmap) in the proposal.
 
 ## Later
@@ -14,6 +13,14 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 - **Init presets beyond the wizard** — first-class `--preset minimal`, `--preset wsl`, etc. once we see what real users actually pick.
 
 ## Done
+
+- **Docs and agent experience** — task guides in `docs/guides` (cross-platform
+  feature, pairing Windows and WSL, sharing git config, PowerShell and Terminal)
+  built on the runnable, tested `examples/cross-platform`; README gets a Guides
+  index and the WSL pairing/interop sections defer to them. `winix scaffold
+  feature <name>` writes a cross-platform template. `inspect` marks scopes a
+  platform skips and shows the WSL variant. The agent skill teaches one feature
+  per shared tool, with platform-only things kept separate. `winix init`'s tsconfig allows `.ts` import extensions.
 
 - **Windows authoring conveniences** — `version: "any"` packages
   (presence-only, unlocked, self-updates aren't drift); Program Files known
