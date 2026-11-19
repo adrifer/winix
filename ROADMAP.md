@@ -18,7 +18,9 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   upgrades that will ask for administrator approval (machine-wide installs,
   packages without a per-user installer), and `winix switch` names them before
   it starts. The applied-state lock records its process, so a lock left by an
-  interrupted switch is removed automatically.
+  interrupted switch is removed automatically. Replaced Startup shortcuts are
+  backed up to `%LOCALAPPDATA%\Winix\startup-backups` instead of a `.lnk.bak`
+  inside the Startup folder, which sign-in would try to open.
 
 - **Running apps block upgrades** — `winix plan` warns when a package it would
   upgrade is running from a winget portable install, and `winix switch` stops

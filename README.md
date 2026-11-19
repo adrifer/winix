@@ -1139,8 +1139,10 @@ embedded quotes, backslashes, and Unicode; no shell is implicitly inserted.
 
 `windowStyle` accepts `normal` (default), `minimized`, or `maximized`; minimized
 does not guarantee a hidden console. Correct shortcuts are left untouched.
-A different existing shortcut is preserved as `.lnk.bak` by default (backup
-collisions fail). `backup: false` refuses the replacement instead, and
+A different existing shortcut is moved by default to
+`%LOCALAPPDATA%\Winix\startup-backups\<timestamp>-<name>.lnk`, outside the
+Startup folder (Windows opens everything in that folder at sign-in, so a
+`.lnk.bak` there would ask how to open it). `backup: false` refuses the replacement instead, and
 `force: true` replaces it without a backup. A new shortcut is staged and verified before
 replacing the old one. Keep names unique per host.
 

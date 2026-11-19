@@ -1003,8 +1003,9 @@ resolve on the target. Windows argv quoting preserves empty/Unicode arguments,
 spaces, quotes, and backslashes without implicitly invoking a shell.
 
 Shortcut names must be valid Windows filenames without paths or reserved names.
-Desired shortcuts are unchanged on repeat applies. Replacements back up to
-`.lnk.bak` by default (failing on collision); `backup: false` refuses them and
+Desired shortcuts are unchanged on repeat applies. Replacements back up by
+default to `%LOCALAPPDATA%\Winix\startup-backups\<timestamp>-<name>.lnk`, never
+inside the Startup folder, which sign-in opens entirely; `backup: false` refuses them and
 `force: true` replaces without a backup.
 New shortcuts are staged and verified before replacement, using Unicode-capable
 Shell APIs. Names must be unique per host.

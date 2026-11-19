@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, mkdir, readFile, rm, writeFile, readlink } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile, readlink, readdir } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
@@ -671,11 +672,19 @@ $link.Save()
       const conflicting = await readFile(target);
       expect(() => runDsc("set", isolated(false))).toThrow();
       expect(await readFile(target)).toEqual(conflicting);
+      // Backups go outside the Startup folder: sign-in opens everything in it.
+      const backups = join(process.env.LOCALAPPDATA!, "Winix", "startup-backups");
+      const ours = async () => (await readdir(backups).catch(() => [] as string[])).filter((file) => file.endsWith(`-${name}.lnk`));
+      const before = await ours();
       runDsc("set", properties);
-      expect(await readFile(target + ".bak")).toEqual(conflicting);
+      expect(existsSync(target + ".bak")).toBe(false);
+      const first = (await ours()).filter((file) => !before.includes(file));
+      expect(first).toHaveLength(1);
+      expect(await readFile(join(backups, first[0]))).toEqual(conflicting);
       mutate();
-      expect(() => runDsc("set", properties)).toThrow();
-      expect(await readFile(target + ".bak")).toEqual(conflicting);
+      runDsc("set", properties);
+      expect((await ours()).filter((file) => !before.includes(file))).toHaveLength(2);
+      for (const file of (await ours()).filter((entry) => !before.includes(entry))) await rm(join(backups, file), { force: true });
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

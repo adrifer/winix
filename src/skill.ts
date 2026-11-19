@@ -349,8 +349,9 @@ Resources return handles that can be passed through \`dependsOn\`.
 - \`windows.path.add()\` and \`windows.path.remove()\` manage PATH entries.
 - \`windows.file.text()\`, \`windows.file.symlink()\`,
   \`windows.file.copy()\`, and \`windows.file.remove()\` manage files. A differing
-  existing target (files, .wslconfig, Startup shortcuts) is moved to <target>.bak
-  by default; a backup collision fails. Don't add backup: true; use
+  existing target (files, .wslconfig) is moved to <target>.bak by default; a
+  backup collision fails. Startup shortcuts are backed up to
+  %LOCALAPPDATA%\\Winix\\startup-backups instead. Don't add backup: true; use
   backup: false to fail instead, or force: true to delete without a backup.
 - \`windows.startup.command(name, spec)\` manages a named current-user Startup
   shortcut, without running it during apply. Supply executable and optional argv

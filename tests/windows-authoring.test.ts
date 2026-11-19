@@ -182,8 +182,11 @@ describe("default backup of existing targets", () => {
       [true, false], [false, false], [false, true], [true, true], [true, false], [true, false],
     ]);
     const startups = dscOf(h).filter((resource) => resource.winix?.kind === "startup").map((resource) => JSON.stringify(resource.properties));
-    expect(startups[0]).toContain("Move-WinixExistingTarget $target $false $true");
+    // Startup backups leave the Startup folder (sign-in would try to open a .lnk.bak there).
+    expect(startups[0]).toContain("Winix\\\\startup-backups");
+    expect(startups[0]).not.toContain("Move-WinixExistingTarget $target");
     expect(startups[1]).toContain("Move-WinixExistingTarget $target $false $false");
+    expect(startups[1]).not.toContain("startup-backups");
   });
 
   it("no longer accepts platforms.windows defaults", () => {

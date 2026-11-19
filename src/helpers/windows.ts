@@ -1386,7 +1386,21 @@ function normalizeStartupCommand(name: string, input: WinStartupCommandSpec): Wi
       "  $link.Save()",
       "  if (-not (Test-WinixStartup $stagingPath)) { throw \"Startup shortcut verification failed: $stagingPath\" }",
       "  [IO.Directory]::CreateDirectory($startup) | Out-Null",
-      `  Move-WinixExistingTarget $target ${psBoolean(spec.force ?? false)} ${psBoolean(spec.backup ?? false)}`,
+      // Sign-in opens everything in the Startup folder, so a <name>.lnk.bak next to
+      // the shortcut would prompt "How do you want to open this file?" at every
+      // sign-in. Back up outside it, keeping the .lnk extension so it can be restored.
+      ...(spec.backup ? [
+        "  if (Test-Path -LiteralPath $target) {",
+        "    $backupDirectory = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Winix\\startup-backups'",
+        "    [IO.Directory]::CreateDirectory($backupDirectory) | Out-Null",
+        "    $backupPath = Join-Path $backupDirectory ((Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '-' + (Split-Path -Leaf $target))",
+        "    if (Test-Path -LiteralPath $backupPath) { throw \"Backup target already exists: $backupPath\" }",
+        "    Move-Item -LiteralPath $target -Destination $backupPath",
+        "    Write-Host \"Moved the existing Startup shortcut to $backupPath\"",
+        "  }",
+      ] : [
+        `  Move-WinixExistingTarget $target ${psBoolean(spec.force ?? false)} $false`,
+      ]),
       "  Move-Item -LiteralPath $stagingPath -Destination $target",
       "} finally { Remove-Item -LiteralPath $stagingDirectory -Recurse -Force }",
       "if (-not (Test-WinixStartup)) { throw \"Startup shortcut verification failed: $target\" }",
