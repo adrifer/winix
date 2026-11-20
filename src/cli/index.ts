@@ -47,6 +47,7 @@ const { positionals, values } = parseArgs({
     "prepare-only": { type: "boolean", default: false },
     // Internal: consent was already given by the repository bootstrap script.
     confirmed: { type: "boolean", default: false },
+    "command-only": { type: "boolean", default: false },
   },
 });
 
@@ -92,6 +93,7 @@ Commands:
 Options:
   --host <name>   Target a specific host
   --prepare-only Stop bootstrap after validation/preview; no activation
+  --command-only  Bootstrap: only install the winix command (and remember --host); no evaluation
   --dry           Preview generation, activation/cleanup, or owner migration
   -y, --yes       Confirm bootstrap, managed removals, or explicit owner migration
   --diff          Show a unified diff against current output (apply)
@@ -123,8 +125,8 @@ Examples:
 }
 
 const cwd = process.cwd();
-if ((values["prepare-only"] || values.confirmed) && command !== "bootstrap") {
-  console.error("--prepare-only and --confirmed are only supported by winix bootstrap.");
+if ((values["prepare-only"] || values.confirmed || values["command-only"]) && command !== "bootstrap") {
+  console.error("--prepare-only, --confirmed and --command-only are only supported by winix bootstrap.");
   process.exit(2);
 }
 if ((values.offline || values.locked) && !["apply", "switch", "plan"].includes(command)) {
@@ -187,7 +189,7 @@ switch (command) {
     try {
       await bootstrapCheckout(cwd, {
         host: values.host, yes: values.yes, prepareOnly: values["prepare-only"], dry: values.dry,
-        confirmed: values.confirmed,
+        confirmed: values.confirmed, commandOnly: values["command-only"],
       });
     } catch (error) { console.error(`Error: ${(error as Error).message}`); process.exit(1); }
     break;

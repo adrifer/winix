@@ -56,7 +56,7 @@ exec(${JSON.stringify(source)}, namespace)
 namespace["platform"].machine = lambda: "x86_64"
 namespace["sys"].platform = "linux"
 with tempfile.TemporaryDirectory(prefix="winix-bootstrap-") as root:
-    for scenario in ("prepare", "activate", "origin", "dirty", "floating", "hash", "escape", "existing"):
+    for scenario in ("prepare", "activate", "origin", "dirty", "nohost", "ssh", "floating", "hash", "escape", "existing"):
         destination = pathlib.Path(root) / scenario
         destination.mkdir()
         (destination / ".git").mkdir()
@@ -80,7 +80,7 @@ with tempfile.TemporaryDirectory(prefix="winix-bootstrap-") as root:
         def fake_run(args, cwd=None, capture=False):
             calls.append(("command", args))
             if args[:4] == ["git", "remote", "get-url", "origin"]:
-                return "https://example.com/other.git" if scenario == "origin" else "https://example.com/dotfiles.git"
+                return {"origin": "git@example.com:other.git", "ssh": "git@example.com:Dotfiles.git"}.get(scenario, "https://example.com/dotfiles.git")
             if args[:3] == ["git", "status", "--porcelain"]:
                 return " M config" if scenario == "dirty" else ""
             if args[:2] == ["git", "rev-parse"]:
@@ -94,17 +94,19 @@ with tempfile.TemporaryDirectory(prefix="winix-bootstrap-") as root:
         namespace["run"] = fake_run
         original = namespace["subprocess"].run
         namespace["subprocess"].run = lambda args, **kwargs: calls.append(("activation", args))
-        sys.argv = ["bootstrap", "--repository", "https://example.com/dotfiles.git", "--host", "linux",
+        sys.argv = ["bootstrap", "--repository", "https://example.com/dotfiles.git",
+                    *([] if scenario == "nohost" else ["--host", "linux"]),
                     "--destination", str(destination), "--yes"]
         if scenario != "activate":
             sys.argv.append("--prepare-only")
         try:
-            if scenario in ("prepare", "activate", "existing"):
+            if scenario in ("prepare", "activate", "existing", "dirty", "nohost", "ssh"):
                 namespace["main"]()
                 activations = [args for kind,args in calls if kind == "activation"]
                 assert len(activations) == 1, calls
                 assert ("--prepare-only" in activations[0]) == (scenario != "activate")
-                assert "--yes" in activations[0]
+                assert "--yes" in activations[0] and "--confirmed" in activations[0]
+                assert ("--host" in activations[0]) == (scenario != "nohost")
                 if scenario == "existing":
                     calls.clear()
                     namespace["main"]()
@@ -114,7 +116,7 @@ with tempfile.TemporaryDirectory(prefix="winix-bootstrap-") as root:
                     namespace["main"]()
                     raise AssertionError("Unexpected success: " + scenario)
                 except RuntimeError as error:
-                    expected_error = {"origin":"different origin", "dirty":"local changes", "floating":"exact version",
+                    expected_error = {"origin":"different origin", "floating":"exact version",
                                       "hash":"checksum mismatch", "escape":"Unsafe bootstrap directory"}[scenario]
                     assert expected_error.lower() in str(error).lower(), str(error)
                 assert not any(kind == "activation" for kind,args in calls), calls
@@ -140,5 +142,38 @@ if bash scripts/bootstrap-linux.sh --repository https://example.com/dotfiles.git
     expect(output).toContain("No changes or config evaluation");
     expect(output).toContain("Usage: bash bootstrap-linux.sh");
     expect(output).not.toContain("Preparing a temporary");
+  });
+});
+
+describe.skipIf(!available)("Linux checkout launcher and winix command (real bash)", () => {
+  it("prefers the pinned runtime, falls back to the bootstrap executable, and works through the command", async () => {
+    const { linuxLauncher, linuxCommandShim } = await import("../src/cli/commands/bootstrap.ts");
+    const b64 = (text: string) => Buffer.from(text).toString("base64");
+    const input = `
+set -euo pipefail
+root=$(mktemp -d); trap 'rm -rf -- "$root"' EXIT
+config="$root/my dotfiles/winix"
+mkdir -p "$config/.winix/bin" "$config/.winix/runtime/0.3.1" "$root/bin" "$root/elsewhere"
+printf '%s\n' '{ "dependencies": { "@adrifer/winix": "https://github.com/adrifer/winix/releases/download/v0.3.1/adrifer-winix-0.3.1.tgz" } }' > "$config/package.json"
+printf '#!/usr/bin/env bash\necho "fallback $PWD $*"\n' > "$root/bin/fallback"
+printf '#!/usr/bin/env bash\necho "pinned $*"\n' > "$config/.winix/runtime/0.3.1/winix"
+chmod +x "$root/bin/fallback" "$config/.winix/runtime/0.3.1/winix"
+echo '${b64(linuxLauncher("/PLACEHOLDER/fallback"))}' | base64 -d | sed "s#/PLACEHOLDER#$root/bin#" > "$config/.winix/bin/winix"
+chmod +x "$config/.winix/bin/winix"
+echo '${b64(linuxCommandShim("/PLACEHOLDER"))}' | base64 -d | sed "s#/PLACEHOLDER#$config/.winix/bin/winix#" > "$root/winix"
+chmod +x "$root/winix"
+cd "$root/elsewhere"
+"$root/winix" switch --dry
+rm "$config/.winix/runtime/0.3.1/winix"
+"$root/winix" plan "two words"
+printf '%s\n' '{ "dependencies": { "@adrifer/winix": "^0.3.0" } }' > "$config/package.json"
+"$root/winix" check
+`;
+    const output = execFileSync(windows ? "wsl.exe" : "bash", windows ? ["--", "bash", "-s"] : ["-s"],
+      { input, encoding: "utf8", timeout: 30000 });
+    const lines = output.trim().split("\n");
+    expect(lines[0]).toBe("pinned run switch --dry");
+    expect(lines[1]).toMatch(/^fallback .*\/my dotfiles\/winix run plan two words$/);
+    expect(lines[2]).toMatch(/^fallback .* run check$/);
   });
 });

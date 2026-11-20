@@ -1160,7 +1160,8 @@ releases include the script and SHA256 checksum, as with Windows bootstrap.
 -ConfigDirectory <relative-path> [-HostName <host>]` extends the prerequisite-only
 script with explicit repository orchestration. `bootstrap-linux.sh` provides
 the corresponding `--repository`, `--ref`, `--destination`, `--config-directory`,
-and `--host` options on glibc Linux x64/ARM64. Linux uses existing Nix for
+and optional `--host` options on glibc Linux x64/ARM64, with the same single
+confirmation and `winix bootstrap --confirmed` delegation. Linux uses existing Nix for
 temporary Git/Python tooling or requires those tools already installed;
 it never silently installs Nix or converts a distribution into NixOS.
 NixOS binaries use private pinned libc/compiler dependencies.
@@ -1197,13 +1198,19 @@ Bootstrap creates an ignored checkout launcher, `.winix/bin/winix.ps1` or
 `.winix/bin/winix`. `winix run <command> [options]` rereads the manifest and prefers
 the installed matching node_modules SDK's CLI under supported Node, otherwise
 uses the matching standalone executable. A stale/corrupt local SDK fails instead
-of falling back silently. On Windows a stale standalone downloads the pinned
-release's executable into `.winix/runtime/<version>`, verified against its
-`SHA256SUMS` before running, and the launcher prefers it from then on (older
-runtime folders are then removed, keeping the running one and the launcher's
-fallback); elsewhere it requires a bootstrap rerun. Windows bootstrap also installs a
-per-user `%LOCALAPPDATA%\Winix\bin\winix.cmd` on the user PATH (registry value
-kind and `%VAR%` entries preserved, no elevation) that runs the launcher. The user
+of falling back silently. On Windows and Linux a stale standalone downloads the
+pinned release's executable into `.winix/runtime/<version>`, verified against
+its `SHA256SUMS` before running (Linux: behind a generated wrapper, through the
+pinned Nix loader/libraries on NixOS, whose `--version` must match), and the
+launcher prefers it from then on (older runtime folders are then removed,
+keeping the running one and the launcher's fallback); macOS has no standalone
+executable. Bootstrap also installs a per-user command that runs the launcher:
+`%LOCALAPPDATA%\Winix\bin\winix.cmd` on the Windows user PATH (registry value
+kind and `%VAR%` entries preserved, no elevation) or `~/.local/bin/winix` on
+Linux (PATH is the user's config; a hint is printed). `winix bootstrap
+--command-only [--host <host>]` only remembers the host and installs these, with
+no evaluation; standalone Windows-driven WSL setup runs it as the Linux user
+after activation, so the distro is then switched from inside with `winix switch`. The user
 opts into npm with `npm ci` and their approved source. Local npm scripts remain
 the standard npm workflow. New init manifests use exact version pins.
 

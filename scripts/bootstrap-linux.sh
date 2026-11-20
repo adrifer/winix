@@ -4,21 +4,22 @@ set -euo pipefail
 # Repository mode never installs Nix or changes the system before confirmation.
 if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
   printf '%s\n' \
-    'Usage: bash bootstrap-linux.sh --repository HTTPS_URL --ref BRANCH --host HOST [--destination PATH] [--config-directory winix] [--prepare-only] [--dry-run] [--yes]' \
+    'Usage: bash bootstrap-linux.sh --repository HTTPS_URL [--ref BRANCH] [--host HOST] [--destination PATH] [--config-directory winix] [--prepare-only] [--dry-run] [--yes]' \
     'Uses existing Nix for temporary Git/Python tools, or requires installed git and python3.' \
-    'No Node/npm, package installation, reboot, checkout reset, or activation without confirmation.'
+    'Asks once, then clones, downloads the pinned Winix, installs the winix command and applies the host.' \
+    'Without --host, Winix offers the declared hosts and remembers the choice.' \
+    'No Node/npm, package installation, reboot or checkout reset.'
   exit 0
 fi
 
 arguments=("$@")
-repository='' hostname='' dry_run=0
+repository='' dry_run=0
 while (($#)); do
   case "$1" in
     --repository|--ref|--host|--destination|--config-directory)
       [[ $# -ge 2 && -n "$2" && "$2" != -* ]] || { echo "Missing value for $1" >&2; exit 2; }
       case "$1" in
         --repository) repository="$2" ;;
-        --host) hostname="$2" ;;
       esac
       shift 2 ;;
     --dry-run) dry_run=1; shift ;;
@@ -26,7 +27,7 @@ while (($#)); do
     *) echo "Unknown bootstrap option: $1" >&2; exit 2 ;;
   esac
 done
-[[ -n "$repository" && -n "$hostname" ]] || { echo '--repository and --host are required; see --help' >&2; exit 2; }
+[[ -n "$repository" ]] || { echo '--repository is required; see --help' >&2; exit 2; }
 [[ "$repository" == https://* && "$repository" != *'@'* && "$repository" != *'?'* && "$repository" != *'#'* ]] || {
   echo 'Repository must be HTTPS without credentials, query, or fragment' >&2; exit 2;
 }
@@ -85,6 +86,18 @@ def confirm(message, yes):
         raise RuntimeError("Bootstrap cancelled")
 
 
+def repository_identity(url):
+    """host/owner/repo for HTTPS and SSH Git URLs, so an SSH clone of the same repository is reused."""
+    value = url.strip()
+    match = re.fullmatch(r"(?:ssh://)?git@([^:/]+)[:/](.+)", value) or re.fullmatch(r"https://([^/@?#]+)/(.+)", value)
+    if not match:
+        return value
+    path = match[2].rstrip("/")
+    if path.endswith(".git"):
+        path = path[:-4]
+    return (match[1] + "/" + path).lower()
+
+
 def safe_directory(path):
     for current in (path, *path.parents):
         if current.is_symlink() or (current.exists() and not current.is_dir()):
@@ -134,7 +147,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--repository", required=True)
     parser.add_argument("--ref", default="main")
-    parser.add_argument("--host", required=True)
+    parser.add_argument("--host")
     parser.add_argument("--destination", default=str(Path.home() / "dotfiles"))
     parser.add_argument("--config-directory", default="winix")
     parser.add_argument("--prepare-only", action="store_true")
@@ -143,24 +156,36 @@ def main():
     uri = urlparse(args.repository)
     if uri.scheme != "https" or not uri.hostname or uri.username or uri.password or uri.query or uri.fragment:
         raise RuntimeError("Repository must be HTTPS without credentials, query, or fragment")
-    if not args.ref or args.ref.startswith("-") or any(c in args.ref + args.host for c in "\x00\r\n"):
+    if not args.ref or args.ref.startswith("-") or any(c in args.ref + (args.host or "") for c in "\x00\r\n"):
         raise RuntimeError("Invalid host/ref")
     subdir = Path(args.config_directory)
     if subdir.is_absolute() or ".." in subdir.parts:
         raise RuntimeError("config-directory must be inside the checkout")
     destination = Path(os.path.abspath(os.path.expanduser(args.destination)))
     safe_directory(destination)
-    confirm("Trust " + args.repository + " and allow cloning/downloads? Config evaluation is confirmed separately.", args.yes)
+    target = "host " + args.host if args.host else "the host you choose"
+    confirm("\n".join([
+        "Winix will:",
+        "  - clone " + args.repository + " (" + args.ref + ") to " + str(destination) + " (or reuse that checkout)",
+        "  - download the Winix release pinned in " + args.config_directory + "/package.json (checksum-verified)",
+        "  - run its configuration code (trusted TypeScript that can execute commands)",
+        "  - install the winix command in ~/.local/bin",
+        "  - " + ("preview " + target + " without activating it" if args.prepare_only
+                  else "activate " + target + " (sudo may ask for your password)"),
+        "Continue?",
+    ]), args.yes)
     if not destination.exists():
         run(["git", "clone", "--origin", "origin", "--", args.repository, str(destination)])
         run(["git", "checkout", args.ref], destination)
     if not (destination / ".git").is_dir():
         raise RuntimeError("Existing destination is not a regular Git checkout; refusing adoption")
     safe_directory(destination / ".git")
-    if run(["git", "remote", "get-url", "origin"], destination, True).strip() != args.repository:
-        raise RuntimeError("Existing checkout has a different origin")
+    origin = run(["git", "remote", "get-url", "origin"], destination, True).strip()
+    if repository_identity(origin) != repository_identity(args.repository):
+        raise RuntimeError("Existing checkout has a different origin (" + origin + ")")
     if run(["git", "status", "--porcelain", "--untracked-files=normal"], destination, True).strip():
-        raise RuntimeError("Checkout has local changes; bootstrap never resets, cleans, or stashes them")
+        print("Warning: the checkout has local changes; they are used as they are (never reset, cleaned or stashed).",
+              file=sys.stderr)
     head = run(["git", "rev-parse", "HEAD"], destination, True).strip()
     wanted = run(["git", "rev-parse", "--verify", args.ref + "^{commit}"], destination, True).strip()
     if head != wanted:
@@ -198,7 +223,7 @@ def main():
             run(["nix", "build", "--no-write-lock-file", "--out-link", str(runtime / name), pin + "#" + output])
         linker = "ld-linux-x86-64.so.2" if architecture == "x64" else "ld-linux-aarch64.so.1"
         command = [str(runtime / "libc" / "lib" / linker), "--argv0", str(binary),
-                   "--library-path", str(runtime / "libc" / "lib") + ":" + str(runtime / "compiler" / "lib"), str(binary)]
+                   "--library-path", str(runtime / "libc" / "lib") + ":" + str(runtime / "compiler-lib" / "lib"), str(binary)]
     else:
         command = [str(binary)]
     if launcher.exists() and not launcher.read_text().startswith("#!/usr/bin/env bash\n# Generated by Winix bootstrap\n"):
@@ -208,7 +233,9 @@ def main():
     launcher.chmod(0o755)
     if run([str(launcher), "--version"], config, True).strip() != version:
         raise RuntimeError("Executable version does not match the checkout")
-    command = [str(launcher), "bootstrap", "--host", args.host]
+    command = [str(launcher), "bootstrap", "--confirmed"]
+    if args.host:
+        command += ["--host", args.host]
     if args.prepare_only:
         command.append("--prepare-only")
     if args.yes:

@@ -441,6 +441,11 @@ export async function runWslSetup(
     if (!matchesDefault) {
       throw new Error("Linux activation did not configure the expected WSL default user");
     }
+    if (options.standalone) {
+      // Daily use inside the distro: `winix switch` from anywhere, fetching the pin's release itself.
+      console.log("WSL setup: installing the winix command");
+      run(executable, ["bootstrap", "--command-only", "--host", plan.host], asUser);
+    }
     verify(plan.checkout, plan.user, plan.home);
     const completeTemporary = join(stateDirectory, `complete.${randomUUID()}.tmp`);
     await fs.writeFile(completeTemporary, `${request.fingerprint}\n${plan.user}\n${plan.checkout}\n`, { flag: "wx", mode: 0o600 });

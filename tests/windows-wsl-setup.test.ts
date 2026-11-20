@@ -410,6 +410,12 @@ try {
       }
       if(command===process.execPath) {
         if(args[0]==='apply') { assert.equal(${standalone},true); assert.ok(options.user); return ''; }
+        if(args[0]==='bootstrap') {
+          assert.equal(${standalone},true);
+          assert.deepEqual(args,['bootstrap','--command-only','--host','linux']);
+          assert.equal(options.user,'alice'); assert.equal(options.cwd,join(checkout,'winix'));
+          return '';
+        }
         if(${standalone}) assert.deepEqual(args,[]);
         preparedAt=options.cwd;return 'WINIX_PLAN:'+JSON.stringify({user:'alice',home,checkout,host:'linux'});
       }
@@ -453,6 +459,7 @@ try {
     assert.equal(await fs.readFile(join(directory,'state','complete'),'utf8'),'test-fingerprint\\nalice\\n'+checkout+'\\n');
     for(const call of calls.filter(call=>['git','npm',process.execPath].includes(call.command))) assert.ok(call.options.user);
     if(${standalone}) assert.equal(calls.some(call=>call.command==='npm'),false);
+    assert.equal(calls.some(call=>call.args[0]==='bootstrap'),${standalone});
     await assert.rejects(runWslSetup({...request,fingerprint:'changed'},options),/Conflicting/);
   }
   const locked = join(root,'locked');

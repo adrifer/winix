@@ -118,7 +118,7 @@ export function wslSetupPrelude(
       'nix build --no-write-lock-file --out-link "$directory/compiler" github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#stdenv.cc.cc.lib',
       'mv -fT -- "$destination" "$directory/winix.bin"',
       'destination=$(mktemp "$directory/launch.XXXXXX")',
-      'printf \'#!/usr/bin/env bash\\nset -euo pipefail\\nexport WINIX_STANDALONE_EXECUTABLE=%q\\nexec %q --argv0 %q --library-path %q %q "$@"\\n\' "$directory/winix" "$directory/libc/lib/$linker" "$directory/winix.bin" "$directory/libc/lib:$directory/compiler/lib" "$directory/winix.bin" > "$destination"',
+      'printf \'#!/usr/bin/env bash\\nset -euo pipefail\\nexport WINIX_STANDALONE_EXECUTABLE=%q\\nexec %q --argv0 %q --library-path %q %q "$@"\\n\' "$directory/winix" "$directory/libc/lib/$linker" "$directory/winix.bin" "$directory/libc/lib:$directory/compiler-lib/lib" "$directory/winix.bin" > "$destination"',
       'chmod 755 -- "$destination"; mv -fT -- "$destination" "$directory/winix"',
       'nix shell --no-write-lock-file github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#git --command "$directory/winix"',
     ];

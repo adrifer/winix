@@ -316,6 +316,17 @@ function Save-WinixVerifiedDownload {
     }
 }
 
+# host/owner/repo for HTTPS and SSH Git URLs, so an SSH clone of the same repository is reused.
+function Get-WinixRepositoryIdentity([string]$Url) {
+    $value = $Url.Trim()
+    if ($value -match '^(?:ssh://)?git@([^:/]+)[:/](.+)$') { $hostPart = $Matches[1]; $pathPart = $Matches[2] }
+    elseif ($value -match '^https://([^/@?#]+)/(.+)$') { $hostPart = $Matches[1]; $pathPart = $Matches[2] }
+    else { return $value }
+    $pathPart = $pathPart.TrimEnd('/')
+    if ($pathPart.EndsWith('.git')) { $pathPart = $pathPart.Substring(0, $pathPart.Length - 4) }
+    return ($hostPart + '/' + $pathPart).ToLowerInvariant()
+}
+
 function Invoke-WinixRepositoryBootstrap {
     param(
         [string]$Repository, [string]$Ref = 'main', [string]$Destination = (Join-Path $HOME 'dotfiles'), [string]$ConfigDirectory = 'winix',
@@ -374,8 +385,9 @@ function Invoke-WinixRepositoryBootstrap {
     }
     if (-not (Test-Path -LiteralPath (Join-Path $Destination '.git') -PathType Container)) { throw 'Existing destination is not a regular Git checkout; refusing adoption.' }
     Assert-WinixBootstrapDirectory (Join-Path $Destination '.git')
-    if (((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'remote', 'get-url', 'origin')) -join '').Trim() -ne $Repository) {
-        throw 'Existing checkout has a different origin; refusing to change it.'
+    $origin = ((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'remote', 'get-url', 'origin')) -join '').Trim()
+    if ((Get-WinixRepositoryIdentity $origin) -ne (Get-WinixRepositoryIdentity $Repository)) {
+        throw "Existing checkout has a different origin ($origin); refusing to change it."
     }
     if ((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'status', '--porcelain', '--untracked-files=normal'))) {
         # Linked app settings change in the checkout (Terminal rewrites settings.json), so a rerun after a restart

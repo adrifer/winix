@@ -1,11 +1,11 @@
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import {
-  bootstrapCheckout, ensureWindowsRuntime, localWinixCommand, nodeTypeArguments, pinnedWinixVersion,
+  bootstrapCheckout, ensureLinuxRuntime, ensureWindowsRuntime, installLinuxCommand, linuxLauncher, localWinixCommand, nodeTypeArguments, pinnedWinixVersion,
   userPathScript, windowsCommandShim, windowsLauncher, type BootstrapDeps,
 } from "../src/cli/commands/bootstrap.ts";
 import { readRememberedHost } from "../src/cli/host-memory.ts";
@@ -13,6 +13,7 @@ import { selectHost } from "../src/cli/commands/switch.ts";
 import { resolveWinixVersionRange } from "../src/cli/commands/init.ts";
 import { execFileSync } from "node:child_process";
 import { checkoutWslRevision } from "../src/backends/windows/wsl-setup-runtime.ts";
+import * as runtime from "../src/runtime.ts";
 
 const temporary: string[] = [];
 afterEach(async () => {
@@ -233,4 +234,93 @@ describe("checkout-pinned bootstrap", () => {
       }
     }, 15000,
   );
+});
+
+describe("Linux standalone runtime and command", () => {
+  const verified = (data: string) => {
+    const binary = Buffer.from(data);
+    const sum = createHash("sha256").update(binary).digest("hex");
+    return vi.fn(async (url: string | URL | Request) => String(url).endsWith("SHA256SUMS")
+      ? new Response(`${sum}  winix-linux-x64\n${sum}  winix-linux-arm64\n`) : new Response(binary)) as unknown as typeof fetch;
+  };
+
+  it("downloads the verified Linux binary behind a wrapper, checks its version and prunes older ones", async () => {
+    const directory = await fixture("0.3.0");
+    const runtime = join(directory, ".winix", "runtime");
+    for (const version of ["0.2.9", "0.3.0", "0.3.1"]) await mkdir(join(runtime, version), { recursive: true });
+    await mkdir(join(directory, ".winix", "bin"), { recursive: true });
+    await writeFile(join(directory, ".winix", "bin", "winix"), linuxLauncher(join(runtime, "0.2.9", "winix")));
+    const request = verified("linux winix");
+    const exec = vi.fn((command: string, args: string[]) => args[0] === "--version" ? "0.3.2\n" : "");
+    const wrapper = await ensureLinuxRuntime(directory, "0.3.2", request, "x64", join(runtime, "0.3.0", "winix"), false, exec);
+    const binary = join(runtime, "0.3.2", "winix.bin");
+    expect(wrapper).toBe(join(runtime, "0.3.2", "winix"));
+    expect(readFileSync(binary, "utf8")).toBe("linux winix");
+    expect(readFileSync(wrapper, "utf8")).toContain(`exec '${binary}' "$@"`);
+    expect(readFileSync(wrapper, "utf8")).toContain(`export WINIX_STANDALONE_EXECUTABLE='${wrapper}'`);
+    expect(exec.mock.calls).toEqual([[wrapper, ["--version"]]]);
+    expect(vi.mocked(request).mock.calls.map(([url]) => String(url))).toEqual([
+      "https://github.com/adrifer/winix/releases/download/v0.3.2/SHA256SUMS",
+      "https://github.com/adrifer/winix/releases/download/v0.3.2/winix-linux-x64",
+    ]);
+    // Kept: the running one (0.3.0), the launcher fallback (0.2.9) and the new one.
+    expect(readdirSync(runtime).sort()).toEqual(["0.2.9", "0.3.0", "0.3.2"]);
+    // Ready: reused without downloading or running anything again.
+    await ensureLinuxRuntime(directory, "0.3.2", request, "x64", wrapper, false, exec);
+    expect(vi.mocked(request)).toHaveBeenCalledTimes(2);
+    expect(exec).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts the binary through the pinned Nix loader on NixOS and refuses a wrong version", async () => {
+    const directory = await fixture("0.3.0");
+    const folder = join(directory, ".winix", "runtime", "0.3.2");
+    const exec = vi.fn((command: string, args: string[]) => args[0] === "--version" ? "0.3.2" : "");
+    const wrapper = await ensureLinuxRuntime(directory, "0.3.2", verified("nixos winix"), "arm64", "/elsewhere/winix", true, exec);
+    expect(exec.mock.calls.slice(0, 2)).toEqual([
+      ["nix", ["build", "--no-write-lock-file", "--out-link", join(folder, "libc"), "github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#glibc.out"]],
+      ["nix", ["build", "--no-write-lock-file", "--out-link", join(folder, "compiler"), "github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f#stdenv.cc.cc.lib"]],
+    ]);
+    const content = readFileSync(wrapper, "utf8");
+    expect(content).toContain(`exec '${join(folder, "libc", "lib", "ld-linux-aarch64.so.1")}' '--argv0' '${join(folder, "winix.bin")}'`);
+    expect(content).toContain(`'--library-path' '${join(folder, "libc", "lib")}:${join(folder, "compiler-lib", "lib")}'`);
+
+    const other = await fixture("0.3.0");
+    await expect(ensureLinuxRuntime(other, "0.3.2", verified("x"), "x64", "/elsewhere/winix", false, () => "0.3.1"))
+      .rejects.toThrow("reports 0.3.1, expected 0.3.2");
+    await expect(ensureLinuxRuntime(other, "0.3.2", verified("x"), "ia32")).rejects.toThrow("No standalone Winix release");
+  });
+
+  it("installs ~/.local/bin/winix, hints when it is not on PATH, and never overwrites a foreign file", async () => {
+    const home = await mkdtemp(join(tmpdir(), "winix-home-"));
+    temporary.push(home);
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const bin = join(home, ".local", "bin");
+    const shim = await installLinuxCommand("/home/me/dotfiles/winix/.winix/bin/winix", home, "/usr/bin");
+    expect(shim).toBe(join(bin, "winix"));
+    expect(readFileSync(shim, "utf8")).toBe(`#!/usr/bin/env bash\n# Generated by Winix bootstrap\nexec '/home/me/dotfiles/winix/.winix/bin/winix' "$@"\n`);
+    expect(log.mock.calls.at(-1)?.[0]).toContain("~/.local/bin is not on PATH");
+    await installLinuxCommand("/other/launcher", home, `/usr/bin${delimiter}${bin}/`);
+    expect(log.mock.calls.at(-1)?.[0]).not.toContain("not on PATH");
+    await writeFile(shim, "#!/bin/sh\necho mine\n");
+    await expect(installLinuxCommand("/x", home, "")).rejects.toThrow("unrecognized winix command");
+  });
+
+  it("--command-only remembers the host and installs the command without evaluating anything", async () => {
+    const directory = await fixture("0.1.0");
+    const run = vi.fn(async () => {});
+    const deps: BootstrapDeps = {
+      candidateHosts: vi.fn(async () => []), askHost: vi.fn(async () => ""), installCommand: vi.fn(async () => {}),
+    };
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    await expect(bootstrapCheckout(directory, { host: "wsl", yes: false, prepareOnly: false, dry: false, commandOnly: true }, run, deps))
+      .rejects.toThrow("needs the standalone Winix executable");
+    vi.spyOn(runtime, "standaloneRuntime").mockReturnValue({ version: "0.3.0", linuxAssets: {} } as ReturnType<typeof runtime.standaloneRuntime>);
+    await bootstrapCheckout(directory, { host: "wsl", yes: false, prepareOnly: false, dry: false, commandOnly: true }, run, deps);
+    expect(run).not.toHaveBeenCalled();
+    expect(deps.candidateHosts).not.toHaveBeenCalled();
+    expect(readRememberedHost(directory)).toBe("wsl");
+    const launcher = join(directory, ".winix", "bin", process.platform === "win32" ? "winix.ps1" : "winix");
+    expect(existsSync(launcher)).toBe(true);
+    expect(deps.installCommand).toHaveBeenCalledWith(launcher);
+  });
 });

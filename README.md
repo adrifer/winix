@@ -167,7 +167,8 @@ boundary; they are not signatures.
 
 It asks **one** question, listing everything it will do (clone, prerequisites,
 the pinned Winix download, running the config, applying the host); after that
-only UAC prompts and removal confirmations interrupt. Without `-HostName`, Winix
+only UAC prompts (sudo on Linux) and removal confirmations interrupt.
+`bootstrap-linux.sh` behaves the same way. Without `-HostName`/`--host`, Winix
 lists the declared hosts for this kind of machine (or picks the only one, or the
 one matching the computer name) and remembers the choice in the checkout's
 ignored `.winix\host`, so later `winix switch` runs need no `--host`, even on a
@@ -186,8 +187,7 @@ powershell -ExecutionPolicy Bypass -File $env:TEMP\setup.ps1
 
 ```bash
 bash bootstrap-linux.sh --repository https://github.com/example/dotfiles.git \
-  --ref main --destination "$HOME/dotfiles" --config-directory winix \
-  --host linux-desktop --prepare-only
+  --ref main --destination "$HOME/dotfiles" --config-directory winix
 ```
 
 Windows needs App Installer/WinGet initially. It ensures Git, makes a regular
@@ -212,7 +212,7 @@ prerequisite installation, or config evaluation. `-PrepareOnly` / `--prepare-onl
 allows those preparation steps, then runs `check` and `switch --dry` but stops
 before activation. Config evaluation can itself run arbitrary code, so the one
 confirmation comes **before** anything is evaluated. `-Yes` / `--yes` accepts
-it noninteractively (then pass `-HostName`), and also managed removals.
+it noninteractively (then pass `-HostName`/`--host`), and also managed removals.
 Running `winix bootstrap` directly (not through the script) keeps its separate
 questions before evaluation and before activation.
 Host selection does not rename the machine. Reboot/WSL shutdown are manual.
@@ -226,19 +226,24 @@ Updating an existing checkout is an explicit Git operation, not a bootstrap side
 
 For ongoing use, bootstrap writes `.winix/bin/winix.ps1` (Windows) or
 `.winix/bin/winix` (Linux). These call `winix run <args>` from the config
-directory. On Windows it also installs a per-user `winix` command
-(`%LOCALAPPDATA%\Winix\bin\winix.cmd`, added to the user PATH without
-elevation, keeping `%VAR%` entries intact) that runs this launcher from any
-folder:
+directory. Bootstrap also installs a per-user `winix` command that runs this
+launcher from any folder:
 
-```powershell
-winix switch          # the remembered host
-winix plan
-```
+- Windows: `%LOCALAPPDATA%\Winix\bin\winix.cmd`, added to the user PATH without
+  elevation (keeping `%VAR%` entries intact).
+- Linux: `~/.local/bin/winix`. PATH is left to your shell or Home Manager
+  config (for example `home.path(nix.homePath(".local/bin"))`); bootstrap
+  prints a hint when it is missing.
+
+Inside a NixOS-WSL distro created by Windows WSL setup, setup installs the same
+command for the Linux user. For an existing distro, run `bootstrap-linux.sh`
+there, or `winix bootstrap --command-only --host <linux-host>` from its config
+directory with a standalone Winix: that only remembers the host and installs
+the command, without evaluating anything.
 
 ```bash
-./.winix/bin/winix check
-./.winix/bin/winix switch --host linux-desktop
+winix switch          # the remembered host, on Windows or Linux
+winix plan
 ```
 
 The launcher rereads the manifest on every invocation. If an optional
@@ -246,11 +251,14 @@ The launcher rereads the manifest on every invocation. If an optional
 the launcher uses its own CLI/SDK under supported Node 22.13+, 24 or 26. Install dependencies
 explicitly with `npm ci` using an approved npm source; bootstrap never does it.
 Existing `npm run` scripts also use that local CLI, without a global installation.
-Without the npm SDK, the standalone executable must match the pin. On Windows,
-when the pin changes, `winix run` downloads that exact release's executable
-into `.winix\runtime\<version>` (checked against its `SHA256SUMS` before it
-runs) and the launcher uses it from then on; older downloaded versions are
-removed, keeping the one the launcher falls back to. Elsewhere, rerun bootstrap.
+Without the npm SDK, the standalone executable must match the pin. When the pin
+changes, `winix run` downloads that exact release's executable into
+`.winix/runtime/<version>`, checked against its `SHA256SUMS` before it runs. On
+Linux it sits behind a wrapper that must report that version (using the pinned
+Nix loader on NixOS). The launcher uses it from then on, and older downloaded
+versions are removed, keeping the one the launcher falls back to. On Windows,
+Linux and WSL an update is therefore just `git pull` and `winix switch`. macOS
+has no standalone executable yet; use the npm route there.
 A stale/corrupt local installation is an error, never a silent standalone
 fallback: run `npm ci`, or delete `node_modules` to use the downloaded release.
 
