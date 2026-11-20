@@ -1089,8 +1089,10 @@ including when the new identity already shares a resource. The next switch still
 enforces conflicts, drift and removal confirmation. `state forget` deliberately
 retains owner requirements and is not an alternative to identity migration.
 
-If existing owned resources would be removed, `switch` lists them and requires
-confirmation (`Continue with switch? [y/N]`) before activation. Declining or
+If existing owned resources would be removed, the plan lists them (`- remove`,
+with a data-loss note only for package uninstalls) and `switch` requires
+confirmation (`Remove the item(s) marked "- remove" and continue? [y/N]`) before
+activation. Reported durations exclude time spent at prompts. Declining or
 closing the prompt cancels the entire switch. `--yes`/`-y` accepts removals for
 automation and is required for noninteractive switches with removals. Dry runs,
 switches without removals, and cleanup of already absent resources do not prompt.

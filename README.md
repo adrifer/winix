@@ -1284,23 +1284,22 @@ would change, checked against the current machine. It never installs or writes
 anything:
 
 ```text
-Plan for desktop: 5 changes, 47 unchanged
+Plan for desktop: 5 changes, 1 removal, 47 unchanged
   + install  DEVCOM.JetBrainsMonoNerdFont                  3.3.0                [admin]
   ~ upgrade  Git.Git                                       2.55.0.3 → 2.56.0.4  [admin]
   ~ upgrade  JesseDuffield.lazygit                         0.64.0 → 0.66.1      [running]
   ~ apply    link localAppData\nvim -> ../nvim/.config/nvim
   ~ apply    Enable Windows features Microsoft-Windows-Subsystem-Linux, VirtualMachinePlatform  [admin]
+  - remove   Old.App (winget package)                      no longer declared; uninstalls it
   = 47 unchanged (30 packages, 12 files, 2 settings, ...)
   i 3 packages newer than locked (kept; switch offers to update the lock): Microsoft.PowerShell, ...
 
   ! Switch asks once for administrator approval (UAC) for the 3 [admin] rows (Git.Git: installed machine-wide; DEVCOM.JetBrainsMonoNerdFont: no per-user installer).
   ! Close lazygit.exe (pid 12156) before switching: winget cannot upgrade a running portable app (JesseDuffield.lazygit), and a failed upgrade can remove its command.
+  ! Uninstalling a package can remove its application data.
   ! Enable Windows features ... can require a Windows restart; Winix never restarts Windows.
 
-Removals and ownership (Winix applied-state inventory):
-  Would remove: ["package","winget","old.app"]
-
-winix switch would apply only these 5 changes.
+winix switch would apply only these 5 changes, and remove the item marked "- remove" (after asking).
 ```
 
 `winix switch` makes the same plan and then applies **only what is out of
@@ -1437,8 +1436,11 @@ preserved; other owners stay recorded. The next switch still enforces shared
 requirements, drift checks and removal confirmation. Migration requires `--yes`
 unless previewing with `--dry`; old owners are never discarded automatically.
 
-When packages or startup shortcuts would be removed, `switch` lists them and asks
-`Continue with switch? [y/N]` before activation. Declining or closing the prompt
+When packages or startup entries Winix created are no longer declared, the plan
+lists them as `- remove` rows and `switch` asks
+`Remove the item(s) marked "- remove" and continue? [y/N]` before activation.
+Resources that are no longer declared but that Winix did not create are listed
+with `i` and left alone. Declining or closing the prompt
 cancels the whole switch without activation or cleanup. Switches without removals
 and `--dry` do not prompt. Use `winix switch --yes` (or `-y`) to accept removals
 for automation; noninteractive switches with removals require this flag.

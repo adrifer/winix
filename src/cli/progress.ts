@@ -23,6 +23,9 @@ export function isInteractive(): boolean {
   return interactive();
 }
 
+/** Time spent waiting at interactive prompts, left out of reported durations. */
+export const promptTime = { waited: 0 };
+
 export function formatDuration(ms: number): string {
   if (ms < 10_000) return `${(ms / 1000).toFixed(1)}s`;
   const seconds = Math.round(ms / 1000);

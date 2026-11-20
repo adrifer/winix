@@ -187,7 +187,14 @@ const CATEGORY_NAMES: Record<WindowsResourceCategory, [string, string]> = {
 };
 
 const MARKERS: Record<PlanState, string> = { ok: "=", change: "~", conflict: "!", unknown: "?" };
-const MARKER_STYLES: Record<string, Style> = { "+": "green", "~": "yellow", "!": "red", "?": "cyan", "=": "dim" };
+const MARKER_STYLES: Record<string, Style> = { "+": "green", "~": "yellow", "!": "red", "?": "cyan", "=": "dim", "-": "red" };
+
+/** A resource Winix created that is no longer declared, as the plan shows it. */
+export interface PlanRemoval {
+  label: string;
+  /** Removing it uninstalls a package. */
+  package?: boolean;
+}
 /** Longest label that still sets the column width; longer ones just overflow it. */
 const LABEL_COLUMN = 44;
 const DETAIL_COLUMN = 28;
@@ -197,7 +204,14 @@ const DETAIL_COLUMN = 28;
  * `color` adds ANSI styling (interactive terminals only).
  */
 export function formatWindowsPlan(
-  host: string, planned: PlannedResource[], opts: { live: boolean; reason?: string; color?: boolean },
+  host: string, planned: PlannedResource[],
+  opts: {
+    live: boolean; reason?: string; color?: boolean;
+    /** Created by Winix, no longer declared: switch removes them. */
+    removals?: PlanRemoval[];
+    /** No longer declared but not created by Winix: left as they are. */
+    untouched?: string[];
+  },
 ): string[] {
   const paint = painter(opts.color === true);
   if (!opts.live) {
@@ -213,7 +227,9 @@ export function formatWindowsPlan(
 
   const count = (state: PlanState) => planned.filter((entry) => entry.state === state).length;
   const changes = count("change");
+  const removals = opts.removals ?? [];
   const parts = [changes === 0 ? "no changes" : plural(changes, "change")];
+  if (removals.length > 0) parts.push(plural(removals.length, "removal"));
   if (count("conflict") > 0) parts.push(plural(count("conflict"), "conflict"));
   if (count("unknown") > 0) parts.push(`${count("unknown")} not checked`);
   parts.push(`${count("ok")} unchanged`);
@@ -231,6 +247,12 @@ export function formatWindowsPlan(
       ...(entry.running?.length ? [paint("red", "[running]")] : []),
     ].join(" "),
   }));
+  for (const removal of removals) {
+    rows.push({
+      marker: "-", action: "remove", label: removal.label,
+      detail: removal.package ? "no longer declared; uninstalls it" : "no longer declared", tags: "",
+    });
+  }
   const width = (values: string[], cap: number) => Math.min(cap, Math.max(0, ...values.map((value) => value.length)));
   const actionWidth = width(rows.map((row) => row.action), Infinity);
   const labelWidth = width(rows.map((row) => row.label), LABEL_COLUMN);
@@ -248,6 +270,10 @@ export function formatWindowsPlan(
   const unchanged = planned.filter((entry) => entry.state === "ok");
   if (unchanged.length > 0) {
     lines.push(paint("dim", `  = ${unchanged.length} unchanged (${countByCategory(unchanged.map((entry) => entry.resource))})`));
+  }
+  if (opts.untouched?.length) {
+    lines.push(`  ${paint("cyan", "i")} ${plural(opts.untouched.length, "resource")} no longer declared but not created by Winix, so left as ${opts.untouched.length === 1 ? "it is" : "they are"}: ` +
+      opts.untouched.join(", "));
   }
   const newer = unchanged.filter((entry) => entry.resource.package && entry.detail?.includes("switch offers"));
   if (newer.length > 0) {
@@ -268,6 +294,9 @@ export function formatWindowsPlan(
     const processes = entry.running!.map((process) => `${process.name} (pid ${process.pid})`).join(", ");
     notes.push(`Close ${processes} before switching: winget cannot upgrade a running portable app ` +
       `(${entry.resource.package!.id}), and a failed upgrade can remove its command.`);
+  }
+  if (removals.some((removal) => removal.package)) {
+    notes.push("Uninstalling a package can remove its application data.");
   }
   const reboot = pending.filter((entry) => entry.resource.reboot);
   if (reboot.length > 0) {

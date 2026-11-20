@@ -7,7 +7,8 @@ import { standaloneRuntime } from "../../runtime.ts";
 import { createHash } from "node:crypto";
 import type { WindowsOptions } from "../../types/index.ts";
 import {
-  inspectResources, managedWindowsResources, nativeWindowsStateAdapter, reconcileWindows,
+  inspectResources, managedResourceLabel, managedWindowsResources, nativeWindowsStateAdapter, reconcileWindows,
+  type ManagedResource, type PlannedRemoval,
   resourceKey, windowsStatePath, windowsStateOwner,
   withWindowsStateLock,
   type ResourceSnapshot,
@@ -169,14 +170,24 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
           entry.detail = `${kept.installed} (locked ${kept.locked}; switch offers to update the lock)`;
         }
       }
-      console.log("");
-      for (const line of formatWindowsPlan(hostName, planned, {
-        live, reason: live ? undefined : "machine checks need native Windows", color: colorEnabled(),
-      })) console.log(line);
     } else if (command) {
       console.log(`\nRunning: ${command.join(" ")}`);
     }
-    const ownership: string[] = [];
+    let removalCount = 0;
+    /** The plan, with what reconciliation would remove (known only on native Windows). */
+    const printPlan = (removals: PlannedRemoval[] = [], untouched: ManagedResource[] = []) => {
+      const present = removals.filter((removal) => removal.present);
+      removalCount = present.length;
+      console.log("");
+      for (const line of formatWindowsPlan(hostName, planned, {
+        live, reason: live ? undefined : "machine checks need native Windows", color: colorEnabled(),
+        removals: present.map((removal) => ({
+          label: managedResourceLabel(removal.resource), package: removal.resource.kind === "package",
+        })),
+        untouched: untouched.map(managedResourceLabel),
+      })) console.log(line);
+    };
+    if (platform === "windows" && !statePath) printPlan();
     const activate = async (): Promise<void | { changed: boolean }> => {
       if (statePath && !opts.dry) {
         const running = new Map<string, RunningProcess[]>(planned.flatMap((entry) =>
@@ -231,7 +242,7 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
         knownSnapshots,
         activate,
         verify: (work) => progress.step("Verifying the result", work, `Verified ${plural(desired.length, "managed resource")}`),
-        ...(windowsDry ? { report: (message: string) => ownership.push(message) } : {}),
+        preview: ({ removals, untouched }) => printPlan(removals, untouched),
       });
       if (!opts.dry && lock && after) {
         let expected = serializeWindowsLock(lock);
@@ -262,11 +273,7 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
       await activate();
     }
     if (windowsDry) {
-      if (ownership.length > 0) {
-        console.log("\nRemovals and ownership (Winix applied-state inventory):");
-        for (const line of ownership) console.log(`  ${line}`);
-      }
-      console.log(`\n${dryRunSummary(planned, live)}`);
+      console.log(`\n${dryRunSummary(planned, live, removalCount)}`);
     } else if (opts.dry && command) {
       console.log(`\nWould run: ${command.join(" ")}`);
     }
@@ -275,12 +282,13 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
   else await performSwitch();
   if (platform === "windows") {
     for (const line of wslNextSteps(workspace, evaluated, selected)) console.log(line);
-    if (!opts.dry && statePath) console.log(`\nDone in ${progress.formatDuration(Date.now() - started)}.`);
+    // Time spent answering prompts is not switch's.
+    if (!opts.dry && statePath) console.log(`\nDone in ${progress.formatDuration(Date.now() - started - progress.promptTime.waited)}.`);
   }
 }
 
 /** The last line of a Windows dry run, consistent with the plan header's counts. */
-export function dryRunSummary(planned: PlannedResource[], live = true): string {
+export function dryRunSummary(planned: PlannedResource[], live = true, removals = 0): string {
   if (!live) {
     return `winix switch on that Windows machine would check ${planned.length === 1 ? "this resource" : `these ${planned.length} resources`} and apply only what is out of date.`;
   }
@@ -288,11 +296,15 @@ export function dryRunSummary(planned: PlannedResource[], live = true): string {
   const unchecked = planned.filter((entry) => entry.state === "unknown").length;
   const conflicts = planned.filter((entry) => entry.state === "conflict").length;
   if (conflicts > 0) return `winix switch would stop before changing anything: resolve the ${plural(conflicts, "conflict")} first.`;
-  if (changes === 0 && unchecked === 0) return "winix switch would change nothing.";
-  const apply = changes === 0 ? "would apply nothing" : `would apply only ${changes === 1 ? "this change" : `these ${changes} changes`}`;
-  const check = unchecked === 0 ? ""
-    : `, and check ${unchecked === 1 ? "the unchecked one" : `the ${unchecked} unchecked ones`} as it applies (applying ${unchecked === 1 ? "it" : "them"} if needed)`;
-  return `winix switch ${apply}${check}.`;
+  if (changes === 0 && unchecked === 0 && removals === 0) return "winix switch would change nothing.";
+  const parts: string[] = [];
+  if (changes > 0) parts.push(`apply only ${changes === 1 ? "this change" : `these ${changes} changes`}`);
+  if (removals > 0) parts.push(`remove ${removals === 1 ? "the item" : `the ${removals} items`} marked "- remove" (after asking)`);
+  if (unchecked > 0) {
+    parts.push(`check ${unchecked === 1 ? "the unchecked one" : `the ${unchecked} unchecked ones`} as it applies (applying ${unchecked === 1 ? "it" : "them"} if needed)`);
+  }
+  if (changes === 0 && removals === 0) parts.unshift("apply nothing");
+  return `winix switch would ${parts.length > 1 ? `${parts.slice(0, -1).join(", ")}, and ${parts.at(-1)}` : parts[0]}.`;
 }
 
 /**

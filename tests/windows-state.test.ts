@@ -21,7 +21,7 @@ async function withConfirmation(answer: string, run: () => Promise<void>) {
   vi.stubGlobal("process", { ...process, stdin: { isTTY: true }, stdout: { isTTY: true } });
   try {
     await run();
-    expect(question).toHaveBeenCalledWith("Continue with switch? [y/N] ", expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(question).toHaveBeenCalledWith(expect.stringMatching(/^Remove the (item|\d+ items) marked "- remove" and continue\? \[y\/N\] $/), expect.objectContaining({ signal: expect.any(AbortSignal) }));
   } finally {
     prompt.close();
     question.mockRestore();

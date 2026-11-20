@@ -1225,8 +1225,15 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
       expect(JSON.parse(await readFile(windowsState.path, "utf8")).entries[key].owned).toBe(true);
       const loaded = await loadWorkspace(dir);
       loaded.workspace.hosts[0] = host("desktop", platforms.windows(), []);
+      logs.mockClear();
       await switchCommand(dir, { dry: true, windowsState, windowsRunner: fake.runner });
       expect(remove).not.toHaveBeenCalled();
+      // The removal is part of the plan, labelled like everything else.
+      const label = { startup: "Startup shortcut probe", "startup-app": "Startup app probe (sign-in task)", package: "Example.App (winget package)" }[kind];
+      const dryOutput = logs.mock.calls.flat().join("\n");
+      expect(dryOutput).toContain(`  - remove  ${label}  no longer declared${kind === "package" ? "; uninstalls it" : ""}`);
+      expect(dryOutput).toContain('winix switch would remove the item marked "- remove" (after asking).');
+      expect(dryOutput).not.toContain('["');
       vi.stubGlobal("process", { ...process, stdin: { isTTY: false }, stdout: { isTTY: false } });
       try {
         await expect(switchCommand(dir, { dry: false, windowsState, windowsRunner: fake.runner })).rejects.toThrow("use --yes");

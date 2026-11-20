@@ -1,4 +1,5 @@
 import { createInterface } from "node:readline/promises";
+import { promptTime } from "./progress.ts";
 
 /** Only dotted numeric versions have an unambiguous ordering across Windows installers. */
 export function isComparableWindowsPackageVersion(version: string): boolean {
@@ -47,10 +48,11 @@ export async function confirmWindowsPackageLockUpdate(id: string, installed: str
   prompt.once("close", () => controller.abort());
   prompt.once("SIGINT", () => controller.abort());
   try {
+    const started = Date.now();
     const answer = await prompt.question(
       `${id}: installed ${installed}, locked ${locked}. Update winix-windows.lock to ${installed}? [y/N] `,
       { signal: controller.signal },
-    );
+    ).finally(() => { promptTime.waited += Date.now() - started; });
     return /^(y|yes)$/i.test(answer.trim());
   } finally {
     prompt.close();

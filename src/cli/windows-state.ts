@@ -8,6 +8,7 @@ import type { EvaluatedHost } from "../evaluator/index.ts";
 import type { WindowsOptions } from "../types/index.ts";
 import { powerShellLiteral } from "../helpers/utils.ts";
 import { captureCommand, runCommand } from "./run.ts";
+import { promptTime } from "./progress.ts";
 import {
   compareWindowsPackageVersions, effectiveWindowsPackageVersion, isComparableWindowsPackageVersion,
   type WindowsPackageRequirement,
@@ -84,6 +85,28 @@ export interface ReconcileOptions {
   knownSnapshots?: ReadonlyMap<string, ResourceSnapshot>;
   /** Wraps the post-activation inventory (progress output). */
   verify?<T>(work: () => Promise<T>): Promise<T>;
+  /**
+   * Receives the planned removals before anything is confirmed or applied, so
+   * the caller can show them in its plan. When given, reconcile does not
+   * report them line by line.
+   */
+  preview?(plan: { removals: PlannedRemoval[]; untouched: ManagedResource[] }): void;
+}
+
+/** A resource Winix created that is no longer declared. */
+export interface PlannedRemoval {
+  resource: ManagedResource;
+  /** false: already gone; only the record is dropped. */
+  present: boolean;
+}
+
+/** How a managed resource reads in plans and messages. */
+export function managedResourceLabel(resource: ManagedResource): string {
+  switch (resource.kind) {
+    case "package": return `${resource.id} (${resource.source} package)`;
+    case "startup": return `Startup shortcut ${resource.name}`;
+    case "startup-app": return `Startup app ${resource.name} (sign-in task)`;
+  }
 }
 
 export function resourceKey(resource: ManagedResource): string {
@@ -328,7 +351,7 @@ export async function forgetWindowsResource(
   });
 }
 
-export async function confirmWindowsRemovals(yes = false): Promise<void> {
+export async function confirmWindowsRemovals(yes = false, count = 1): Promise<void> {
   if (yes) return;
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error("Switch requires removal confirmation. Preview with switch --dry, then use --yes for noninteractive execution.");
@@ -338,7 +361,10 @@ export async function confirmWindowsRemovals(yes = false): Promise<void> {
   prompt.once("close", () => controller.abort());
   prompt.once("SIGINT", () => controller.abort());
   try {
-    const answer = await prompt.question("Continue with switch? [y/N] ", { signal: controller.signal });
+    const started = Date.now();
+    const answer = await prompt.question(
+      `Remove ${count === 1 ? "the item" : `the ${count} items`} marked "- remove" and continue? [y/N] `, { signal: controller.signal },
+    ).finally(() => { promptTime.waited += Date.now() - started; });
     if (!/^(y|yes)$/i.test(answer.trim())) {
       throw new Error("Switch cancelled. No activation or removal was performed.");
     }
@@ -416,6 +442,7 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<Readonly
       }
     }
     const removals: [string, Entry, ResourceSnapshot][] = [];
+    const untouched: ManagedResource[] = [];
     const candidates: [string, Entry][] = [];
     for (const [key, entry] of Object.entries(state.entries)) {
       if (!entry.owners.includes(opts.owner) && entry.owners.length > 0) continue;
@@ -429,7 +456,8 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<Readonly
     );
     for (const [key, entry] of candidates) {
       if (!entry.owned) {
-        report(`Leaving externally owned resource untouched: ${key}`);
+        untouched.push(entry.resource);
+        if (!opts.preview) report(`Leaving externally owned resource untouched: ${key}`);
         continue;
       }
       const current = removable.get(key) ?? null;
@@ -439,16 +467,23 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<Readonly
       if (current !== null && !sameIgnoringAnyVersion(entry, current)) {
         throw new Error(`Refusing to remove externally modified resource: ${key}. Resolve ownership explicitly.`);
       }
-      report(`${current === null ? "Already absent" : opts.dry ? "Would remove" : "Planned removal"}: ${key}`);
+      if (!opts.preview) report(`${current === null ? "Already absent" : opts.dry ? "Would remove" : "Planned removal"}: ${key}`);
       removals.push([key, entry, current]);
     }
+    opts.preview?.({
+      removals: removals.map(([, entry, current]) => ({ resource: entry.resource, present: current !== null })),
+      untouched,
+    });
     if (opts.dry) {
       await opts.activate();
       return undefined;
     }
-    if (removals.some(([, , current]) => current !== null)) {
-      report("Package uninstallers may remove application data.");
-      await confirmWindowsRemovals(opts.yes);
+    const present = removals.filter(([, , current]) => current !== null);
+    if (present.length > 0) {
+      if (!opts.preview && present.some(([, entry]) => entry.resource.kind === "package")) {
+        report("Package uninstallers may remove application data.");
+      }
+      await confirmWindowsRemovals(opts.yes, present.length);
     }
     const outcome = await opts.activate();
     // Capture all desired outcomes before committing any new ownership.
@@ -519,7 +554,7 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<Readonly
       }
       delete state.entries[key];
       await saveState(opts.statePath, state);
-      report(`Removed: ${key}`);
+      report(opts.preview ? `  ✓ removed ${managedResourceLabel(entry.resource)}` : `Removed: ${key}`);
     }
     for (const [key, entry] of Object.entries(state.entries)) {
       if (!entry.owned && entry.owners.length === 0) delete state.entries[key];

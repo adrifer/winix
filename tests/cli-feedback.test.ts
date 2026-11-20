@@ -199,6 +199,24 @@ describe("Windows plan", () => {
     ]);
   });
 
+  it("shows removals in the plan, warning only when a package would be uninstalled", async () => {
+    const planned = await planWindowsResources([pkg("Same.App", "1.0")], new Map([["Same.App", { version: "1.0" }]]), undefined);
+    const shortcuts = formatWindowsPlan("desktop", planned, {
+      live: true, removals: [{ label: "Startup shortcut komorebi" }, { label: "Startup shortcut whkd" }],
+      untouched: ["Old.Tool (winget package)"],
+    });
+    expect(shortcuts).toEqual([
+      "Plan for desktop: no changes, 2 removals, 1 unchanged",
+      "  - remove  Startup shortcut komorebi  no longer declared",
+      "  - remove  Startup shortcut whkd      no longer declared",
+      "  = 1 unchanged (1 package)",
+      "  i 1 resource no longer declared but not created by Winix, so left as it is: Old.Tool (winget package)",
+    ]);
+    const packages = formatWindowsPlan("desktop", planned, { live: true, removals: [{ label: "Old.App (winget package)", package: true }] });
+    expect(packages).toContain("  - remove  Old.App (winget package)  no longer declared; uninstalls it");
+    expect(packages.at(-1)).toBe("  ! Uninstalling a package can remove its application data.");
+  });
+
   it("describes the declaration when the machine cannot be checked", async () => {
     const planned = await planWindowsResources([pkg("Git.Git", "2.0"), summary({ category: "file", testScript: "..." })], undefined, undefined);
     expect(formatWindowsPlan("desktop", planned, { live: false, reason: "machine checks need native Windows" })).toEqual([
@@ -531,6 +549,9 @@ describe("switch progress", () => {
       "winix switch would apply only this change, and check the unchecked one as it applies (applying it if needed).");
     expect(dryRunSummary([entry("unknown"), entry("unknown")])).toBe(
       "winix switch would apply nothing, and check the 2 unchecked ones as it applies (applying them if needed).");
+    expect(dryRunSummary([entry("ok")], true, 2)).toBe('winix switch would remove the 2 items marked "- remove" (after asking).');
+    expect(dryRunSummary([entry("change"), entry("unknown")], true, 1)).toBe(
+      'winix switch would apply only this change, remove the item marked "- remove" (after asking), and check the unchecked one as it applies (applying it if needed).');
     expect(dryRunSummary([entry("change"), entry("conflict")])).toBe(
       "winix switch would stop before changing anything: resolve the 1 conflict first.");
     // Not checked against a machine (not native Windows): everything is unknown.

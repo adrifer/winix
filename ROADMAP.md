@@ -45,6 +45,11 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   through WMI (`Win32_OptionalFeature`) instead of DISM, so a plan can confirm
   them without elevation and a no-change switch no longer asks for UAC just to
   look; enabling or disabling them still runs in the elevated step.
+  Removals are rows of the plan (`- remove  Startup shortcut whkd  no longer
+  declared`) instead of raw applied-state keys, with the data-loss warning only
+  for package uninstalls and a prompt naming what it removes; resources left
+  alone because Winix did not create them are listed with `i`. "Done in"
+  excludes time spent at prompts.
 
 - **Fast Windows switch** — `winix switch` no longer runs `winget configure`.
   Hosts generate `resources.json`; switch plans against the machine and applies
