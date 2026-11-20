@@ -252,7 +252,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         console.log("\nRemovals and ownership (Winix applied-state inventory):");
         for (const line of ownership) console.log(`  ${line}`);
       }
-      console.log(`\n${dryRunSummary(planned)}`);
+      console.log(`\n${dryRunSummary(planned, live)}`);
     } else if (opts.dry && command) {
       console.log(`\nWould run: ${command.join(" ")}`);
     }
@@ -266,7 +266,10 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
 }
 
 /** The last line of a Windows dry run, consistent with the plan header's counts. */
-export function dryRunSummary(planned: PlannedResource[]): string {
+export function dryRunSummary(planned: PlannedResource[], live = true): string {
+  if (!live) {
+    return `winix switch on that Windows machine would check ${planned.length === 1 ? "this resource" : `these ${planned.length} resources`} and apply only what is out of date.`;
+  }
   const changes = planned.filter((entry) => entry.state === "change").length;
   const unchecked = planned.filter((entry) => entry.state === "unknown").length;
   const conflicts = planned.filter((entry) => entry.state === "conflict").length;

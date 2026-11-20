@@ -530,6 +530,9 @@ describe("switch progress", () => {
       "winix switch would apply nothing, and check the 2 unchecked ones as it applies (applying them if needed).");
     expect(dryRunSummary([entry("change"), entry("conflict")])).toBe(
       "winix switch would stop before changing anything: resolve the 1 conflict first.");
+    // Not checked against a machine (not native Windows): everything is unknown.
+    expect(dryRunSummary([entry("unknown"), entry("unknown")], false)).toBe(
+      "winix switch on that Windows machine would check these 2 resources and apply only what is out of date.");
   });
 
   it("formats durations", () => {

@@ -1013,15 +1013,16 @@ describe("winix switch Windows dry run", () => {
         },
       });
       const output = logs.join("\n");
-      expect(output).toContain("winix switch would apply only this change.");
       expect(output).not.toContain("winget configure");
       // A plan, not the generated files. Machine checks need native Windows.
       if (process.platform === "win32") {
+        expect(output).toContain("winix switch would apply only this change.");
         expect(output).toContain("Plan for desktop: 1 change, 0 unchanged");
         expect(output).toMatch(/\+ install\s+Fastfetch-cli\.Fastfetch\s+2\.45\.0/);
       } else {
         expect(output).toContain("Plan for desktop (not checked against a machine: machine checks need native Windows)");
         expect(output).toContain("Declares 1 package.");
+        expect(output).toContain("winix switch on that Windows machine would check this resource and apply only what is out of date.");
       }
       expect(output).not.toContain('"resources"');
     } finally {
