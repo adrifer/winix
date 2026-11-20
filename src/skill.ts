@@ -506,12 +506,16 @@ the entire switch. Use \`--yes\`/\`-y\` for automation; noninteractive runs with
 removals require it. Dry runs do not prompt.
 Native Windows switch treats floating package locks as minimum versions/fresh
 install targets: install missing, upgrade older, keep newer without downgrading.
+An older package winget cannot find by id (installed by another installer, e.g.
+an org-provided PowerShell MSI) is kept with a plan note; uninstalling that copy
+lets the next switch install the locked winget version.
 Owned external upgrades retain ownership and refresh observed snapshots after
 successful activation; pre-installed packages remain unowned. An inline version
 is exact: existing mismatches fail explicitly before activation.
 Unequal non-dotted-numeric versions cannot be ordered and require explicit
 resolution. Interactive successful switches offer a separate [y/N] lock update
-for newer floating packages. Declining continues; dry/noninteractive runs do not
+for newer floating packages ([y/N/a] when several are newer; a = this and all
+remaining). Declining continues; dry/noninteractive runs do not
 update observed-version pins, and --yes does not accept lock-update prompts.
 Plain apply/direct DSC scripts keep lock-based generation.
 External shortcut edits, package downgrades and exact-pin drift still block

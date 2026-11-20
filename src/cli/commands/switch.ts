@@ -170,6 +170,10 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
         if (kept && entry.state === "ok") {
           entry.detail = `${kept.installed} (locked ${kept.locked}; switch offers to update the lock)`;
         }
+        // Kept because winget cannot upgrade it: presence is all this switch can ensure.
+        if (entry.notUpgradable && entry.resource.package) {
+          delete requirements[resourceKey({ kind: "package", id: entry.resource.package.id, source: entry.resource.package.source })];
+        }
       }
     } else if (command) {
       console.log(`\nRunning: ${command.join(" ")}`);
@@ -247,13 +251,22 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
       });
       if (!opts.dry && lock && after) {
         let expected = serializeWindowsLock(lock);
-        for (const candidate of newer) {
+        // Only packages still at the version the plan saw can have their lock raised.
+        const candidates = newer.filter((candidate) => {
           const current = after.get(resourceKey({ kind: "package", id: candidate.id, source: lock.packages[candidate.id].source }));
-          if (!current || !("version" in current) || current.version !== candidate.installed) {
-            console.log(`Not updating lock for ${candidate.id}: installed version changed during activation.`);
-            continue;
+          if (current && "version" in current && current.version === candidate.installed) return true;
+          console.log(`Not updating lock for ${candidate.id}: installed version changed during activation.`);
+          return false;
+        });
+        let acceptAll = false;
+        for (const [index, candidate] of candidates.entries()) {
+          if (!acceptAll) {
+            const answer = await confirmWindowsPackageLockUpdate(
+              candidate.id, candidate.installed, candidate.locked, candidates.length - index - 1,
+            );
+            if (answer === "all") acceptAll = true;
+            else if (!answer) continue;
           }
-          if (!await confirmWindowsPackageLockUpdate(candidate.id, candidate.installed, candidate.locked)) continue;
           const saved = readWindowsLock(configDir);
           if (!saved || serializeWindowsLock(saved) !== expected) {
             throw new Error("winix-windows.lock changed during switch; refusing to overwrite concurrent changes.");

@@ -1206,11 +1206,79 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
         expect(logs.some((line) => line.includes("newer than locked") && line.includes("Example.App"))).toBe(true);
         expect(existsSync(inventory)).toBe(false);
       } else {
-        expect(confirm).toHaveBeenCalledWith("Example.App", "8", "7");
+        expect(confirm).toHaveBeenCalledWith("Example.App", "8", "7", 0);
         expect(JSON.parse(await readFile(inventory, "utf8")).entries['["package","winget","example.app"]'].owned).toBe(false);
       }
     } finally {
       log.mockRestore(); confirm.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("raises the lock for every remaining package after an 'all' answer", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-package-upgrade-all-"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const confirm = vi.spyOn(packageVersionPolicy, "confirmWindowsPackageLockUpdate")
+      .mockResolvedValueOnce(false).mockResolvedValueOnce("all");
+    const fake = fakeWindowsRunner();
+    try {
+      await writeConfig(dir, `host("desktop", platforms.windows(), [
+        windows.package("A.App"), windows.package("B.App"), windows.package("C.App"), windows.package("D.App"),
+      ])`);
+      const pin = { version: "7", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" };
+      await writeFile(join(dir, "winix-windows.lock"), JSON.stringify({
+        version: 1, generatedAt: "2026-11-13T00:00:00Z",
+        packages: { "A.App": pin, "B.App": pin, "C.App": pin, "D.App": pin },
+      }));
+      await switchCommand(dir, {
+        dry: false, host: "desktop", windowsRunner: fake.runner,
+        windowsState: {
+          path: join(dir, "inventory.json"),
+          adapter: { inspect: async () => ({ version: "8" }), remove: async () => { throw new Error("Must not uninstall"); } },
+        },
+      });
+      // Declined A, answered "all" at B: B, C and D are raised without more questions.
+      expect(confirm.mock.calls).toEqual([["A.App", "8", "7", 3], ["B.App", "8", "7", 2]]);
+      const versions = Object.fromEntries(Object.entries(readWindowsLock(dir)!.packages).map(([id, entry]) => [id, entry.version]));
+      expect(versions).toEqual({ "A.App": "7", "B.App": "8", "C.App": "8", "D.App": "8" });
+    } finally {
+      log.mockRestore(); confirm.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps a package winget cannot upgrade and still applies what depends on it", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-package-unmatched-"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fake = fakeWindowsRunner();
+    try {
+      await writeConfig(dir, `host("desktop", platforms.windows(), ({ windows }) => {
+        const pwsh = windows.package("Microsoft.PowerShell");
+        windows.raw({ name: "after pwsh", executable: "cmd.exe", dependsOn: pwsh });
+      })`);
+      await writeFile(join(dir, "winix-windows.lock"), JSON.stringify({
+        version: 1, generatedAt: "2026-11-13T00:00:00Z",
+        packages: { "Microsoft.PowerShell": { version: "7.7.0.0", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" } },
+      }));
+      await switchCommand(dir, {
+        dry: false, host: "desktop", windowsRunner: fake.runner,
+        planChecker: {
+          scripts: async () => new Map(), dsc: async () => new Map(),
+          unmatched: async () => new Set(["Microsoft.PowerShell"]),
+        },
+        windowsState: {
+          path: join(dir, "inventory.json"),
+          adapter: { inspect: async () => ({ version: "7.6.10.0" }), remove: async () => { throw new Error("Must not uninstall"); } },
+        },
+      });
+      // No upgrade is attempted; the dependent command runs; the older version passes verification.
+      const steps = fake.batches.flatMap((batch) => batch.steps);
+      expect(steps.map((step) => step.kind)).toEqual(["command"]);
+      expect(steps[0].dependsOn).toEqual([]);
+      expect(readWindowsLock(dir)?.packages["Microsoft.PowerShell"].version).toBe("7.7.0.0");
+      expect(log.mock.calls.flat().join("\n")).toContain("winget cannot upgrade it to 7.7.0.0; switch keeps it");
+    } finally {
+      log.mockRestore();
       await rm(dir, { recursive: true, force: true });
     }
   });

@@ -146,6 +146,7 @@ windows.package("Valve.Steam", { version: "any" });     // any version
 | Installed version is older | Switch fails ("Exact version mismatch") | Upgraded to the locked version | Left alone |
 | Installed version is newer | Switch fails; never downgraded | Kept ("Keeping X (locked Y)"); switch offers to update the lock | Left alone; no prompt |
 | winget reports `Unknown` | Switch fails | Kept (warning each switch); never reinstalled | Left alone; no warning |
+| Older, installed by another installer winget can't upgrade | Switch fails ("Exact version mismatch") | Kept; the plan says how to hand it to winget | Left alone |
 | Changed outside Winix (Winix-installed) | Switch fails | Newer accepted; older fails | Any change accepted |
 | `check` warns when not in the lock | No | Yes (apply would resolve it online) | No |
 
@@ -598,10 +599,20 @@ be reliably ordered and fail with instructions to resolve them explicitly.
 
 After a successful interactive switch that kept a newer floating package,
 Winix asks `Update winix-windows.lock to <version>? [y/N]`. Declining keeps the
-lock and still completes the switch. Dry/noninteractive runs never ask or
+lock and still completes the switch. When several packages are newer, the
+prompt also offers `a`: yes for this package and every one after it, with no
+more questions. Dry/noninteractive runs never ask or
 update observed-version pins; `--yes` confirms removals, not lock updates.
 Normal missing-pin resolution remains unchanged. These defaults apply to
 `winix switch`, not direct generated-script/DSC activation or plain `apply`.
+
+Some machines come with a package that another installer put there, such as
+an organization's repackaged PowerShell 7 MSI. winget lists it by name, but
+`winget upgrade --id` reports "No installed package found", so it can't upgrade
+it. Before upgrading, the plan asks winget for each package by id. One it can't
+find is kept (`= keep`, with a `!` note) instead of failing the switch and
+skipping everything after it. To let Winix manage it, uninstall that copy and
+switch again: Winix then installs the locked version from winget.
 
 Startup file hashes and installed package versions still protect removals.
 If the installed version is non-numeric or reported as `Unknown` (common for

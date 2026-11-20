@@ -19,6 +19,12 @@ export interface PlannedResource {
   running?: RunningProcess[];
   /** Why installing or upgrading this package will ask for administrator approval (UAC). */
   elevation?: string;
+  /**
+   * An older installed package that winget cannot upgrade: another installer put
+   * it there and winget matches it only by name, not by id. Kept as it is, with
+   * the version it would have been upgraded to.
+   */
+  notUpgradable?: { installed: string; locked: string };
 }
 
 export interface ElevationRequest {
@@ -54,6 +60,24 @@ export interface WindowsPlanChecker {
    * scope; installs use the installer winget picks.
    */
   elevation?(requests: ElevationRequest[]): Promise<Map<string, string>>;
+  /**
+   * Of these installed packages, the ids winget cannot find by id (`winget list
+   * --id`), so `winget upgrade` cannot upgrade them: another installer (an
+   * organization's image, a repackaged MSI) put them there.
+   */
+  unmatched?(packages: { id: string; source: string }[]): Promise<Set<string>>;
+}
+
+/** Ask the checker which upgrades winget cannot find by id; advisory, so failures report nothing. */
+export async function unmatchedPackages(
+  checker: WindowsPlanChecker | undefined, packages: { id: string; source: string }[],
+): Promise<Set<string>> {
+  if (!checker?.unmatched || packages.length === 0) return new Set();
+  try {
+    return await checker.unmatched(packages);
+  } catch {
+    return new Set();
+  }
 }
 
 /** Ask the checker which installs/upgrades will prompt for UAC; advisory, so failures report nothing. */
@@ -128,6 +152,21 @@ export async function planWindowsResources(
     }
     return check.ok ? { resource, state: "ok", action: "keep" } : { resource, state: "change", action: "apply" };
   });
+  // An upgrade winget would fail with "No installed package found" is kept
+  // instead, so the switch does not fail it and skip everything after it.
+  const unmatched = await unmatchedPackages(checker, planned.flatMap((entry) =>
+    entry.resource.package && entry.action === "upgrade"
+      ? [{ id: entry.resource.package.id, source: entry.resource.package.source }] : []));
+  for (const entry of planned) {
+    const pkg = entry.resource.package;
+    if (!pkg || entry.action !== "upgrade" || !unmatched.has(pkg.id)) continue;
+    const installed = packages?.get(pkg.id);
+    const version = installed && "version" in installed ? installed.version : "installed";
+    entry.state = "ok";
+    entry.action = "keep";
+    entry.detail = `${version} (winget cannot upgrade it to ${pkg.version})`;
+    entry.notUpgradable = { installed: version, locked: pkg.version ?? "" };
+  }
   const upgrades = planned.filter((entry) => entry.resource.package && entry.action === "upgrade");
   const changing = planned.filter((entry) => entry.resource.package && (entry.action === "upgrade" || entry.action === "install"));
   const [running, prompts] = await Promise.all([
@@ -298,6 +337,11 @@ export function formatWindowsPlan(
   if (removals.some((removal) => removal.package)) {
     notes.push("Uninstalling a package can remove its application data.");
   }
+  for (const entry of planned.filter((candidate) => candidate.notUpgradable)) {
+    const { installed, locked } = entry.notUpgradable!;
+    notes.push(`${entry.resource.package!.id} ${installed} was installed by another installer, so winget cannot upgrade it ` +
+      `to ${locked}; switch keeps it. To let Winix upgrade it, uninstall that copy and switch again (Winix then installs ${locked}).`);
+  }
   const reboot = pending.filter((entry) => entry.resource.reboot);
   if (reboot.length > 0) {
     notes.push(`${reboot.map((entry) => entry.resource.label).join(", ")} can require a Windows restart; Winix never restarts Windows.`);
@@ -395,7 +439,22 @@ export const nativeWindowsPlanChecker: WindowsPlanChecker = {
     }
     return prompts;
   },
+  async unmatched(packages) {
+    const found = new Set<string>();
+    for (const pkg of packages) {
+      const result = await runWinget(["list", "--id", pkg.id, "--exact", "--source", pkg.source]);
+      if (noInstalledPackage(result)) found.add(pkg.id);
+    }
+    return found;
+  },
 };
+
+/** winget's APPINSTALLER_CLI_ERROR_NO_APPLICATIONS_FOUND (0x8A150014), however the exit code is reported. */
+const NO_APPLICATIONS_FOUND = 0x8A150014;
+
+export function noInstalledPackage(result: { code: number | null; stdout: string }): boolean {
+  return result.code !== null && (result.code >>> 0) === NO_APPLICATIONS_FOUND;
+}
 
 function showArgs(request: ElevationRequest): string[] {
   return ["show", "--id", request.id, "--exact", "--source", request.source,

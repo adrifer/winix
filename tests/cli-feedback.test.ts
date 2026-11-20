@@ -10,8 +10,8 @@ import { wslDistroProperties } from "../src/backends/windows/wsl.ts";
 import { wslRepositoryKey } from "../src/backends/windows/wsl-setup.ts";
 import { unifiedDiff } from "../src/cli/diff.ts";
 import {
-  formatWindowsPlan, installElevation, nativeWindowsPlanChecker, parseDscTestOutput, parseProbeOutput, parseRunningOutput,
-  planWindowsResources, upgradeElevation, type PlannedResource, type WindowsPlanChecker,
+  formatWindowsPlan, installElevation, nativeWindowsPlanChecker, noInstalledPackage, parseDscTestOutput, parseProbeOutput,
+  parseRunningOutput, planWindowsResources, upgradeElevation, type PlannedResource, type WindowsPlanChecker,
 } from "../src/cli/windows-plan.ts";
 import {
   applyWindowsBatches, formatApplySummary, nativeWindowsBatchRunner, orderBatches, parseApplyResults, planApplyBatches,
@@ -263,6 +263,40 @@ describe("Windows plan", () => {
     expect(formatWindowsPlan("desktop", planned, { live: true })).toContain(
       "  ! Switch asks once for administrator approval (UAC) for the 2 [admin] rows " +
       "(Machine.Upgrade: installed machine-wide; Machine.Install: no per-user installer).");
+  });
+
+  it("keeps an upgrade winget cannot find by id and explains how to hand it over", async () => {
+    const resources = [pkg("Microsoft.PowerShell", "7.7.0.0"), pkg("Git.Git", "2.0")];
+    const inventory = new Map([["Microsoft.PowerShell", { version: "7.6.10.0" }], ["Git.Git", { version: "1.0" }]]);
+    const unmatched = vi.fn(async () => new Set(["Microsoft.PowerShell"]));
+    const elevation = vi.fn(async () => new Map<string, string>());
+    const checker: WindowsPlanChecker = { scripts: vi.fn(async () => new Map()), dsc: vi.fn(async () => new Map()), unmatched, elevation };
+    const planned = await planWindowsResources(resources, inventory, checker);
+    expect(unmatched).toHaveBeenCalledWith([
+      { id: "Microsoft.PowerShell", source: "winget" }, { id: "Git.Git", source: "winget" },
+    ]);
+    expect(planned[0]).toMatchObject({
+      state: "ok", action: "keep", notUpgradable: { installed: "7.6.10.0", locked: "7.7.0.0" },
+    });
+    expect(planned[1]).toMatchObject({ state: "change", action: "upgrade" });
+    // Only the upgrade that will run is asked about UAC.
+    expect(elevation).toHaveBeenCalledWith([{ id: "Git.Git", source: "winget", action: "upgrade", version: "2.0" }]);
+    const lines = formatWindowsPlan("desktop", planned, { live: true });
+    expect(lines[0]).toBe("Plan for desktop: 1 change, 1 unchanged");
+    expect(lines).toContain(
+      "  ! Microsoft.PowerShell 7.6.10.0 was installed by another installer, so winget cannot upgrade it to 7.7.0.0; " +
+      "switch keeps it. To let Winix upgrade it, uninstall that copy and switch again (Winix then installs 7.7.0.0).");
+
+    // Advisory: a failing probe keeps the upgrade.
+    const failing: WindowsPlanChecker = { ...checker, unmatched: vi.fn(async () => { throw new Error("no winget"); }) };
+    expect((await planWindowsResources(resources, inventory, failing))[0]).toMatchObject({ state: "change", action: "upgrade" });
+  });
+
+  it("recognizes winget's no-installed-package exit code however it is reported", () => {
+    expect(noInstalledPackage({ code: -1978335212, stdout: "" })).toBe(true);
+    expect(noInstalledPackage({ code: 2316632084, stdout: "" })).toBe(true);
+    expect(noInstalledPackage({ code: 0, stdout: "PowerShell 7-x64 Microsoft.PowerShell 7.7.0.0 winget" })).toBe(false);
+    expect(noInstalledPackage({ code: null, stdout: "" })).toBe(false);
   });
 
   it("reads installed scope and installer choice from winget output", () => {

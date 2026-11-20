@@ -41,7 +41,14 @@ export function effectiveWindowsPackageVersion(
   return compareWindowsPackageVersions(id, installed, requirement.version) >= 0 ? installed : requirement.version;
 }
 
-export async function confirmWindowsPackageLockUpdate(id: string, installed: string, locked: string): Promise<boolean> {
+/**
+ * Asks whether to raise one package's lock to the newer installed version.
+ * With `others` more packages still to ask about, "a" answers yes for this one
+ * and all of them ("all").
+ */
+export async function confirmWindowsPackageLockUpdate(
+  id: string, installed: string, locked: string, others = 0,
+): Promise<boolean | "all"> {
   if (!process.stdin.isTTY || !process.stdout.isTTY) return false;
   const prompt = createInterface({ input: process.stdin, output: process.stdout });
   const controller = new AbortController();
@@ -49,11 +56,14 @@ export async function confirmWindowsPackageLockUpdate(id: string, installed: str
   prompt.once("SIGINT", () => controller.abort());
   try {
     const started = Date.now();
+    const choices = others > 0 ? `[y/N/a] (a: this and the ${others} other${others === 1 ? "" : "s"})` : "[y/N]";
     const answer = await prompt.question(
-      `${id}: installed ${installed}, locked ${locked}. Update winix-windows.lock to ${installed}? [y/N] `,
+      `${id}: installed ${installed}, locked ${locked}. Update winix-windows.lock to ${installed}? ${choices} `,
       { signal: controller.signal },
     ).finally(() => { promptTime.waited += Date.now() - started; });
-    return /^(y|yes)$/i.test(answer.trim());
+    const reply = answer.trim();
+    if (others > 0 && /^(a|all)$/i.test(reply)) return "all";
+    return /^(y|yes)$/i.test(reply);
   } finally {
     prompt.close();
   }

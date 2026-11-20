@@ -3,6 +3,16 @@
 Notable changes per release. Every release, with its downloadable assets, is on
 [GitHub Releases](https://github.com/adrifer/winix/releases).
 
+## Unreleased
+
+- `winix switch`: when several installed packages are newer than the lock, the
+  lock-update prompt accepts `a` to update this one and all the remaining ones
+  without asking again.
+- `winix plan`/`switch`: an older installed package that winget can't upgrade by
+  id (installed by another installer, e.g. an organization's PowerShell 7 MSI)
+  is kept with a note on how to hand it over to winget, instead of failing the
+  switch and skipping everything that depends on it.
+
 ## 0.3.0
 
 The release that makes Windows a first-class target and gives every platform

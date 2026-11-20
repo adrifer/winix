@@ -47,6 +47,24 @@ describe("Windows package version policy", () => {
     } finally { prompt.close(); vi.unstubAllGlobals(); vi.mocked(createInterface).mockReset(); }
   });
 
+  it.each([
+    ["a", 2, "all"], ["ALL", 1, "all"], ["y", 2, true], ["", 2, false], ["a", 0, false],
+  ] as const)("answers %j with %i more packages to ask about as %j", async (answer, others, expected) => {
+    const readline = await vi.importActual<typeof import("node:readline/promises")>("node:readline/promises");
+    const prompt = readline.createInterface({ input: new PassThrough(), output: new PassThrough() });
+    vi.mocked(createInterface).mockReturnValue(prompt);
+    const question = vi.spyOn(prompt, "question").mockResolvedValue(answer);
+    vi.stubGlobal("process", { ...process, stdin: { isTTY: true }, stdout: { isTTY: true } });
+    try {
+      expect(await confirmWindowsPackageLockUpdate("Example.App", "8", "7", others)).toBe(expected);
+      expect(question).toHaveBeenCalledWith(
+        others === 0 ? "Example.App: installed 8, locked 7. Update winix-windows.lock to 8? [y/N] "
+          : `Example.App: installed 8, locked 7. Update winix-windows.lock to 8? [y/N/a] (a: this and the ${others} other${others === 1 ? "" : "s"}) `,
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    } finally { prompt.close(); vi.unstubAllGlobals(); vi.mocked(createInterface).mockReset(); }
+  });
+
   it("never prompts or updates a lock non-interactively", async () => {
     vi.stubGlobal("process", { ...process, stdin: { isTTY: false }, stdout: { isTTY: false } });
     try {
