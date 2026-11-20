@@ -14,6 +14,19 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Simpler first run** — the Windows repository bootstrap asks one
+  confirmation listing every step, then runs with only UAC prompts (and
+  removal confirmations) interrupting; `-HostName` is optional: Winix offers the
+  declared hosts and remembers the choice in `.winix/host`, which `winix switch`
+  uses when the computer name matches no host. Reruns (after a restart) warn
+  about local changes instead of stopping. Bootstrap installs a per-user
+  `winix` command on PATH (no UAC), and when the checkout's pin changes,
+  `winix run` downloads that exact, checksum-verified release itself instead of
+  asking for a bootstrap rerun (pruning older downloads; a stale `node_modules`
+  SDK still stops, naming `npm ci` or deleting it). Missing WinGet opens App
+  Installer in the Store. Linux/WSL standalone launchers do not fetch yet.
+  Fresh-machine end-to-end activation is still to be rehearsed.
+
 - **Fast sign-in startup** — `windows.startup.app(name, spec)` registers a
   per-user "At log on" task in Task Scheduler's `\Winix\` folder (no UAC; runs
   as the user, no time limit, normal priority, on battery, one instance)

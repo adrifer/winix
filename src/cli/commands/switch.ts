@@ -32,6 +32,7 @@ import {
   platformForEvaluatedHost,
 } from "../activation.ts";
 import { applyWorkspace } from "./apply.ts";
+import { readRememberedHost } from "../host-memory.ts";
 import { readWindowsLock, serializeWindowsLock, writeWindowsLock } from "../../backends/windows/lockfile.ts";
 import {
   compareWindowsPackageVersions, confirmWindowsPackageLockUpdate, effectiveWindowsPackageVersion,
@@ -66,7 +67,7 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
   const started = Date.now();
   const { workspace, configDir } = await loadWorkspace(cwd);
   const evaluated = evaluate(workspace, { configDir });
-  const hostName = selectHost(evaluated.map((host) => host.name), opts.host);
+  const hostName = selectHost(evaluated.map((host) => host.name), opts.host, hostname(), readRememberedHost(configDir));
   const selected = evaluated.find((host) => host.name === hostName);
   if (!selected) throw new Error(`Host "${hostName}" not found`);
 
@@ -377,7 +378,9 @@ export function wslNextSteps(
 export function selectHost(
   hosts: string[],
   requested?: string,
-  currentHostname = hostname()
+  currentHostname = hostname(),
+  /** The host `winix bootstrap` set up on this machine (.winix/host). */
+  remembered?: string,
 ): string {
   if (requested) {
     if (!hosts.includes(requested)) {
@@ -390,12 +393,13 @@ export function selectHost(
     return requested;
   }
 
+  if (remembered && hosts.includes(remembered)) return remembered;
   if (hosts.length === 1) return hosts[0];
   if (hosts.includes(currentHostname)) return currentHostname;
 
   throw new Error(
     `Current hostname "${currentHostname}" does not match a configured host. ` +
-    "`winix switch` needs --host. Available hosts:\n" +
+    "`winix switch` needs --host (winix bootstrap remembers it for this machine). Available hosts:\n" +
     hosts.map((host) => `  - ${host}`).join("\n")
   );
 }

@@ -13,7 +13,8 @@ Check/install only native prerequisites for the Winix executable; Node.js/npm ar
 .PARAMETER Repository
 Opt into HTTPS repository bootstrap. The checkout's exact SDK pin selects the executable.
 .PARAMETER HostName
-Declared Winix target for repository mode; does not rename Windows.
+Declared Winix target for repository mode; does not rename Windows. When omitted,
+Winix offers the declared hosts to choose from (and remembers the choice).
 .PARAMETER PrepareOnly
 Prepare prerequisites/runtime and validate/preview the repository without activating a host.
 .PARAMETER DryRun
@@ -229,6 +230,22 @@ Then rerun this bootstrap. No prerequisites have been installed.
     Write-Host 'Open a new PowerShell 7 terminal before preparing the Winix/config checkout and running winix check or switch --dry.'
 }
 
+function Initialize-WinixBootstrapWinGet {
+    param([switch]$Yes)
+    if (Get-WinixBootstrapApplication 'winget.exe') { return }
+    if ($Yes -or [Console]::IsInputRedirected) {
+        throw 'WinGet is unavailable. Install or update App Installer (Microsoft Store, 9NBLGGH4NNS1), open a new terminal, and rerun.'
+    }
+    Write-Host 'WinGet is missing. Opening App Installer in Microsoft Store; install or update it.'
+    Write-Host 'Without Store access, see https://learn.microsoft.com/windows/package-manager/winget/#install-winget.'
+    Start-Process -FilePath 'ms-windows-store://pdp/?ProductId=9NBLGGH4NNS1'
+    [void](Read-Host 'Press Enter when App Installer is installed (Ctrl+C to cancel)')
+    Update-WinixBootstrapPath
+    if (-not (Get-WinixBootstrapApplication 'winget.exe')) {
+        throw 'WinGet is still unavailable. Finish installing App Installer, open a new terminal, and rerun.'
+    }
+}
+
 function Assert-WinixBootstrapDirectory {
     param([string]$Path)
     $current = [IO.Path]::GetFullPath($Path)
@@ -310,7 +327,7 @@ function Invoke-WinixRepositoryBootstrap {
         $uri.Scheme -ne 'https' -or $uri.UserInfo -or $uri.Query -or $uri.Fragment) {
         throw 'Repository must be HTTPS without credentials, query, or fragment.'
     }
-    if (-not $HostName -or $HostName.StartsWith('-') -or $HostName -match '[\x00\r\n]') { throw '-HostName requires a declared host name, not a Windows rename.' }
+    if ($HostName -and ($HostName.StartsWith('-') -or $HostName -match '[\x00\r\n]')) { throw '-HostName requires a declared host name, not a Windows rename.' }
     if (-not $Ref -or $Ref.StartsWith('-') -or $Ref -match '[\x00\r\n]') { throw 'Invalid repository ref.' }
     if ([IO.Path]::IsPathRooted($ConfigDirectory) -or $ConfigDirectory -match '(^|[\\/])\.\.([\\/]|$)' -or $ConfigDirectory -match '[:\x00\r\n]') {
         throw 'ConfigDirectory must be inside the checkout.'
@@ -318,22 +335,30 @@ function Invoke-WinixRepositoryBootstrap {
     $Destination = [IO.Path]::GetFullPath($Destination)
     Assert-WinixBootstrapDirectory $Destination
     $config = [IO.Path]::GetFullPath((Join-Path $Destination $ConfigDirectory))
+    $target = if ($HostName) { "host $HostName" } else { 'the host you choose' }
     if ($DryRun) {
-        Write-Host "Would ensure Git, clone/validate $Repository ($Ref) at $Destination, read its Winix pin, verify downloads, prepare prerequisites and preview host $HostName. No changes or config evaluation performed."
+        Write-Host "Would ensure Git, clone/validate $Repository ($Ref) at $Destination, read its Winix pin, verify downloads, prepare prerequisites and preview $target. No changes or config evaluation performed."
         return
     }
-    Write-Host "Repository: $Repository ($Ref), checkout: $Destination, config: $config, host: $HostName"
+    # The only question: everything after it runs without asking (UAC prompts aside).
+    Write-Host ''
+    Write-Host "This sets up this PC from $Repository ($Ref):"
+    Write-Host "  - clone it to $Destination (or reuse that checkout)"
+    Write-Host '  - install Git, PowerShell 7 and DSC if missing (installers may ask for administrator approval)'
+    Write-Host "  - download the Winix version pinned in $ConfigDirectory\package.json (checksum-verified)"
+    Write-Host "  - run its configuration (TypeScript from this repository; it can run commands)"
+    if ($PrepareOnly) { Write-Host "  - preview $target without applying it" } else { Write-Host "  - apply it to this PC as $target" }
     if (-not $Yes) {
         if ([Console]::IsInputRedirected) { throw 'Noninteractive repository bootstrap requires -Yes.' }
-        if ((Read-Host 'Trust this repository and allow bootstrap downloads/prerequisite installation? [y/N]').Trim() -notmatch '^(?i:y|yes)$') {
-            throw 'Bootstrap cancelled.'
+        if ((Read-Host 'Continue? [y/N]').Trim() -notmatch '^(?i:y|yes)$') {
+            throw 'Bootstrap cancelled. Nothing was changed.'
         }
     }
     Update-WinixBootstrapPath
+    Initialize-WinixBootstrapWinGet -Yes:$Yes
     $git = Get-WinixBootstrapApplication 'git.exe'
     if (-not $git) {
         $winget = Get-WinixBootstrapApplication 'winget.exe'
-        if (-not $winget) { throw 'WinGet is unavailable. Install App Installer, open a new terminal, and rerun.' }
         Invoke-WinixBootstrapNative $winget @('install', '--id', 'Git.Git', '--exact', '--source', 'winget',
             '--silent', '--accept-package-agreements', '--accept-source-agreements', '--disable-interactivity') | ForEach-Object { Write-Host $_ }
         Update-WinixBootstrapPath
@@ -353,7 +378,9 @@ function Invoke-WinixRepositoryBootstrap {
         throw 'Existing checkout has a different origin; refusing to change it.'
     }
     if ((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'status', '--porcelain', '--untracked-files=normal'))) {
-        throw 'Checkout has local changes. Commit/stash them explicitly; bootstrap never resets or cleans files.'
+        # Linked app settings change in the checkout (Terminal rewrites settings.json), so a rerun after a restart
+        # must not stop here. They are left exactly as they are.
+        Write-Warning 'The checkout has local changes; continuing without touching them (bootstrap never resets, cleans or pulls).'
     }
     $head = ((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'rev-parse', 'HEAD')) -join '').Trim()
     $wanted = ((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'rev-parse', '--verify', "$Ref^{commit}")) -join '').Trim()
@@ -378,7 +405,9 @@ function Invoke-WinixRepositoryBootstrap {
     if (((Invoke-WinixBootstrapNative $binary @('--version')) -join '').Trim() -ne $version) { throw 'Downloaded executable version does not match the checkout.' }
     & $prerequisites -Standalone -Yes
     if (-not $?) { throw 'Prerequisites failed; resolve the error/reboot manually, then rerun the same bootstrap.' }
-    $arguments = @('bootstrap', '--host', $HostName)
+    # Consent was given above; winix bootstrap asks nothing more (removals and UAC aside).
+    $arguments = @('bootstrap', '--confirmed')
+    if ($HostName) { $arguments += @('--host', $HostName) }
     if ($PrepareOnly) { $arguments += '--prepare-only' }
     if ($Yes) { $arguments += '--yes' }
     Push-Location -LiteralPath $config

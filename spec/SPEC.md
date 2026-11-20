@@ -1157,7 +1157,7 @@ releases include the script and SHA256 checksum, as with Windows bootstrap.
 #### Repository bootstrap and `winix run`
 
 `bootstrap-windows.ps1 -Repository <https-url> -Ref <ref> -Destination <path>
--ConfigDirectory <relative-path> -HostName <host>` extends the prerequisite-only
+-ConfigDirectory <relative-path> [-HostName <host>]` extends the prerequisite-only
 script with explicit repository orchestration. `bootstrap-linux.sh` provides
 the corresponding `--repository`, `--ref`, `--destination`, `--config-directory`,
 and `--host` options on glibc Linux x64/ARM64. Linux uses existing Nix for
@@ -1166,8 +1166,9 @@ it never silently installs Nix or converts a distribution into NixOS.
 NixOS binaries use private pinned libc/compiler dependencies.
 
 Repositories must be credential-free HTTPS URLs. A new clone retains normal Git
-history; an existing checkout must be clean, have the exact expected origin,
-and already match its requested local ref. No automatic pull/reset/cleanup or
+history; an existing checkout must have the exact expected origin and already
+match its requested local ref. Local changes only warn (linked app settings
+rewrite tracked files), so reruns after a restart proceed. No automatic pull/reset/cleanup or
 branch switching occurs for existing repositories. Directory links and config
 path escapes are refused. Host selection is not a machine rename.
 
@@ -1179,18 +1180,30 @@ verifies that release's prerequisite-only script. TLS and execution policies
 remain enforced; release hashes are not publisher signatures.
 
 `-DryRun`/`--dry-run` makes no changes, downloads, clone or evaluation.
-`-PrepareOnly`/`--prepare-only` prepares prerequisites/runtime, then delegates to
-`winix bootstrap --host <host> --prepare-only` for check and activation preview.
-Without prepare-only, bootstrap confirms activation after preview. Trust consent
-precedes all config evaluation, including check. `-Yes`/`--yes` explicitly accepts
-these operations and switch's managed removals. Failures propagate; no automatic
+The Windows script asks one confirmation listing every step (clone,
+prerequisites, pinned download, config evaluation, activation or preview), then
+delegates to `winix bootstrap --confirmed [--host <host>] [--prepare-only]`,
+which asks nothing further: without a host it picks the remembered one
+(`.winix/host`), the only candidate for the platform, the one matching the
+computer name, or asks the user to choose, and remembers it; `switch` uses the
+remembered host when no `--host` is given and the computer name matches none.
+With consent given, `check` is followed directly by `switch` (which prints the
+plan); `--prepare-only` stops after `switch --dry`. `winix bootstrap` without
+`--confirmed` asks before evaluation and before activation. `-Yes`/`--yes`
+explicitly accepts these operations and switch's managed removals. Failures propagate; no automatic
 restart, WSL shutdown, npm installation or global Winix installation occurs.
 
 Bootstrap creates an ignored checkout launcher, `.winix/bin/winix.ps1` or
 `.winix/bin/winix`. `winix run <command> [options]` rereads the manifest and prefers
 the installed matching node_modules SDK's CLI under supported Node, otherwise
 uses the matching standalone executable. A stale/corrupt local SDK fails instead
-of falling back silently; a stale standalone requires bootstrap rerun. The user
+of falling back silently. On Windows a stale standalone downloads the pinned
+release's executable into `.winix/runtime/<version>`, verified against its
+`SHA256SUMS` before running, and the launcher prefers it from then on (older
+runtime folders are then removed, keeping the running one and the launcher's
+fallback); elsewhere it requires a bootstrap rerun. Windows bootstrap also installs a
+per-user `%LOCALAPPDATA%\Winix\bin\winix.cmd` on the user PATH (registry value
+kind and `%VAR%` entries preserved, no elevation) that runs the launcher. The user
 opts into npm with `npm ci` and their approved source. Local npm scripts remain
 the standard npm workflow. New init manifests use exact version pins.
 

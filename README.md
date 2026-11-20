@@ -162,8 +162,26 @@ boundary; they are not signatures.
 
 ```powershell
 .\bootstrap-windows.ps1 -Repository https://github.com/example/dotfiles.git `
-  -Ref main -Destination "$HOME\dotfiles" -ConfigDirectory winix `
-  -HostName windows-devbox -PrepareOnly
+  -Ref main -Destination "$HOME\dotfiles" -ConfigDirectory winix
+```
+
+It asks **one** question, listing everything it will do (clone, prerequisites,
+the pinned Winix download, running the config, applying the host); after that
+only UAC prompts and removal confirmations interrupt. Without `-HostName`, Winix
+lists the declared hosts for this kind of machine (or picks the only one, or the
+one matching the computer name) and remembers the choice in the checkout's
+ignored `.winix\host`, so later `winix switch` runs need no `--host`, even on a
+PC named `DESKTOP-XXXXXXX`. Rerunning the same command (for example after a
+restart for WSL) reuses the checkout, the host and the downloads.
+
+A dotfiles repository can ship a tiny entry script that reads its own
+`winix/package.json` pin from GitHub, downloads that release's
+`bootstrap-windows.ps1`, checks it against the release's `.sha256`, and runs it
+with the repository defaults: then a fresh PC needs only
+
+```powershell
+irm https://raw.githubusercontent.com/<you>/dotfiles/main/setup/windows.ps1 -OutFile $env:TEMP\setup.ps1
+powershell -ExecutionPolicy Bypass -File $env:TEMP\setup.ps1
 ```
 
 ```bash
@@ -192,24 +210,30 @@ stored in dotfiles, and no global Winix/npm installation is performed.
 `-DryRun` / `--dry-run` makes **no changes**, including no clone, tool downloads,
 prerequisite installation, or config evaluation. `-PrepareOnly` / `--prepare-only`
 allows those preparation steps, then runs `check` and `switch --dry` but stops
-before activation. Config evaluation can itself run arbitrary code, so it
-requires consent **before** `check`. Omit prepare-only to review the preview
-and confirm activation separately. `-Yes` / `--yes` explicitly accepts trust,
-prerequisite changes, activation (unless prepare-only), and managed removals.
+before activation. Config evaluation can itself run arbitrary code, so the one
+confirmation comes **before** anything is evaluated. `-Yes` / `--yes` accepts
+it noninteractively (then pass `-HostName`), and also managed removals.
+Running `winix bootstrap` directly (not through the script) keeps its separate
+questions before evaluation and before activation.
 Host selection does not rename the machine. Reboot/WSL shutdown are manual.
 
-Existing checkouts must have the expected origin, local ref/HEAD and clean
-working tree. Bootstrap never pulls, resets, stashes, changes branches in an
+Existing checkouts must have the expected origin and local ref/HEAD. Local
+changes (linked app settings rewrite files in the checkout) only produce a
+warning: bootstrap never pulls, resets, stashes, cleans, changes branches in an
 existing checkout, or overwrites an unrelated directory; links/path escapes
 are rejected. Rerun after resolving a reported prerequisite/reboot boundary.
 Updating an existing checkout is an explicit Git operation, not a bootstrap side effect.
 
 For ongoing use, bootstrap writes `.winix/bin/winix.ps1` (Windows) or
-`.winix/bin/winix` (Linux). These call `winix run <args>` from the config directory:
+`.winix/bin/winix` (Linux). These call `winix run <args>` from the config
+directory. On Windows it also installs a per-user `winix` command
+(`%LOCALAPPDATA%\Winix\bin\winix.cmd`, added to the user PATH without
+elevation, keeping `%VAR%` entries intact) that runs this launcher from any
+folder:
 
 ```powershell
-.\.winix\bin\winix.ps1 check
-.\.winix\bin\winix.ps1 switch --host windows-devbox
+winix switch          # the remembered host
+winix plan
 ```
 
 ```bash
@@ -222,9 +246,13 @@ The launcher rereads the manifest on every invocation. If an optional
 the launcher uses its own CLI/SDK under supported Node 22.13+, 24 or 26. Install dependencies
 explicitly with `npm ci` using an approved npm source; bootstrap never does it.
 Existing `npm run` scripts also use that local CLI, without a global installation.
-Without the npm SDK, the verified standalone executable must match the pin;
-after changing the pin, rerun bootstrap to download the matching executable.
-A stale/corrupt local installation is an error, never a silent standalone fallback.
+Without the npm SDK, the standalone executable must match the pin. On Windows,
+when the pin changes, `winix run` downloads that exact release's executable
+into `.winix\runtime\<version>` (checked against its `SHA256SUMS` before it
+runs) and the launcher uses it from then on; older downloaded versions are
+removed, keeping the one the launcher falls back to. Elsewhere, rerun bootstrap.
+A stale/corrupt local installation is an error, never a silent standalone
+fallback: run `npm ci`, or delete `node_modules` to use the downloaded release.
 
 Fresh Windows-driven WSL setups using a branch now fetch full history and
 create a local tracking branch **at the locked first-run commit**, even if

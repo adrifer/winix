@@ -548,19 +548,20 @@ WSL, reboots, or changes execution policy persistently. Prepare the config and
 compatible SDK separately, then review \`switch --dry\` before activation.
 
 Repository mode adds \`-Repository HTTPS_URL -Ref main -Destination PATH
--ConfigDirectory winix -HostName HOST\`. Linux's \`bootstrap-linux.sh\` uses
+-ConfigDirectory winix [-HostName HOST]\` (without a host, the user picks one and
+it is remembered in .winix/host for later switches). Linux's \`bootstrap-linux.sh\` uses
 \`--repository\`, \`--ref\`, \`--destination\`, \`--config-directory\`, \`--host\`.
 It uses existing Nix for temporary Git/Python tools, or requires installed
 Git/Python; it never installs Nix or converts other Linux distributions.
-Both clone or validate a clean existing checkout without pulling/resetting,
+Both clone or validate an existing checkout (local changes only warn) without pulling/resetting,
 read its exact SDK dependency (version or official release SDK tarball URL),
 and verify matching release executables before running them. Windows additionally
 verifies that release's prerequisite-only script. Review scripts and release
 checksums first; hashes are not signatures. No Node/npm installation is automatic.
 \`-DryRun\`/\`--dry-run\` performs no changes/evaluation; \`-PrepareOnly\`/
 \`--prepare-only\` allows setup plus check/switch preview but no activation.
-Trust confirmation occurs before config evaluation. Omit prepare-only to
-confirm activation separately; \`-Yes\`/\`--yes\` accepts trust/activation/removals.
+The Windows script asks one confirmation before anything is evaluated, then
+runs without further questions; \`-Yes\`/\`--yes\` accepts it and removals.
 Do not run real bootstrap/activation as a development check on a shared machine.
 
 \`winix bootstrap --host HOST\` performs the checkout validation/preview/confirmation
@@ -569,7 +570,8 @@ phase. Its generated \`.winix/bin/winix.ps1\` or \`.winix/bin/winix\` launcher i
 optional node_modules SDK uses its own CLI under supported stable Node
 22.13+ (22.x), 24.x or 26.x; stale/corrupt
 local packages fail, never silently fall back. Otherwise the standalone must
-match the manifest; rerun bootstrap after changing the pin. The user may run
+match the manifest; on Windows a changed pin downloads that verified release
+automatically. Windows bootstrap also puts a per-user \`winix\` command on PATH. The user may run
 \`npm ci\` explicitly using an approved source, then use normal local npm scripts.
 The npm launcher enables transformation on Node 22/24, omits the removed
 transform flag on 26, and rejects unsupported majors. Node 26 accepts erasable

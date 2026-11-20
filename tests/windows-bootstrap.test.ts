@@ -123,7 +123,7 @@ function Invoke-WinixBootstrapNative {
     if ($FilePath -eq 'git.exe') {
         switch ($Arguments[2]) {
             'remote' { return 'https://example.com/dotfiles.git' }
-            'status' { return '' }
+            'status' { return $script:dirty }
             'rev-parse' { return ('a' * 40) }
             default { throw "Unexpected Git mutation: $Arguments" }
         }
@@ -144,14 +144,22 @@ function Invoke-WinixBootstrapHost {
 }
 `;
       for (let index = 0; index < 2; index++) {
-        const result = run(shell, setup,
+        // The rerun has local changes (linked app settings): it warns and continues.
+        const result = run(shell, setup + (index === 1 ? "\n$script:dirty = ' M windows/terminal/settings.json'" : "\n$script:dirty = ''"),
           `-Repository 'https://example.com/dotfiles.git' -Ref main -Destination '${root.replaceAll("'", "''")}' -HostName desktop -PrepareOnly -Yes`,
           "Invoke-WinixRepositoryBootstrap");
         expect(result.ok, result.error ?? "").toBe(true);
-        expect(result.calls.find((call) => call.file === "bootstrap")?.args).toEqual(["bootstrap", "--host", "desktop", "--prepare-only", "--yes"]);
+        // Consent was given by the script; Winix asks nothing more.
+        expect(result.calls.find((call) => call.file === "bootstrap")?.args).toEqual(["bootstrap", "--confirmed", "--host", "desktop", "--prepare-only", "--yes"]);
         expect(result.calls.some((call) => call.file === "download" && call.args[0].includes("/v0.3.0-preview.1/"))).toBe(true);
         expect(result.calls.some((call) => call.file === "node.exe" || call.file === "npm.cmd")).toBe(false);
       }
+      // Without -HostName, Winix lets the user choose (and remembers it).
+      const chosen = run(shell, setup + "\n$script:dirty = ''",
+        `-Repository 'https://example.com/dotfiles.git' -Ref main -Destination '${root.replaceAll("'", "''")}' -Yes`,
+        "Invoke-WinixRepositoryBootstrap");
+      expect(chosen.ok, chosen.error ?? "").toBe(true);
+      expect(chosen.calls.find((call) => call.file === "bootstrap")?.args).toEqual(["bootstrap", "--confirmed", "--yes"]);
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 

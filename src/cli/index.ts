@@ -45,6 +45,8 @@ const { positionals, values } = parseArgs({
     help: { type: "boolean", short: "h", default: false },
     version: { type: "boolean", short: "v", default: false },
     "prepare-only": { type: "boolean", default: false },
+    // Internal: consent was already given by the repository bootstrap script.
+    confirmed: { type: "boolean", default: false },
   },
 });
 
@@ -121,8 +123,8 @@ Examples:
 }
 
 const cwd = process.cwd();
-if (values["prepare-only"] && command !== "bootstrap") {
-  console.error("--prepare-only is only supported by winix bootstrap.");
+if ((values["prepare-only"] || values.confirmed) && command !== "bootstrap") {
+  console.error("--prepare-only and --confirmed are only supported by winix bootstrap.");
   process.exit(2);
 }
 if ((values.offline || values.locked) && !["apply", "switch", "plan"].includes(command)) {
@@ -184,7 +186,8 @@ switch (command) {
   case "bootstrap":
     try {
       await bootstrapCheckout(cwd, {
-        host: values.host ?? "", yes: values.yes, prepareOnly: values["prepare-only"], dry: values.dry,
+        host: values.host, yes: values.yes, prepareOnly: values["prepare-only"], dry: values.dry,
+        confirmed: values.confirmed,
       });
     } catch (error) { console.error(`Error: ${(error as Error).message}`); process.exit(1); }
     break;
