@@ -15,16 +15,23 @@ const source = script.split('python3 - "$@" <<\'PY\'\n')[1].split("\nPY")[0];
 describe.skipIf(!available)("Linux repository bootstrap with mocked downloads/activation", () => {
   it("accepts and declines interactive trust using a real non-seekable terminal", () => {
     const test = `
-import os, pty
+import os, pty, select, time
 namespace = {"__name__":"bootstrap_test"}
 exec(${JSON.stringify(source)}, namespace)
 master, slave = pty.openpty()
 path = os.ttyname(slave)
 namespace["open"] = lambda name, mode="r": open(path if name == "/dev/tty" else name, mode)
+def read_until(expected, seconds=5):
+    # PTY echo and output arrive asynchronously: keep reading until the prompt shows.
+    data, deadline = b"", time.monotonic() + seconds
+    while expected not in data and time.monotonic() < deadline:
+        if select.select([master], [], [], 0.1)[0]:
+            data += os.read(master, 4096)
+    return data
 try:
     os.write(master, b"yes\\n")
     namespace["confirm"]("Trust repository?", False)
-    assert b"Trust repository? [y/N]" in os.read(master, 4096)
+    assert b"Trust repository? [y/N]" in read_until(b"Trust repository? [y/N]")
     os.write(master, b"no\\n")
     try:
         namespace["confirm"]("Activate?", False)
