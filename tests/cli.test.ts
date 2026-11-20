@@ -1013,15 +1013,15 @@ describe("winix switch Windows dry run", () => {
         },
       });
       const output = logs.join("\n");
-      expect(output).toContain("winix switch would apply only these 1 change(s)");
+      expect(output).toContain("winix switch would apply only this change.");
       expect(output).not.toContain("winget configure");
       // A plan, not the generated files. Machine checks need native Windows.
       if (process.platform === "win32") {
-        expect(output).toContain("Plan for desktop (checked against this machine):");
-        expect(output).toMatch(/\+ install\s+Fastfetch-cli\.Fastfetch\s+\(2\.45\.0\)/);
+        expect(output).toContain("Plan for desktop: 1 change, 0 unchanged");
+        expect(output).toMatch(/\+ install\s+Fastfetch-cli\.Fastfetch\s+2\.45\.0/);
       } else {
-        expect(output).toContain("Plan for desktop (not checked against a machine: machine checks need native Windows):");
-        expect(output).toContain("Declares packages: 1.");
+        expect(output).toContain("Plan for desktop (not checked against a machine: machine checks need native Windows)");
+        expect(output).toContain("Declares 1 package.");
       }
       expect(output).not.toContain('"resources"');
     } finally {
@@ -1060,8 +1060,8 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
       expect(confirm).not.toHaveBeenCalled();
       expect(readWindowsLock(dir)?.packages["Example.App"].version).toBe("7");
       const output = log.mock.calls.flat().join("\n");
-      expect(output).toContain("= 1 unchanged (packages: 1)");
-      expect(output).toContain("Summary: 0 to change, 1 unchanged.");
+      expect(output).toContain("= 1 unchanged (1 package)");
+      expect(output).toContain("Plan for desktop: no changes, 1 unchanged");
       if (!dry) expect(output).toContain("Nothing to change.");
     } finally {
       log.mockRestore(); warn.mockRestore(); confirm.mockRestore();
@@ -1158,7 +1158,7 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
         elevated: true,
         steps: [expect.objectContaining({ kind: "package", package: { id: "Example.App", source: "winget", version: "8", action: "upgrade" } })],
       }]);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining("need administrator rights; approve the UAC prompt"));
+      expect(log).toHaveBeenCalledWith(expect.stringContaining("administrator rights; approve the UAC prompt"));
     } finally {
       log.mockRestore();
       await rm(dir, { recursive: true, force: true });

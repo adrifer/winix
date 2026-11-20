@@ -25,6 +25,9 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   applying shows the step in progress and the wait for the UAC prompt; switch
   ends with its total time. Switch prints one "Generated" line and no "Next:"
   hint, and drops the "Keeping … (locked …)" lines the plan already reports.
+  The plan puts its counts in the header, aligns labels and details in
+  columns, tags rows `[admin]`/`[running]` instead of repeating them in notes,
+  uses real plurals, and is coloured on interactive terminals (`NO_COLOR`).
 
 - **Fast Windows switch** — `winix switch` no longer runs `winget configure`.
   Hosts generate `resources.json`; switch plans against the machine and applies

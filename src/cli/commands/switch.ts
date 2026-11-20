@@ -21,6 +21,7 @@ import {
   applyWindowsBatches, formatApplySummary, nativeWindowsBatchRunner, planApplyBatches, type WindowsBatchRunner,
 } from "../windows-apply.ts";
 import * as progress from "../progress.ts";
+import { colorEnabled, plural } from "../style.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { loadWorkspace } from "../loader.ts";
 import { runCommand } from "../run.ts";
@@ -92,7 +93,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
           const tracked = managedWindowsResources(host).filter((resource) => resource.kind === "package");
           // One inventory for every package, reused by the plan, activation and reconciliation.
           const inventory = await progress.step("Reading installed packages",
-            () => inspectResources(adapter, tracked), `Read ${tracked.length} installed package(s)`);
+            () => inspectResources(adapter, tracked), `Read ${plural(tracked.length, "installed package")}`);
           for (const resource of tracked) {
             const snapshot = inventory.get(resourceKey(resource)) ?? null;
             knownSnapshots.set(resourceKey(resource), snapshot);
@@ -144,8 +145,8 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
       // One plan, checked against the machine, for the preview and for activation.
       const checked = summaries.filter((resource) => !resource.package && resource.category !== "command").length;
       planned = live
-        ? await progress.step(`Checking ${checked} resource(s) on this machine`,
-          () => planWindowsResources(summaries, packageInventory, checker), `Checked ${checked} resource(s) on this machine`)
+        ? await progress.step(`Checking ${plural(checked, "resource")} on this machine`,
+          () => planWindowsResources(summaries, packageInventory, checker), `Checked ${plural(checked, "resource")} on this machine`)
         : await planWindowsResources(summaries, undefined, undefined);
       // Packages newer than locked are kept; show the lock beside the installed version.
       for (const entry of planned) {
@@ -156,12 +157,11 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
       }
       console.log("");
       for (const line of formatWindowsPlan(hostName, planned, {
-        live, reason: live ? undefined : "machine checks need native Windows",
+        live, reason: live ? undefined : "machine checks need native Windows", color: colorEnabled(),
       })) console.log(line);
     } else if (command) {
       console.log(`\nRunning: ${command.join(" ")}`);
     }
-    const dryChanges = planned.filter((entry) => entry.state !== "ok").length;
     const ownership: string[] = [];
     const activate = async (): Promise<void | { changed: boolean }> => {
       if (statePath && !opts.dry) {
@@ -176,13 +176,13 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
           return { changed: false };
         }
         const total = batches.reduce((count, batch) => count + batch.steps.length, 0);
-        console.log(`\nApplying ${total} change(s):`);
+        console.log(`\nApplying ${plural(total, "change")}:`);
         const outcome = await applyWindowsBatches(batches, opts.windowsRunner ?? nativeWindowsBatchRunner, applyProgress());
         progress.stop();
         const labels = new Map(summaries.map((resource) => [resource.name, resource.package?.id ?? resource.label]));
         for (const line of formatApplySummary(outcome, labels)) console.log(line);
         if (outcome.failed.length > 0) {
-          throw new Error(`${outcome.failed.length} Windows change(s) did not apply; fix the errors above and rerun winix switch.`);
+          throw new Error(`${plural(outcome.failed.length, "Windows change")} did not apply; fix the errors above and rerun winix switch.`);
         }
         return { changed: outcome.results.some((entry) => entry.status === "applied") };
       }
@@ -216,7 +216,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         lockHeld: true,
         knownSnapshots,
         activate,
-        verify: (work) => progress.step("Verifying the result", work, `Verified ${desired.length} managed resource(s)`),
+        verify: (work) => progress.step("Verifying the result", work, `Verified ${plural(desired.length, "managed resource")}`),
         ...(windowsDry ? { report: (message: string) => ownership.push(message) } : {}),
       });
       if (!opts.dry && lock && after) {
@@ -252,9 +252,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         console.log("\nRemovals and ownership (Winix applied-state inventory):");
         for (const line of ownership) console.log(`  ${line}`);
       }
-      console.log(dryChanges === 0
-        ? "\nwinix switch would change nothing."
-        : `\nwinix switch would apply only these ${dryChanges} change(s); work that needs administrator rights runs in one elevated step (one UAC prompt).`);
+      console.log(`\n${dryRunSummary(planned)}`);
     } else if (opts.dry && command) {
       console.log(`\nWould run: ${command.join(" ")}`);
     }
@@ -267,12 +265,28 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
   }
 }
 
+/** The last line of a Windows dry run, consistent with the plan header's counts. */
+export function dryRunSummary(planned: PlannedResource[]): string {
+  const changes = planned.filter((entry) => entry.state === "change").length;
+  const unchecked = planned.filter((entry) => entry.state === "unknown").length;
+  const conflicts = planned.filter((entry) => entry.state === "conflict").length;
+  if (conflicts > 0) return `winix switch would stop before changing anything: resolve the ${plural(conflicts, "conflict")} first.`;
+  if (changes === 0 && unchecked === 0) return "winix switch would change nothing.";
+  const apply = changes === 0 ? "would apply nothing" : `would apply only ${changes === 1 ? "this change" : `these ${changes} changes`}`;
+  const check = unchecked === 0 ? ""
+    : `, and check ${unchecked === 1 ? "the unchecked one" : `the ${unchecked} unchecked ones`} as it applies (applying ${unchecked === 1 ? "it" : "them"} if needed)`;
+  return `winix switch ${apply}${check}.`;
+}
+
 /**
  * Show the apply runner's progress: a spinner with the step in progress (and
  * while waiting for the UAC prompt), then one line per finished step. Without
  * an interactive terminal, start and finish lines are printed as they come.
  */
-export function applyProgress(print: (line: string) => void = console.log): (line: string) => void {
+export function applyProgress(
+  // Look console.log up per line: the spinner wraps it to clear itself first.
+  print: (line: string) => void = (line) => console.log(line),
+): (line: string) => void {
   let current: string | undefined;
   let started = Date.now();
   progress.spin("Applying");

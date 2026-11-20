@@ -20,7 +20,7 @@ import {
 import {
   inspectResources, inventoryPackages, parsePackageInventory, parseWingetExport, type WindowsStateAdapter,
 } from "../src/cli/windows-state.ts";
-import { applyProgress } from "../src/cli/commands/switch.ts";
+import { applyProgress, dryRunSummary } from "../src/cli/commands/switch.ts";
 import { formatDuration } from "../src/cli/progress.ts";
 import { lockGapWarnings } from "../src/cli/commands/check.ts";
 import { inspectHost } from "../src/cli/commands/inspect.ts";
@@ -148,14 +148,19 @@ describe("Windows plan", () => {
       ["Newer.App", "ok", "keep"], ["Exact.App", "conflict", "conflict"], ["Any.App", "ok", "keep"],
       ["Unknown.App", "ok", "keep"], ["Missing.Any", "change", "install"],
     ]);
-    const output = formatWindowsPlan("desktop", planned, { live: true }).join("\n");
-    expect(output).toContain("+ install   New.App  (1.0)");
-    expect(output).toContain("~ upgrade   Old.App  (1.5 -> 2.0)");
-    expect(output).toContain("! conflict  Exact.App  (installed 1.2, exact pin 1.0; switch fails rather than downgrade)");
-    expect(output).toContain("+ install   Missing.Any  (latest available)");
-    expect(output).toContain("= 4 unchanged (packages: 4)");
-    expect(output).toContain("newer than locked; switch keeps them and offers to update the lock: Newer.App");
-    expect(output).toContain("Summary: 3 to change, 1 conflict(s), 4 unchanged.");
+    const output = formatWindowsPlan("desktop", planned, { live: true });
+    expect(output).toEqual([
+      "Plan for desktop: 3 changes, 1 conflict, 4 unchanged",
+      "  + install   New.App      1.0",
+      "  ~ upgrade   Old.App      1.5 → 2.0",
+      "  ! conflict  Exact.App    installed 1.2, exact pin 1.0; switch fails rather than downgrade",
+      "  + install   Missing.Any  latest available",
+      "  = 4 unchanged (4 packages)",
+      "  i 1 package newer than locked (kept; switch offers to update the lock): Newer.App",
+    ]);
+    // Colour only when asked (interactive terminals).
+    expect(formatWindowsPlan("desktop", planned, { live: true, color: true })[1]).toBe(
+      "  \x1b[32m+\x1b[0m \x1b[32minstall \x1b[0m  New.App      \x1b[2m1.0\x1b[0m");
   });
 
   it("checks scripts and DSC resources independently and explains what could not be checked", async () => {
@@ -180,24 +185,25 @@ describe("Windows plan", () => {
     expect(checker.dsc).toHaveBeenCalledWith([resources[4]]);
     const output = formatWindowsPlan("desktop", planned, { live: true });
     expect(output).toEqual([
-      "Plan for desktop (checked against this machine):",
+      "Plan for desktop: 3 changes, 2 not checked, 2 unchanged",
       "  ~ apply  link a -> b",
-      "  ? check  Enable Windows features X  (needs an elevated shell to check)",
-      "  ? check  broken  (check failed: Cannot find path)",
-      "  ~ run    setup  (raw commands run on every switch)",
-      "  ~ apply  machine thing",
-      "  = 2 unchanged (files: 1, environment: 1)",
-      "  ! 1 change(s) need administrator rights; switch asks once (UAC): machine thing",
+      "  ? check  Enable Windows features X  needs an elevated shell to check",
+      "  ? check  broken                     check failed: Cannot find path",
+      "  ~ run    setup                      raw commands run on every switch",
+      // Tags line up after the detail column (capped at 28 characters).
+      `  ~ apply  ${"machine thing".padEnd(25)}  ${" ".repeat(28)}  [admin]`,
+      "  = 2 unchanged (1 file, 1 environment variable)",
+      "",
+      "  ! Switch asks once for administrator approval (UAC) for the [admin] row.",
       "  ! Enable Windows features X can require a Windows restart; Winix never restarts Windows.",
-      "  Summary: 3 to change, 2 not checked, 2 unchanged.",
     ]);
   });
 
   it("describes the declaration when the machine cannot be checked", async () => {
     const planned = await planWindowsResources([pkg("Git.Git", "2.0"), summary({ category: "file", testScript: "..." })], undefined, undefined);
     expect(formatWindowsPlan("desktop", planned, { live: false, reason: "machine checks need native Windows" })).toEqual([
-      "Plan for desktop (not checked against a machine: machine checks need native Windows):",
-      "  Declares packages: 1, files: 1.",
+      "Plan for desktop (not checked against a machine: machine checks need native Windows)",
+      "  Declares 1 package, 1 file.",
     ]);
   });
 
@@ -211,8 +217,9 @@ describe("Windows plan", () => {
     const planned = await planWindowsResources(resources, inventory, checker);
     expect(running).toHaveBeenCalledWith(["Tool.Busy", "Tool.Idle"]);
     expect(formatWindowsPlan("desktop", planned, { live: true })).toContain(
-      "  ! Tool.Busy is running (busy.exe, pid 42; busy.exe, pid 43); close it before switch: " +
-      "winget cannot upgrade a running portable app, and a failed upgrade can remove its command.");
+      "  ! Close busy.exe (pid 42), busy.exe (pid 43) before switching: winget cannot upgrade a running portable app " +
+      "(Tool.Busy), and a failed upgrade can remove its command.");
+    expect(formatWindowsPlan("desktop", planned, { live: true })[1]).toBe("  ~ upgrade  Tool.Busy  1.0 → 2.0  [running]");
 
     // Advisory: a failing probe reports nothing instead of failing the plan.
     const failing: WindowsPlanChecker = { ...checker, running: vi.fn(async () => { throw new Error("no pwsh"); }) };
@@ -236,8 +243,8 @@ describe("Windows plan", () => {
       { id: "Machine.Install", source: "winget", action: "install", version: "1.0" },
     ]);
     expect(formatWindowsPlan("desktop", planned, { live: true })).toContain(
-      "  ! 2 package(s) need administrator rights; switch asks once (UAC) for all of them: " +
-      "Machine.Upgrade (installed machine-wide), Machine.Install (no per-user installer)");
+      "  ! Switch asks once for administrator approval (UAC) for the 2 [admin] rows " +
+      "(Machine.Upgrade: installed machine-wide; Machine.Install: no per-user installer).");
   });
 
   it("reads installed scope and installer choice from winget output", () => {
@@ -398,7 +405,7 @@ describe("Windows apply (switch)", () => {
       { name: "a", status: "failed", error: "boom" }, { name: "b", status: "unchanged" },
       { name: "c", status: "skipped", error: "a dependency failed" }, { name: "d", status: "applied" },
     ]);
-    expect(lines).toContain("Applying 1 change(s) that need administrator rights; approve the UAC prompt (it can open behind other windows).");
+    expect(lines).toContain("Applying 1 change that needs administrator rights; approve the UAC prompt (it can open behind other windows).");
     expect(formatApplySummary(outcome, new Map([["a", "A"], ["c", "C"]]))).toEqual([
       "Applied 1, already in place 1, failed 1, skipped 1.", "  ✗ A: boom", "  ✗ C: a dependency failed",
     ]);
@@ -513,6 +520,18 @@ describe("winget export inventory", () => {
 });
 
 describe("switch progress", () => {
+  it("ends a dry run consistently with the plan header", () => {
+    const entry = (state: PlannedResource["state"]) => ({ resource: summary({}), state, action: "x" }) as PlannedResource;
+    expect(dryRunSummary([entry("ok")])).toBe("winix switch would change nothing.");
+    expect(dryRunSummary([entry("change"), entry("ok")])).toBe("winix switch would apply only this change.");
+    expect(dryRunSummary([entry("change"), entry("unknown")])).toBe(
+      "winix switch would apply only this change, and check the unchecked one as it applies (applying it if needed).");
+    expect(dryRunSummary([entry("unknown"), entry("unknown")])).toBe(
+      "winix switch would apply nothing, and check the 2 unchecked ones as it applies (applying them if needed).");
+    expect(dryRunSummary([entry("change"), entry("conflict")])).toBe(
+      "winix switch would stop before changing anything: resolve the 1 conflict first.");
+  });
+
   it("formats durations", () => {
     expect([formatDuration(400), formatDuration(9_940), formatDuration(45_000), formatDuration(125_000)])
       .toEqual(["0.4s", "9.9s", "45s", "2m 05s"]);
@@ -522,7 +541,7 @@ describe("switch progress", () => {
     const lines: string[] = [];
     const log = applyProgress((line) => lines.push(line));
     for (const line of [
-      "Applying 1 change(s) that need administrator rights; approve the UAC prompt (it can open behind other windows).",
+      "Applying 1 change that needs administrator rights; approve the UAC prompt (it can open behind other windows).",
       "  ~ install  Proton.ProtonPass 1.43.0",
       "    ✓ Proton.ProtonPass (45s)",
       "  ~ apply  link C:\\a -> C:\\b",
@@ -530,7 +549,7 @@ describe("switch progress", () => {
       "    ✗ link C:\\a -> C:\\b: still not in the desired state after applying",
     ]) log(line);
     expect(lines.map((line) => line.replace(/\([\d.]+s\)/, "(T)"))).toEqual([
-      "Applying 1 change(s) that need administrator rights; approve the UAC prompt (it can open behind other windows).",
+      "Applying 1 change that needs administrator rights; approve the UAC prompt (it can open behind other windows).",
       "  ~ install Proton.ProtonPass 1.43.0",
       "  ✓ install Proton.ProtonPass 1.43.0 (T)",
       "  ~ apply link C:\\a -> C:\\b",

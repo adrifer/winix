@@ -5,6 +5,7 @@ import { spawn } from "node:child_process";
 import type { WindowsResourceCategory, WindowsResourceSummary } from "../backends/windows/index.ts";
 import { compareWindowsPackageVersions, isComparableWindowsPackageVersion } from "./windows-package-versions.ts";
 import type { ResourceSnapshot } from "./windows-state.ts";
+import { painter, plural, type Style } from "./style.ts";
 
 export type PlanState = "ok" | "change" | "conflict" | "unknown";
 
@@ -164,7 +165,7 @@ function packagePlan(resource: WindowsResourceSummary, snapshot: ResourceSnapsho
   }
   const order = compareWindowsPackageVersions(pkg.id, installed, pkg.version);
   if (order === 0) return { resource, state: "ok", action: "keep", detail: installed };
-  if (order < 0) return { resource, state: "change", action: "upgrade", detail: `${installed} -> ${pkg.version}` };
+  if (order < 0) return { resource, state: "change", action: "upgrade", detail: `${installed} → ${pkg.version}` };
   return pkg.exact
     ? { resource, state: "conflict", action: "conflict", detail: `installed ${installed}, exact pin ${pkg.version}; switch fails rather than downgrade` }
     : { resource, state: "ok", action: "keep", detail: `${installed} (locked ${pkg.version}; switch offers to update the lock)` };
@@ -178,76 +179,109 @@ function firstLine(message: string): string {
   return message.split(/\r?\n/).map((line) => line.trim()).find(Boolean) ?? message;
 }
 
-const CATEGORY_NAMES: Record<WindowsResourceCategory, string> = {
-  package: "packages", file: "files", startup: "startup shortcuts", environment: "environment",
-  settings: "settings", powershell: "PowerShell", features: "Windows features", wsl: "WSL",
-  fonts: "fonts", command: "commands", winix: "Winix helpers", other: "other",
+const CATEGORY_NAMES: Record<WindowsResourceCategory, [string, string]> = {
+  package: ["package", "packages"], file: ["file", "files"], startup: ["startup shortcut", "startup shortcuts"],
+  environment: ["environment variable", "environment variables"], settings: ["setting", "settings"],
+  powershell: ["PowerShell", "PowerShell"], features: ["Windows feature set", "Windows feature sets"], wsl: ["WSL", "WSL"],
+  fonts: ["font", "fonts"], command: ["command", "commands"], winix: ["Winix helper", "Winix helpers"], other: ["other", "other"],
 };
 
 const MARKERS: Record<PlanState, string> = { ok: "=", change: "~", conflict: "!", unknown: "?" };
+const MARKER_STYLES: Record<string, Style> = { "+": "green", "~": "yellow", "!": "red", "?": "cyan", "=": "dim" };
+/** Longest label that still sets the column width; longer ones just overflow it. */
+const LABEL_COLUMN = 44;
+const DETAIL_COLUMN = 28;
 
-/** Render a plan. `live` is false when nothing was checked against the machine. */
+/**
+ * Render a plan. `live` is false when nothing was checked against the machine.
+ * `color` adds ANSI styling (interactive terminals only).
+ */
 export function formatWindowsPlan(
-  host: string, planned: PlannedResource[], opts: { live: boolean; reason?: string },
+  host: string, planned: PlannedResource[], opts: { live: boolean; reason?: string; color?: boolean },
 ): string[] {
-  const lines = [opts.live
-    ? `Plan for ${host} (checked against this machine):`
-    : `Plan for ${host} (not checked against a machine${opts.reason ? `: ${opts.reason}` : ""}):`];
+  const paint = painter(opts.color === true);
   if (!opts.live) {
-    const counts = countByCategory(planned.map((entry) => entry.resource));
-    lines.push(`  Declares ${counts || "nothing"}.`);
-  } else {
-    const changes = planned.filter((entry) => entry.state !== "ok");
-    const width = Math.max(0, ...changes.map((entry) => entry.action.length));
-    for (const entry of changes) {
-      const marker = entry.action === "install" ? "+" : MARKERS[entry.state];
-      const label = entry.resource.package ? entry.resource.package.id : entry.resource.label;
-      lines.push(`  ${marker} ${entry.action.padEnd(width)}  ${label}${entry.detail ? `  (${entry.detail})` : ""}`);
+    const lines = [paint("bold", `Plan for ${host}`) + ` (not checked against a machine${opts.reason ? `: ${opts.reason}` : ""})`];
+    lines.push(`  Declares ${countByCategory(planned.map((entry) => entry.resource)) || "nothing"}.`);
+    const elevated = planned.filter((entry) => entry.resource.elevated);
+    if (elevated.length > 0) {
+      lines.push("", `  ${paint("red", "!")} ${plural(elevated.length, "resource")} ${elevated.length === 1 ? "needs" : "need"} ` +
+        "administrator rights; switch asks once (UAC).");
     }
-    const unchanged = planned.filter((entry) => entry.state === "ok");
-    if (unchanged.length > 0) {
-      lines.push(`  = ${unchanged.length} unchanged (${countByCategory(unchanged.map((entry) => entry.resource))})`);
-    }
-    const newer = unchanged.filter((entry) => entry.resource.package && entry.detail?.includes("switch offers"));
-    if (newer.length > 0) {
-      lines.push(`  i ${newer.length} package(s) newer than locked; switch keeps them and offers to update the lock: ` +
-        newer.map((entry) => entry.resource.package!.id).join(", "));
-    }
+    return lines;
   }
-  const pending = opts.live ? planned.filter((entry) => entry.state !== "ok") : planned;
-  const elevated = pending.filter((entry) => entry.resource.elevated);
+
+  const count = (state: PlanState) => planned.filter((entry) => entry.state === state).length;
+  const changes = count("change");
+  const parts = [changes === 0 ? "no changes" : plural(changes, "change")];
+  if (count("conflict") > 0) parts.push(plural(count("conflict"), "conflict"));
+  if (count("unknown") > 0) parts.push(`${count("unknown")} not checked`);
+  parts.push(`${count("ok")} unchanged`);
+  const lines = [`${paint("bold", `Plan for ${host}`)}: ${parts.join(", ")}`];
+
+  const pending = planned.filter((entry) => entry.state !== "ok");
+  const admin = (entry: PlannedResource) => entry.resource.elevated || entry.elevation !== undefined;
+  const rows = pending.map((entry) => ({
+    marker: entry.action === "install" ? "+" : MARKERS[entry.state],
+    action: entry.action,
+    label: entry.resource.package ? entry.resource.package.id : entry.resource.label,
+    detail: entry.detail ?? "",
+    tags: [
+      ...(admin(entry) ? [paint("magenta", "[admin]")] : []),
+      ...(entry.running?.length ? [paint("red", "[running]")] : []),
+    ].join(" "),
+  }));
+  const width = (values: string[], cap: number) => Math.min(cap, Math.max(0, ...values.map((value) => value.length)));
+  const actionWidth = width(rows.map((row) => row.action), Infinity);
+  const labelWidth = width(rows.map((row) => row.label), LABEL_COLUMN);
+  const detailWidth = rows.some((row) => row.tags) ? width(rows.map((row) => row.detail), DETAIL_COLUMN) : 0;
+  for (const row of rows) {
+    const cells = [
+      `  ${paint(MARKER_STYLES[row.marker], row.marker)} ${paint(MARKER_STYLES[row.marker], row.action.padEnd(actionWidth))}`,
+      row.label.padEnd(row.detail || row.tags ? labelWidth : 0),
+      paint("dim", row.detail.padEnd(row.tags ? detailWidth : 0)),
+      row.tags,
+    ];
+    lines.push(cells.filter((cell, index) => index < 2 || cell.length > 0).join("  ").trimEnd());
+  }
+
+  const unchanged = planned.filter((entry) => entry.state === "ok");
+  if (unchanged.length > 0) {
+    lines.push(paint("dim", `  = ${unchanged.length} unchanged (${countByCategory(unchanged.map((entry) => entry.resource))})`));
+  }
+  const newer = unchanged.filter((entry) => entry.resource.package && entry.detail?.includes("switch offers"));
+  if (newer.length > 0) {
+    lines.push(`  ${paint("cyan", "i")} ${plural(newer.length, "package")} newer than locked (kept; switch offers to update the lock): ` +
+      newer.map((entry) => entry.resource.package!.id).join(", "));
+  }
+
+  const notes: string[] = [];
+  const elevated = pending.filter(admin);
   if (elevated.length > 0) {
-    lines.push(`  ! ${elevated.length} ${opts.live ? "change(s)" : "resource(s)"} need administrator rights; switch asks once (UAC): ` +
-      elevated.map((entry) => entry.resource.package?.id ?? entry.resource.label).join(", "));
-  }
-  const prompting = pending.filter((entry) => entry.elevation);
-  if (prompting.length > 0) {
-    lines.push(`  ! ${prompting.length} package(s) need administrator rights; switch asks once (UAC) for all of them: ` +
-      prompting.map((entry) => `${entry.resource.package!.id} (${entry.elevation})`).join(", "));
+    const reasons = elevated.filter((entry) => entry.elevation)
+      .map((entry) => `${entry.resource.package!.id}: ${entry.elevation}`);
+    notes.push(`Switch asks once for administrator approval (UAC) for the ` +
+      `${elevated.length === 1 ? "[admin] row" : `${elevated.length} [admin] rows`}` +
+      `${reasons.length > 0 ? ` (${reasons.join("; ")})` : ""}.`);
   }
   for (const entry of pending.filter((candidate) => candidate.running?.length)) {
-    lines.push(`  ! ${entry.resource.package!.id} is running (${describeRunning(entry.running!)}); close it before switch: ` +
-      "winget cannot upgrade a running portable app, and a failed upgrade can remove its command.");
+    const processes = entry.running!.map((process) => `${process.name} (pid ${process.pid})`).join(", ");
+    notes.push(`Close ${processes} before switching: winget cannot upgrade a running portable app ` +
+      `(${entry.resource.package!.id}), and a failed upgrade can remove its command.`);
   }
   const reboot = pending.filter((entry) => entry.resource.reboot);
   if (reboot.length > 0) {
-    lines.push(`  ! ${reboot.map((entry) => entry.resource.label).join(", ")} can require a Windows restart; Winix never restarts Windows.`);
+    notes.push(`${reboot.map((entry) => entry.resource.label).join(", ")} can require a Windows restart; Winix never restarts Windows.`);
   }
-  if (opts.live) {
-    const count = (state: PlanState) => planned.filter((entry) => entry.state === state).length;
-    const parts = [`${count("change")} to change`];
-    if (count("conflict") > 0) parts.push(`${count("conflict")} conflict(s)`);
-    if (count("unknown") > 0) parts.push(`${count("unknown")} not checked`);
-    parts.push(`${count("ok")} unchanged`);
-    lines.push(`  Summary: ${parts.join(", ")}.`);
-  }
+  if (notes.length > 0) lines.push("", ...notes.map((note) => `  ${paint("red", "!")} ${note}`));
   return lines;
 }
 
 function countByCategory(resources: WindowsResourceSummary[]): string {
   const counts = new Map<WindowsResourceCategory, number>();
   for (const resource of resources) counts.set(resource.category, (counts.get(resource.category) ?? 0) + 1);
-  return [...counts].map(([category, count]) => `${CATEGORY_NAMES[category]}: ${count}`).join(", ");
+  return [...counts].sort(([, left], [, right]) => right - left)
+    .map(([category, count]) => `${count} ${CATEGORY_NAMES[category][count === 1 ? 0 : 1]}`).join(", ");
 }
 
 const PROBE_MARKER = "WINIX-PLAN:";

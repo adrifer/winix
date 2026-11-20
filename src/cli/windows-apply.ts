@@ -184,7 +184,8 @@ export async function applyWindowsBatches(
     }
     if (runnable.length === 0) continue;
     if (batch.elevated) {
-      log(`Applying ${runnable.length} change(s) that need administrator rights; approve the UAC prompt (it can open behind other windows).`);
+      log(`Applying ${runnable.length === 1 ? "1 change that needs" : `${runnable.length} changes that need`} administrator rights; ` +
+        "approve the UAC prompt (it can open behind other windows).");
     }
     let batchResults: StepResult[];
     try {

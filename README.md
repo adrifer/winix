@@ -1257,23 +1257,23 @@ would change, checked against the current machine. It never installs or writes
 anything:
 
 ```text
-Plan for desktop (checked against this machine):
-  + install  DEVCOM.JetBrainsMonoNerdFont  (3.3.0)
-  ~ upgrade  Git.Git  (2.55.0.3 -> 2.56.0.4)
-  ~ upgrade  JesseDuffield.lazygit  (0.64.0 -> 0.66.1)
+Plan for desktop: 4 changes, 1 not checked, 47 unchanged
+  + install  DEVCOM.JetBrainsMonoNerdFont                  3.3.0                [admin]
+  ~ upgrade  Git.Git                                       2.55.0.3 → 2.56.0.4  [admin]
+  ~ upgrade  JesseDuffield.lazygit                         0.64.0 → 0.66.1      [running]
   ~ apply    link localAppData\nvim -> ../nvim/.config/nvim
-  ? check    Enable Windows features Microsoft-Windows-Subsystem-Linux, VirtualMachinePlatform  (needs an elevated shell to check)
-  = 31 unchanged (packages: 21, files: 4, settings: 2, ...)
-  i 4 package(s) newer than locked; switch keeps them and offers to update the lock: Neovim.Neovim, ...
-  ! 2 package(s) need administrator rights; switch asks once (UAC) for all of them: Git.Git (installed machine-wide), DEVCOM.JetBrainsMonoNerdFont (no per-user installer)
-  ! JesseDuffield.lazygit is running (lazygit.exe, pid 12156); close it before switch: winget cannot upgrade a running portable app, and a failed upgrade can remove its command.
+  ? check    Enable Windows features Microsoft-Windows-Subsystem-Linux, VirtualMachinePlatform  needs an elevated shell to check
+  = 47 unchanged (30 packages, 12 files, 2 settings, ...)
+  i 3 packages newer than locked (kept; switch offers to update the lock): Microsoft.PowerShell, ...
+
+  ! Switch asks once for administrator approval (UAC) for the 2 [admin] rows (Git.Git: installed machine-wide; DEVCOM.JetBrainsMonoNerdFont: no per-user installer).
+  ! Close lazygit.exe (pid 12156) before switching: winget cannot upgrade a running portable app (JesseDuffield.lazygit), and a failed upgrade can remove its command.
   ! Enable Windows features ... can require a Windows restart; Winix never restarts Windows.
-  Summary: 20 to change, 2 not checked, 31 unchanged.
 
 Removals and ownership (Winix applied-state inventory):
   Would remove: ["package","winget","old.app"]
 
-winix switch would apply only these 20 change(s); work that needs administrator rights runs in one elevated step (one UAC prompt).
+winix switch would apply only these 4 changes, and check the unchecked one as it applies (applying it if needed).
 ```
 
 `winix switch` makes the same plan and then applies **only what is out of
@@ -1302,19 +1302,18 @@ when it finishes; while applying, the spinner names the step in progress (or
 says it is waiting for the UAC prompt):
 
 ```text
-✓ Read 30 installed package(s) (2.0s)
+✓ Read 30 installed packages (2.0s)
 ✓ Generated .winix/out/desktop/resources.json
-✓ Checked 22 resource(s) on this machine (9.0s)
+✓ Checked 22 resources on this machine (9.0s)
 
-Plan for desktop (checked against this machine):
-  + install  Proton.ProtonPass  (1.43.0)
-  = 51 unchanged (packages: 29, files: 12, ...)
-  Summary: 1 to change, 51 unchanged.
+Plan for desktop: 1 change, 51 unchanged
+  + install  Proton.ProtonPass  1.43.0
+  = 51 unchanged (29 packages, 12 files, ...)
 
-Applying 1 change(s):
+Applying 1 change:
   ✓ install Proton.ProtonPass 1.43.0 (45s)
 Applied 1, already in place 0, failed 0, skipped 0.
-✓ Verified 32 managed resource(s) (2.4s)
+✓ Verified 32 managed resources (2.4s)
 
 Done in 1m 01s.
 ```
@@ -1325,7 +1324,9 @@ and apply it.
 
 - `+` install, `~` change, `!` conflict (for example an exact pin older than the
   installed version: switch fails rather than downgrade), `?` could not be
-  checked, `=` already in the desired state.
+  checked, `=` already in the desired state. `[admin]` marks changes that run
+  in the elevated step and `[running]` packages that must be closed first; in a
+  terminal the plan is coloured (not when piped, in CI, or with `NO_COLOR`).
 - Packages come from one `winget export` (a batched DSC read confirms any it
   does not list before switch installs them). Every other resource runs its
   own test script, each isolated so one failure (often a missing elevation)
