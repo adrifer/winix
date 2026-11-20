@@ -52,6 +52,16 @@ interface SwitchOptions {
 }
 
 export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<void> {
+  // Feedback from the first moment; each phase replaces the spinner text.
+  progress.spin("Loading configuration");
+  try {
+    await runSwitch(cwd, opts);
+  } finally {
+    progress.stop();
+  }
+}
+
+async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
   const started = Date.now();
   const { workspace, configDir } = await loadWorkspace(cwd);
   const evaluated = evaluate(workspace, { configDir });
@@ -80,6 +90,8 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
     const windowsDry = opts.dry && platform === "windows";
     const result = await applyWorkspace(cwd, {
       host: hostName,
+      // Evaluated once, above; generation reuses it.
+      loaded: { workspace, configDir, hosts: evaluated },
       dry: windowsDry,
       print: !windowsDry,
       compact: true,
@@ -136,6 +148,8 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
       } : undefined,
     });
 
+    // Nothing may draw over activation output (nixos-rebuild inherits the terminal).
+    progress.stop();
     const command = platform === "windows" ? undefined : activationCommand(platform, flakeRefForHost(result.outDir, hostName));
     const summaries = result.windowsOutput?.resources[hostName] ?? [];
     const checker = opts.planChecker ?? (opts.windowsState ? undefined : nativeWindowsPlanChecker);

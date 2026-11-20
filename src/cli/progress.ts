@@ -97,7 +97,8 @@ export function stop(): number {
 export async function step<T>(
   text: string, work: () => Promise<T>, done: string | ((result: T) => string | undefined) = text,
 ): Promise<T> {
-  const previous = active;
+  // Replaces any spinner already showing (a phase set with spin()); the next
+  // phase starts its own.
   spin(text);
   try {
     const result = await work();
@@ -109,7 +110,5 @@ export async function step<T>(
     const elapsed = stop();
     console.log(`✗ ${text} (${formatDuration(elapsed)})`);
     throw error;
-  } finally {
-    if (previous) spin(previous.text);
   }
 }

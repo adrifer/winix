@@ -28,6 +28,9 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
   The plan puts its counts in the header, aligns labels and details in
   columns, tags rows `[admin]`/`[running]` instead of repeating them in notes,
   uses real plurals, and is coloured on interactive terminals (`NO_COLOR`).
+  The spinner starts with the command ("Loading configuration", "Checking
+  winix-windows.lock"), and switch evaluates the workspace once instead of
+  twice (about 2 s on a real workspace).
 
 - **Fast Windows switch** — `winix switch` no longer runs `winget configure`.
   Hosts generate `resources.json`; switch plans against the machine and applies

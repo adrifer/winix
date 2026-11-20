@@ -32,6 +32,8 @@ import { validateWindowsWslSetupTargets } from "../../backends/windows/wsl-setup
 import { platformForEvaluatedHost, type ActivationPlatform } from "../activation.ts";
 import { collectFontSources, resolveWindowsFonts, resolveFontSource, type WindowsFontResolver } from "../../backends/windows/fonts.ts";
 import { unifiedDiff } from "../diff.ts";
+import * as progress from "../progress.ts";
+import type { WorkspaceDef } from "../../core/types.ts";
 
 interface ApplyOptions {
   resolveWindowsFont?: WindowsFontResolver;
@@ -49,6 +51,8 @@ interface ApplyOptions {
   print?: boolean;
   /** One "Generated" line and no next steps (switch prints its own progress). */
   compact?: boolean;
+  /** An already loaded and evaluated workspace (switch evaluates it once). */
+  loaded?: { workspace: WorkspaceDef; configDir: string; hosts: ReturnType<typeof evaluate> };
   offline?: boolean;
   locked?: boolean;
   windowsLockDry?: boolean;
@@ -79,8 +83,8 @@ export async function applyWorkspace(
   cwd: string,
   opts: ApplyOptions
 ): Promise<ApplyResult> {
-  const { workspace, configDir } = await loadWorkspace(cwd);
-  const allHosts = evaluate(workspace, { configDir });
+  const { workspace, configDir } = opts.loaded ?? await loadWorkspace(cwd);
+  const allHosts = opts.loaded?.hosts ?? evaluate(workspace, { configDir });
   let evaluated = allHosts;
 
   if (opts.host) {
@@ -98,6 +102,7 @@ export async function applyWorkspace(
   const windowsHosts = evaluated.filter((host) => hostPlatforms.get(host.name) === "windows");
   for (const host of windowsHosts) validateWindowsWslResources(host.windows);
   validateWindowsWslSetupTargets(workspace, allHosts, windowsHosts);
+  if (opts.compact && windowsHosts.length > 0) progress.spin("Checking winix-windows.lock");
   const windowsLock = windowsHosts.length > 0
     ? await prepareWindowsLock(
       configDir,
