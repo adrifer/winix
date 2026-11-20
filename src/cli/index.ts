@@ -290,11 +290,13 @@ switch (command) {
       let resource: ManagedResource;
       if (positionals[1] === "forget" && positionals[2] === "startup" && positionals.length === 4) {
         resource = { kind: "startup", name: positionals[3] };
+      } else if (positionals[1] === "forget" && positionals[2] === "startup-app" && positionals.length === 4) {
+        resource = { kind: "startup-app", name: positionals[3] };
       } else if (positionals[1] === "forget" && positionals[2] === "package" &&
                  positionals.length === 5 && ["winget", "msstore"].includes(positionals[3])) {
         resource = { kind: "package", source: positionals[3], id: positionals[4] };
       } else {
-        throw new Error("Usage: winix state owners | state migrate-owner <id> --host <name> [--dry|--yes] | state forget startup <name> [--dry] | state forget package <winget|msstore> <id> [--dry]");
+        throw new Error("Usage: winix state owners | state migrate-owner <id> --host <name> [--dry|--yes] | state forget startup <name> [--dry] | state forget startup-app <name> [--dry] | state forget package <winget|msstore> <id> [--dry]");
       }
       await forgetWindowsResource(windowsStatePath(), resource, values.dry);
     } catch (err) {

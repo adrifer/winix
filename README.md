@@ -692,7 +692,7 @@ export default workspace({ hosts: [
     // A file handle used as a path supplies the path *and* the dependency.
     const komorebi = windows.package("LGUG2Z.komorebi");
     const config = windows.file.symlink(windows.knownFolder.userProfile("komorebi.json"), "../windows/komorebi.json");
-    windows.startup.command("komorebi", {
+    windows.startup.app("komorebi", {
       executable: windows.knownFolder.programFiles("komorebi/bin/komorebic-no-console.exe"),
       arguments: ["start", "--config", config],
       dependsOn: komorebi,
@@ -716,7 +716,7 @@ export default workspace({ hosts: [
 - `windows.configPath(path?)` returns an absolute path relative to
   `winix.config.ts` at evaluation, for string values. File sources are already
   config-relative.
-- In `windows.startup.command`, a `windows.file.*` handle can stand in for the
+- In `windows.startup.app`/`shortcut`, a `windows.file.*` handle can stand in for the
   executable, an argument, or the working directory. Winix uses its target and
   adds the dependency.
 - `winix package search <query>` finds winget ids. `winix windows import
@@ -1115,19 +1115,46 @@ without corrupting file contents or paths.
 ### Windows sign-in startup
 
 ```ts
-windows.startup.command("my-app", {
+windows.startup.app("my-app", {
   executable: "%ProgramFiles%/MyApp/app.exe",
   arguments: ["--config", windows.knownFolder.appData("MyApp/config.json")],
   workingDirectory: windows.knownFolder.userProfile(),
-  windowStyle: "minimized",
+  windowStyle: "minimized",   // normal (default), minimized, maximized, hidden
+  delay: 5,                   // seconds after sign-in; optional
   dependsOn: appPackage,
 });
+
+// Explicitly a shortcut in the Startup folder:
+windows.startup.shortcut("my-tool", { executable: "my-tool.exe" });
+
+// Explorer's own pacing for Run entries and Startup-folder shortcuts:
+windows.startup.explorer({ delay: false, waitForIdle: false });
 ```
 
-`windows.startup.command(name, spec)` manages `<name>.lnk` in the current user's
-actual Startup known folder. It only registers the shortcut: nothing is launched,
-stopped, or reloaded during apply. Commands run at sign-in, not at machine boot;
-this is not a service, scheduled task, elevated launch, or all-users startup API.
+`windows.startup.app(name, spec)` starts a program when you sign in, through a
+per-user "At log on" task in Task Scheduler's `\Winix\` folder. Logon tasks
+start right after sign-in; the Startup folder is opened last, after every Run
+entry and Store-app startup task, one at a time, which can take minutes. The task
+runs as you (not elevated), with no time limit, at normal priority, on battery,
+and never as a second instance. Registering it needs no administrator rights.
+`hidden` runs a console program with no window at all (through a headless
+console host); `minimized` and `maximized` start it through a small headless
+PowerShell launcher, since a task has no window-style setting. Logon tasks are
+listed in Task Scheduler, not in Settings → Apps → Startup.
+
+`windows.startup.shortcut(name, spec)` manages `<name>.lnk` in the current
+user's actual Startup known folder instead.
+
+Both only register the entry: nothing is launched, stopped, or reloaded during
+apply, and Winix records and removes what it created like packages. Programs
+start at sign-in, not at machine boot; this is not a service, elevated launch,
+or all-users startup API.
+
+`windows.startup.explorer({ delay?, waitForIdle? })` sets
+`HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize`:
+`delay: false` removes Explorer's delay before it starts Run entries and
+Startup shortcuts, `waitForIdle: false` stops it waiting for an idle desktop
+first; `true` restores the Windows default.
 
 The executable may be an absolute path, an environment-variable path, a named
 known-folder path, or an application name resolved on PATH during activation.
@@ -1138,9 +1165,9 @@ strings are literal (including `%VAR%`), while known-folder values resolve durin
 activation. Standard Windows argv quoting preserves spaces, empty arguments,
 embedded quotes, backslashes, and Unicode; no shell is implicitly inserted.
 
-`windowStyle` accepts `normal` (default), `minimized`, or `maximized`; minimized
-does not guarantee a hidden console. Correct shortcuts are left untouched.
-A different existing shortcut is moved by default to
+For shortcuts, `windowStyle` accepts `normal` (default), `minimized`, or
+`maximized`; minimized does not guarantee a hidden console. Correct shortcuts
+and tasks are left untouched. A different existing shortcut is moved by default to
 `%LOCALAPPDATA%\Winix\startup-backups\<timestamp>-<name>.lnk`, outside the
 Startup folder (Windows opens everything in that folder at sign-in, so a
 `.lnk.bak` there would ask how to open it). `backup: false` refuses the replacement instead, and

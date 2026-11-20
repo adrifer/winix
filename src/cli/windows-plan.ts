@@ -180,7 +180,7 @@ function firstLine(message: string): string {
 }
 
 const CATEGORY_NAMES: Record<WindowsResourceCategory, [string, string]> = {
-  package: ["package", "packages"], file: ["file", "files"], startup: ["startup shortcut", "startup shortcuts"],
+  package: ["package", "packages"], file: ["file", "files"], startup: ["startup entry", "startup entries"],
   environment: ["environment variable", "environment variables"], settings: ["setting", "settings"],
   powershell: ["PowerShell", "PowerShell"], features: ["Windows feature set", "Windows feature sets"], wsl: ["WSL", "WSL"],
   fonts: ["font", "fonts"], command: ["command", "commands"], winix: ["Winix helper", "Winix helpers"], other: ["other", "other"],

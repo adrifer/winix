@@ -24,6 +24,9 @@ import type {
   WinKnownFolder,
   WinKnownFolderName,
   WinStartupCommand,
+  WinStartupWindowStyle,
+  WinStartupAppWindowStyle,
+  WinStartupExplorerOptions,
   WinWslConfig,
   WinWslDistro,
   WinWslSetup,
@@ -108,7 +111,7 @@ export interface WinPowerShellModuleOpts {
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
-export interface WinStartupCommandSpec extends Omit<WinStartupCommand, "executable" | "arguments" | "workingDirectory"> {
+interface WinStartupSpecBase extends Omit<WinStartupCommand, "executable" | "arguments" | "workingDirectory" | "windowStyle"> {
   /**
    * Path, application name, or a windows.file.* handle (its target is used and
    * the file becomes a dependency). The same applies to arguments and
@@ -117,13 +120,39 @@ export interface WinStartupCommandSpec extends Omit<WinStartupCommand, "executab
   executable: WinFilePath | ResourceHandle;
   arguments?: (WinFilePath | ResourceHandle)[];
   workingDirectory?: WinFilePath | ResourceHandle;
-  backup?: boolean;
-  force?: boolean;
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
+export interface WinStartupAppSpec extends WinStartupSpecBase {
+  /** "hidden" runs console programs without a window. Defaults to "normal". */
+  windowStyle?: WinStartupAppWindowStyle;
+  /** Seconds after sign-in before it starts (0 to 3600). Defaults to 0. */
+  delay?: number;
+}
+
+export interface WinStartupShortcutSpec extends WinStartupSpecBase {
+  windowStyle?: WinStartupWindowStyle;
+  /** Move a different existing shortcut of this name to %LOCALAPPDATA%\Winix\startup-backups (default unless force). */
+  backup?: boolean;
+  force?: boolean;
+}
+
 export interface WinStartupNamespace {
-  command(name: string, spec: WinStartupCommandSpec): ResourceHandle;
+  /**
+   * Start a program when the current user signs in, through a per-user logon
+   * task in Task Scheduler's \Winix\ folder: it starts right after sign-in,
+   * not after every other startup entry like the Startup folder. Never run
+   * during apply; no elevation needed.
+   */
+  app(name: string, spec: WinStartupAppSpec): ResourceHandle;
+  /** A shortcut in the current user's Startup folder, which Explorer opens last at sign-in. */
+  shortcut(name: string, spec: WinStartupShortcutSpec): ResourceHandle;
+  /**
+   * Explorer's startup pacing for Run entries and Startup-folder shortcuts:
+   * `delay: false` removes its initial delay, `waitForIdle: false` stops it
+   * waiting for the desktop to go idle. `true` restores the Windows default.
+   */
+  explorer(options: WinStartupExplorerOptions, opts?: WinSettingOpts): ResourceHandle;
 }
 
 export interface WinOptionalFeatureOpts {
@@ -1274,13 +1303,29 @@ function psBoolean(value: boolean): string {
   return value ? "$true" : "$false";
 }
 
-type ResolvedStartupSpec = WinStartupCommand & Pick<WinStartupCommandSpec, "backup" | "force" | "dependsOn">;
+interface ResolvedStartupSpec {
+  executable: WinFilePath;
+  arguments?: WinFilePath[];
+  workingDirectory?: WinFilePath;
+  windowStyle?: WinStartupAppWindowStyle;
+  backup?: boolean;
+  force?: boolean;
+  dependsOn?: ResourceHandle | ResourceHandle[];
+}
 
-function normalizeStartupCommand(name: string, input: WinStartupCommandSpec): WinDscResource {
-  const helper = "windows.startup.command";
+/**
+ * Validation and activation-time path resolution shared by startup apps and
+ * shortcuts: the PowerShell prelude defines $executable (absolute, resolved
+ * from PATH when given a bare name), $workingDirectory and $arguments (one
+ * Windows command-line string).
+ */
+function startupCommon(
+  helper: string, name: string, input: WinStartupAppSpec | WinStartupShortcutSpec,
+  styles: readonly WinStartupAppWindowStyle[],
+): { spec: ResolvedStartupSpec; style: WinStartupAppWindowStyle; prelude: string[] } {
   if (typeof name !== "string" || !name.trim() || /[<>:"/\\|?*\x00-\x1f]|[. ]$/.test(name) ||
-      /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name) || name.length > 251) {
-    throw new Error(`${helper} requires a valid shortcut name without path separators or reserved Windows names`);
+      /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name) || name.length > 200) {
+    throw new Error(`${helper} requires a valid name without path separators or reserved Windows names`);
   }
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error(`${helper} requires a command specification`);
@@ -1294,14 +1339,13 @@ function normalizeStartupCommand(name: string, input: WinStartupCommandSpec): Wi
     return target;
   };
   const explicit = input.dependsOn === undefined ? [] : Array.isArray(input.dependsOn) ? input.dependsOn : [input.dependsOn];
-  let spec: ResolvedStartupSpec = {
+  const spec: ResolvedStartupSpec = {
     ...input,
     executable: pathOf(input.executable),
     workingDirectory: input.workingDirectory === undefined ? undefined : pathOf(input.workingDirectory),
     arguments: Array.isArray(input.arguments) ? input.arguments.map(pathOf) : input.arguments as undefined,
   };
   if (implied.length > 0) spec.dependsOn = [...explicit, ...implied.filter((handle) => !explicit.includes(handle))];
-  spec = { ...spec, ...normalizeFileOpts(spec, helper) };
   for (const [key, value] of [
     ["executable", spec.executable],
     ["workingDirectory", spec.workingDirectory ?? knownFolder("userProfile")],
@@ -1315,10 +1359,9 @@ function normalizeStartupCommand(name: string, input: WinStartupCommandSpec): Wi
   ))) {
     throw new Error(`${helper} arguments must be strings or known-folder paths without null characters`);
   }
-  const styles = { normal: 1, minimized: 7, maximized: 3 } as const;
   const style = spec.windowStyle ?? "normal";
-  if (!Object.hasOwn(styles, style)) {
-    throw new Error(`${helper} windowStyle must be normal, minimized, or maximized`);
+  if (!styles.includes(style)) {
+    throw new Error(`${helper} windowStyle must be ${styles.slice(0, -1).join(", ")}, or ${styles.at(-1)}`);
   }
   const args = (spec.arguments ?? []).map((value) =>
     typeof value === "string" ? psSingleQuoted(value) : `(${filePathExpression(value)})`
@@ -1326,16 +1369,12 @@ function normalizeStartupCommand(name: string, input: WinStartupCommandSpec): Wi
   const prelude = [
     "$ErrorActionPreference = 'Stop'",
     ...filePathPrelude(),
-    ...fileMoveTargetPrelude(),
     String.raw`function ConvertTo-WinixArgument([string]$Value) {
   if ($Value.Length -gt 0 -and $Value -notmatch '[\s"]') { return $Value }
   $escaped = [regex]::Replace($Value, '(\\*)"', '$1$1\"')
   $escaped = [regex]::Replace($escaped, '(\\+)$', '$1$1')
   return '"' + $escaped + '"'
 }`,
-    "$startup = [Environment]::GetFolderPath('Startup')",
-    "if ([string]::IsNullOrWhiteSpace($startup)) { throw 'Windows Startup folder is unavailable' }",
-    `$target = Join-Path $startup ${psSingleQuoted(`${name}.lnk`)}`,
     `$executable = ${filePathExpression(spec.executable)}`,
     String.raw`if ($executable -notmatch '[/\\:]') {`,
     "  $commands = @(Get-Command -Name $executable -CommandType Application -ErrorAction Stop)",
@@ -1349,7 +1388,24 @@ function normalizeStartupCommand(name: string, input: WinStartupCommandSpec): Wi
     "if (-not [IO.Path]::IsPathFullyQualified($workingDirectory) -or -not (Test-Path -LiteralPath $workingDirectory -PathType Container)) { throw \"Startup working directory must be an existing absolute directory: $workingDirectory\" }",
     "$workingDirectory = (Resolve-Path -LiteralPath $workingDirectory).ProviderPath",
     `$arguments = (@(${args.join(", ")}) | ForEach-Object { ConvertTo-WinixArgument $_ }) -join ' '`,
-    `$windowStyle = ${styles[style]}`,
+  ];
+  return { spec, style, prelude };
+}
+
+const SHORTCUT_STYLES = ["normal", "minimized", "maximized"] as const;
+
+function normalizeStartupShortcut(name: string, input: WinStartupShortcutSpec): WinDscResource {
+  const helper = "windows.startup.shortcut";
+  const common = startupCommon(helper, name, input, SHORTCUT_STYLES);
+  const spec = { ...common.spec, ...normalizeFileOpts(common.spec, helper) };
+  const showCommand = { normal: 1, minimized: 7, maximized: 3 }[common.style as typeof SHORTCUT_STYLES[number]];
+  const prelude = [
+    ...common.prelude,
+    ...fileMoveTargetPrelude(),
+    "$startup = [Environment]::GetFolderPath('Startup')",
+    "if ([string]::IsNullOrWhiteSpace($startup)) { throw 'Windows Startup folder is unavailable' }",
+    `$target = Join-Path $startup ${psSingleQuoted(`${name}.lnk`)}`,
+    `$windowStyle = ${showCommand}`,
     // WScript.Shell uses ANSI for shortcut arguments; Shell.Application preserves Unicode.
     "$shell = New-Object -ComObject Shell.Application",
     "function Get-WinixStartupLink([string]$Path) {",
@@ -1408,6 +1464,137 @@ function normalizeStartupCommand(name: string, input: WinStartupCommandSpec): Wi
   }, spec), { kind: "startup", name });
 }
 
+/** Task Scheduler folder for Winix-managed sign-in tasks. */
+export const STARTUP_TASK_PATH = "\\Winix\\";
+const APP_STYLES = ["normal", "minimized", "maximized", "hidden"] as const;
+
+/**
+ * A per-user "At log on" scheduled task in \Winix\. Unlike the Startup folder,
+ * which Explorer runs last and one entry at a time, logon tasks start right
+ * after sign-in. Registering one for the current user needs no elevation. The
+ * task runs as the user, not elevated, with no time limit, normal priority,
+ * on battery, and never a second instance.
+ *
+ * Window styles: normal runs the executable directly; hidden runs it through
+ * a headless console host (console programs get no window); minimized and
+ * maximized start it through a headless PowerShell launcher, since a task has
+ * no window-style setting of its own.
+ */
+function normalizeStartupApp(name: string, input: WinStartupAppSpec): WinDscResource {
+  const helper = "windows.startup.app";
+  for (const key of ["backup", "force"] as const) {
+    if (input && typeof input === "object" && key in input) {
+      throw new Error(`${helper} does not take "${key}": its task lives in Task Scheduler's \\Winix\\ folder, which Winix owns`);
+    }
+  }
+  const common = startupCommon(helper, name, input, APP_STYLES);
+  const delay = input.delay ?? 0;
+  if (typeof delay !== "number" || !Number.isInteger(delay) || delay < 0 || delay > 3600) {
+    throw new Error(`${helper} delay must be a whole number of seconds from 0 to 3600`);
+  }
+  const prelude = [
+    ...common.prelude,
+    `$taskPath = ${psSingleQuoted(STARTUP_TASK_PATH)}`,
+    `$taskName = ${psSingleQuoted(name)}`,
+    `$delay = ${delay}`,
+    `$windowStyle = ${psSingleQuoted(common.style)}`,
+    "$user = [Security.Principal.WindowsIdentity]::GetCurrent().Name",
+    "$conhost = Join-Path ([Environment]::SystemDirectory) 'conhost.exe'",
+    "function ConvertTo-WinixLiteral([string]$Value) { return \"'\" + $Value.Replace(\"'\", \"''\") + \"'\" }",
+    "switch ($windowStyle) {",
+    "  'normal' { $execute = $executable; $actionArguments = $arguments }",
+    "  'hidden' { $execute = $conhost; $actionArguments = ('--headless ' + (ConvertTo-WinixArgument $executable) + $(if ($arguments) { ' ' + $arguments } else { '' })) }",
+    "  default {",
+    "    $style = if ($windowStyle -eq 'minimized') { 'Minimized' } else { 'Maximized' }",
+    "    $launch = '$i = [Diagnostics.ProcessStartInfo]::new(' + (ConvertTo-WinixLiteral $executable) + '); $i.Arguments = ' + (ConvertTo-WinixLiteral $arguments) +",
+    "      '; $i.WorkingDirectory = ' + (ConvertTo-WinixLiteral $workingDirectory) + '; $i.UseShellExecute = $true; $i.WindowStyle = ' + (ConvertTo-WinixLiteral $style) + '; [void][Diagnostics.Process]::Start($i)'",
+    "    $execute = $conhost",
+    "    $actionArguments = '--headless ' + (ConvertTo-WinixArgument (Join-Path $PSHOME 'pwsh.exe')) + ' -NoLogo -NoProfile -NonInteractive -EncodedCommand ' + [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($launch))",
+    "  }",
+    "}",
+    "function Get-WinixStartupTask { Get-ScheduledTask -TaskPath $taskPath -TaskName $taskName -ErrorAction SilentlyContinue }",
+    "function Test-WinixStartupApp {",
+    "  $task = Get-WinixStartupTask",
+    "  if ($null -eq $task -or \"$($task.State)\" -eq 'Disabled') { return $false }",
+    "  $actions = @($task.Actions); $triggers = @($task.Triggers)",
+    "  if ($actions.Count -ne 1 -or $triggers.Count -ne 1) { return $false }",
+    "  $trigger = $triggers[0]; $action = $actions[0]; $settings = $task.Settings",
+    "  $actualDelay = if ($trigger.Delay) { [int][Xml.XmlConvert]::ToTimeSpan($trigger.Delay).TotalSeconds } else { 0 }",
+    "  return $trigger.CimClass.CimClassName -eq 'MSFT_TaskLogonTrigger' -and $trigger.Enabled -and $trigger.UserId -ieq $user -and $actualDelay -eq $delay -and",
+    "    $action.Execute -ieq $execute -and \"$($action.Arguments)\" -ceq $actionArguments -and $action.WorkingDirectory -ieq $workingDirectory -and",
+    "    \"$($task.Principal.RunLevel)\" -eq 'Limited' -and \"$($task.Principal.LogonType)\" -eq 'Interactive' -and",
+    "    [Xml.XmlConvert]::ToTimeSpan($settings.ExecutionTimeLimit) -eq [TimeSpan]::Zero -and -not $settings.DisallowStartIfOnBatteries -and",
+    "    -not $settings.StopIfGoingOnBatteries -and $settings.Priority -eq 4 -and \"$($settings.MultipleInstances)\" -eq 'IgnoreNew'",
+    "}",
+  ];
+  return withDscMetadata(scriptDsc(`Startup app ${name}`, {
+    getScript: [...prelude, "@{ Task = ($taskPath + $taskName); InDesiredState = (Test-WinixStartupApp) }"].join("\n"),
+    testScript: [...prelude, "Test-WinixStartupApp"].join("\n"),
+    setScript: [
+      ...prelude,
+      "if (Test-WinixStartupApp) { return }",
+      "$trigger = New-ScheduledTaskTrigger -AtLogOn -User $user",
+      "if ($delay -gt 0) { $trigger.Delay = 'PT' + $delay + 'S' }",
+      "$principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited",
+      "$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew -Priority 4 -Compatibility Win8",
+      "$action = if ($actionArguments) { New-ScheduledTaskAction -Execute $execute -Argument $actionArguments -WorkingDirectory $workingDirectory } else { New-ScheduledTaskAction -Execute $execute -WorkingDirectory $workingDirectory }",
+      "Register-ScheduledTask -TaskPath $taskPath -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Started at sign-in by Winix (windows.startup.app).' -Force | Out-Null",
+      "if (-not (Test-WinixStartupApp)) { throw \"Startup app verification failed: $taskPath$taskName\" }",
+    ].join("\n"),
+  }, common.spec), { kind: "startup-app", name });
+}
+
+/**
+ * Explorer's own startup pacing (HKCU ...\Explorer\Serialize): a delay before
+ * it starts Run entries and Startup-folder shortcuts, and waiting for the
+ * desktop to go idle. `false` turns each off; `true` restores the Windows
+ * default (removes the value).
+ */
+function normalizeStartupExplorer(options: WinStartupExplorerOptions, opts: WinSettingOpts | undefined): WinDscResource {
+  const helper = "windows.startup.explorer";
+  if (!options || typeof options !== "object" || Array.isArray(options)) throw new Error(`${helper} requires an options object`);
+  const values: [string, boolean | undefined][] = [
+    ["StartupDelayInMSec", options.delay], ["WaitForIdleState", options.waitForIdle],
+  ];
+  for (const [, value] of values) {
+    if (value !== undefined && typeof value !== "boolean") throw new Error(`${helper} delay and waitForIdle must be booleans`);
+  }
+  const declared = values.filter(([, value]) => value !== undefined) as [string, boolean][];
+  if (declared.length === 0) throw new Error(`${helper} needs delay and/or waitForIdle`);
+  const prelude = [
+    "$ErrorActionPreference = 'Stop'",
+    "$key = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize'",
+    // name -> $true: Windows default (no value); $false: 0 (off).
+    `$desired = [ordered]@{ ${declared.map(([name, value]) => `${psSingleQuoted(name)} = ${psBoolean(value)}`).join("; ")} }`,
+    "function Test-WinixExplorerStartup {",
+    "  $current = Get-ItemProperty -LiteralPath $key -ErrorAction SilentlyContinue",
+    "  foreach ($name in $desired.Keys) {",
+    "    $value = if ($null -ne $current) { $current.PSObject.Properties[$name] } else { $null }",
+    "    if ($desired[$name]) { if ($null -ne $value) { return $false } }",
+    "    elseif ($null -eq $value -or $value.Value -ne 0) { return $false }",
+    "  }",
+    "  return $true",
+    "}",
+  ];
+  const label = declared.map(([name, value]) =>
+    `${name === "StartupDelayInMSec" ? "startup delay" : "wait for idle"} ${value ? "default" : "off"}`).join(", ");
+  const resource = scriptDsc(`Explorer startup ${label}`, {
+    getScript: [...prelude, "@{ InDesiredState = (Test-WinixExplorerStartup) }"].join("\n"),
+    testScript: [...prelude, "Test-WinixExplorerStartup"].join("\n"),
+    setScript: [
+      ...prelude,
+      "if (Test-WinixExplorerStartup) { return }",
+      "New-Item -Path $key -Force | Out-Null",
+      "foreach ($name in $desired.Keys) {",
+      "  if ($desired[$name]) { Remove-ItemProperty -LiteralPath $key -Name $name -ErrorAction SilentlyContinue }",
+      "  else { New-ItemProperty -LiteralPath $key -Name $name -PropertyType DWord -Value 0 -Force | Out-Null }",
+      "}",
+      "if (-not (Test-WinixExplorerStartup)) { throw 'Explorer startup settings verification failed' }",
+    ].join("\n"),
+  }, { dependsOn: opts?.dependsOn });
+  return withDscMetadata(resource, { kind: "startup-explorer", label: `Explorer startup: ${label}` });
+}
+
 export interface WinEnvNamespace {
   set(name: string, value: string, opts?: WinEnvOpts): ResourceHandle;
   remove(name: string, opts?: WinEnvOpts): ResourceHandle;
@@ -1432,7 +1619,7 @@ export interface WindowsHelper {
   personalization(options: WinPersonalization, opts?: WinSettingOpts): ResourceHandle;
   optionalFeature(name: string, opts?: WinOptionalFeatureOpts): ResourceHandle;
   wsl: WinWslNamespace;
-  /** Manage named current-user Startup shortcuts without running the commands during apply. */
+  /** Programs started at sign-in (logon tasks or Startup shortcuts), never run during apply. */
   startup: WinStartupNamespace;
   /** Resolve a user folder on the target machine during activation. */
   knownFolder: {
@@ -1647,7 +1834,9 @@ export const windows: WindowsHelper = {
     },
   ),
   startup: {
-    command: (name, spec) => dscHandle(normalizeStartupCommand(name, spec)),
+    app: (name, spec) => dscHandle(normalizeStartupApp(name, spec)),
+    shortcut: (name, spec) => dscHandle(normalizeStartupShortcut(name, spec)),
+    explorer: (options, opts) => dscHandle(normalizeStartupExplorer(options, opts)),
   },
   knownFolder: {
     documents: (path) => knownFolder("documents", path),

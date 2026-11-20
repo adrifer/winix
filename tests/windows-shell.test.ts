@@ -123,12 +123,12 @@ describe("Windows shell primitives", () => {
     expect(() => windows.powershell.module("Terminal-*")).toThrow(/module name/);
   });
 
-  it("collects startup commands by effect and preserves resource dependencies", () => {
+  it("collects startup shortcuts by effect and preserves resource dependencies", () => {
     const evaluated = evaluate(workspace({
       inputs: {},
       hosts: [host("desktop", platforms.windows(), ({ windows }) => {
         const app = windows.package({ id: "Example.App", version: "1.0" });
-        windows.startup.command("Example", {
+        windows.startup.shortcut("Example", {
           executable: "%ProgramFiles%/Example/app.exe",
           arguments: ["--config", windows.knownFolder.appData("Example/config.json"), "%LITERAL%"],
           workingDirectory: windows.knownFolder.userProfile(),
@@ -150,11 +150,61 @@ describe("Windows shell primitives", () => {
 
   it("rejects startup path traversal, reserved filenames, malformed commands, and null arguments", () => {
     for (const name of ["", "../escape", "bad\\name", "CON", "nul.txt", "name.", "bad:name"]) {
-      expect(() => windows.startup.command(name, { executable: "app.exe" })).toThrow(/shortcut name/);
+      expect(() => windows.startup.shortcut(name, { executable: "app.exe" })).toThrow(/valid name/);
+      expect(() => windows.startup.app(name, { executable: "app.exe" })).toThrow(/valid name/);
     }
-    expect(() => windows.startup.command("app", { executable: "" })).toThrow(/executable/);
-    expect(() => windows.startup.command("app", { executable: "app.exe", arguments: ["bad\0arg"] })).toThrow(/arguments/);
-    expect(() => windows.startup.command("app", { executable: "app.exe", workingDirectory: "" })).toThrow(/workingDirectory/);
+    for (const helper of [windows.startup.shortcut, windows.startup.app]) {
+      expect(() => helper("app", { executable: "" })).toThrow(/executable/);
+      expect(() => helper("app", { executable: "app.exe", arguments: ["bad\0arg"] })).toThrow(/arguments/);
+      expect(() => helper("app", { executable: "app.exe", workingDirectory: "" })).toThrow(/workingDirectory/);
+    }
+    // Shortcuts cannot hide a console window; startup apps can.
+    expect(() => windows.startup.shortcut("app", { executable: "app.exe", windowStyle: "hidden" as never })).toThrow(/windowStyle/);
+    for (const delay of [-1, 1.5, 3601, "5s"]) {
+      expect(() => windows.startup.app("app", { executable: "app.exe", delay: delay as never })).toThrow(/delay/);
+    }
+    // The task lives in Winix's own Task Scheduler folder: nothing to back up.
+    expect(() => windows.startup.app("app", { executable: "app.exe", backup: true } as never)).toThrow(/does not take "backup"/);
+  });
+
+  it("declares startup apps as per-user logon tasks in \\Winix\\", () => {
+    const evaluated = evaluate(workspace({
+      inputs: {},
+      hosts: [host("desktop", platforms.windows(), ({ windows }) => {
+        const tool = windows.package({ id: "Example.App", version: "1.0" });
+        windows.startup.app("Example", {
+          executable: "%ProgramFiles%/Example/app.exe", arguments: ["--flag", "two words"],
+          windowStyle: "minimized", delay: 5, dependsOn: tool,
+        });
+        windows.startup.app("Console", { executable: "whkd.exe", windowStyle: "hidden" });
+      })],
+    }));
+    const [app, hidden] = evaluated[0].windows!.dsc!;
+    expect(app.winix).toEqual({ kind: "startup-app", name: "Example" });
+    expect(app.name).toBe("Startup app Example");
+    const set = app.properties!.setScript as string;
+    expect(set).toContain("$taskPath = '\\Winix\\'");
+    expect(set).toContain("New-ScheduledTaskTrigger -AtLogOn -User $user");
+    expect(set).toContain("-RunLevel Limited");
+    expect(set).toContain("-ExecutionTimeLimit ([TimeSpan]::Zero)");
+    expect(set).toContain("$delay = 5");
+    expect(set).toContain("$windowStyle = 'minimized'");
+    expect(set).not.toContain("Start-ScheduledTask");
+    expect(hidden.properties!.testScript).toContain("$windowStyle = 'hidden'");
+    const summary = generateWindows(evaluated).resources.desktop.find((resource) => resource.name === "Startup app Example")!;
+    expect([summary.category, summary.label, summary.elevated, summary.dependsOn]).toEqual(
+      ["startup", "Startup app Example (sign-in task)", false, ["Example App"]]);
+  });
+
+  it("sets Explorer's startup pacing in the current user's registry", () => {
+    const resource = windows.startup.explorer({ delay: false, waitForIdle: true }).windows!.dsc![0];
+    expect(resource.winix).toEqual({ kind: "startup-explorer", label: "Explorer startup: startup delay off, wait for idle default" });
+    const set = resource.properties!.setScript as string;
+    expect(set).toContain("HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize");
+    expect(set).toContain("'StartupDelayInMSec' = $false; 'WaitForIdleState' = $true");
+    expect(resource.elevated).toBeUndefined();
+    expect(() => windows.startup.explorer({})).toThrow(/delay and\/or waitForIdle/);
+    expect(() => windows.startup.explorer({ delay: 0 as never })).toThrow(/booleans/);
   });
 });
 
@@ -610,6 +660,48 @@ describe.skipIf(process.platform !== "win32" || process.env.WINIX_DSC_INTEGRATIO
     expect(runDsc("test", module).inDesiredState).toBe(true);
   }, 120000);
 
+  it("registers startup apps as logon tasks without running them, preserving argv", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix startup app \u00e9 "));
+    const name = `Winix-test-${process.pid}`;
+    const values = ["", "two words", 'quote"inside', "C:\\trailing dir\\", "$literal %PATH% caf\u00e9"];
+    const executable = join(dir, "tool.exe");
+    try {
+      await writeFile(executable, "This file must never be executed.");
+      const properties = windows.startup.app(name, { executable, arguments: values, workingDirectory: dir, delay: 7 })
+        .windows!.dsc![0].properties!;
+      expect(runDsc("test", properties).inDesiredState).toBe(false);
+      runDsc("set", properties);
+      expect(runDsc("test", properties).inDesiredState).toBe(true);
+      const actual = JSON.parse(runPowerShell7(`
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public class WinixTaskArgv {
+  [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+  public static extern IntPtr CommandLineToArgvW(string input, out int count);
+  [DllImport("kernel32.dll")]
+  public static extern IntPtr LocalFree(IntPtr pointer);
+}
+'@
+$task = Get-ScheduledTask -TaskPath '\\Winix\\' -TaskName ${powerShellLiteral(name)}
+$info = $task | Get-ScheduledTaskInfo
+$count = 0
+$pointer = [WinixTaskArgv]::CommandLineToArgvW('x ' + $task.Actions[0].Arguments, [ref]$count)
+try { $argv = @(for ($i = 1; $i -lt $count; $i++) { [Runtime.InteropServices.Marshal]::PtrToStringUni([Runtime.InteropServices.Marshal]::ReadIntPtr($pointer, $i * [IntPtr]::Size)) }) }
+finally { [void][WinixTaskArgv]::LocalFree($pointer) }
+@{ execute = $task.Actions[0].Execute; argv = $argv; delay = $task.Triggers[0].Delay; neverRun = ($info.LastTaskResult -eq 267011) } | ConvertTo-Json -Compress`));
+      expect(actual).toEqual({ execute: executable, argv: values, delay: "PT7S", neverRun: true });
+      // A changed declaration is drift; set replaces the task.
+      const changed = windows.startup.app(name, { executable, workingDirectory: dir }).windows!.dsc![0].properties!;
+      expect(runDsc("test", changed).inDesiredState).toBe(false);
+      runDsc("set", changed);
+      expect(runDsc("test", changed).inDesiredState).toBe(true);
+    } finally {
+      runPowerShell7(`Unregister-ScheduledTask -TaskPath '\\Winix\\' -TaskName ${powerShellLiteral(name)} -Confirm:$false -ErrorAction SilentlyContinue`);
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 120000);
+
   it("manages Startup shortcuts without launching, preserves argv, and protects existing entries", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix startup's \u00e9 "));
     const name = "Winix-\u00e9";
@@ -623,7 +715,7 @@ describe.skipIf(process.platform !== "win32" || process.env.WINIX_DSC_INTEGRATIO
       windowStyle: "minimized" as const,
     };
     const isolated = (backup: boolean) => {
-      const properties = windows.startup.command(name, { ...spec, backup }).windows!.dsc![0].properties!;
+      const properties = windows.startup.shortcut(name, { ...spec, backup }).windows!.dsc![0].properties!;
       return Object.fromEntries(Object.entries(properties).map(([key, script]) => [
         key, String(script).replace(
           "$startup = [Environment]::GetFolderPath('Startup')", `$startup = ${powerShellLiteral(dir)}`

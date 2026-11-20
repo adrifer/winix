@@ -331,6 +331,8 @@ export function describeWindowsDscResource(resource: WinDscResource): {
       return { category: metadata.wslConfig ? "wsl" : "file", label };
     }
     case "startup": return { category: "startup", label: `Startup shortcut ${metadata.name}` };
+    case "startup-app": return { category: "startup", label: `Startup app ${metadata.name} (sign-in task)` };
+    case "startup-explorer": return { category: "settings", label: metadata.label };
     case "env": return {
       category: "environment",
       label: metadata.action === "set" ? `${metadata.name}=${metadata.value ?? ""} (${metadata.scope})` : `unset ${metadata.name} (${metadata.scope})`,

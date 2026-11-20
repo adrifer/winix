@@ -1203,11 +1203,11 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
     }
   });
 
-  it.each(["startup", "package"] as const)("records successful %s activation and automatically removes a deleted declaration only on a real switch", async (kind) => {
+  it.each(["startup", "startup-app", "package"] as const)("records successful %s activation and automatically removes a deleted declaration only on a real switch", async (kind) => {
     const dir = await mkdtemp(join(tmpdir(), "winix-switch-state-"));
     let present = false;
-    const snapshot = kind === "startup" ? { fingerprint: "a".repeat(64) } : { version: "1.0" };
-    const key = kind === "startup" ? '["startup","probe"]' : '["package","winget","example.app"]';
+    const snapshot = kind === "package" ? { version: "1.0" } : { fingerprint: "a".repeat(64) };
+    const key = kind === "package" ? '["package","winget","example.app"]' : `["${kind}","probe"]`;
     const fake = fakeWindowsRunner(() => { present = true; });
     const logs = vi.spyOn(console, "log").mockImplementation(() => {});
     const remove = vi.fn(async () => { present = false; });
@@ -1216,13 +1216,12 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
       adapter: { inspect: async () => present ? snapshot : null, remove },
     };
     try {
-      const declaration = kind === "startup"
-        ? 'windows.startup.command("probe", { executable: "pwsh.exe" })'
-        : 'windows.package({ id: "Example.App", version: "1.0" })';
+      const declaration = kind === "package" ? 'windows.package({ id: "Example.App", version: "1.0" })'
+        : `windows.startup.${kind === "startup" ? "shortcut" : "app"}("probe", { executable: "pwsh.exe" })`;
       await writeConfig(dir, `host("desktop", platforms.windows(), [${declaration}])`);
       await switchCommand(dir, { dry: false, windowsState, windowsRunner: fake.runner });
       expect(present).toBe(true);
-      expect(fake.steps().map((step) => step.kind)).toEqual(kind === "startup" ? ["script"] : ["package"]);
+      expect(fake.steps().map((step) => step.kind)).toEqual(kind === "package" ? ["package"] : ["script"]);
       expect(JSON.parse(await readFile(windowsState.path, "utf8")).entries[key].owned).toBe(true);
       const loaded = await loadWorkspace(dir);
       loaded.workspace.hosts[0] = host("desktop", platforms.windows(), []);

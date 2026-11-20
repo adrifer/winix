@@ -14,6 +14,17 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Fast sign-in startup** — `windows.startup.app(name, spec)` registers a
+  per-user "At log on" task in Task Scheduler's `\Winix\` folder (no UAC; runs
+  as the user, no time limit, normal priority, on battery, one instance)
+  instead of a Startup-folder shortcut, which Explorer opens last and one entry
+  at a time (minutes on a machine with many startup apps). Window styles
+  include `hidden` for console programs; `delay` staggers starts. Tasks are
+  tracked in applied state by the hash of their exported XML and removed like
+  shortcuts. `windows.startup.shortcut()` keeps the Startup-folder form
+  (`windows.startup.command` is removed), and `windows.startup.explorer({
+  delay, waitForIdle })` sets Explorer's own startup pacing in HKCU.
+
 - **Switch speed and progress** — packages are read from one `winget export`
   (2–7 s instead of a 46 s batched DSC read on a 30-package host); DSC confirms
   any package the export does not list before switch installs it. A switch

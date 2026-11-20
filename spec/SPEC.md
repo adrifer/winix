@@ -989,20 +989,29 @@ Linux binaries need a compatible glibc/libstdc++ environment for direct use;
 automatic WSL setup supplies it on NixOS. Binaries are unsigned. Fresh-image
 activation and ARM64 execution remain unverified.
 
-`windows.startup.command(name, spec)` declares a named, current-user Startup
-shortcut (`<name>.lnk`), backed by the same PowerShell 7 resource. It registers
-sign-in startup only and never launches commands during apply. It is not a
-service, scheduler, elevation mechanism, or all-users startup facility.
+`windows.startup.app(name, spec)` declares a named, current-user sign-in
+program as a logon-triggered scheduled task `\Winix\<name>` (current user, limited
+run level, interactive, no time limit, priority 4, battery allowed, multiple
+instances ignored), registered without elevation. `windows.startup.shortcut(name,
+spec)` declares a Startup-folder shortcut (`<name>.lnk`) instead. Both are
+PowerShell 7 resources tracked in applied state (kinds `startup-app`, by the
+SHA-256 of the exported task XML, and `startup`, by the shortcut's hash), and
+register sign-in startup only: nothing is launched during apply. They are not
+services, elevation mechanisms, or all-users startup facilities.
 `spec` contains `executable`, optional argv `arguments`, `workingDirectory`,
-`windowStyle` (`normal`, `minimized`, or `maximized`), `dependsOn`, `backup`,
-and `force`. Executable paths may use environment variables/known folders or
+`windowStyle`, and `dependsOn`; apps add `delay` (whole seconds, 0–3600) and
+the `hidden` style (headless console host), shortcuts add `backup` and
+`force`. App `minimized`/`maximized` start through a headless PowerShell
+launcher. `windows.startup.explorer({ delay?, waitForIdle? })` sets or clears
+`StartupDelayInMSec`/`WaitForIdleState` under HKCU
+`...\Explorer\Serialize`. Executable paths may use environment variables/known folders or
 an application name on PATH. Working directories must be absolute or resolved
 known-folder/environment paths; the default is the user profile. Both must
 exist during activation. Argument strings are literal; known-folder arguments
 resolve on the target. Windows argv quoting preserves empty/Unicode arguments,
 spaces, quotes, and backslashes without implicitly invoking a shell.
 
-Shortcut names must be valid Windows filenames without paths or reserved names.
+Startup names must be valid Windows filenames without paths or reserved names.
 Desired shortcuts are unchanged on repeat applies. Replacements back up by
 default to `%LOCALAPPDATA%\Winix\startup-backups\<timestamp>-<name>.lnk`, never
 inside the Startup folder, which sign-in opens entirely; `backup: false` refuses them and

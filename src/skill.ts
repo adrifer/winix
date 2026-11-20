@@ -356,14 +356,22 @@ through \`dependsOn\`.
   backup collision fails. Startup shortcuts are backed up to
   %LOCALAPPDATA%\\Winix\\startup-backups instead. Don't add backup: true; use
   backup: false to fail instead, or force: true to delete without a backup.
-- \`windows.startup.command(name, spec)\` manages a named current-user Startup
-  shortcut, without running it during apply. Supply executable and optional argv
-  arguments, workingDirectory, windowStyle (normal/minimized/maximized),
-  dependsOn, backup, and force. Executables may be application names on PATH or
+- \`windows.startup.app(name, spec)\` starts a program at sign-in through a
+  per-user logon task in Task Scheduler's \\Winix\\ folder (no UAC; starts right
+  after sign-in, unlike the Startup folder, which Explorer opens last). Use it for
+  anything that should start when the user signs in; it is never run during
+  apply. Supply executable and optional argv arguments, workingDirectory,
+  windowStyle (normal/minimized/maximized/hidden: hidden runs console programs
+  without a window), delay (seconds), and dependsOn.
+- \`windows.startup.shortcut(name, spec)\` manages a named current-user Startup
+  shortcut instead (same options without delay/hidden, plus backup and force);
+  only when a Startup-folder shortcut is specifically wanted.
+- \`windows.startup.explorer({ delay?: boolean, waitForIdle?: boolean })\`: false
+  removes Explorer's startup delay / idle wait for Run entries and shortcuts. Executables may be application names on PATH or
   absolute/environment/known-folder paths. Arguments are literal strings or
   known-folder paths; the default working directory is the user profile.
   A windows.file.* handle may be used as executable, argument or working
-  directory: its target is used and the shortcut depends on it automatically.
+  directory: its target is used and the entry depends on it automatically.
   Executable and working directory must exist during activation. A differing
   shortcut is backed up by default (backup: false refuses, force: true deletes);
   backup collisions fail. This is sign-in startup,

@@ -15,6 +15,8 @@ import {
 
 export type ManagedResource =
   | { kind: "startup"; name: string }
+  /** A windows.startup.app logon task in Task Scheduler's \Winix\ folder. */
+  | { kind: "startup-app"; name: string }
   | { kind: "package"; id: string; source: string };
 export type ResourceSnapshot = { fingerprint: string } | { version: string } | null;
 interface Entry {
@@ -85,8 +87,8 @@ export interface ReconcileOptions {
 }
 
 export function resourceKey(resource: ManagedResource): string {
-  return JSON.stringify(resource.kind === "startup"
-    ? ["startup", resource.name.toLowerCase()]
+  return JSON.stringify(resource.kind === "startup" || resource.kind === "startup-app"
+    ? [resource.kind, resource.name.toLowerCase()]
     : ["package", resource.source.toLowerCase(), resource.id.toLowerCase()]);
 }
 
@@ -141,8 +143,8 @@ export function managedWindowsResources(host: EvaluatedHost): ManagedResource[] 
     (pkg) => ({ kind: "package", id: pkg.id, source: pkg.source })
   );
   for (const resource of windows.dsc ?? []) {
-    if (resource.winix?.kind === "startup") {
-      resources.push({ kind: "startup", name: resource.winix.name });
+    if (resource.winix?.kind === "startup" || resource.winix?.kind === "startup-app") {
+      resources.push({ kind: resource.winix.kind, name: resource.winix.name });
     }
   }
   const keys = new Set<string>();
@@ -181,7 +183,7 @@ function assertRemovablePackageVersion(id: string, version: string): void {
 
 function validResource(value: unknown): value is ManagedResource {
   if (!value || typeof value !== "object") return false;
-  if ("kind" in value && value.kind === "startup") {
+  if ("kind" in value && (value.kind === "startup" || value.kind === "startup-app")) {
     return "name" in value && typeof value.name === "string" && value.name.length > 0 &&
       !/[<>:"/\\|?*\x00-\x1f]|[. ]$/.test(value.name) &&
       !/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(value.name);
@@ -203,7 +205,7 @@ export function parseAppliedState(text: string): AppliedState {
         typeof entry.definition !== "string" ||
         !Array.isArray(entry.owners) || !entry.owners.every((owner: unknown) => typeof owner === "string") ||
         (entry.packageExact !== undefined && typeof entry.packageExact !== "boolean") ||
-        !(entry.snapshot === null || (entry.resource.kind === "startup"
+        !(entry.snapshot === null || (entry.resource.kind !== "package"
           ? typeof entry.snapshot?.fingerprint === "string" && /^[a-f0-9]{64}$/.test(entry.snapshot.fingerprint)
           : typeof entry.snapshot?.version === "string" && entry.snapshot.version.length > 0))) {
       throw new Error(`Invalid Windows applied-state entry: ${key}; refusing reconciliation`);
@@ -496,7 +498,7 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<Readonly
         resource,
         owners: [...(previous?.owners ?? []), opts.owner],
         owned: previous?.owned === true || initial === null ||
-          (resource.kind === "startup" && !sameSnapshot(initial, current)),
+          (resource.kind !== "package" && !sameSnapshot(initial, current)),
         snapshot: current,
         definition: opts.definitions[key],
         ...(resource.kind === "package" && opts.anyVersionPackages?.has(key)
@@ -554,6 +556,34 @@ $path = Join-Path $root ${powerShellLiteral(name + ".lnk")}`;
 
 type PackageResource = Extract<ManagedResource, { kind: "package" }>;
 type StartupResource = Extract<ManagedResource, { kind: "startup" }>;
+type StartupAppResource = Extract<ManagedResource, { kind: "startup-app" }>;
+
+const STARTUP_TASK_FOLDER = "\\Winix\\";
+
+/**
+ * Fingerprints of windows.startup.app tasks: the SHA-256 of the exported task
+ * XML (stable across runs), null when the task does not exist.
+ */
+async function startupAppStates(resources: StartupAppResource[]): Promise<ResourceSnapshot[]> {
+  if (resources.length === 0) return [];
+  const names = resources.map((resource) => powerShellLiteral(resource.name)).join(", ");
+  const output = await powershellAsync(`$result = @(foreach ($name in @(${names})) {
+  $task = Get-ScheduledTask -TaskPath ${powerShellLiteral(STARTUP_TASK_FOLDER)} -TaskName $name -ErrorAction SilentlyContinue
+  if ($null -eq $task) { '' } else {
+    $xml = Export-ScheduledTask -TaskPath ${powerShellLiteral(STARTUP_TASK_FOLDER)} -TaskName $name
+    [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($xml))).ToLowerInvariant()
+  }
+})
+ConvertTo-Json -InputObject $result -Compress`);
+  const parsed: unknown = JSON.parse(output);
+  const hashes = Array.isArray(parsed) ? parsed : [parsed];
+  if (hashes.length !== resources.length) throw new Error("Invalid startup task fingerprint");
+  return hashes.map((hash) => {
+    if (hash === "") return null;
+    if (typeof hash !== "string" || !/^[a-f0-9]{64}$/.test(hash)) throw new Error("Invalid startup task fingerprint");
+    return { fingerprint: hash };
+  });
+}
 
 /** Read many packages in one `dsc config get` (one process instead of one per package). */
 export async function packageStates(resources: PackageResource[]): Promise<ResourceSnapshot[]> {
@@ -718,16 +748,21 @@ export const nativeWindowsStateAdapter: WindowsStateAdapter = {
   async inspectMany(resources) {
     const packages = resources.filter((resource): resource is PackageResource => resource.kind === "package");
     const startups = resources.filter((resource): resource is StartupResource => resource.kind === "startup");
-    const [packageSnapshots, startupSnapshots] = await Promise.all([inventoryPackages(packages), startupStates(startups)]);
+    const apps = resources.filter((resource): resource is StartupAppResource => resource.kind === "startup-app");
+    const [packageSnapshots, startupSnapshots, appSnapshots] = await Promise.all([
+      inventoryPackages(packages), startupStates(startups), startupAppStates(apps),
+    ]);
     const states = new Map<ManagedResource, ResourceSnapshot>([
       ...packages.map((resource, index) => [resource, packageSnapshots[index]] as const),
       ...startups.map((resource, index) => [resource, startupSnapshots[index]] as const),
+      ...apps.map((resource, index) => [resource, appSnapshots[index]] as const),
     ]);
     return resources.map((resource) => states.get(resource)!);
   },
   async inspect(resource) {
     // Single checks guard destructive operations: always ask DSC directly.
     if (resource.kind === "package") return (await packageStates([resource]))[0];
+    if (resource.kind === "startup-app") return (await startupAppStates([resource]))[0];
     return (await startupStates([resource]))[0];
   },
   async remove(resource, snapshot) {
@@ -738,6 +773,13 @@ export const nativeWindowsStateAdapter: WindowsStateAdapter = {
         "uninstall", "--id", resource.id, "--exact", "--source", resource.source,
         "--version", snapshot.version, "--silent", "--disable-interactivity",
       ]);
+    } else if (resource.kind === "startup-app") {
+      if (!("fingerprint" in snapshot)) throw new Error("Missing startup task fingerprint for removal");
+      const current = (await startupAppStates([resource]))[0];
+      if (!current || !("fingerprint" in current) || current.fingerprint !== snapshot.fingerprint) {
+        throw new Error("Startup task changed before removal");
+      }
+      await powershellAsync(`Unregister-ScheduledTask -TaskPath ${powerShellLiteral(STARTUP_TASK_FOLDER)} -TaskName ${powerShellLiteral(resource.name)} -Confirm:$false`);
     } else {
       if (!("fingerprint" in snapshot)) throw new Error("Missing shortcut fingerprint for removal");
       await powershellAsync(`${startupPathScript(resource.name)}

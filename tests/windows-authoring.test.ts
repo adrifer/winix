@@ -145,11 +145,11 @@ describe("named Windows paths", () => {
 });
 
 describe("inferred startup dependencies", () => {
-  it("uses a file handle's target and orders the shortcut after it", () => {
+  it.each(["app", "shortcut"] as const)("uses a file handle's target and orders the startup %s after it", (helper) => {
     const h = windowsHost(({ windows }) => {
       const tool = windows.package("LGUG2Z.komorebi");
       const config = windows.file.symlink(windows.knownFolder.userProfile("komorebi.json"), "../komorebi.json");
-      windows.startup.command("komorebi", {
+      windows.startup[helper]("komorebi", {
         executable: windows.knownFolder.programFiles("komorebi/bin/komorebic-no-console.exe"),
         arguments: ["start", "--config", config],
         dependsOn: tool,
@@ -173,8 +173,8 @@ describe("default backup of existing targets", () => {
       windows.file.text(windows.knownFolder.userProfile("d"), "d", { force: true, backup: true });
       windows.powershell.profile("../profile.ps1");
       windows.wsl({ config: { wsl2: { memory: "8GB" } } });
-      windows.startup.command("tool", { executable: "pwsh.exe" });
-      windows.startup.command("strict", { executable: "pwsh.exe", backup: false });
+      windows.startup.shortcut("tool", { executable: "pwsh.exe" });
+      windows.startup.shortcut("strict", { executable: "pwsh.exe", backup: false });
     });
     const files = dscOf(h).map(fileMeta).filter((file) => file !== undefined);
     expect(files.map((file) => [file.backup, file.force])).toEqual([

@@ -213,7 +213,7 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
           ? (windows.packages?.[resource.id].anyVersion ? "version:any" : undefined) ??
             windows.packages?.[resource.id].version ?? lock?.packages[resource.id]?.version
           : JSON.stringify(windows.dsc?.find(
-            (entry) => entry.winix?.kind === "startup" && entry.winix.name === resource.name
+            (entry) => entry.winix?.kind === resource.kind && entry.winix.name === resource.name
           )?.properties);
         if (!definition) throw new Error(`Missing activation definition: ${resourceKey(resource)}`);
         definitions[resourceKey(resource)] = createHash("sha256").update(definition).digest("hex");

@@ -59,6 +59,15 @@ export interface WinPersonalization {
 }
 
 export type WinStartupWindowStyle = "normal" | "minimized" | "maximized";
+/** Startup apps can also run console programs without any window. */
+export type WinStartupAppWindowStyle = WinStartupWindowStyle | "hidden";
+
+export interface WinStartupExplorerOptions {
+  /** false: no delay before Explorer starts Run entries and Startup shortcuts. */
+  delay?: boolean;
+  /** false: do not wait for the desktop to go idle first. */
+  waitForIdle?: boolean;
+}
 
 export interface WinStartupCommand {
   /** Absolute/environment-variable path, known-folder path, or application name on PATH. */
@@ -277,6 +286,14 @@ export type WinDscMetadata =
   | {
       kind: "startup";
       name: string;
+    }
+  | {
+      kind: "startup-app";
+      name: string;
+    }
+  | {
+      kind: "startup-explorer";
+      label: string;
     }
   | {
       kind: "env";

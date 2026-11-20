@@ -56,18 +56,27 @@ windows.file.copy(windows.knownFolder.localAppData("Winix\\config"), new URL("./
 windows.powershell.module("Terminal-Icons", { version: "0.11.0" });
 // @ts-expect-error Only supported known-folder names are accepted.
 windows.knownFolder.unknown();
-const startup: ResourceHandle = windows.startup.command("terminal", {
+const startup: ResourceHandle = windows.startup.app("terminal", {
   executable: "pwsh.exe",
   arguments: ["-File", windows.knownFolder.userProfile("start.ps1")],
-  windowStyle: "minimized",
+  windowStyle: "hidden",
+  delay: 5,
   dependsOn: icons,
 });
-// @ts-expect-error Startup commands require an executable.
-windows.startup.command("missing", { dependsOn: startup });
+windows.startup.shortcut("legacy", { executable: "app.exe", windowStyle: "minimized", backup: false, dependsOn: startup });
+windows.startup.explorer({ delay: false, waitForIdle: false });
+// @ts-expect-error Startup apps require an executable.
+windows.startup.app("missing", { dependsOn: startup });
 // @ts-expect-error Startup window styles use named values, not arbitrary numbers.
-windows.startup.command("invalid", { executable: "app.exe", windowStyle: 7 });
+windows.startup.app("invalid", { executable: "app.exe", windowStyle: 7 });
 // @ts-expect-error Startup arguments must be strings or known-folder paths.
-windows.startup.command("invalid", { executable: "app.exe", arguments: [42] });
+windows.startup.app("invalid", { executable: "app.exe", arguments: [42] });
+// @ts-expect-error Shortcuts cannot hide console windows.
+windows.startup.shortcut("invalid", { executable: "app.exe", windowStyle: "hidden" });
+// @ts-expect-error Startup apps have no backup: their task lives in Winix's own folder.
+windows.startup.app("invalid", { executable: "app.exe", backup: true });
+// @ts-expect-error The delay is a number of seconds.
+windows.startup.app("invalid", { executable: "app.exe", delay: "5s" });
 
 home.program("zsh", {
   enable: true,

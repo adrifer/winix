@@ -38,7 +38,7 @@ export default workspace({
         "../../README.md",
         { dependsOn: icons },
       );
-      windows.startup.command("Winix README", {
+      windows.startup.app("Winix README", {
         executable: "notepad.exe",
         arguments: [windows.knownFolder.documents("Winix\\README.md")],
         dependsOn: readme,
