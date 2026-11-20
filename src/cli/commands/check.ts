@@ -35,7 +35,9 @@ export async function check(cwd: string, opts: CheckOptions): Promise<void> {
     const analyses = analyzeWorkspace(workspace, { configDir });
     const conflicts = detectConflicts(analyses);
     const suspiciousReferences = collectSuspiciousNixReferences(analyses);
-    const ignoredFragments = collectIgnoredFragments(analyses, evaluated);
+    // Features listed on a host that do nothing there are likely mistakes; shared
+    // profiles are meant to span platforms (winix inspect lists their ignored parts).
+    const ignoredFragments = collectIgnoredFragments(analyses, evaluated).filter((item) => !item.composed);
 
     console.log(`✓ Configuration valid`);
     console.log(`  Hosts: ${evaluated.map((h) => h.name).join(", ")}`);

@@ -1382,6 +1382,7 @@ Introspection for debugging and agent consumption.
 ```bash
 winix inspect                        # every host
 winix inspect --host desktop         # one host
+winix inspect --matrix               # features x hosts table, grouped by profile
 ```
 
 Per host: platform, feature order, then each feature once with the scopes it
@@ -1389,6 +1390,15 @@ contributes to (`nixos`, `homeManager`, `darwin`, `windows`), its Nix option
 keys, and its Windows resources (packages with their version policy, files,
 env, startup, modules, WSL...) with `dependsOn` edges. Features that contribute
 nothing on the host's platform are marked as ignored.
+
+`--matrix` prints a feature x host table instead: rows grouped by the outermost
+profile they come through (`profile()` results are marked `__group`; a
+profile's own fragments show as "(its own settings)", host callback bodies as
+"(inline in <host>)", direct entries last), cells `●` applies, `·` included
+but inapplicable, blank absent. `winix check` warns about wholly inapplicable
+features only for entries listed on the host itself (including a host
+callback's returned entries), not for profile members or features a feature
+returns, since shared profiles are meant to span platforms.
 
 The `--json` machine-readable variant is on the Agent DX roadmap; see
 [§ 12](#12-agent-dx).

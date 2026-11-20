@@ -1429,6 +1429,13 @@ Related commands:
 - `winix inspect --host <name>` lists each feature once, the scopes it targets
   (`windows`, `homeManager`, ...), the Windows resources it declares and their
   `dependsOn` edges, and marks features that contribute nothing on that platform.
+- `winix inspect --matrix` prints one table for the whole config: a row per
+  feature, grouped by the profile (role) it comes through, and a column per host:
+  `●` applies there, `·` included but nothing for that platform (the other OS's
+  half of a shared profile), blank when not included.
+- `winix check` warns about a feature that does nothing on a host only when the
+  host lists it directly; features reached through a profile are expected to
+  span platforms (a role used on Windows and Linux), so they stay quiet.
 - `--offline` (apply, switch, plan) never resolves `winix-windows.lock` online and
   fails, naming what is missing, when a pin is absent. `--locked` also fails when
   the lock would change at all, including inline versions it does not record yet.

@@ -155,7 +155,13 @@ export function profile(
     );
   }
 
-  return feature(id, () => entries) as ProfileFactory<[]>;
+  const base = feature(id, () => entries);
+  // Same lazy fragment, marked as a grouping (inspect/check tell roles apart from features).
+  const fn = ((...args: []) => ({ ...base(...args), __group: true as const })) as ProfileFactory<[]>;
+  for (const key of ["isActive", "id"] as const) {
+    Object.defineProperty(fn, key, Object.getOwnPropertyDescriptor(base, key)!);
+  }
+  return fn;
 }
 
 // --- host() ---

@@ -14,6 +14,12 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Cross-platform roles** — `winix inspect --matrix` shows features x hosts
+  grouped by profile (role); `winix check` no longer warns about profile members
+  that don't apply to a platform (only about entries listed on a host). Profiles
+  are marked `__group` for this. Windows bootstrap downloads print one line
+  instead of Windows PowerShell's progress block.
+
 - **Editor types without npm; explicit npm/source mode** — config commands
   write the running Winix's declarations (SDK, bundled Nix option types,
   `@types/node`) to `.winix/types`, embedded in executables and shipped in the

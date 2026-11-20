@@ -90,6 +90,17 @@ describe("CLI analysis", () => {
         ]),
         host("mac", platforms.darwin(), [
           feature("win-only", ({ windows }) => { windows.package("Git.Git"); })(),
+        ]),
+        // Shared profiles span platforms: their inapplicable members are expected.
+        host("roles", platforms.windows(), [
+          profile("everywhere", [
+            feature("tool-home", ({ home }) => { home.packages("eza"); })(),
+            feature("tool-both", ({ home, windows }) => { home.packages("eza"); windows.package("eza-community.eza"); })(),
+          ])(),
+        ]),
+        // The callback form lists features on the host itself: still warned.
+        host("callback", platforms.windows(), () => [
+          feature("listed-home", ({ home }) => { home.packages("git"); })(),
         ])
       `);
       await check(dir, { strict: false, escapeReport: false });
@@ -99,6 +110,7 @@ describe("CLI analysis", () => {
         "Warning: server win-only: no applicable configuration (ignored scopes: windows).",
         "Warning: server home-disabled: no applicable configuration (ignored scopes: homeManager).",
         "Warning: mac win-only: no applicable configuration (ignored scopes: windows).",
+        "Warning: callback listed-home: no applicable configuration (ignored scopes: homeManager).",
       ]);
       await expect(check(dir, { strict: true, escapeReport: false })).rejects.toThrow("check exited");
       expect(exit).toHaveBeenCalledWith(1);
@@ -1254,7 +1266,7 @@ async function writeConfig(dir: string, hostsSource: string): Promise<void> {
   await writeFile(
     join(dir, "winix.config.mjs"),
     `
-      import { feature, host, platforms, windows, workspace } from ${JSON.stringify(indexUrl)};
+      import { feature, host, platforms, profile, windows, workspace } from ${JSON.stringify(indexUrl)};
 
       export default workspace({
         inputs: { nixpkgs: "nixos-unstable" },

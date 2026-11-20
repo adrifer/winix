@@ -701,6 +701,10 @@ object to \`%USERPROFILE%\\.gitconfig\` with \`windows.file.text\`. Recipes live
   Windows package locks.
 - \`winix inspect [--host NAME]\` lists each feature once with its scopes, Nix keys,
   and Windows resources with dependsOn edges; ignored features are marked.
+  \`winix inspect --matrix\` shows features x hosts grouped by profile (role):
+  ● applies, · included but nothing for that platform. Profiles may span OSes
+  (one role for Windows and Linux hosts); check only warns about inapplicable
+  features listed on a host directly.
 
 On native Windows, real NixOS and nix-darwin activation is unsupported. Dry
 runs still print commands with forward-slash flake references. Windows hosts

@@ -7,7 +7,7 @@ import { loadWorkspace } from "../loader.ts";
 
 const NIX_SCOPES = ["nixos", "homeManager", "darwin"] as const;
 
-export async function inspect(cwd: string, opts: { host?: string } = {}): Promise<void> {
+export async function inspect(cwd: string, opts: { host?: string; matrix?: boolean } = {}): Promise<void> {
   const { workspace, configPath, configDir } = await loadWorkspace(cwd);
   const analyses = analyzeWorkspace(workspace, { configDir });
   const evaluated = evaluate(workspace, { configDir });
@@ -19,6 +19,10 @@ export async function inspect(cwd: string, opts: { host?: string } = {}): Promis
 
   console.log(`Config: ${configPath}`);
   console.log(`Hosts: ${analyses.length}`);
+  if (opts.matrix) {
+    for (const line of inspectMatrix(selected, ignored)) console.log(line);
+    return;
+  }
   for (const analysis of selected) {
     const index = analyses.indexOf(analysis);
     const ignoredLabels = ignored.filter((item) => item.host === analysis.name).map((item) => item.fragment);
@@ -66,6 +70,53 @@ export function inspectHost(
     }
     if (expand("windows")) for (const line of windowsLines) lines.push(`    ${line}`);
   }
+  return lines;
+}
+
+/**
+ * Features x hosts: ● the feature applies on that host, · it is included but
+ * has nothing for that platform (the other OS's half of a shared role), blank
+ * when not included. Rows are grouped by the host-level entry (usually a
+ * role/profile) they came through; features listed on hosts directly come last.
+ */
+export function inspectMatrix(
+  analyses: HostAnalysis[], ignored: { host: string; fragment: string }[],
+): string[] {
+  const extras = "listed on the host";
+  const rows = new Map<string, { group: string; cells: Map<string, "applies" | "ignored"> }>();
+  for (const analysis of analyses) {
+    for (const { label, fragment, via } of analysis.fragments) {
+      if (fragment.__platform) continue;
+      const row = rows.get(label) ?? { group: via ?? extras, cells: new Map() };
+      const state = ignored.some((item) => item.host === analysis.name && item.fragment === label) ? "ignored" : "applies";
+      row.cells.set(analysis.name, state);
+      rows.set(label, row);
+    }
+  }
+  const groups = [...new Set([...rows.values()].map((row) => row.group))]
+    .sort((a, b) => Number(a === extras) - Number(b === extras));
+  const labelWidth = Math.max(...[...rows.keys()].map((label) => label.length + 2), ...groups.map((group) => group.length), 20);
+  const hosts = analyses.map((analysis) => analysis.name);
+  const cell = (text: string, width: number) => {
+    const left = Math.floor((width - text.length) / 2);
+    return " ".repeat(left) + text + " ".repeat(width - text.length - left);
+  };
+  const line = (first: string, cells: string[]) =>
+    `${first.padEnd(labelWidth)}  ${cells.map((text, index) => cell(text, hosts[index].length)).join("  ")}`.trimEnd();
+  const lines = ["", line("", hosts)];
+  for (const group of groups) {
+    lines.push(group);
+    for (const [label, row] of rows) {
+      if (row.group !== group) continue;
+      const shown = label === group ? "(its own settings)"
+        : /:inline(\[\d+\])?$/.test(label) ? `(inline in ${label.replace(/:inline(\[\d+\])?$/, "")})` : label;
+      lines.push(line(`  ${shown}`, hosts.map((name) => {
+        const state = row.cells.get(name);
+        return state === "applies" ? "●" : state === "ignored" ? "·" : "";
+      })));
+    }
+  }
+  lines.push("", "● applies   · included, nothing for this platform   (blank) not included");
   return lines;
 }
 

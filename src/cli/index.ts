@@ -49,6 +49,7 @@ const { positionals, values } = parseArgs({
     // Internal: consent was already given by the repository bootstrap script.
     confirmed: { type: "boolean", default: false },
     "command-only": { type: "boolean", default: false },
+    matrix: { type: "boolean", default: false },
   },
 });
 
@@ -84,7 +85,8 @@ Commands:
   plan         Show what switch would change on this machine (same as switch --dry)
   switch       Generate output and run the host activation command
   update       Update generated flake.lock and copy it to project root
-  inspect      Print each host's features and what they declare (--host to pick one)
+  inspect      Print each host's features and what they declare (--host to pick one;
+               --matrix: a features x hosts table, grouped by role)
   fonts search [query] --provider nerd-fonts  Search official font release IDs
   package search <query>  Search winget and show how to declare a package
   windows import [--host <name>]  Print declarations for installed, undeclared packages
@@ -129,6 +131,10 @@ Examples:
 const cwd = process.cwd();
 if ((values["prepare-only"] || values.confirmed || values["command-only"]) && command !== "bootstrap") {
   console.error("--prepare-only, --confirmed and --command-only are only supported by winix bootstrap.");
+  process.exit(2);
+}
+if (values.matrix && command !== "inspect") {
+  console.error("--matrix is only supported by winix inspect.");
   process.exit(2);
 }
 if ((values.offline || values.locked) && !["apply", "switch", "plan"].includes(command)) {
@@ -285,7 +291,7 @@ switch (command) {
     break;
   case "inspect":
     try {
-      await inspect(cwd, { host: values.host });
+      await inspect(cwd, { host: values.host, matrix: values.matrix });
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
       process.exit(1);

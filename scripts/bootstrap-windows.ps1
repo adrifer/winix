@@ -291,6 +291,8 @@ function Get-WinixBootstrapSha256 {
 
 function Save-WinixVerifiedDownload {
     param([string]$Url, [string]$ChecksumUrl, [string]$Asset, [string]$Destination)
+    # Windows PowerShell's download progress block covers the console and slows large downloads.
+    $ProgressPreference = 'SilentlyContinue'
     if (Test-Path -LiteralPath $Destination) {
         if ((Get-Item -LiteralPath $Destination -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {
             throw "Refusing linked download destination: $Destination"
@@ -306,6 +308,7 @@ function Save-WinixVerifiedDownload {
         if ((Test-Path -LiteralPath $Destination) -and (Get-WinixBootstrapSha256 $Destination) -eq $expected) {
             return
         }
+        Write-Host "Downloading $Asset (checksum-verified)..."
         Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile $temporary -TimeoutSec 90
         if ((Get-WinixBootstrapSha256 $temporary) -ne $expected) {
             throw "Release checksum mismatch for $Asset; nothing was executed"

@@ -15,6 +15,14 @@ import { hasHomeManagerImport } from "../backends/nix/index.ts";
 export interface FragmentRecord {
   label: string;
   fragment: Fragment;
+  /**
+   * Reached through a grouping (a profile, or a feature composing other
+   * features) rather than listed on the host itself. Shared groupings are
+   * meant to span platforms, so their inapplicable parts are expected.
+   */
+  composed?: boolean;
+  /** For composed records: the host-level entry (usually a profile) they came through. */
+  via?: string;
 }
 
 export interface HostAnalysis {
@@ -91,16 +99,22 @@ export function applicableScopes(analysis: HostAnalysis, evaluated: EvaluatedHos
   return applicable;
 }
 
+/**
+ * Features that contribute nothing on a host's platform. `composed` is true
+ * when every part of it came through a shared grouping (see FragmentRecord).
+ */
 export function collectIgnoredFragments(
   analyses: HostAnalysis[], evaluated: EvaluatedHost[],
-): { host: string; fragment: string; scopes: Scope[] }[] {
+): { host: string; fragment: string; scopes: Scope[]; composed: boolean }[] {
   return analyses.flatMap((analysis, index) => {
     const applicable = applicableScopes(analysis, evaluated[index]);
     if (!applicable) return [];
 
     const byLabel = new Map<string, Set<Scope>>();
-    for (const { label, fragment } of analysis.fragments) {
+    const direct = new Set<string>();
+    for (const { label, fragment, composed } of analysis.fragments) {
       if (fragment.__platform) continue;
+      if (!composed) direct.add(label);
       const contributed = byLabel.get(label) ?? new Set<Scope>();
       for (const scope of scopes) {
         const data = fragment[scope];
@@ -110,7 +124,7 @@ export function collectIgnoredFragments(
     }
     return [...byLabel].flatMap(([fragment, contributed]) =>
       contributed.size > 0 && ![...contributed].some((scope) => applicable.has(scope))
-        ? [{ host: analysis.name, fragment, scopes: [...contributed] }]
+        ? [{ host: analysis.name, fragment, scopes: [...contributed], composed: !direct.has(fragment) }]
         : []);
   });
 }
@@ -208,7 +222,17 @@ function analyzeHost(host: HostDef, options: EvaluateOptions): HostAnalysis {
   try {
     resolveEntry(host.platform, host.platform.__id, fragments);
     host.fragments.forEach((entry, index) => {
-      resolveEntry(entry, labelForEntry(entry, index), fragments);
+      if (isLazy(entry) && entry.__id === `${host.name}:inline`) {
+        // host()'s callback form: what it returns is listed on the host itself.
+        const resolved = entry.__resolve();
+        if (Array.isArray(resolved)) {
+          resolved.forEach((item, itemIndex) => resolveEntry(item, `${entry.__id}[${itemIndex}]`, fragments));
+        } else {
+          resolveEntry(resolved, entry.__id, fragments);
+        }
+      } else {
+        resolveEntry(entry, labelForEntry(entry, index), fragments);
+      }
     });
   } finally {
     restoreEvalContext(prev);
@@ -217,19 +241,24 @@ function analyzeHost(host: HostDef, options: EvaluateOptions): HostAnalysis {
   return { name: host.name, platform, ...(host.platform.__variant ? { variant: host.platform.__variant } : {}), fragments };
 }
 
-function resolveEntry(entry: unknown, label: string, out: FragmentRecord[]): void {
+function resolveEntry(entry: unknown, label: string, out: FragmentRecord[], composed = false, via?: string): void {
   if (isLazy(entry)) {
+    // Everything under a profile is composed and grouped under the outermost
+    // one; features a feature returns are composed but keep their group.
+    const group = entry.__group === true;
+    const childVia = via ?? (group ? entry.__id : undefined);
     const resolved = entry.__resolve();
     if (Array.isArray(resolved)) {
-      resolved.forEach((item, index) => resolveEntry(item, `${entry.__id}[${index}]`, out));
+      resolved.forEach((item, index) =>
+        resolveEntry(item, `${entry.__id}[${index}]`, out, composed || group || isLazy(item), childVia));
     } else {
-      resolveEntry(resolved, entry.__id, out);
+      resolveEntry(resolved, entry.__id, out, composed || group, childVia);
     }
   } else if (Array.isArray(entry)) {
-    entry.forEach((item, index) => resolveEntry(item, `${label}[${index}]`, out));
+    entry.forEach((item, index) => resolveEntry(item, `${label}[${index}]`, out, composed, via));
   } else if (typeof entry === "object" && entry !== null) {
     const fragment = entry as Fragment;
-    out.push({ label: fragment.__id ?? label, fragment });
+    out.push({ label: fragment.__id ?? label, fragment, ...(composed ? { composed, ...(via ? { via } : {}) } : {}) });
   }
 }
 

@@ -103,6 +103,8 @@ export interface LazyFragment {
   __lazy: true;
   __id: string;
   __platform?: boolean;
+  /** Set by profile(): a grouping of features rather than a feature. */
+  __group?: true;
   __resolve: () => FragmentResult;
 }
 
