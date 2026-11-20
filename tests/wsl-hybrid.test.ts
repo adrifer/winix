@@ -225,7 +225,8 @@ describe('WSL setup repository "self"', () => {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
-  });
+    // Several real git processes; slow on a busy Windows machine.
+  }, 30000);
 
   it("keeps the completion fingerprint stable across inferred branches only", () => {
     const base = { repository: "https://github.com/example/dotfiles.git", ref: "main", configDirectory: "winix", host: "wsl" };
