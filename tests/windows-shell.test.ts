@@ -492,7 +492,7 @@ ${script.replace(/^\$store = .*$/m, () => `$store = ${powerShellLiteral(store)}`
       } finally {
         await rm(dir, { recursive: true, force: true });
       }
-    });
+    }, 30000); // several real pwsh launches: slow on CI runners
 
     it.each([
       [false, ["0.9.0", "0.10.0.1", "0.10.0", "0.11.0-beta"], "0.10.0.1"],
