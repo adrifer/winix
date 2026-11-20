@@ -128,7 +128,7 @@ WSL: Linux hosts are activated separately from Windows.
 ## Reach Windows from WSL
 
 Avoid hard-coding the Windows user name or drive in Linux config. From
-[`features/windows-interop.ts`](../../examples/cross-platform/features/windows-interop.ts):
+[`features/system/windows-interop.ts`](../../examples/cross-platform/features/system/windows-interop.ts):
 
 ```ts
 export const windowsInterop = feature("windows-interop", ({ home }) => {
@@ -164,4 +164,4 @@ moves or unregisters an existing distro.
 - **Restart WSL yourself** after `.wslconfig` or default-user changes
   (`wsl --shutdown` when convenient). Winix never shuts WSL down.
 
-Full reference: [Provision WSL from a Windows host](../../README.md#provision-wsl-from-a-windows-host).
+Full reference: [WSL from a Windows host](../reference/wsl.md).

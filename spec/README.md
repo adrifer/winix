@@ -1,37 +1,29 @@
 # Winix specification
 
-This directory is the durable home for Winix's design.
-
-## Layout
-
-| File / directory | What it is |
+| File | What it is |
 |---|---|
-| [`SPEC.md`](./SPEC.md) | **The spec.** What Winix is and does today. Single source of truth for behavior. |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | How Winix is built internally: evaluator passes, fragment graph, code generation, file layout under `src/`. |
-| [`proposals/`](./proposals/) | Forward-looking designs for features that are not yet implemented (e.g. the Windows backend). |
+| [`SPEC.md`](./SPEC.md) | **The contract**: the model, merge semantics, guarantees and rules Winix keeps. Changes to these are deliberate. |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | How Winix is built: evaluator passes, fragment lifecycle, backends, file layout under `src/`. |
+| [`proposals/`](./proposals/) | Designs for big changes before they are built. |
 
-## Where to look
-
-- **"What does Winix do?"** → [`SPEC.md`](./SPEC.md)
-- **"How does Winix do it?"** → [`ARCHITECTURE.md`](./ARCHITECTURE.md)
-- **"What about Windows / future backends?"** → [`proposals/`](./proposals/)
+How to *use* each feature is documented for users in [`docs/`](../docs/) (the
+reference and guides); `SPEC.md` links there rather than repeating it.
 
 ## Editing
 
-- Add or change user-visible behavior → edit `SPEC.md`.
-- Change internals without changing behavior → edit `ARCHITECTURE.md`.
-- Propose a new backend, breaking API change, or major feature → add a file
-  to `proposals/` following [`proposals/README.md`](./proposals/README.md).
-- Bug fixes, internal refactors, and new helpers that fit existing patterns
-  don't need a spec change.
+- New or changed user-visible behavior: update the relevant `docs/` page, and
+  `SPEC.md` when it changes a rule or guarantee.
+- Internals without behavior changes: `ARCHITECTURE.md`.
+- A new backend, a breaking API change or a major feature: a proposal first
+  ([`proposals/README.md`](./proposals/README.md)).
+- Bug fixes, refactors and helpers that fit existing patterns need no spec
+  change.
 
-## Non-goals for v1
-
-These are stated once and apply to everything in `SPEC.md`:
+## Non-goals
 
 - Replacing Nix evaluation or the NixOS module system.
 - Matching Nix-level reproducibility on Windows.
 - Providing a GUI.
 - Managing remote fleets.
 - Hiding all platform-specific behavior.
-- Allowing TypeScript specs to mutate the system directly.
+- Allowing TypeScript configs to mutate the system directly.

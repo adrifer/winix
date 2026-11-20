@@ -18,7 +18,7 @@ Mac, organised as machines → roles → features (see its README). Its test
 | [Share git config across Windows and WSL](share-git-config.md) | Keep one git identity and settings for Git for Windows and Linux git |
 | [PowerShell profile and Windows Terminal](powershell-and-terminal.md) | Keep your PowerShell profile (with aliases shared with zsh), prompt and Terminal settings in the repo |
 
-For every option a helper takes, see the [README](../../README.md). Agents can
+For every option a helper takes, see the [reference](../README.md). Agents can
 print version-matched instructions with `winix --skill`.
 
 To try the example from a clone of this repository:

@@ -1,19 +1,14 @@
 # Contributing to Winix
 
-Thanks for thinking about contributing! Winix is young and the codebase is still
-moving fast, but contributions are very welcome — especially around helpers,
-docs, examples, and bug reports.
-
-If you're poking around to understand how things fit together, start with
-[`AGENTS.md`](./AGENTS.md) for a guided tour of the architecture and conventions.
+Contributions are welcome, especially helpers, docs, examples and bug reports.
+For a tour of the architecture and conventions, start with
+[`AGENTS.md`](./AGENTS.md).
 
 ## Requirements
 
-- **Node.js >= 20** (CI runs on 22)
-- **npm** (the repo is npm-based; bun also works locally if you prefer)
-
-The core npm workflows are shell-independent and should work from PowerShell,
-cmd, WSL, Linux, and macOS.
+- **Node.js 22.13+, 24 or 26** and npm.
+- **Bun 1.4.0**, only to build the standalone executables.
+- Native Windows or WSL/Linux/macOS: the npm workflows are shell-independent.
 
 ## Getting started
 
@@ -21,67 +16,59 @@ cmd, WSL, Linux, and macOS.
 git clone https://github.com/adrifer/winix
 cd winix
 npm install
-npm test
+npm test -- --run
 ```
-
-That should give you 94/94 passing tests in a few seconds.
 
 ## Common workflows
 
-| Task                              | Command                       |
-| --------------------------------- | ----------------------------- |
-| Run the test suite                | `npm test`                    |
-| Run a single test file            | `npm test -- helpers.test.ts` |
-| Type-check (no emit)              | `npm run check`               |
-| Build to `dist/`                  | `npm run build`               |
-| Watch mode                        | `npm run dev`                 |
-| Lint                              | `npm run lint`                |
-| Regenerate bundled NixOS/HM types | `npm run generate:types`      |
+| Task | Command |
+| --- | --- |
+| Run the tests | `npm test -- --run` |
+| Run one test file | `npx vitest run tests/cli.test.ts` |
+| Type-check | `npm run check` |
+| Build `dist/` (plus editor types) | `npm run build` |
+| Build standalone executables | `npm run build:standalone` |
+| Regenerate bundled NixOS/HM/darwin option types | `npm run generate:types` |
+| Run the CLI from source | `node --experimental-transform-types src/cli/index.ts check` |
+
+To try a source checkout against a real config through the `winix` command,
+set `WINIX_SDK` to this directory (see the README).
 
 ## Before opening a PR
 
-Please make sure:
+1. `npm run check` is clean and `npm test -- --run` passes.
+2. New behavior has a test in `tests/`.
+3. User-facing changes are documented: the relevant page in `docs/` (and the
+   README if it changes the quick start), `src/skill.ts` (what agents read via
+   `winix --skill`), and `spec/SPEC.md` when a rule or guarantee changes.
+   Changes to `examples/cross-platform` update the guides that quote it.
+4. Conventional commit prefixes (`feat:`, `fix:`, `docs:`, `chore:`,
+   `refactor:`, `test:`).
 
-1. `npm run check` is clean (no TypeScript errors).
-2. `npm test` passes locally.
-3. New behavior has a test next to the existing ones in `tests/`.
-4. Public API changes are reflected in:
-   - `README.md` (user-facing examples)
-   - `spec/SPEC.md` (if it affects the authoring model)
-   - `spec/ARCHITECTURE.md` (if it adds/moves a module)
-   - JSDoc on the exported function/method
-5. Conventional commit prefix in the title (`feat:`, `fix:`, `docs:`,
-   `chore:`, `refactor:`, `test:`). CI uses this for release notes.
-
-GitHub Actions will run the full check + tests on every PR. The `Publish`
-workflow only runs on pushed tags (`v*`), so PRs never publish anything.
+CI runs the checks and tests on every PR; publishing only runs for pushed `v*`
+tags.
 
 ## Proposing larger changes
 
-For anything beyond a small fix or doc tweak, please open an issue or a draft
-proposal in `spec/proposals/` first. The format is light: motivation, sketch
-of the API, open questions. See existing files for examples
-(`binary-release.md` is the most recent one). This keeps surface-area
-discussions out of the PR review loop.
+For a new backend, a breaking API change or a cross-cutting feature, open an
+issue or a proposal in [`spec/proposals/`](./spec/proposals/README.md) first.
+Ideas and planned work are in [ROADMAP.md](./ROADMAP.md).
 
-## Areas that are especially welcome
+## Especially welcome
 
-- **New helpers** that wrap common nixpkgs / Home Manager patterns. The bar
-  is the rules in [`AGENTS.md`](./AGENTS.md#api-shape-rules): mirror the
-  parent Nix namespace, no hidden key conversion, opinionated but overridable.
-- **Examples** under `examples/` — both `expected/` (current behavior) and
-  `proposed/` (what you wish worked) are useful.
-- **Bug reports** with a minimal reproducing `winix.config.ts`.
-- **Docs**: small fixes, clearer explanations, more examples in the README.
+- **Helpers** that wrap common nixpkgs, Home Manager or Windows patterns,
+  following the [API shape rules](./AGENTS.md#api-shape-rules).
+- **Bug reports** with a minimal `winix.config.ts` that reproduces them.
+- **Docs**: clearer explanations, more recipes in `docs/guides`.
 
 ## Releases
 
-Maintainers cut releases via `npm run release:preview` and
-`npm run release:stable`. Both require a clean `main` working tree and push
-a `v*` tag that the publish workflow turns into an npm release.
+Maintainers run `npm run release:preview` (any branch) or
+`npm run release:stable` (from `main`) on a clean tree. Both run the checks and
+tests, then push a `v*` tag; the publish workflow builds the executables, runs
+their smoke tests on Linux and Windows, and publishes to npm and GitHub
+Releases. Add a [CHANGELOG](./CHANGELOG.md) entry for stable releases.
 
 ## Questions
 
-Open a [Discussion](https://github.com/adrifer/winix/discussions) or an
-issue. There's no Discord or chat right now — keeping things on the repo
-makes them searchable.
+Open a [Discussion](https://github.com/adrifer/winix/discussions) or an issue.

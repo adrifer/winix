@@ -1,15 +1,11 @@
 # Windows example
 
-Demonstrates the implemented Windows backend slice: declaring a Windows host
-with `platforms.windows()`, installing winget packages with
-`windows.package(...)`, running arbitrary commands with `windows.raw(...)`, and
-managing environment/PATH and arbitrary DSC v3 resources with
-`windows.env.set/remove(...)` / `windows.path.add/remove(...)` /
-`windows.dsc(...)`.
-
-> **Status:** Packages, raw commands, env/path, and the generic DSC escape
-> hatch exist publicly today. See `spec/proposals/windows-backend.md` for the
-> full plan.
+A reference for the lower-level Windows helpers: every form of
+`windows.package(...)`, raw commands with `windows.raw(...)`, environment and
+PATH with `windows.env.*` / `windows.path.*`, and any DSC v3 resource with
+`windows.dsc(...)`. For a whole config (files, PowerShell, Terminal, WSL),
+see [`examples/cross-platform`](../cross-platform) and the
+[Windows reference](../../docs/reference/windows.md).
 
 ## What it shows
 

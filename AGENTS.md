@@ -2,159 +2,145 @@
 
 Instructions for AI coding agents (Copilot, Claude Code, Cursor, etc.) working on Winix.
 
-## Project Overview
+## Project overview
 
-Winix is a TypeScript-first system configuration tool that generates Nix (NixOS, nix-darwin, Home Manager) from composable TypeScript fragments.
+Winix is a TypeScript-first configuration tool for Windows, NixOS, WSL and macOS.
+Configs are composable TypeScript fragments:
 
-**Pipeline:** `winix.config.ts` → Evaluator (two-pass) → Nix backend → `.winix/out/flake.nix` + host modules
+- **Nix hosts** (NixOS, NixOS-WSL, nix-darwin, Home Manager): `winix.config.ts`
+  → evaluator → Nix backend → `.winix/out/flake.nix` + host modules, applied by
+  `nixos-rebuild`/`darwin-rebuild`.
+- **Windows hosts**: evaluator → Windows backend → `.winix/out/<host>/resources.json`,
+  checked against the machine and applied by Winix's own plan-then-apply executor.
 
 ## Architecture
 
 ```
 src/
-  core/types.ts          # All type definitions. Start here.
-  sdk/index.ts           # User-facing API: feature(), profile(), host(), platforms.*, workspace()
-  evaluator/index.ts     # Two-pass: collect IDs → resolve with context → deep merge
-  backends/nix/index.ts  # Generates flake.nix + host .nix modules
+  core/types.ts             All core type definitions. Start here.
+  sdk/index.ts              Authoring API: feature(), profile(), host(), platforms.*, workspace()
+  evaluator/index.ts        Passes: collect IDs → resolve with context → deep merge
+  helpers/                  home.*, nixos.*, darwin.*, windows.*, nix.* helpers
+  backends/nix/             flake.nix + host modules
+  backends/windows/         resources.json, lockfile, WSL provisioning and setup, fonts, feeds
+  runtime.ts                Standalone-executable metadata (version, Linux assets, editor types)
+  skill.ts                  What `winix --skill` prints for agents
   cli/
-    index.ts             # CLI entry point (parseArgs)
-    loader.ts            # Finds and imports winix.config.ts
-    commands/apply.ts    # winix apply
-    commands/check.ts    # winix check
+    index.ts                Entry point (parseArgs) and command dispatch
+    loader.ts               Finds and imports winix.config.ts
+    analysis.ts             Per-host fragment analysis (inspect, check warnings, conflicts)
+    windows-plan.ts / windows-apply.ts / windows-state.ts   Windows plan, apply, ownership
+    editor-types.ts         .winix/types for editors
+    progress.ts / style.ts  Spinner and colours
+    commands/               apply, check, switch (plan), update, inspect, init, bootstrap, scaffold, ...
+scripts/                    bootstrap-windows.ps1, bootstrap-linux.sh, release and build scripts
 ```
 
-## Key Concepts
+## Key concepts
 
-### Fragment Pattern
+### Fragment pattern
 Everything is a `Fragment | Fragment[]`. No inheritance, no classes. Just functions returning data. Bodies may also **declare by effect** through injected namespaces (`home.*`, `nixos.*`, `darwin.*`, `windows.*`), which auto-register without a return.
 
-### Three Helpers
+### Three helpers
 Distinct roles: a **feature declares** config, a **profile groups** features, and a **host** is the target.
 - `feature(id, callback)` — **declares** config. N per host. Has `.isActive`. The callback receives an injected context; it can declare by effect and/or return fragments.
-- `profile(id, entries[])` — **groups** features. **Array of entries only** (instantiated features/profiles and bare fragments). No callback: passing one is a compile error and a runtime `TypeError`. Has `.isActive`.
+- `profile(id, entries[])` — **groups** features. **Array of entries only** (instantiated features/profiles and bare fragments). No callback: passing one is a compile error and a runtime `TypeError`. Has `.isActive`. Results are marked `__group`, so `inspect --matrix` groups by profile and `check` does not warn about members that don't apply to a platform.
 - `host(name, platform, entries[])` or `host(name, platform, callback)` — top-level target. Entries array **or** callback (effects + return). No `.isActive`.
 
-Platforms are built through `platforms.*` (`platforms.nixos({...})`, `platforms.wsl({...})`, `platforms.darwin({...})`, `platforms.windows()`) and passed as a host's second argument; they expose `.isActive` too (`platforms.nixos.isActive`). `platforms.wsl()` is a NixOS variant (platform id `nixos`, context `variant: "wsl"`), so both `platforms.nixos.isActive` and `platforms.wsl.isActive` are true on WSL hosts. The CLI evaluates with `evaluate(workspace, { configDir })`; config-relative helpers (`home.symlink("../x")`, WSL setup `repository: "self"`) read it from the eval context.
+Platforms are built through `platforms.*` (`platforms.nixos({...})`, `platforms.wsl({...})`, `platforms.darwin({...})`, `platforms.windows()`) and passed as a host's second argument; they expose `.isActive` too (`platforms.nixos.isActive`). `platforms.wsl()` is a NixOS variant (platform id `nixos`, context `variant: "wsl"`), so both `platforms.nixos.isActive` and `platforms.wsl.isActive` are true on WSL hosts. The CLI evaluates with `evaluate(workspace, { configDir })`; config-relative helpers (`home.symlink("./x")`, WSL setup `repository: "self"`) read it from the eval context.
 
-### Context Injection & Effects
+### Context injection and effects
 - `feature` and the callback form of `host` receive `{ home, nixos, darwin, windows, platforms }`. `nix`, `account`, and `overlay` are NOT injected (stay file-level imports).
 - Declarations through an injected namespace **auto-register** (no return needed). Calling another `feature()`/`profile()` factory returns a lazy fragment that is **not** auto-collected and **must be returned** to compose it.
-- Additive and back-compat: the return forms (one fragment, array, or after local logic) still work; an effect-only callback returning nothing type-checks (`AuthoringResult = FragmentResult | void`); imported globals still work (a global `home.*` call is not auto-registered, so it must be returned).
+- The return forms (one fragment, array) still work; an effect-only callback returning nothing type-checks; a global (imported) `home.*` call is not auto-registered, so it must be returned.
 
-### Lazy Evaluation
-`platform()` and `feature()` return `LazyFragment` descriptors (not resolved fragments). The evaluator:
-1. **Pass 1:** Scans descriptors to collect IDs + resolve composites recursively to find nested IDs.
-2. **Pass 2:** Sets implicit context (`_ctx`), then calls `__resolve()` on each lazy fragment. `.isActive` getters read from this context.
-3. **Pass 3:** Deep merges all resolved fragments (arrays append, objects merge, scalars last-wins).
+### Lazy evaluation
+`platform()` and `feature()` return `LazyFragment` descriptors. The evaluator:
+1. **Pass 1:** scans descriptors to collect IDs, resolving composites recursively to find nested IDs.
+2. **Pass 2:** sets the implicit context (`_ctx`), then calls `__resolve()` on each lazy fragment. `.isActive` getters read this context.
+3. **Pass 3:** deep merges all resolved fragments (arrays append, objects merge, scalars last-wins).
 
-### Implicit Context
-`.isActive` uses a module-level `_ctx` variable (like React hooks). Set by the evaluator before resolving fragments. `withContext()` is the testing escape hatch.
+`.isActive` uses a module-level `_ctx` (like React hooks); `withContext()` is the testing escape hatch.
 
 ## Conventions
 
 - **All TypeScript, no Rust.** Single language stack.
 - **ESM modules** with `.ts` extensions in imports (Node `--experimental-transform-types`).
-- **Vitest** for tests. Run `npx vitest run`.
+- **Vitest** for tests: `npx vitest run`.
 - **No build step** for development. Source runs directly via Node.
-- **Fragment keys match Nix option names.** Use `"experimental-features"` not `experimentalFeatures`. The backend does NOT auto-convert camelCase to kebab-case for option keys.
-- **Input names** use camelCase in TS (`nixosWsl`), auto-converted to kebab-case for Nix (`nixos-wsl`).
-- **Core npm workflows must stay shell-independent.** `npm run check`, `npm test`, `npm run build`, and `npm run clean` should work from PowerShell/cmd, WSL, Linux, and macOS. Use Node scripts instead of shell-specific commands like `rm -rf`, `cp`, or `mkdir -p`.
+- **Fragment keys match Nix option names.** Use `"experimental-features"`, not `experimentalFeatures`; the backend never converts option keys.
+- **Input names** use camelCase in TS (`nixosWsl`), converted to kebab-case for Nix (`nixos-wsl`).
+- **Core npm workflows stay shell-independent.** `npm run check`, `npm test`, `npm run build` and `npm run clean` work from PowerShell/cmd, WSL, Linux and macOS. Use Node scripts, not `rm -rf`, `cp`, or `mkdir -p`.
+- **Don't add runtime dependencies** unless absolutely necessary.
 
-## Windows/WSL Compatibility
+## Windows and WSL
 
-Winix development is supported from native Windows and WSL. Windows hosts emit `resources.json` (applied by Winix's own plan-then-apply executor, `src/cli/windows-apply.ts`; elevated work batched into one UAC prompt) with package, raw, env, path, file, setting, dsc, startup, PowerShell module, optional-feature, and WSL helpers. Resource helpers return handles and accept `dependsOn`. `windows.knownFolder.documents()` and sibling methods resolve file targets during activation; copy/symlink sources are config-directory-relative (or absolute/environment paths/file URLs). `windows.startup.app()` registers per-user logon tasks in Task Scheduler `\Winix\` (fast sign-in start, no UAC; applied-state kind `startup-app`, fingerprinted by exported task XML) and `windows.startup.shortcut()` Startup-folder shortcuts, neither launched during apply; `windows.startup.explorer()` sets Explorer startup pacing. `winix plan` (= `switch --dry`) prints a live-checked plan for Windows hosts from `WindowsOutput.resources` summaries; file resources import one content-addressed module installed by the `Winix PowerShell helpers` resource (startup scripts keep their inline helpers: their definition hash is recorded in applied state); package inventory is one `winget export` per switch via `inspectMany` (DSC confirms packages it does not list), reused by the plan, activation and reconciliation, and repeated after activation only when something applied; `src/cli/progress.ts` shows a spinner per phase and step on interactive terminals; `--offline`/`--locked` guard lock resolution; the lock no longer writes `generatedAt`. Self-updating apps use `windows.package(id, { version: "any" })` (normalized to `anyVersion`; presence-only, never locked). File-like resources and Startup shortcuts default to `backup: !force` (differing targets move to `.bak`); startup paths accept file handles and infer `dependsOn`. `windows.configPath()`, `windows.powershell.profile()` and `windows.terminal.settings()` cover common paths. Windows-only workspaces may omit `inputs`. PowerShell modules, NixOS-WSL x64/ARM64 images, and optional distro setup repository commits use separate pins in `winix-windows.lock`, alongside packages. WSL provisioning never restarts Windows, shuts down WSL, replaces conflicting distros, or deletes distro data. The same `windows.wsl.distro()` declaration creates an absent distro or adopts an untracked registration matching WSL 2, NixOS and the expected Linux hostname (`host`, defaulting to `setup.host`). Adoption records GUID/location in Local AppData `Winix\wsl-registrations`, preserves actual location/defaults, skips setup permanently, and leaves Linux activation manual; it does not inspect Git, checkouts, config or accounts. Distro `setup` opts Winix-created distros into trusted first-run Linux repository/npm preparation and account/full-host activation; omitting it keeps Linux activation manual. Setup `host`/`user` accept host and `account.user` values, and `repository: "self"` infers the remote/branch/config directory from the local checkout (inferred refs are excluded from the completion fingerprint; keep fingerprints of existing setups byte-identical; a completed distro whose fingerprint no longer matches only prints a note, since setup runs once and the distro is then managed from inside WSL). Check/apply validate the full setup plan offline. Setup selects an already-declared Linux account, resumes recorded stages, and never resets dirty checkouts or updates completed setups. Fresh-image activation remains unverified; curated program helpers remain pending. See `spec/proposals/windows-backend.md` for the full plan.
+The rules and guarantees are in `spec/SPEC.md` §9 (Windows backend); usage is in `docs/reference/windows.md` and `docs/reference/wsl.md`. The essentials when changing this code:
 
-- **Separate filesystem paths from generated Nix paths.**
-  - Use `node:path` for real filesystem paths (`.winix/out`, copying raw modules, loading configs).
-  - Use `node:path.posix` or explicit POSIX formatting for generated Nix paths (`./hosts/foo.nix`, `../raw-modules/foo.nix`).
-  - Never let Windows backslashes leak into generated Nix files or Nix flake refs.
-- **CLI behavior on native Windows:**
-  - `winix check` and `winix apply --dry` should work.
-  - `winix switch --dry` should print the command without `sudo` and with forward-slash flake refs (`path:D:/repo/...#host`).
-  - Real `winix switch` should fail clearly until native Windows activation exists.
-  - Real `winix update` should fail clearly because it requires the Nix CLI; users should run it from WSL, Linux, or macOS.
-- **CLI behavior on WSL/Linux/macOS:**
-  - `winix switch --dry` should keep POSIX paths (`path:/home/...#host`) and prefix `sudo` when not root.
-  - NixOS and nix-darwin activation commands should remain unchanged outside native Windows.
-- **When adding commands or backend output, test both path surfaces.**
-  - Windows filesystem paths may contain `\`, drive letters, and spaces.
-  - Nix paths and flake refs should use `/`.
+- **Plan, then apply.** Every resource has a test and a set; `winix plan` (= `switch --dry`) reports what differs, `switch` applies only that. Elevated work is batched into one UAC prompt. Package inventory is one `winget export` per switch (DSC confirms what it doesn't list), reused by the plan, activation and reconciliation.
+- **Handles and order.** Resource helpers return handles accepted by `dependsOn`; cross-host handles are an error.
+- **Locks.** Packages, PowerShell modules, fonts, NixOS-WSL images and WSL setup commits are pinned in `winix-windows.lock`. `version: "any"` packages are presence-only and never locked. Dry runs and `--offline`/`--locked` never write pins.
+- **Ownership.** Only resources Winix created are removed when their declaration goes away; adopted or pre-existing ones are never touched. Losing state never infers deletion rights. Removals need confirmation (or `--yes`).
+- **Files.** Differing targets move to `.bak` by default (`backup: !force`); sources are config-directory-relative.
+- **WSL safety.** Provisioning never restarts Windows, shuts down WSL, replaces or unregisters a distro, or deletes distro data. A distro declaration creates an absent distro or adopts a matching one (WSL 2, NixOS, expected hostname); adopted distros never run setup.
+- **WSL setup** runs once (resumable on failure, never resets dirty checkouts). Afterwards the distro is managed from inside WSL; a later change to the setup declaration only prints a note. Keep fingerprints of existing setups byte-identical; inferred refs (`repository: "self"`) are excluded from the fingerprint.
+- **Standalone executables** embed one SDK/evaluator instance (virtual `@adrifer/winix` module); never load an independent SDK copy. The `winix` command runs the checkout's pinned release, downloading and verifying it on Windows and Linux (NixOS through a pinned Nix loader); `node_modules` never changes what it runs, `WINIX_SDK` does explicitly.
 
-## API Shape Rules
+### Paths and platforms
+- **Separate filesystem paths from generated Nix paths.** Use `node:path` for real filesystem paths; `node:path.posix` or explicit POSIX formatting for generated Nix paths. Never let Windows backslashes leak into generated Nix files or flake refs.
+- **On native Windows:** `check`, `apply`, `plan` and `switch` work for Windows hosts; for Nix hosts, `switch --dry` prints the command without `sudo` and with forward-slash flake refs (`path:D:/repo/...#host`), and real activation or `winix update` (Nix CLI) fails clearly.
+- **On WSL/Linux/macOS:** `switch --dry` keeps POSIX paths (`path:/home/...#host`) and prefixes `sudo` when not root.
+- **Test both path surfaces** when adding commands or output: Windows paths may contain `\`, drive letters and spaces; Nix paths and flake refs use `/`.
 
-Use these rules when adding or reviewing Winix SDK helpers:
+## API shape rules
 
-1. **Mirror the parent Nix namespace by default.** If a Nix option is pure config passthrough under `networking.*`, `boot.*`, `security.*`, etc., prefer one parent helper with an object: `nixos.networking({ firewall, nat })`, `nixos.boot({ loader, initrd })`, `nixos.security({ pam, sudo })`.
-2. **Avoid root-level aliases for nested options.** Do not add helpers like `nixos.firewall()`, `nixos.networkmanager()`, or `nixos.nat()` unless the helper represents a major Winix concept rather than a shortcut to a nested Nix path.
-3. **Use named helpers for keyed collections or awkward workflows.** Options like systemd units, launchd agents, Home Manager files, and OCI containers are keyed by name and verbose as raw objects, so helpers are justified.
-4. **Put keyed helpers under the owning namespace when possible.** Prefer `nixos.systemd.service()`, `darwin.launchd.agent()`, and `nixos.virtualisation.ociContainer()` over unrelated root helpers.
-5. **Keep justified ergonomic exceptions explicit.** Helpers like `nixos.sysctl()` are acceptable when the concept is commonly discussed independently from its Nix path (`boot.kernel.sysctl`), but document them as exceptions.
+Use these rules when adding or reviewing SDK helpers:
 
-## How to Add a Feature
+1. **Mirror the parent Nix namespace by default.** For pure config passthrough under `networking.*`, `boot.*`, `security.*`, etc., prefer one parent helper with an object: `nixos.networking({ firewall, nat })`, `nixos.boot({ loader, initrd })`.
+2. **Avoid root-level aliases for nested options** (`nixos.firewall()`, `nixos.nat()`) unless the helper is a major Winix concept.
+3. **Use named helpers for keyed collections or awkward workflows** (systemd units, launchd agents, Home Manager files, OCI containers).
+4. **Put keyed helpers under the owning namespace**: `nixos.systemd.service()`, `darwin.launchd.agent()`, `nixos.virtualisation.ociContainer()`.
+5. **Keep justified ergonomic exceptions explicit** (`nixos.sysctl()` for `boot.kernel.sysctl`), and document them.
 
-1. If it's a new SDK helper or type: edit `src/core/types.ts` + `src/sdk/index.ts`.
-2. If it's evaluator logic: edit `src/evaluator/index.ts`. Add a test.
-3. If it's Nix output: edit `src/backends/nix/index.ts`. Check with `--dry` on test-config.
-4. If it's a CLI command: add to `src/cli/commands/` and register in `src/cli/index.ts`.
-5. Update `ROADMAP.md` when completing tasks.
-6. Update `test-config/winix.config.ts` if the change affects output.
+## How to add a feature
+
+1. New SDK helper or type: `src/core/types.ts` + `src/sdk/index.ts` (or `src/helpers/`).
+2. Evaluator logic: `src/evaluator/index.ts`, with a test.
+3. Nix output: `src/backends/nix/`; Windows output: `src/backends/windows/`. Check with `apply --dry` on `test-config/`.
+4. A CLI command: `src/cli/commands/`, registered in `src/cli/index.ts`.
+5. Document it (below), and add a CHANGELOG entry for user-visible changes.
 
 ## Testing
 
-Standalone builds use Bun 1.4.0 (`npm run build:standalone`), producing Windows
-and glibc Linux x64/ARM64 assets in `artifacts/`. The Windows build embeds the
-Linux hashes, so release builds must build all targets in order. Runtime SDK
-imports are virtual modules sharing the bundled evaluator's context; do not
-load an independent SDK copy. Automatic npm installation is disabled.
-Set `WINIX_STANDALONE_TEST_BINARY` to run `tests/standalone.test.ts` against a
-compiled binary. WSL standalone setup verifies the release binary before
-launching it through a private, pinned Nix runtime linker/library environment;
-never test it by activating the shared machine.
-
-```bash
-npx vitest run                    # Unit tests
-cd test-config && node --experimental-transform-types ../src/cli/index.ts apply --dry   # Integration
-```
-
-Native DSC integration tests are opt-in and require `dsc`, `winget`, and PowerShell 7
-on PATH. In PowerShell, run
-`$env:WINIX_DSC_INTEGRATION = '1'; npx vitest run tests\windows-shell.test.ts`.
-They exercise temporary files/symlinks and uniquely named user environment values,
-cleaned up afterward; symlink creation requires Developer Mode or elevation.
-
-When touching CLI paths, activation, output layout, or npm scripts, also verify from native Windows and WSL when possible:
-
 ```bash
 npm run check
-npm test -- --run
+npx vitest run
 npm run build
-cd test-config
-node --experimental-transform-types --no-warnings ../src/cli/index.ts check
-node --experimental-transform-types --no-warnings ../src/cli/index.ts apply --dry
-node --experimental-transform-types --no-warnings ../src/cli/index.ts switch --dry
+cd test-config && node --experimental-transform-types --no-warnings ../src/cli/index.ts check
 ```
+
+- Standalone builds use Bun 1.4.0 (`npm run build:standalone`, which runs `npm run build` first for the embedded editor types). The Windows build embeds the Linux hashes, so release builds build all targets in order. `WINIX_STANDALONE_TEST_BINARY=<path>` runs `tests/standalone.test.ts` against a compiled binary (CI does this on Linux and Windows).
+- Native DSC integration tests are opt-in and need `dsc`, `winget` and PowerShell 7: in PowerShell, `$env:WINIX_DSC_INTEGRATION = '1'; npx vitest run tests\windows-shell.test.ts`. Symlink cases need Developer Mode or elevation.
+- Never test activation, bootstrap or WSL setup on the shared machine; use dry runs, temporary directories and mocks.
+- When touching CLI paths, activation, output layout or npm scripts, verify from native Windows and WSL when possible.
 
 ## Docs
 
-- `README.md` is the reference; `docs/guides/*.md` are task recipes (Starlight-style front matter).
-- Guide code is quoted from `examples/cross-platform` (laid out as machines/ → roles/ → features/); `tests/cross-platform-example.test.ts` evaluates and generates it, with a Nix snapshot. Change the example and the guide together, and keep the example small.
+- `README.md` is the front door: pitch, quick start, layout, links. Keep it short.
+- `docs/reference/*.md` is the user reference (install, authoring, Windows, WSL, CLI); `docs/guides/*.md` are task recipes (Starlight-style front matter, for a future docs site).
+- Guide code is quoted from `examples/cross-platform` (machines/ → roles/ → features/); `tests/cross-platform-example.test.ts` evaluates and generates it, with a Nix snapshot. Change the example and the guides together, and keep the example small.
 - `src/skill.ts` is what agents read (`winix --skill`); update it with user-facing CLI or authoring changes.
+- `CHANGELOG.md` records shipped changes; `ROADMAP.md` holds what's next and ideas.
 
 ## Spec
 
-Design lives in `spec/`:
-- `spec/SPEC.md` — Single source of truth for what Winix is and does (product, model, evaluation, API, CLI, escape hatches, security, agent DX).
-- `spec/ARCHITECTURE.md` — Internals: evaluator passes, fragment graph, Nix code generation, file layout under `src/`.
-- `spec/proposals/` — Forward-looking designs (e.g. Windows backend) that are not yet implemented.
-
-## Current State
-
-Working end-to-end: config → eval → Nix output → `nixos-rebuild test` successful.
-See `ROADMAP.md` for what's done and what's next (prioritized).
+- `spec/SPEC.md` — the contract: model, merge semantics, Windows backend rules (§9), CLI, security, agent DX.
+- `spec/ARCHITECTURE.md` — internals: evaluator passes, fragment lifecycle, backends, file layout.
+- `spec/proposals/` — designs for big changes before they are built (none open).
 
 ## Don'ts
 
 - Don't add classes or inheritance. Fragments are plain objects from plain functions.
 - Don't add global registries. Fragment discovery is by import, not registration.
-- Don't auto-convert camelCase to kebab-case for Nix option keys. Users write the actual Nix key name.
+- Don't auto-convert camelCase to kebab-case for Nix option keys.
 - Don't add runtime dependencies unless absolutely necessary.

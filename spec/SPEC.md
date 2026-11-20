@@ -1,9 +1,9 @@
 # Winix Specification
 
-> **Status:** Living spec for what Winix **is and does today**.
-> Anything aspirational or unimplemented lives in [`proposals/`](./proposals/).
-> Internal implementation details (evaluator passes, fragment graph, code generation)
-> live in [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+> **Status:** Living spec for what Winix **is and does today**: its model,
+> semantics, rules and guarantees. How to use each feature is in
+> [`docs/`](../docs/README.md); plans are in the [ROADMAP](../ROADMAP.md);
+> internals are in [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ## Table of contents
 
@@ -15,10 +15,11 @@
 6. [Authoring API](#6-authoring-api)
 7. [Curated helpers](#7-curated-helpers)
 8. [Escape hatches](#8-escape-hatches)
-9. [CLI](#9-cli)
-10. [Quality requirements](#10-quality-requirements)
-11. [Security](#11-security)
-12. [Agent DX](#12-agent-dx)
+9. [Windows backend](#9-windows-backend)
+10. [CLI](#10-cli)
+11. [Quality requirements](#11-quality-requirements)
+12. [Security](#12-security)
+13. [Agent DX](#13-agent-dx)
 
 ## 1. Product
 
@@ -663,10 +664,37 @@ detection and rejects unknown extensions rather than inferring raw. Keeping
 the field per-platform supports vendors that publish different formats for
 different targets.
 
-### Resource handles and `dependsOn` (Windows backend)
 
-> **Scope:** This applies to the Windows backend only. `windows.package(...)`
-> and `windows.raw(...)` are the resource-producing helpers today.
+### Diagnostics
+
+The compiler warns (not errors) on escape hatch use, to encourage migration:
+
+```
+⚠ wsl.ts:15 — nix.expr() used in home.programs.zsh.initContent
+  Consider extracting to a typed fragment when stable.
+
+⚠ winix.config.ts:8 — rawModule("./legacy/vscode-path.nix")
+  2 raw modules remain. Consider extracting typed fragments.
+```
+
+### Design principles
+
+- Every escape hatch is a fragment (same shape, same composition model).
+- Escape hatches are never silently ignored.
+- Unsupported escape hatches fail during planning.
+- Raw code never runs during TypeScript evaluation.
+- Source provenance is always tracked.
+
+## 9. Windows backend
+
+Windows hosts (`platforms.windows()`) emit `.winix/out/<host>/resources.json`,
+which `winix switch` checks against the machine and applies (plan, then apply).
+How to use each helper is documented in
+[Windows hosts](../docs/reference/windows.md) and
+[WSL from a Windows host](../docs/reference/wsl.md); this section holds the rules
+and guarantees.
+
+### Resources, handles and `dependsOn`
 
 The Windows backend emits a DSC v3 configuration, which is a dependency graph:
 a resource has a name and other resources can reference it via `dependsOn`. To
@@ -689,7 +717,7 @@ windows.raw(
 - The handle is opaque to user code; only the emitter reads it to resolve
   dependency references to names.
 
-#### Emitted resources
+### Emitted resources
 
 The emitter writes `.winix/out/<host>/resources.json`, assigning each resource
 a stable `name` (letters, numbers, spaces) and translating captured handles
@@ -730,6 +758,8 @@ Symlink resources automatically depend on typed settings declaring
 `DeveloperMode: true` anywhere in the same host, preserving other explicit
 dependencies. This does not enable Developer Mode implicitly; without such a
 declaration, existing Developer Mode or elevation is required as before.
+
+### PowerShell modules and feeds
 
 `windows.powershell.module(name, { repository?, prerelease?, dependsOn? })` declares a
 current-user PowerShell 7 module without an inline version. The default repository
@@ -776,7 +806,7 @@ package is declared. Registered repository discovery uses PowerShell 7 with PSRe
 Profile imports are separate from installation: an unversioned import still
 selects PowerShell's normal installed version, not necessarily the locked one.
 
-#### Windows authoring conveniences
+### Authoring conveniences
 
 - `windows.package` `version: "any"` (spec object, or the `windows.package(id, opts)`
   form) normalizes to `WinPackage.anyVersion: true` with no `version`.
@@ -808,7 +838,7 @@ selects PowerShell's normal installed version, not necessarily the locked one.
 - CLI: `winix package search <query>` (winget search) and `winix windows import
   [--host]` (`winget export` diff). Both are read-only and Windows-only.
 
-#### Hybrid Windows ↔ WSL
+### Hybrid Windows ↔ WSL
 
 - `platforms.wsl(opts)` is a NixOS platform variant: `platforms.nixos(opts)`
   plus `imports = [ inputs.<input>.nixosModules.wsl ]` (input defaults to
@@ -856,6 +886,8 @@ selects PowerShell's normal installed version, not necessarily the locked one.
 - `home.wsl.gitCredentialManager({ paths? })` sets `programs.git.enable` and
   `programs.git.settings.credential.helper` to such a shim. It defaults to Git
   for Windows' ucrt64 and mingw64 GCM.
+
+### WSL provisioning
 
 Windows-side WSL provisioning uses `windows.optionalFeature(name,
 { enabled?, dependsOn? })`, `windows.wsl({ config?, backup?, force?, dependsOn? })`, and
@@ -913,6 +945,8 @@ distros keep their first-run/resume and default management behavior.
 Dry generation/check are static only; provisioning pins remain available because
 the same declaration can create on another machine.
 
+### WSL first-run setup
+
 Optional distro `setup` explicitly links a trusted HTTPS Git `repository`,
 optional `ref` (default HEAD), relative `configDirectory`, and Linux `host`;
 optional `user` selects its declared normal account and `checkout` defaults to
@@ -948,12 +982,16 @@ conflicts require manual recovery or a new distro. No WSL shutdown/reboot occurs
 Without setup, Linux repository installation and activation remain manual.
 Fresh-image end-to-end activation remains unverified.
 
+### PowerShell 7 execution
+
 File and PATH scripts use the same PowerShell 7 resource; raw command strings
 default to `pwsh` (explicit executable selections are preserved). PowerShell 7
 must be on PATH before resource discovery; package ordering alone is not a
 fresh-machine bootstrap. Script set operations must check their own desired
 state, independently of test operations. Environment variables remain native
 Registry resources, with their existing user/machine permission boundaries.
+
+### Prerequisites and standalone executables
 
 `scripts/bootstrap-windows.ps1` provides an out-of-band Windows PowerShell
 5.1/PowerShell 7 prerequisite layer, requiring App Installer/WinGet but not Git,
@@ -993,6 +1031,8 @@ Linux binaries need a compatible glibc/libstdc++ environment for direct use;
 automatic WSL setup supplies it on NixOS. Binaries are unsigned. Fresh-image
 activation and ARM64 execution remain unverified.
 
+### Sign-in startup
+
 `windows.startup.app(name, spec)` declares a named, current-user sign-in
 program as a logon-triggered scheduled task `\Winix\<name>` (current user, limited
 run level, interactive, no time limit, priority 4, battery allowed, multiple
@@ -1022,6 +1062,8 @@ inside the Startup folder, which sign-in opens entirely; `backup: false` refuses
 `force: true` replaces without a backup.
 New shortcuts are staged and verified before replacement, using Unicode-capable
 Shell APIs. Names must be unique per host.
+
+### npm registries, personalization and fonts
 
 `windows.npm.registries({ registries, default, scopes? })` configures the merged
 host's current-user npm registry and declared scoped registry keys. URLs are
@@ -1053,6 +1095,8 @@ files/registry entries fail. No silent replacement or removal ownership is
 claimed. Family names are read from font metadata; app font selection is separate.
 Dry runs may resolve metadata/checksums but never install fonts, change the
 desktop, or write pins. Native activation remains unverified.
+
+### Ownership and removal
 
 Native Windows `switch` reconciles startup/package ownership using a versioned,
 machine-local per-user inventory in `%LOCALAPPDATA%\Winix`, separate from
@@ -1111,31 +1155,9 @@ one machine; simultaneous external installers/other Windows accounts are not
 coordinated. Direct generated-script/DSC activation bypasses ownership tracking.
 Other resource kinds are not yet tracked.
 
-See
-[`proposals/windows-backend.md`](./proposals/windows-backend.md) for the
-forward-looking design.
+Planned Windows work is in the [ROADMAP](../ROADMAP.md).
 
-### Diagnostics
-
-The compiler warns (not errors) on escape hatch use, to encourage migration:
-
-```
-⚠ wsl.ts:15 — nix.expr() used in home.programs.zsh.initContent
-  Consider extracting to a typed fragment when stable.
-
-⚠ winix.config.ts:8 — rawModule("./legacy/vscode-path.nix")
-  2 raw modules remain. Consider extracting typed fragments.
-```
-
-### Design principles
-
-- Every escape hatch is a fragment (same shape, same composition model).
-- Escape hatches are never silently ignored.
-- Unsupported escape hatches fail during planning.
-- Raw code never runs during TypeScript evaluation.
-- Source provenance is always tracked.
-
-## 9. CLI
+## 10. CLI
 
 The CLI owns evaluation orchestration, validation, generation, activation, and
 diagnostics. For internal command implementation, see
@@ -1405,7 +1427,7 @@ callback's returned entries), not for profile members or features a feature
 returns, since shared profiles are meant to span platforms.
 
 The `--json` machine-readable variant is on the Agent DX roadmap; see
-[§ 12](#12-agent-dx).
+[§ 13](#13-agent-dx).
 
 #### `winix update`
 
@@ -1443,7 +1465,7 @@ confusing backend errors.
 - `3` unsupported capability
 - `4` evaluator failure
 
-## 10. Quality requirements
+## 11. Quality requirements
 
 - Deterministic evaluation from the same inputs.
 - Stable resource IDs (derived from import path + export name; renames are
@@ -1455,7 +1477,7 @@ confusing backend errors.
 - No system mutation during TypeScript evaluation.
 - Dry-run / check workflows before apply.
 
-## 11. Security
+## 12. Security
 
 Winix manages sensitive system configuration and must be conservative.
 
@@ -1488,7 +1510,7 @@ added, they will reference external stores rather than embedding values:
 
 Remote, unpinned modules are out of scope for v1.
 
-## 12. Agent DX
+## 13. Agent DX
 
 Winix should be easy for coding agents to inspect, modify, and validate.
 This is a first-class design goal, not an afterthought.
