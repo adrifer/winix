@@ -1159,7 +1159,7 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
         elevated: true,
         steps: [expect.objectContaining({ kind: "package", package: { id: "Example.App", source: "winget", version: "8", action: "upgrade" } })],
       }]);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining("administrator rights; approve the UAC prompt"));
+      expect(log).toHaveBeenCalledWith(expect.stringContaining("Approve the UAC prompt for the change that needs administrator rights"));
     } finally {
       log.mockRestore();
       await rm(dir, { recursive: true, force: true });

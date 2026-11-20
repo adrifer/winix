@@ -342,7 +342,8 @@ export function describeWindowsDscResource(resource: WinDscResource): {
     case "wallpaper": return { category: "settings", label: "Wallpaper" };
     case "fonts": return { category: "fonts", label: `Fonts (${metadata.sources.length} source(s))` };
     case "optional-features": return {
-      category: "features", reboot: metadata.enabled, needsElevationToCheck: true,
+      // Checked through WMI without elevation; only enabling/disabling needs it.
+      category: "features", reboot: metadata.enabled,
       label: `${metadata.enabled ? "Enable" : "Disable"} Windows features ${metadata.names.join(", ")}`,
     };
     case "wsl-distro": {

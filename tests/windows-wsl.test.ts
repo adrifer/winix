@@ -338,6 +338,15 @@ function Get-WindowsOptionalFeature { param([switch]$Online,$FeatureName,$ErrorA
   $state = if ($script:states.ContainsKey($FeatureName)) { $script:states[$FeatureName] } else { 'Enabled' }
   [pscustomobject]@{FeatureName=$FeatureName; State=$state}
 }
+function Get-CimInstance { param($ClassName,$ErrorAction)
+  # Checks read WMI (no elevation): 1 enabled, 2 disabled, 3 absent; pending is not enabled yet.
+  $names = @('Microsoft-Windows-Subsystem-Linux', 'VirtualMachinePlatform') + @($script:states.Keys) | Select-Object -Unique
+  foreach ($name in $names) {
+    $state = if ($script:states.ContainsKey($name)) { $script:states[$name] } else { 'Enabled' }
+    $install = switch ($state) { 'Enabled' { 1 } 'DisabledWithPayloadRemoved' { 3 } default { 2 } }
+    [pscustomobject]@{Name=$name; InstallState=$install}
+  }
+}
 function Enable-WindowsOptionalFeature { param([switch]$Online,$FeatureName,[switch]$All,[switch]$NoRestart,$ErrorAction)
   $script:enabled++; $script:states[$FeatureName] = if($script:restart){'EnablePending'}else{'Enabled'}
   [pscustomobject]@{RestartNeeded=$script:restart}

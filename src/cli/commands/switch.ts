@@ -327,7 +327,7 @@ export function applyProgress(
       return;
     }
     print(line);
-    if (/approve the UAC prompt/.test(line)) progress.spin("Waiting for administrator approval (UAC)");
+    if (/Approve the UAC prompt/.test(line)) progress.spin("Waiting for administrator approval (UAC)");
   };
 }
 

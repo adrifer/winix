@@ -1257,23 +1257,23 @@ would change, checked against the current machine. It never installs or writes
 anything:
 
 ```text
-Plan for desktop: 4 changes, 1 not checked, 47 unchanged
+Plan for desktop: 5 changes, 47 unchanged
   + install  DEVCOM.JetBrainsMonoNerdFont                  3.3.0                [admin]
   ~ upgrade  Git.Git                                       2.55.0.3 → 2.56.0.4  [admin]
   ~ upgrade  JesseDuffield.lazygit                         0.64.0 → 0.66.1      [running]
   ~ apply    link localAppData\nvim -> ../nvim/.config/nvim
-  ? check    Enable Windows features Microsoft-Windows-Subsystem-Linux, VirtualMachinePlatform  needs an elevated shell to check
+  ~ apply    Enable Windows features Microsoft-Windows-Subsystem-Linux, VirtualMachinePlatform  [admin]
   = 47 unchanged (30 packages, 12 files, 2 settings, ...)
   i 3 packages newer than locked (kept; switch offers to update the lock): Microsoft.PowerShell, ...
 
-  ! Switch asks once for administrator approval (UAC) for the 2 [admin] rows (Git.Git: installed machine-wide; DEVCOM.JetBrainsMonoNerdFont: no per-user installer).
+  ! Switch asks once for administrator approval (UAC) for the 3 [admin] rows (Git.Git: installed machine-wide; DEVCOM.JetBrainsMonoNerdFont: no per-user installer).
   ! Close lazygit.exe (pid 12156) before switching: winget cannot upgrade a running portable app (JesseDuffield.lazygit), and a failed upgrade can remove its command.
   ! Enable Windows features ... can require a Windows restart; Winix never restarts Windows.
 
 Removals and ownership (Winix applied-state inventory):
   Would remove: ["package","winget","old.app"]
 
-winix switch would apply only these 4 changes, and check the unchecked one as it applies (applying it if needed).
+winix switch would apply only these 5 changes.
 ```
 
 `winix switch` makes the same plan and then applies **only what is out of

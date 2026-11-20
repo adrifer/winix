@@ -320,7 +320,10 @@ describe("Windows plan", () => {
     expect(byLabel["EDITOR=nvim (user)"].category).toBe("environment");
     expect(byLabel["EDITOR=nvim (user)"].properties).toBeDefined();
     const features = resources.find((resource) => resource.category === "features")!;
-    expect([features.reboot, features.needsElevationToCheck]).toEqual([true, true]);
+    // Checked through WMI without elevation; only applying needs administrator rights.
+    expect([features.reboot, features.needsElevationToCheck, features.elevated]).toEqual([true, undefined, true]);
+    expect(features.testScript).toContain("Win32_OptionalFeature");
+    expect(features.testScript?.trim().endsWith("Test-WinixFeatures")).toBe(true);
     expect(resources.find((resource) => resource.category === "winix")?.label).toBe("Winix PowerShell helpers (used by file resources)");
   });
 });
@@ -405,7 +408,7 @@ describe("Windows apply (switch)", () => {
       { name: "a", status: "failed", error: "boom" }, { name: "b", status: "unchanged" },
       { name: "c", status: "skipped", error: "a dependency failed" }, { name: "d", status: "applied" },
     ]);
-    expect(lines).toContain("Applying 1 change that needs administrator rights; approve the UAC prompt (it can open behind other windows).");
+    expect(lines).toContain("  Approve the UAC prompt for the change that needs administrator rights (it can open behind other windows).");
     expect(formatApplySummary(outcome, new Map([["a", "A"], ["c", "C"]]))).toEqual([
       "Applied 1, already in place 1, failed 1, skipped 1.", "  ✗ A: boom", "  ✗ C: a dependency failed",
     ]);
@@ -544,7 +547,7 @@ describe("switch progress", () => {
     const lines: string[] = [];
     const log = applyProgress((line) => lines.push(line));
     for (const line of [
-      "Applying 1 change that needs administrator rights; approve the UAC prompt (it can open behind other windows).",
+      "  Approve the UAC prompt for the change that needs administrator rights (it can open behind other windows).",
       "  ~ install  Proton.ProtonPass 1.43.0",
       "    ✓ Proton.ProtonPass (45s)",
       "  ~ apply  link C:\\a -> C:\\b",
@@ -552,7 +555,7 @@ describe("switch progress", () => {
       "    ✗ link C:\\a -> C:\\b: still not in the desired state after applying",
     ]) log(line);
     expect(lines.map((line) => line.replace(/\([\d.]+s\)/, "(T)"))).toEqual([
-      "Applying 1 change that needs administrator rights; approve the UAC prompt (it can open behind other windows).",
+      "  Approve the UAC prompt for the change that needs administrator rights (it can open behind other windows).",
       "  ~ install Proton.ProtonPass 1.43.0",
       "  ✓ install Proton.ProtonPass 1.43.0 (T)",
       "  ~ apply link C:\\a -> C:\\b",

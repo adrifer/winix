@@ -58,11 +58,17 @@ export function optionalFeatureProperties(names: string[], enabled: boolean): Wi
     "function Get-WinixFeatureStates {",
     "  foreach ($name in $names) { Get-WindowsOptionalFeature -Online -FeatureName $name -ErrorAction Stop }",
     "}",
+    // Checks read WMI, which works without elevation (DISM's
+    // Get-WindowsOptionalFeature does not), so a plan can tell that the
+    // features are already in place without a UAC prompt.
+    // Win32_OptionalFeature.InstallState: 1 enabled, 2 disabled, 3 absent.
     "function Test-WinixFeatures {",
-    "  foreach ($feature in @(Get-WinixFeatureStates)) {",
-    "    $state = [string]$feature.State",
-    "    if ($enabled) { if ($state -ne 'Enabled') { return $false } }",
-    "    elseif ($state -notin @('Disabled', 'DisabledWithPayloadRemoved')) { return $false }",
+    "  $installed = @{}",
+    "  foreach ($feature in @(Get-CimInstance -ClassName Win32_OptionalFeature -ErrorAction Stop)) { $installed[$feature.Name] = [int]$feature.InstallState }",
+    "  foreach ($name in $names) {",
+    "    if (-not $installed.ContainsKey($name)) { throw \"Unknown Windows feature: $name\" }",
+    "    if ($enabled) { if ($installed[$name] -ne 1) { return $false } }",
+    "    elseif ($installed[$name] -notin @(2, 3)) { return $false }",
     "  }",
     "  return $true",
     "}",
