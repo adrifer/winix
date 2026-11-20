@@ -536,7 +536,11 @@ Git/Node/PowerShell/DSC installation.
 it cannot be combined with \`-UseNvm\`. Release executables embed the SDK/runtime,
 load local TS/JS imports and Node builtins without node_modules, and never
 automatically download third-party npm imports. The executable version determines
-the SDK, not package-lock.json; editor TypeScript dependencies remain optional.
+the SDK, not package-lock.json. Editor types need no npm: config commands (check,
+apply, plan, switch, update, inspect, init) write the running Winix's declarations
+(SDK, bundled Nix option types, @types/node) to the ignored .winix/types, and the
+init tsconfig maps \`@adrifer/winix\` there via \`paths\`; \`winix types\` writes them
+on demand and prints the compilerOptions an existing tsconfig still needs.
 Choose versioned GitHub release assets, verify SHA256SUMS, and respect execution
 policies (binaries are not code-signed). Windows WSL setup embeds matching Linux
 hashes; custom single-target builds cannot provision WSL. Linux assets use glibc;
@@ -566,11 +570,11 @@ Do not run real bootstrap/activation as a development check on a shared machine.
 
 \`winix bootstrap --host HOST\` performs the checkout validation/preview/confirmation
 phase. Its generated \`.winix/bin/winix.ps1\` or \`.winix/bin/winix\` launcher invokes
-\`winix run <args>\`, rereading the exact pin on every invocation. A matching
-optional node_modules SDK uses its own CLI under supported stable Node
-22.13+ (22.x), 24.x or 26.x; stale/corrupt
-local packages fail, never silently fall back. Otherwise the standalone must
-match the manifest; on Windows and Linux a changed pin downloads that verified
+\`winix run <args>\`, rereading the exact pin on every invocation and running
+that pinned release; node_modules never changes it (npm scripts still use their
+local CLI). \`WINIX_SDK=<package dir>\` explicitly runs another Winix (a source
+checkout's src/cli/index.ts, else dist) under Node 22.13+, 24 or 26.
+The standalone must match the manifest; on Windows and Linux a changed pin downloads that verified
 release automatically (NixOS through the pinned Nix loader). Bootstrap also puts
 a per-user \`winix\` command on PATH (Windows) or in ~/.local/bin (Linux);
 \`winix bootstrap --command-only [--host HOST]\` installs only that, with no

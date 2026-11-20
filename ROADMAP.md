@@ -14,6 +14,14 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Editor types without npm; explicit npm/source mode** — config commands
+  write the running Winix's declarations (SDK, bundled Nix option types,
+  `@types/node`) to `.winix/types`, embedded in executables and shipped in the
+  npm package; the init tsconfig maps `@adrifer/winix` there and `winix types`
+  writes them on demand (replacing the documented-but-missing
+  `winix types generate`). `winix run` no longer prefers `node_modules`;
+  `WINIX_SDK=<dir>` runs another Winix explicitly (source checkouts directly).
+
 - **Simpler first run** — the Windows and Linux repository bootstraps ask one
   confirmation listing every step, then run with only UAC/sudo prompts (and
   removal confirmations) interrupting; the host is optional: Winix offers the

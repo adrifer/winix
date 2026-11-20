@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { installSkill } from "./install.ts";
 import { standaloneRuntime } from "../../runtime.ts";
+import { refreshEditorTypes } from "../editor-types.ts";
 
 interface InitOptions {
   force: boolean;
@@ -18,7 +19,8 @@ export async function init(cwd: string, opts: InitOptions): Promise<void> {
   await writeIfAllowed(join(cwd, "package.json"), packageJson, opts.force);
   await writeIfAllowed(join(cwd, ".gitignore"), GITIGNORE, opts.force);
   await installSkill(cwd, { force: opts.force });
-  console.log("✓ Initialized Winix project");
+  await refreshEditorTypes(cwd);
+  console.log("✓ Initialized Winix project (editor types in .winix/types; no npm needed)");
   console.log("");
   console.log("Next steps:");
   console.log(standaloneRuntime() ? "  winix check" : "  npm install");
@@ -106,11 +108,16 @@ const TSCONFIG = `{
     "allowImportingTsExtensions": true,
     "target": "esnext",
     "noEmit": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "typeRoots": ["./.winix/types/@types"],
+    "types": ["node"],
+    "paths": {
+      "@adrifer/winix": ["./.winix/types/node_modules/@adrifer/winix/index.d.ts"],
+      "@adrifer/winix/types": ["./.winix/types/node_modules/@adrifer/winix/dist/types/index.d.ts"],
+      "@adrifer/winix/types/bundled": ["./.winix/types/node_modules/@adrifer/winix/types/index.d.ts"]
+    }
   },
-  "include": [
-    "**/*.ts",
-    "node_modules/@adrifer/winix/types/bundled/*.d.ts"
-  ]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", ".winix"]
 }
 `;

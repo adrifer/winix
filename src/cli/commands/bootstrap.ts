@@ -34,35 +34,36 @@ export async function checkoutWinixVersion(directory: string): Promise<string> {
 /** Downloads the executable for a pinned version; returns its path. */
 export type RuntimeFetcher = (version: string) => Promise<string>;
 
+/**
+ * What `winix run` executes for a checkout: the Winix release the checkout
+ * pins (this executable when it matches, else the fetched release). Nothing is
+ * inferred from node_modules: another Winix (a source checkout, or an npm
+ * install) runs only when WINIX_SDK names its package directory explicitly.
+ */
 export async function localWinixCommand(
   directory: string,
   expected: string,
   runtimeVersion: string,
   executable: string,
   fetchRuntime?: RuntimeFetcher,
+  sdk = process.env.WINIX_SDK,
 ): Promise<{ command: string; args: string[] }> {
-  const packagePath = join(directory, "node_modules", "@adrifer", "winix", "package.json");
-  let local: unknown;
-  let installed = false;
-  try { local = JSON.parse(await readFile(packagePath, "utf8")); installed = true; }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    try {
-      await lstat(dirname(packagePath));
-      throw new Error("Local node_modules Winix is incomplete (missing package.json). Run npm ci or remove the optional SDK explicitly.");
-    } catch (directoryError) {
-      if ((directoryError as NodeJS.ErrnoException).code !== "ENOENT") throw directoryError;
+  if (sdk) {
+    const root = resolve(directory, sdk);
+    let local: unknown;
+    try { local = JSON.parse(await readFile(join(root, "package.json"), "utf8")); }
+    catch { throw new Error(`WINIX_SDK=${sdk} is not a Winix package directory (no readable package.json in ${root}).`); }
+    if (!local || typeof local !== "object" || (local as { name?: unknown }).name !== "@adrifer/winix") {
+      throw new Error(`WINIX_SDK=${sdk} is not the @adrifer/winix package (${root}).`);
     }
-  }
-  if (installed) {
-    if (!local || typeof local !== "object" || !("version" in local)) throw new Error("Local node_modules Winix has invalid package metadata. Run npm ci.");
-    if (local.version !== expected) {
-      throw new Error(`Local node_modules Winix is ${local.version}, expected ${expected}. Run npm ci using your approved repository (Winix never installs dependencies itself), or delete node_modules to use the downloaded release instead.`);
-    }
-    return {
-      command: standaloneRuntime() ? "node" : process.execPath,
-      args: ["--no-warnings", join(dirname(packagePath), "dist", "cli", "index.js")],
-    };
+    // A source checkout runs its TypeScript directly (no build needed); a package runs its dist.
+    const source = join(root, "src", "cli", "index.ts");
+    const built = join(root, "dist", "cli", "index.js");
+    const entry = existsSync(source) ? source : existsSync(built) ? built : undefined;
+    if (!entry) throw new Error(`WINIX_SDK=${sdk} has neither src/cli/index.ts nor dist/cli/index.js.`);
+    const version = String((local as { version?: unknown }).version ?? "unknown");
+    console.error(`Using Winix from WINIX_SDK (${root}, ${version}); this checkout pins ${expected}.`);
+    return { command: standaloneRuntime() ? "node" : process.execPath, args: ["--no-warnings", entry] };
   }
   if (runtimeVersion !== expected) {
     // The pin changed since bootstrap: fetch that exact, verified release.
@@ -402,7 +403,7 @@ async function installLauncher(directory: string, deps: BootstrapDeps): Promise<
   const windows = process.platform === "win32";
   const launcher = join(bin, windows ? "winix.ps1" : "winix");
   await writeGenerated(launcher, windows ? windowsLauncher(executable) : linuxLauncher(executable), "launcher");
-  console.log(`Checkout launcher: ${launcher}. It prefers a matching node_modules SDK, never installs npm packages, and fetches the pinned Winix release when the pin changes.`);
+  console.log(`Checkout launcher: ${launcher}. It runs the pinned Winix release (downloading it when the pin changes); set WINIX_SDK to run another Winix, such as a source checkout.`);
   await deps.installCommand(launcher);
 }
 

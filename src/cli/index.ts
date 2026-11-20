@@ -20,6 +20,7 @@ import { findConfig } from "./loader.ts";
 import { nerdFontsCatalog } from "../backends/windows/fonts.ts";
 import { packageSearch, windowsImport } from "./commands/windows-packages.ts";
 import { scaffoldFeature, scaffoldNextSteps } from "./commands/scaffold.ts";
+import { refreshEditorTypes, typesCommand } from "./editor-types.ts";
 
 if (process.argv[2] === "run") {
   try { await runCheckout(process.cwd(), process.argv.slice(3)); }
@@ -73,12 +74,13 @@ winix - TypeScript-first system configuration
 
 Commands:
   bootstrap    Validate/preview a trusted checkout, then confirm activation
-  run <args>   Prefer checkout-local SDK, enforcing the checkout's exact Winix pin
+  run <args>   Run the checkout's pinned Winix (downloaded when needed; WINIX_SDK=<dir> runs another)
   init         Scaffold a Winix project
   install skill Install the agent skill wrapper
   scaffold feature <name>  Create features/<name>.ts with home.* and windows.* side by side
   apply        Generate backend output in .winix/out/
   check        Validate configuration
+  types        Write editor types to .winix/types (also done by every config command) and check tsconfig.json
   plan         Show what switch would change on this machine (same as switch --dry)
   switch       Generate output and run the host activation command
   update       Update generated flake.lock and copy it to project root
@@ -139,7 +141,23 @@ if (values.yes && command !== "switch" && command !== "bootstrap" &&
   process.exit(2);
 }
 
+// Keep the config's editor types (.winix/types) matching the Winix that runs it.
+if (["check", "apply", "plan", "switch", "update", "inspect"].includes(command)) {
+  const config = findConfig(cwd);
+  if (config) await refreshEditorTypes(dirname(config));
+}
+
 switch (command) {
+  case "types":
+    try {
+      const config = findConfig(cwd);
+      if (!config) throw new Error(`Could not find winix.config.ts in ${cwd} or parent directories.`);
+      await typesCommand(dirname(config));
+    } catch (error) {
+      console.error(`✗ Error: ${(error as Error).message}`);
+      process.exit(1);
+    }
+    break;
   case "fonts":
     try {
       if (positionals[1] !== "search" || positionals.length > 3 || values.provider !== "nerd-fonts") {

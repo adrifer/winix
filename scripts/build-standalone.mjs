@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
@@ -15,6 +15,8 @@ const targets = {
   "windows-arm64": "bun-windows-arm64",
 };
 if (target !== "all" && !Object.hasOwn(targets, target)) throw new Error(`Unknown standalone target: ${target}`);
+// The executables embed dist/editor-types.json (editor types without npm).
+execSync("npm run build", { cwd: root, stdio: "inherit" });
 const output = join(root, "artifacts");
 await mkdir(output, { recursive: true });
 const assets = {};

@@ -36,6 +36,10 @@ export default workspace({ inputs: {}, hosts: [
 `);
       expect(run(directory, ["--version"]).trim()).toMatch(/^\d+\.\d+\.\d+(?:-preview\.\d+)?$/);
       expect(run(directory, ["check"])).toContain("Configuration valid");
+      // Editor types are embedded and written without npm.
+      expect(await readFile(join(directory, ".winix", "types", "node_modules", "@adrifer", "winix", "index.d.ts"), "utf8"))
+        .toContain('export * from "./dist/index.js"');
+      expect(await readFile(join(directory, ".winix", "types", "@types", "node", "index.d.ts"), "utf8")).toContain("node");
       const output = run(directory, ["apply", "--host", "test", "--dry"]);
       expect(output).toContain('hostName = "embedded-context"');
       expect(output).toContain("feature.ts");

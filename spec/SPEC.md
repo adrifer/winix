@@ -1195,10 +1195,11 @@ explicitly accepts these operations and switch's managed removals. Failures prop
 restart, WSL shutdown, npm installation or global Winix installation occurs.
 
 Bootstrap creates an ignored checkout launcher, `.winix/bin/winix.ps1` or
-`.winix/bin/winix`. `winix run <command> [options]` rereads the manifest and prefers
-the installed matching node_modules SDK's CLI under supported Node, otherwise
-uses the matching standalone executable. A stale/corrupt local SDK fails instead
-of falling back silently. On Windows and Linux a stale standalone downloads the
+`.winix/bin/winix`. `winix run <command> [options]` rereads the manifest and runs
+the pinned release: the matching standalone executable. It never infers another
+Winix from node_modules; `WINIX_SDK=<package dir>` (absolute or config-relative)
+explicitly runs that package's `src/cli/index.ts`, else `dist/cli/index.js`,
+under supported Node, reporting it and the pin. On Windows and Linux a stale standalone downloads the
 pinned release's executable into `.winix/runtime/<version>`, verified against
 its `SHA256SUMS` before running (Linux: behind a generated wrapper, through the
 pinned Nix loader/libraries on NixOS, whose `--version` must match), and the
@@ -1224,6 +1225,20 @@ Completed setups are never retroactively migrated, pulled or reapplied.
 Scaffold a new Winix project. Creates `winix.config.ts`, `tsconfig.json`,
 `package.json` (with `@adrifer/winix` pinned to the current installed
 version), `.gitignore`, and the Winix agent skill wrapper.
+
+#### Editor types and `winix types`
+
+Editing needs no npm install. `npm run build` collects the SDK declarations
+(with the bundled NixOS/Home Manager/nix-darwin option augmentations),
+`@types/node` and `undici-types` (with licenses) into `dist/editor-types.json`,
+content-hashed; the npm package ships it and standalone executables embed it.
+`check`, `apply`, `plan`, `switch`, `update`, `inspect` and `init` write it to
+the config's ignored `.winix/types` when its hash differs (in place, stale files
+removed, stamp last; best effort, never failing the command), so declarations
+always match the running Winix. The init tsconfig maps `@adrifer/winix`,
+`@adrifer/winix/types` and `@adrifer/winix/types/bundled` there with `paths`,
+uses `.winix/types/@types` as `typeRoots`, and excludes `.winix`. `winix types`
+writes them on demand and prints the compilerOptions a tsconfig still lacks.
 
 ```bash
 npx @adrifer/winix init

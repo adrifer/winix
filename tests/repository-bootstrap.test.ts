@@ -41,32 +41,48 @@ describe("checkout-pinned bootstrap", () => {
     }
   });
 
-  it("keeps standalone only when its version matches; a mismatched installed SDK is an explicit error", async () => {
+  it("runs the pinned release and never infers another Winix from node_modules", async () => {
     const directory = await fixture("0.3.0");
-    expect(await localWinixCommand(directory, "0.3.0", "0.3.0", "verified-winix")).toEqual({
+    expect(await localWinixCommand(directory, "0.3.0", "0.3.0", "verified-winix", undefined, "")).toEqual({
       command: "verified-winix", args: [],
     });
-    await expect(localWinixCommand(directory, "0.3.0", "0.2.3", "old-winix")).rejects.toThrow("Rerun the repository bootstrap");
+    await expect(localWinixCommand(directory, "0.3.0", "0.2.3", "old-winix", undefined, "")).rejects.toThrow("Rerun the repository bootstrap");
+    // An installed (even stale or broken) node_modules SDK is ignored.
     const local = join(directory, "node_modules", "@adrifer", "winix");
     await mkdir(local, { recursive: true });
     await writeFile(join(local, "package.json"), '{"version":"0.2.3"}');
-    await expect(localWinixCommand(directory, "0.3.0", "0.3.0", "verified-winix")).rejects.toThrow("Run npm ci");
-    await writeFile(join(local, "package.json"), '{"version":"0.3.0"}');
-    expect((await localWinixCommand(directory, "0.3.0", "0.2.3", "old-winix")).args).toContain(join(local, "dist", "cli", "index.js"));
-    await writeFile(join(local, "package.json"), "{corrupt");
-    await expect(localWinixCommand(directory, "0.3.0", "0.3.0", "verified-winix")).rejects.toThrow();
-    await writeFile(join(local, "package.json"), "null");
-    await expect(localWinixCommand(directory, "0.3.0", "0.3.0", "verified-winix")).rejects.toThrow("invalid package metadata");
-    await rm(join(local, "package.json"));
-    await expect(localWinixCommand(directory, "0.3.0", "0.3.0", "verified-winix")).rejects.toThrow("incomplete");
+    expect(await localWinixCommand(directory, "0.3.0", "0.3.0", "verified-winix", undefined, "")).toEqual({
+      command: "verified-winix", args: [],
+    });
+  });
+
+  it("runs another Winix only when WINIX_SDK names it: source checkouts first, then dist", async () => {
+    const directory = await fixture("0.3.0");
+    const sdk = join(directory, "winix-source");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await expect(localWinixCommand(directory, "0.3.0", "0.3.0", "winix", undefined, sdk)).rejects.toThrow("not a Winix package directory");
+    await mkdir(join(sdk, "dist", "cli"), { recursive: true });
+    await writeFile(join(sdk, "package.json"), '{"name":"left-pad","version":"1.0.0"}');
+    await expect(localWinixCommand(directory, "0.3.0", "0.3.0", "winix", undefined, sdk)).rejects.toThrow("not the @adrifer/winix package");
+    await writeFile(join(sdk, "package.json"), '{"name":"@adrifer/winix","version":"0.9.9"}');
+    await expect(localWinixCommand(directory, "0.3.0", "0.3.0", "winix", undefined, sdk)).rejects.toThrow("neither src/cli/index.ts nor dist/cli/index.js");
+    await writeFile(join(sdk, "dist", "cli", "index.js"), "");
+    // Version mismatches are fine: WINIX_SDK is an explicit choice (relative to the checkout).
+    expect((await localWinixCommand(directory, "0.3.0", "0.2.3", "old-winix", undefined, "winix-source")).args)
+      .toEqual(["--no-warnings", join(sdk, "dist", "cli", "index.js")]);
+    await mkdir(join(sdk, "src", "cli"), { recursive: true });
+    await writeFile(join(sdk, "src", "cli", "index.ts"), "");
+    expect((await localWinixCommand(directory, "0.3.0", "0.3.0", "winix", undefined, sdk)).args)
+      .toEqual(["--no-warnings", join(sdk, "src", "cli", "index.ts")]);
+    expect(vi.mocked(console.error).mock.calls.at(-1)?.[0]).toContain("this checkout pins 0.3.0");
   });
 
   it("fetches the pinned release when the pin moved past the executable", async () => {
     const directory = await fixture("0.3.0");
     const fetchRuntime = vi.fn(async (version: string) => `runtime-${version}.exe`);
-    expect(await localWinixCommand(directory, "0.3.1", "0.3.0", "old-winix", fetchRuntime)).toEqual({ command: "runtime-0.3.1.exe", args: [] });
+    expect(await localWinixCommand(directory, "0.3.1", "0.3.0", "old-winix", fetchRuntime, "")).toEqual({ command: "runtime-0.3.1.exe", args: [] });
     expect(fetchRuntime).toHaveBeenCalledWith("0.3.1");
-    expect(await localWinixCommand(directory, "0.3.0", "0.3.0", "winix", fetchRuntime)).toEqual({ command: "winix", args: [] });
+    expect(await localWinixCommand(directory, "0.3.0", "0.3.0", "winix", fetchRuntime, "")).toEqual({ command: "winix", args: [] });
     expect(fetchRuntime).toHaveBeenCalledTimes(1);
   });
 
@@ -108,13 +124,6 @@ describe("checkout-pinned bootstrap", () => {
       ? new Response(`${sum}  winix-windows-x64.exe\n`) : new Response(binary)) as unknown as typeof fetch;
     await ensureWindowsRuntime(directory, "0.3.2", request, "x64", join(runtime, "0.3.0", "winix.exe"));
     expect(readdirSync(runtime).sort()).toEqual(["0.2.9", "0.3.0", "0.3.2", "notes"]);
-  });
-
-  it("explains both ways out of a stale node_modules SDK", async () => {
-    const directory = await fixture("0.3.1");
-    await mkdir(join(directory, "node_modules", "@adrifer", "winix"), { recursive: true });
-    await writeFile(join(directory, "node_modules", "@adrifer", "winix", "package.json"), JSON.stringify({ version: "0.3.0" }));
-    await expect(localWinixCommand(directory, "0.3.1", "0.3.1", "winix")).rejects.toThrow("delete node_modules to use the downloaded release");
   });
 
   it("asks nothing after the script's consent, chooses and remembers the host, and lets switch show the plan", async () => {

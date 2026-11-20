@@ -9,6 +9,11 @@ Bun source and component/build references for this runtime:
 https://github.com/oven-sh/bun/tree/bun-v1.4.0
 https://github.com/oven-sh/bun/blob/bun-v1.4.0/LICENSE.md
 
+Winix executables and its npm package also embed unmodified type declarations
+from @types/node (DefinitelyTyped) and undici-types, both MIT-licensed, for
+editor support; their LICENSE files are written alongside them to a config's
+.winix/types directory.
+
 Winix is MIT-licensed; see LICENSE. Complete Winix application sources are
 available at the matching release tag:
 https://github.com/adrifer/winix
