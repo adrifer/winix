@@ -320,6 +320,11 @@ try {
   result = spawnSync(bash, ["-s"], {input:probe, env, encoding:"utf8"});
   assert.equal(result.status, 0, result.stderr);
   assert.equal(await fs.readFile(join(root,"trace"),"utf8"), "getent\\nawk\\n");
+  // Settings changed after setup (another branch, say): still complete, with a note.
+  await fs.writeFile(join(state,"complete"), "older-fingerprint\\nalice\\n"+checkout+"\\n");
+  result = spawnSync(bash, ["-s"], {input:probe, env, encoding:"utf8"});
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /first-run setup is not repeated/);
   console.log("WINIX_PATH_SUCCESS");
 } finally { await fs.rm(root, {recursive:true, force:true}); }
 `;

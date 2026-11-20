@@ -833,6 +833,10 @@ selects PowerShell's normal installed version, not necessarily the locked one.
   An inferred `ref` sets the internal `setupRefFromCheckout` marker and is
   excluded from the completed-setup fingerprint. Explicit refs, and setups
   that do not use `"self"`, keep the original fingerprint byte for byte.
+  A completed distro whose recorded fingerprint differs from the current
+  declaration is not set up again and does not fail activation: the probe
+  prints a note and still verifies the recorded account, checkout and WSL
+  default user. Later changes are applied from inside the distro.
 - Every check/apply validates each WSL setup against its Linux host offline,
   using the same plan the first-run coordinator computes (host, NixOS-WSL
   module, `system.stateVersion`, account selection, checkout inside home).

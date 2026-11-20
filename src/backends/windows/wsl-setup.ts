@@ -140,7 +140,9 @@ export function wslSetupPrelude(
     "[[ ! -L \"$state\" && ! -L \"$state/complete\" ]] || { echo 'Unsafe WSL setup completion record' >&2; exit 2; }",
     "if [[ ! -f \"$state/complete\" ]]; then exit 3; fi",
     "mapfile -t completed < \"$state/complete\"",
-    `[[ "\${completed[0]:-}" == '${fingerprint}' ]] || { echo 'WSL setup settings changed; existing setup is never overwritten automatically' >&2; exit 2; }`,
+    // Setup runs once; afterwards the distro is managed from inside WSL, so later
+    // setup changes (a new branch, say) are noted, never applied or fatal.
+    `[[ "\${completed[0]:-}" == '${fingerprint}' ]] || echo 'Note: WSL setup settings changed after this distro was set up; first-run setup is not repeated (manage the distro from inside WSL).' >&2`,
     "[[ ${#completed[@]} == 3 ]] || { echo 'Invalid WSL setup completion record' >&2; exit 2; }",
     "getent passwd \"${completed[1]}\" >/dev/null || { echo 'WSL setup user is missing' >&2; exit 2; }",
     "[[ -d \"${completed[2]}/.git\" ]] || { echo 'WSL setup checkout is missing' >&2; exit 2; }",

@@ -1065,13 +1065,12 @@ as `git@github.com:me/dotfiles.git` become HTTPS), its upstream branch as `ref`
 (the commit when detached) and the config's path as `configDirectory`. The
 commit is still pinned in `wslRepositories`; push the branch first, since the pin
 is resolved on the remote. An inferred `ref` is left out of the completed-setup
-fingerprint, so switching branches on Windows never trips the "settings changed"
-guard on finished distros. Any other change to a setup declaration, including
-moving to `"self"` without the same explicit `ref`, still changes the
-fingerprint, and completed distros then refuse activation. Keep the existing
-`ref` and `checkout` explicit when migrating machines that were already
-provisioned. After `winix switch` on Windows, Winix prints the command that
-applies later Linux changes inside each distro.
+fingerprint. Setup runs once: when a setup declaration changes after a distro
+was set up (another `ref`, a different `checkout`...), the completed distro is
+left as it is and the switch prints a note instead of failing; the account,
+checkout and WSL default user are still verified. Later changes are applied
+from inside the distro (`winix switch` there). After `winix switch` on Windows,
+Winix prints the command that applies later Linux changes inside each distro.
 
 #### Reach Windows from WSL
 
