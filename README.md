@@ -468,6 +468,27 @@ One feature can declare for every platform; each namespace only applies where
 it makes sense. See [Write a cross-platform feature](docs/guides/cross-platform-feature.md),
 or start one with `winix scaffold feature <name>`.
 
+### Organising a config
+
+`winix init` starts with one file. As a config grows to several machines and
+operating systems, this layout keeps "what does each machine get?" easy to answer:
+
+```
+winix.config.ts     inputs + the list of machines
+machines/           one file per computer: its roles and machine-only extras
+                    (a Windows PC and its WSL distro are one machine, two hosts)
+roles/              profiles for kinds of machines (everywhere, dev, work...),
+                    spanning operating systems
+features/           one file per tool, declaring every OS it supports
+```
+
+A machine lists roles, a role lists features, and each host gets its own
+platform's half of every feature. `winix inspect --matrix` prints the result,
+every feature against every host and grouped by role, and `winix check` only
+flags features listed on a host directly that do nothing there.
+[`examples/cross-platform`](examples/cross-platform) is a small, runnable
+version of this layout.
+
 ### Platform-aware configuration
 
 Fragments can ask whether another platform or feature is active.

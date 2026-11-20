@@ -9,50 +9,62 @@ One checkout describes both machines: the Windows host creates a NixOS-WSL
 distro, and on first run sets it up as a Linux Winix host from the same
 repository. You declare the pairing by passing values, not by repeating names.
 
-## 1. The Linux host
+## 1. One machine, two hosts
 
-From [`examples/cross-platform/winix.config.ts`](../../examples/cross-platform/winix.config.ts):
+The PC and its distro are one machine, so they share one file. From
+[`examples/cross-platform/machines/desktop.ts`](../../examples/cross-platform/machines/desktop.ts):
 
 ```ts
-const inputs = defineInputs({
-  nixpkgs: "nixos-unstable",
-  homeManager: input("github:nix-community/home-manager", { follows: { nixpkgs: "nixpkgs" } }),
-  nixosWsl: input("github:nix-community/NixOS-WSL", { follows: { nixpkgs: "nixpkgs" } }),
-});
-
-const alice = account.user("alice", () => ({
-  admin: true,
-  shell: "zsh",
-  stateVersion: "25.05",
-  wslDefault: true,
-}));
-
-const wslWork = host("wsl-work", platforms.wsl({ stateVersion: "25.05" }), [
+const linux = host("wsl-work", platforms.wsl({ stateVersion: "25.05" }), [
   alice(),
   everywhere(),
+  dev(),
   windowsInterop(),
 ]);
+
+const windows = host("DESKTOP", platforms.windows(), [
+  everywhere(),
+  dev(),
+  windowsDesktop(),
+  // The host value, not its name: renaming it can't leave a stale string.
+  nixosWsl(linux),
+]);
+
+export const desktop = [windows, linux];
 ```
 
 - `platforms.wsl()` is NixOS under WSL: it imports the NixOS-WSL module and sets
-  `wsl.enable`. It needs the `nixosWsl` input; `winix check` warns if it is missing.
-- `wslDefault: true` makes `alice` the distro's default user.
+  `wsl.enable`. It needs the `nixosWsl` input (in `winix.config.ts`); `winix
+  check` warns if it is missing.
+- Both hosts use the same roles (`everywhere`, `dev`); each gets its own
+  platform's half of every feature.
+- `alice` ([`features/system/alice.ts`](../../examples/cross-platform/features/system/alice.ts))
+  is an `account.user` with `wslDefault: true`, which makes it the distro's
+  default user.
 
-## 2. The Windows host
+## 2. The distro
+
+[`features/system/nixos-wsl.ts`](../../examples/cross-platform/features/system/nixos-wsl.ts)
+takes the Linux host as an argument:
 
 ```ts
-const desktop = host("DESKTOP", platforms.windows(), ({ windows }) => {
+export const nixosWsl = feature("nixos-wsl", ({ windows }, linuxHost: HostDef) => {
   windows.wsl();
   windows.wsl.distro("NixOS", {
     source: "nixos-wsl",
     installLocation: windows.knownFolder.localAppData("Winix\\WSL\\NixOS"),
     default: true,
-    setup: { repository: "self", host: wslWork, user: alice },
+    setup: {
+      // In your own checkout, repository: "self" infers the remote, branch and
+      // config directory from Git. The example spells them out.
+      repository: "https://github.com/example/dotfiles.git",
+      ref: "main",
+      configDirectory: "winix",
+      host: linuxHost,
+      user: alice,
+    },
   });
-  return [everywhere(), powershellTerminal()];
 });
-
-export default workspace({ inputs, hosts: [desktop, wslWork] });
 ```
 
 - `windows.wsl()` installs `Microsoft.WSL` and enables the WSL and Virtual
@@ -62,8 +74,8 @@ export default workspace({ inputs, hosts: [desktop, wslWork] });
   either can't leave a stale string behind.
 - `repository: "self"` reads the Git checkout that holds `winix.config.ts`: its
   tracked remote (SSH remotes become HTTPS), the upstream branch and the config
-  directory. The example spells these out (`repository`, `ref`,
-  `configDirectory`) because it is not its own repository.
+  directory. Use it in your own repository: `setup: { repository: "self", host:
+  linuxHost, user: alice }`.
 
 ## 3. Check, preview, switch
 
@@ -95,13 +107,22 @@ stage and never resets a dirty checkout.
 
 ## 4. Day to day
 
-Windows changes apply with `winix switch` on Windows. Linux changes apply inside
-the distro; after a Windows switch Winix prints the exact command, for example:
+Each side is switched on its own. Windows changes apply with `winix switch` on
+Windows; after setup the distro is managed from inside WSL, where setup installs
+the same `winix` command (`~/.local/bin/winix`, with the host remembered):
+
+```bash
+cd ~/dotfiles && git pull
+winix switch
+```
+
+After a Windows switch Winix also prints the exact command to run from Windows,
+for example:
 
 ```text
 WSL: Linux hosts are activated separately from Windows.
   NixOS → wsl-work: apply Linux changes inside the distro with
-    wsl.exe -d NixOS --cd /home/alice/dotfiles/winix -- npm exec -- winix switch --host wsl-work
+    wsl.exe -d NixOS --cd /home/alice/dotfiles/winix -- /var/lib/winix/runtime/0.3.0/winix switch --host wsl-work
 ```
 
 ## Reach Windows from WSL
@@ -133,11 +154,9 @@ moves or unregisters an existing distro.
 
 ## Gotchas
 
-- **Changing `setup` after a distro is set up** is refused for that distro
-  (the completed setup is fingerprinted). Switching branches with
-  `repository: "self"` is fine: an inferred `ref` is left out of the fingerprint.
-  When migrating a machine that was set up with an explicit `ref` and
-  `checkout`, keep them explicit.
+- **Changing `setup` after a distro is set up** doesn't set it up again: setup
+  runs once, and the switch prints a note (the account, checkout and default
+  user are still checked). Apply later changes from inside the distro.
 - **Credentials are not provisioned.** Setup clones before your Linux config
   is active, so `home.wsl.gitCredentialManager()` cannot help that first clone.
   A private repository needs authentication that already works inside the

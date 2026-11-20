@@ -21,14 +21,19 @@
       "version": "7.5.3.0",
       "resolvedAt": "2026-11-18T00:00:00.000Z"
     },
+    "Microsoft.WindowsTerminal": {
+      "source": "winget",
+      "version": "1.23.12371.0",
+      "resolvedAt": "2026-11-18T00:00:00.000Z"
+    },
     "Microsoft.WSL": {
       "source": "winget",
       "version": "2.6.1",
       "resolvedAt": "2026-11-18T00:00:00.000Z"
     },
-    "Microsoft.WindowsTerminal": {
+    "OpenJS.NodeJS.LTS": {
       "source": "winget",
-      "version": "1.23.12371.0",
+      "version": "24.11.1",
       "resolvedAt": "2026-11-18T00:00:00.000Z"
     },
     "Starship.Starship": {

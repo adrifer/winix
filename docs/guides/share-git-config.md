@@ -11,7 +11,7 @@ settings in one TypeScript object and write it to both places.
 
 ## The feature
 
-From [`examples/cross-platform/features/git.ts`](../../examples/cross-platform/features/git.ts):
+From [`examples/cross-platform/features/cli/git.ts`](../../examples/cross-platform/features/cli/git.ts):
 
 ```ts
 const settings = {

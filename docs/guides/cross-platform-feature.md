@@ -31,11 +31,12 @@ apart: removing it or changing its config means remembering both.
 - **Different host sets.** A tool you want on every Windows machine but only on
   some Linux hosts is easier as two features attached separately.
 
-To see everything one machine gets in one place, run `winix inspect --host <name>`.
+To see everything one machine gets in one place, run `winix inspect --host <name>`;
+`winix inspect --matrix` shows every feature against every host.
 
 ## The pattern
 
-From [`examples/cross-platform/features/lazygit.ts`](../../examples/cross-platform/features/lazygit.ts):
+From [`examples/cross-platform/features/cli/lazygit.ts`](../../examples/cross-platform/features/cli/lazygit.ts):
 
 ```ts
 import { feature } from "@adrifer/winix";
@@ -100,7 +101,8 @@ on that host, and the scopes it skips:
 ```text
 macbook
   platform: darwin
-  composition: account:user:alice > git > lazygit
+  composition: account:user:alice > shell > starship > git > lazygit
+  ...
   git  [homeManager]  (not on this platform: windows)
     homeManager: programs
   lazygit  [homeManager]  (not on this platform: windows)
@@ -115,9 +117,23 @@ On the Windows host the same feature lists its Windows resources instead:
     link localAppData\lazygit\config.yml -> ./dotfiles/lazygit/config.yml
 ```
 
-`winix check` warns when everything a feature declares targets other platforms
-than the host it is attached to (for example a Linux-only feature added to a
-Windows host).
+`winix check` warns when everything a feature listed on a host targets other
+platforms (for example a Linux-only feature added to a Windows host). Features
+that come through a shared profile, such as the example's `everywhere` role, are
+expected to span platforms and don't warn.
+
+## Group features into roles
+
+Because each feature carries every platform, a profile of them works on any
+host. The example groups features into roles (`roles/everywhere.ts`,
+`roles/dev.ts`) and gives each machine its roles in `machines/`:
+
+```ts
+export const everywhere = profile("everywhere", [shell(), starship(), git(), lazygit()]);
+```
+
+The Mac and the Windows PC both use `everywhere()`; each gets its own half of
+every feature.
 
 ## Start from a template
 

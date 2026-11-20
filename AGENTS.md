@@ -137,7 +137,7 @@ node --experimental-transform-types --no-warnings ../src/cli/index.ts switch --d
 ## Docs
 
 - `README.md` is the reference; `docs/guides/*.md` are task recipes (Starlight-style front matter).
-- Guide code is quoted from `examples/cross-platform`; `tests/cross-platform-example.test.ts` evaluates and generates it. Change the example and the guide together.
+- Guide code is quoted from `examples/cross-platform` (laid out as machines/ → roles/ → features/); `tests/cross-platform-example.test.ts` evaluates and generates it, with a Nix snapshot. Change the example and the guide together, and keep the example small.
 - `src/skill.ts` is what agents read (`winix --skill`); update it with user-facing CLI or authoring changes.
 
 ## Spec

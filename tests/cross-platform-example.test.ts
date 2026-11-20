@@ -2,16 +2,16 @@ import { resolve } from "node:path";
 import { windowsText } from "./helpers/windows-text.ts";
 import { describe, expect, it } from "vitest";
 import example from "../examples/cross-platform/winix.config.ts";
-import { gitConfig } from "../examples/cross-platform/features/git.ts";
+import { gitConfig } from "../examples/cross-platform/features/cli/git.ts";
 import { evaluate, generateWindows, host, platforms, workspace } from "../src/index.ts";
-import { starship } from "../examples/cross-platform/features/starship.ts";
+import { starship } from "../examples/cross-platform/features/cli/starship.ts";
 import { generateNix } from "../src/backends/nix/index.ts";
 import { readWindowsLock, windowsLockPinGaps } from "../src/backends/windows/lockfile.ts";
 import { validateWindowsWslSetupTargets } from "../src/backends/windows/wsl-setup-runtime.ts";
 import { isWindowsHost } from "../src/backends/windows/host.ts";
 import type { WindowsOptions } from "../src/types/windows.ts";
 import { analyzeWorkspace, applicableScopes, collectIgnoredFragments } from "../src/cli/analysis.ts";
-import { inspectHost } from "../src/cli/commands/inspect.ts";
+import { inspectHost, inspectMatrix } from "../src/cli/commands/inspect.ts";
 
 // The guides in docs/guides quote this example; keep them in sync.
 const configDir = resolve("examples", "cross-platform");
@@ -38,6 +38,8 @@ describe("cross-platform example (docs/guides)", () => {
       "link localAppData\\lazygit\\config.yml -> ./dotfiles/lazygit/config.yml",
       "link documents\\PowerShell\\Microsoft.PowerShell_profile.ps1 -> ./dotfiles/powershell/Microsoft.PowerShell_profile.ps1",
       "WSL distro NixOS (wsl-work)",
+      "OpenJS.NodeJS.LTS", "Microsoft.WindowsTerminal",
+      "write userProfile\\.config\\powershell\\aliases.ps1",
     ]));
     const files = ((windowsHosts[0].windows as WindowsOptions).dsc ?? []).flatMap((resource) =>
       resource.winix?.kind === "file" && resource.winix.action === "text" ? [resource.winix] : []);
@@ -51,6 +53,58 @@ describe("cross-platform example (docs/guides)", () => {
     ].join("\n"));
     const doc = windowsText(output, "DESKTOP");
     expect(doc).toContain(resolve(configDir, "dotfiles", "lazygit", "config.yml"));
+  });
+
+  it("generates the PowerShell aliases from the same table as zsh", () => {
+    const files = ((windowsHosts[0].windows as WindowsOptions).dsc ?? []).flatMap((resource) =>
+      resource.winix?.kind === "file" && resource.winix.action === "text" ? [resource.winix] : []);
+    const aliases = files.find((file) => typeof file.target !== "string" && file.target.path.endsWith("aliases.ps1"));
+    expect(aliases?.content).toBe([
+      "function g { & lazygit @args }",
+      "function gs { & git status @args }",
+      "function .. { Set-Location .. }",
+      "",
+    ].join("\n"));
+    const nix = generateNix(example, hosts.filter((host) => !isWindowsHost(host)));
+    for (const host of [nix.hosts["wsl-work.nix"], nix.hosts["macbook.nix"]]) {
+      expect(host).toContain('programs.zsh.shellAliases.g = "lazygit";');
+      expect(host).toContain('programs.zsh.shellAliases.".." = "cd ..";');
+    }
+  });
+
+  it("groups features by role in inspect --matrix", () => {
+    const analyses = analyzeWorkspace(example, { configDir });
+    expect(inspectMatrix(analyses, collectIgnoredFragments(analyses, hosts)).map((line) => line.trimEnd())).toEqual([
+      "",
+      "                      DESKTOP  wsl-work  macbook",
+      "everywhere",
+      "  shell                  ●        ●         ●",
+      "  starship               ●        ●         ●",
+      "  git                    ●        ●         ●",
+      "  lazygit                ●        ●         ●",
+      "dev",
+      "  node                   ●        ●",
+      "windows-desktop",
+      "  windows-terminal       ●",
+      "listed on the host",
+      "  nixos-wsl              ●",
+      "  account:user:alice              ●         ●",
+      "  windows-interop                 ●",
+      "",
+      "● applies   · included, nothing for this platform   (blank) not included",
+    ]);
+  });
+
+  it("generates stable Nix output (replaces the old reference example snapshot)", () => {
+    const output = generateNix(example, hosts.filter((host) => !isWindowsHost(host)));
+    expect(output.warnings).toEqual([]);
+    expect(output.rawModules).toEqual([]);
+    const portable = (text: string) => text.replaceAll(configDir.replaceAll("\\", "/"), "<example>");
+    expect({
+      "flake.nix": output["flake.nix"],
+      "hosts/wsl-work.nix": portable(output.hosts["wsl-work.nix"]),
+      "hosts/macbook.nix": portable(output.hosts["macbook.nix"]),
+    }).toMatchSnapshot();
   });
 
   it("renders the same settings through Home Manager on WSL and macOS", () => {

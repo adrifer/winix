@@ -370,15 +370,16 @@ prints a one-line hint pointing at the relevant log.
 ## 7. Testing strategy
 
 - Unit tests (vitest) for each helper, evaluator pass, and backend emitter.
-- Snapshot tests for generated Nix using `examples/reference/`.
+- Snapshot tests for generated Nix using `examples/cross-platform/` (config
+  paths replaced by a placeholder so snapshots are machine-independent).
 - CLI smoke tests under `tests/cli.test.ts` that invoke commands via the
   exported `run(argv)` API (no child processes for speed).
-- End-to-end tests run `winix check` and `winix apply` against the reference
-  examples and diff generated output.
+- End-to-end tests run `winix check` and `winix apply` against the examples
+  and diff generated output.
 
-The reference workspace under `examples/reference/` doubles as the
-conformance fixture: any new feature should add or update an example there
-and update its golden snapshot.
+`examples/cross-platform/` (machines → roles → features, quoted by the
+guides) doubles as the conformance fixture: keep it small, and update its
+golden snapshot and the guides together.
 
 ## 8. Versioning and releases
 

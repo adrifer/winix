@@ -16,7 +16,7 @@ import {
   rawModule,
 } from "../src/index.js";
 
-// --- Define test fragments (mirrors examples/reference) ---
+// --- Define test fragments (a WSL + macOS setup, like a typical dotfiles repo) ---
 
 const nixos = platform("linux", (opts?: { stateVersion?: string }) => ({
   nixos: {
