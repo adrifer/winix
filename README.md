@@ -1293,7 +1293,31 @@ per switch, none when nothing machine-wide changes. Run `winix switch` as your
 normal user; per-user packages and some DSC resources fail when the whole
 switch runs elevated. A failed step only skips what depends on it; switch
 reports every failure, exits non-zero, and the next switch retries. When
-nothing is out of date, a switch takes about as long as the plan.
+nothing is out of date, a switch takes about as long as the plan (seconds, not
+minutes): the machine is inventoried once, and again after applying only if
+something changed.
+
+In a terminal, each phase shows a spinner with its elapsed time, then one line
+when it finishes; while applying, the spinner names the step in progress (or
+says it is waiting for the UAC prompt):
+
+```text
+✓ Read 30 installed package(s) (2.0s)
+✓ Generated .winix/out/desktop/resources.json
+✓ Checked 22 resource(s) on this machine (9.0s)
+
+Plan for desktop (checked against this machine):
+  + install  Proton.ProtonPass  (1.43.0)
+  = 51 unchanged (packages: 29, files: 12, ...)
+  Summary: 1 to change, 51 unchanged.
+
+Applying 1 change(s):
+  ✓ install Proton.ProtonPass 1.43.0 (45s)
+Applied 1, already in place 0, failed 0, skipped 0.
+✓ Verified 32 managed resource(s) (2.4s)
+
+Done in 1m 01s.
+```
 
 Generated output per Windows host is `.winix/out/<host>/resources.json`: each
 resource with its name, category, dependencies, elevation, and how to check
@@ -1302,7 +1326,8 @@ and apply it.
 - `+` install, `~` change, `!` conflict (for example an exact pin older than the
   installed version: switch fails rather than downgrade), `?` could not be
   checked, `=` already in the desired state.
-- Packages come from one batched DSC inventory. Every other resource runs its
+- Packages come from one `winget export` (a batched DSC read confirms any it
+  does not list before switch installs them). Every other resource runs its
   own test script, each isolated so one failure (often a missing elevation)
   only marks that resource `?`. Raw `windows.raw` commands always show as
   `~ run`, because they run on every switch.

@@ -14,12 +14,13 @@ import {
   type WindowsStateAdapter,
 } from "../windows-state.ts";
 import {
-  elevationPrompts, formatWindowsPlan, nativeWindowsPlanChecker, planWindowsResources,
-  runningPackages, runningPackagesError, type ElevationRequest, type WindowsPlanChecker,
+  formatWindowsPlan, nativeWindowsPlanChecker, planWindowsResources,
+  runningPackagesError, type PlannedResource, type RunningProcess, type WindowsPlanChecker,
 } from "../windows-plan.ts";
 import {
   applyWindowsBatches, formatApplySummary, nativeWindowsBatchRunner, planApplyBatches, type WindowsBatchRunner,
 } from "../windows-apply.ts";
+import * as progress from "../progress.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { loadWorkspace } from "../loader.ts";
 import { runCommand } from "../run.ts";
@@ -50,6 +51,7 @@ interface SwitchOptions {
 }
 
 export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<void> {
+  const started = Date.now();
   const { workspace, configDir } = await loadWorkspace(cwd);
   const evaluated = evaluate(workspace, { configDir });
   const hostName = selectHost(evaluated.map((host) => host.name), opts.host);
@@ -79,6 +81,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
       host: hostName,
       dry: windowsDry,
       print: !windowsDry,
+      compact: true,
       diff: false,
       offline: opts.offline,
       locked: opts.locked,
@@ -87,8 +90,9 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         const versions: Record<string, string | null> = {};
         for (const host of hosts) {
           const tracked = managedWindowsResources(host).filter((resource) => resource.kind === "package");
-          // One inventory call for every package instead of one per package.
-          const inventory = await inspectResources(adapter, tracked);
+          // One inventory for every package, reused by the plan, activation and reconciliation.
+          const inventory = await progress.step("Reading installed packages",
+            () => inspectResources(adapter, tracked), `Read ${tracked.length} installed package(s)`);
           for (const resource of tracked) {
             const snapshot = inventory.get(resourceKey(resource)) ?? null;
             knownSnapshots.set(resourceKey(resource), snapshot);
@@ -121,8 +125,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
                 versions[resource.id] = null;
                 console.warn(`Warning: ${resource.id} reported a non-comparable installed version (${JSON.stringify(installed)}); ensuring it is installed without enforcing locked version ${version}.`);
               } else if (compareWindowsPackageVersions(resource.id, installed, version) > 0) {
-                // The dry-run plan reports these itself.
-                if (!opts.dry) console.log(`Keeping ${resource.id} ${installed} (locked ${version}).`);
+                // The plan reports these ("newer than locked").
                 newer.push({ id: resource.id, installed, locked: version });
               }
             }
@@ -135,21 +138,22 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
     const command = platform === "windows" ? undefined : activationCommand(platform, flakeRefForHost(result.outDir, hostName));
     const summaries = result.windowsOutput?.resources[hostName] ?? [];
     const checker = opts.planChecker ?? (opts.windowsState ? undefined : nativeWindowsPlanChecker);
-    /** Show the lock for packages switch keeps newer than locked (generation uses the installed version). */
-    const showKept = (planned: Awaited<ReturnType<typeof planWindowsResources>>) => {
+    const live = statePath !== undefined;
+    let planned: PlannedResource[] = [];
+    if (platform === "windows") {
+      // One plan, checked against the machine, for the preview and for activation.
+      const checked = summaries.filter((resource) => !resource.package && resource.category !== "command").length;
+      planned = live
+        ? await progress.step(`Checking ${checked} resource(s) on this machine`,
+          () => planWindowsResources(summaries, packageInventory, checker), `Checked ${checked} resource(s) on this machine`)
+        : await planWindowsResources(summaries, undefined, undefined);
+      // Packages newer than locked are kept; show the lock beside the installed version.
       for (const entry of planned) {
         const kept = newer.find((candidate) => candidate.id === entry.resource.package?.id);
         if (kept && entry.state === "ok") {
           entry.detail = `${kept.installed} (locked ${kept.locked}; switch offers to update the lock)`;
         }
       }
-    };
-    let dryChanges = 0;
-    if (windowsDry) {
-      const live = statePath !== undefined;
-      const planned = await planWindowsResources(summaries, live ? packageInventory : undefined, live ? checker : undefined);
-      showKept(planned);
-      dryChanges = planned.filter((entry) => entry.state !== "ok").length;
       console.log("");
       for (const line of formatWindowsPlan(hostName, planned, {
         live, reason: live ? undefined : "machine checks need native Windows",
@@ -157,69 +161,30 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
     } else if (command) {
       console.log(`\nRunning: ${command.join(" ")}`);
     }
+    const dryChanges = planned.filter((entry) => entry.state !== "ok").length;
     const ownership: string[] = [];
-    const activate = async () => {
+    const activate = async (): Promise<void | { changed: boolean }> => {
       if (statePath && !opts.dry) {
-        const tracked = managedWindowsResources(selected)
-          .filter((resource) => resource.kind === "package" && !anyVersionPackages.has(resourceKey(resource)));
-        const inventory = await inspectResources(adapter, tracked);
-        const declared = (selected.windows as WindowsOptions).packages ?? {};
-        const upgrades: string[] = [];
-        const changes: ElevationRequest[] = [];
-        // Presence-only packages are only installed when missing.
-        for (const [id, snapshot] of packageInventory) {
-          if (snapshot === null && declared[id]?.anyVersion) changes.push({ id, source: declared[id].source, action: "install" });
-        }
-        for (const resource of tracked) {
-          if (resource.kind !== "package") continue;
-          const key = resourceKey(resource);
-          const current = inventory.get(key) ?? null;
-          if (current === null) {
-            changes.push({ id: resource.id, source: resource.source, action: "install", version: activationVersions[key] });
-          } else {
-            if (!("version" in current)) throw new Error(`Invalid package snapshot: ${resource.id}`);
-            effectiveWindowsPackageVersion(resource.id, requirements[key], current.version);
-            if (!requirements[key].exact && !unknownVersions.has(key) &&
-                isComparableWindowsPackageVersion(current.version) &&
-                compareWindowsPackageVersions(resource.id, current.version, activationVersions[key]) > 0) {
-              throw new Error(`Package ${resource.id} updated during switch. Rerun switch to keep ${current.version}; refusing stale activation.`);
-            }
-            if (!unknownVersions.has(key) && isComparableWindowsPackageVersion(current.version) &&
-                isComparableWindowsPackageVersion(activationVersions[key]) &&
-                compareWindowsPackageVersions(resource.id, current.version, activationVersions[key]) < 0) {
-              upgrades.push(resource.id);
-              changes.push({ id: resource.id, source: resource.source, action: "upgrade", version: activationVersions[key] });
-            }
-          }
-        }
-        const [running, prompts] = await Promise.all([
-          runningPackages(checker, upgrades), elevationPrompts(checker, changes),
-        ]);
+        const running = new Map<string, RunningProcess[]>(planned.flatMap((entry) =>
+          entry.running?.length ? [[entry.resource.package!.id, entry.running] as [string, RunningProcess[]]] : []));
         if (running.size > 0) throw new Error(runningPackagesError(running));
-
-        // Plan against the machine as it is now, then apply only what is out of date.
-        const current = new Map(packageInventory);
-        for (const resource of tracked) {
-          if (resource.kind === "package") current.set(resource.id, inventory.get(resourceKey(resource)) ?? null);
-        }
-        const planned = await planWindowsResources(summaries, current, checker);
-        showKept(planned);
+        const prompts = new Map(planned.flatMap((entry) =>
+          entry.elevation ? [[entry.resource.package!.id, entry.elevation] as [string, string]] : []));
         const batches = planApplyBatches(planned, prompts);
-        console.log("");
-        for (const line of formatWindowsPlan(hostName, planned, { live: true })) console.log(line);
         if (batches.length === 0) {
           console.log("\nNothing to change.");
-          return;
+          return { changed: false };
         }
-        console.log("");
-        const outcome = await applyWindowsBatches(batches, opts.windowsRunner ?? nativeWindowsBatchRunner);
+        const total = batches.reduce((count, batch) => count + batch.steps.length, 0);
+        console.log(`\nApplying ${total} change(s):`);
+        const outcome = await applyWindowsBatches(batches, opts.windowsRunner ?? nativeWindowsBatchRunner, applyProgress());
+        progress.stop();
         const labels = new Map(summaries.map((resource) => [resource.name, resource.package?.id ?? resource.label]));
-        console.log("");
         for (const line of formatApplySummary(outcome, labels)) console.log(line);
         if (outcome.failed.length > 0) {
           throw new Error(`${outcome.failed.length} Windows change(s) did not apply; fix the errors above and rerun winix switch.`);
         }
-        return;
+        return { changed: outcome.results.some((entry) => entry.status === "applied") };
       }
       if (opts.dry || !command) return;
       await runCommand(command[0], command.slice(1), { dry: opts.dry });
@@ -239,7 +204,7 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         if (!definition) throw new Error(`Missing activation definition: ${resourceKey(resource)}`);
         definitions[resourceKey(resource)] = createHash("sha256").update(definition).digest("hex");
       }
-      await reconcileWindows({
+      const after = await reconcileWindows({
         statePath,
         owner: await windowsStateOwner(configDir, hostName),
         desired, definitions,
@@ -251,14 +216,13 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
         lockHeld: true,
         knownSnapshots,
         activate,
+        verify: (work) => progress.step("Verifying the result", work, `Verified ${desired.length} managed resource(s)`),
         ...(windowsDry ? { report: (message: string) => ownership.push(message) } : {}),
       });
-      if (!opts.dry && lock) {
+      if (!opts.dry && lock && after) {
         let expected = serializeWindowsLock(lock);
         for (const candidate of newer) {
-          const current = await adapter.inspect({
-            kind: "package", id: candidate.id, source: lock.packages[candidate.id].source,
-          });
+          const current = after.get(resourceKey({ kind: "package", id: candidate.id, source: lock.packages[candidate.id].source }));
           if (!current || !("version" in current) || current.version !== candidate.installed) {
             console.log(`Not updating lock for ${candidate.id}: installed version changed during activation.`);
             continue;
@@ -299,7 +263,41 @@ export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<v
   else await performSwitch();
   if (platform === "windows") {
     for (const line of wslNextSteps(workspace, evaluated, selected)) console.log(line);
+    if (!opts.dry && statePath) console.log(`\nDone in ${progress.formatDuration(Date.now() - started)}.`);
   }
+}
+
+/**
+ * Show the apply runner's progress: a spinner with the step in progress (and
+ * while waiting for the UAC prompt), then one line per finished step. Without
+ * an interactive terminal, start and finish lines are printed as they come.
+ */
+export function applyProgress(print: (line: string) => void = console.log): (line: string) => void {
+  let current: string | undefined;
+  let started = Date.now();
+  progress.spin("Applying");
+  return (line) => {
+    const start = /^ {2}~ (\S+)\s+(.+)$/.exec(line);
+    if (start) {
+      current = `${start[1]} ${start[2]}`;
+      started = Date.now();
+      if (!progress.isInteractive()) print(`  ~ ${current}`);
+      progress.spin(current);
+      return;
+    }
+    const done = /^ {4}✓ /.test(line);
+    const failed = /^ {4}✗ /.test(line);
+    if ((done || failed) && current) {
+      progress.stop();
+      const elapsed = progress.formatDuration(Date.now() - started);
+      print(done ? `  ✓ ${current} (${elapsed})` : `  ✗ ${current} (${elapsed}): ${line.slice(line.indexOf(": ") + 2)}`);
+      current = undefined;
+      progress.spin("Applying");
+      return;
+    }
+    print(line);
+    if (/approve the UAC prompt/.test(line)) progress.spin("Waiting for administrator approval (UAC)");
+  };
 }
 
 /**

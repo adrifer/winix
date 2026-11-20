@@ -1,5 +1,31 @@
 import { spawn } from "node:child_process";
 
+/**
+ * Run a command to completion without blocking the event loop (so progress
+ * output keeps updating), resolving stdout. Errors carry stderr.
+ */
+export function captureCommand(
+  command: string, args: string[], opts: { input?: string; timeout?: number } = {},
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+    let stdout = "";
+    let stderr = "";
+    const timer = opts.timeout
+      ? setTimeout(() => { child.kill(); reject(new Error(`${command} timed out`)); }, opts.timeout)
+      : undefined;
+    child.stdout.setEncoding("utf8").on("data", (chunk: string) => { stdout += chunk; });
+    child.stderr.setEncoding("utf8").on("data", (chunk: string) => { stderr += chunk; });
+    child.on("error", (error) => { clearTimeout(timer); reject(error); });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (code === 0) resolve(stdout);
+      else reject(new Error(stderr.trim() || `${command} exited with code ${code}`));
+    });
+    child.stdin.end(opts.input ?? "");
+  });
+}
+
 export async function runCommand(
   command: string,
   args: string[],

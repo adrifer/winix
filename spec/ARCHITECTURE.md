@@ -44,16 +44,22 @@ activation, immediate pre-removal inspection, removal and post-removal verificat
 Keep state-lock/load/save and package/startup timings separate so process startup
 cost is not confused with activation or filesystem work.
 
-Package inspection is batched once per phase (initial inventory, the
-pre-activation staleness check, the post-activation inventory) through one
-`dsc config get` (`WindowsStateAdapter.inspectMany`). Results are correlated by
-instance name and then validated against the exact ID/source; a missing result
-throws instead of being read as absence. Reconciliation reuses the initial
-inventory taken by the same switch (`knownSnapshots`) before activation; it is
-never reused across activation. Immediate pre-removal drift checks and
-post-removal verification still inspect one resource at a time. Measured on a
-31-package host: one `dsc resource get` takes about 7.5 s, while the batched
-call takes about 43 s for all 31.
+A switch inventories packages once (`WindowsStateAdapter.inspectMany`) and
+uses that inventory for version selection, the plan, activation and the
+reconciliation pre-checks (`knownSnapshots`). The native adapter reads it from
+one `winget export --include-versions` (about 2–7 s for every installed package);
+packages the export does not answer for (absent, installed side by side, or from
+a source the export did not cover), or all of them when the export fails, are
+read with one batched `dsc config get`, so an install is only planned on DSC's
+word. DSC results are correlated by instance name and validated against the
+exact ID/source; a missing result throws instead of being read as absence.
+After activation the machine is inventoried again only when a step actually
+applied something (`activate` returns `{ changed }`); otherwise the
+pre-activation snapshots are recorded. Immediate pre-removal drift checks and
+post-removal verification still inspect one resource at a time with DSC.
+Startup shortcuts are fingerprinted in one PowerShell process. Measured on a
+30-package host: the batched `dsc config get` took 46 s, `winget export` 7 s
+cold and 2 s warm; a no-change `winix plan` dropped from about 60 s to 14 s.
 
 ## 2. Module layout
 

@@ -1093,21 +1093,25 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
         version: 1, generatedAt: "2026-11-13T00:00:00Z",
         packages: { "Example.App": { version: "7", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" } },
       }));
-      await expect(switchCommand(dir, {
+      const switching = switchCommand(dir, {
         host: "desktop", dry: false, windowsRunner: runner,
         windowsState: {
           path: join(dir, "inventory.json"),
           adapter: {
-            // The initial inventory is reused by reconciliation; the pre-activation check is the second inspection.
+            // The initial inventory is reused by the plan; the post-activation check is the second inspection.
             inspect: async () => ({ version: failure === "stale" && ++inspections >= 2 ? "9" : "8" }),
             remove: async () => { throw new Error("Must not uninstall"); },
           },
         },
-      })).rejects.toThrow(failure === "stale" ? "updated during switch" : failure === "failed" ? "did not apply" : "changed during switch");
+      });
+      if (failure === "stale") await switching;
+      else await expect(switching).rejects.toThrow(failure === "failed" ? "did not apply" : "changed during switch");
       expect(readWindowsLock(dir)?.packages["Example.App"].version).toBe("7");
       if (failure !== "concurrent") expect(confirm).not.toHaveBeenCalled();
       else expect(readWindowsLock(dir)?.packages["Other.App"].version).toBe("2");
-      if (failure === "stale") expect(runner.run).not.toHaveBeenCalled();
+      if (failure === "stale") {
+        expect(log).toHaveBeenCalledWith("Not updating lock for Example.App: installed version changed during activation.");
+      }
     } finally {
       log.mockRestore(); confirm.mockRestore();
       await rm(dir, { recursive: true, force: true });

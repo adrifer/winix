@@ -47,6 +47,8 @@ interface ApplyOptions {
   diff: boolean;
   /** Dry runs print the generated files unless false (switch --dry prints a plan instead). */
   print?: boolean;
+  /** One "Generated" line and no next steps (switch prints its own progress). */
+  compact?: boolean;
   offline?: boolean;
   locked?: boolean;
   windowsLockDry?: boolean;
@@ -171,6 +173,14 @@ export async function applyWorkspace(
     }
   }
 
+  if (opts.compact) {
+    const files = [
+      ...Object.keys(nixOutput?.hosts ?? {}).map((name) => `hosts/${name}`),
+      ...Object.entries(windowsOutput?.hosts ?? {}).flatMap(([hostName, bundle]) => Object.keys(bundle).map((file) => `${hostName}/${file}`)),
+    ];
+    console.log(files.length === 1 ? `✓ Generated .winix/out/${files[0]}` : `✓ Generated ${evaluated.length} host(s) in .winix/out/`);
+    return { ...resultFor(configDir, outDir, evaluated), windowsLock, windowsOutput };
+  }
   console.log(`✓ Generated ${evaluated.length} host(s) in .winix/out/`);
   for (const name of Object.keys(nixOutput?.hosts ?? {})) {
     console.log(`  → hosts/${name}`);

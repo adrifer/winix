@@ -1,13 +1,13 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { mkdir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { hostname } from "node:os";
+import { mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { hostname, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import type { EvaluatedHost } from "../evaluator/index.ts";
 import type { WindowsOptions } from "../types/index.ts";
 import { powerShellLiteral } from "../helpers/utils.ts";
-import { runCommand } from "./run.ts";
+import { captureCommand, runCommand } from "./run.ts";
 import {
   compareWindowsPackageVersions, effectiveWindowsPackageVersion, isComparableWindowsPackageVersion,
   type WindowsPackageRequirement,
@@ -66,7 +66,12 @@ export interface ReconcileOptions {
   dry: boolean;
   yes?: boolean;
   adapter: WindowsStateAdapter;
-  activate(): Promise<void>;
+  /**
+   * Applies the desired state. Returning `{ changed: false }` (nothing was
+   * applied) lets reconciliation reuse the snapshots it took before activation
+   * instead of inventorying the machine again.
+   */
+  activate(): Promise<void | { changed: boolean }>;
   report?(message: string): void;
   /** CLI switch holds this lock across backend generation as well as activation. */
   lockHeld?: boolean;
@@ -75,6 +80,8 @@ export interface ReconcileOptions {
    * inventory. Activation-time checks and removals always inspect again.
    */
   knownSnapshots?: ReadonlyMap<string, ResourceSnapshot>;
+  /** Wraps the post-activation inventory (progress output). */
+  verify?<T>(work: () => Promise<T>): Promise<T>;
 }
 
 export function resourceKey(resource: ManagedResource): string {
@@ -347,11 +354,11 @@ export async function confirmWindowsRemovals(yes = false): Promise<void> {
  * One user/machine inventory, serialized across workspaces. Ownership is granted
  * only after successful activation and never inferred from version locks.
  */
-export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
+export async function reconcileWindows(opts: ReconcileOptions): Promise<ReadonlyMap<string, ResourceSnapshot> | undefined> {
   const report = opts.report ?? console.log;
   const desired = new Map(opts.desired.map((resource) => [resourceKey(resource), resource]));
   if (desired.size !== opts.desired.length) throw new Error("Duplicate managed Windows resources");
-  const reconcile = async () => {
+  const reconcile = async (): Promise<ReadonlyMap<string, ResourceSnapshot> | undefined> => {
     const state = await loadState(opts.statePath);
     const known = opts.knownSnapshots ?? new Map<string, ResourceSnapshot>();
     const inventory = new Map([...known, ...await inspectResources(
@@ -435,16 +442,17 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
     }
     if (opts.dry) {
       await opts.activate();
-      return;
+      return undefined;
     }
     if (removals.some(([, , current]) => current !== null)) {
       report("Package uninstallers may remove application data.");
       await confirmWindowsRemovals(opts.yes);
     }
-    await opts.activate();
+    const outcome = await opts.activate();
     // Capture all desired outcomes before committing any new ownership.
     const after = new Map<string, ResourceSnapshot>();
-    const activated = await inspectResources(opts.adapter, [...desired.values()]);
+    const activated = outcome?.changed === false ? before
+      : await (opts.verify ?? ((work) => work()))(() => inspectResources(opts.adapter, [...desired.values()]));
     for (const [key, resource] of desired) {
       const current = activated.get(key) ?? null;
       if (current === null) throw new Error(`Activation succeeded but managed resource is missing: ${key}`);
@@ -515,9 +523,12 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<void> {
       if (!entry.owned && entry.owners.length === 0) delete state.entries[key];
     }
     await saveState(opts.statePath, state);
+    return after;
   };
-  if (opts.lockHeld) await reconcile();
-  else await withWindowsStateLock(opts.statePath, opts.dry, reconcile);
+  if (opts.lockHeld) return reconcile();
+  let result: ReadonlyMap<string, ResourceSnapshot> | undefined;
+  await withWindowsStateLock(opts.statePath, opts.dry, async () => { result = await reconcile(); });
+  return result;
 }
 
 function powershell(script: string): string {
@@ -527,6 +538,14 @@ function powershell(script: string): string {
   ], { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 60000 }).trim();
 }
 
+/** Like powershell(), without blocking the event loop. */
+async function powershellAsync(script: string, timeout = 60000): Promise<string> {
+  return (await captureCommand("pwsh", [
+    "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand",
+    Buffer.from("$ErrorActionPreference = 'Stop'\n" + script, "utf16le").toString("base64"),
+  ], { timeout })).trim();
+}
+
 function startupPathScript(name: string): string {
   return `$root = [Environment]::GetFolderPath('Startup')
 if (-not $root) { throw 'Windows Startup folder is unavailable' }
@@ -534,22 +553,10 @@ $path = Join-Path $root ${powerShellLiteral(name + ".lnk")}`;
 }
 
 type PackageResource = Extract<ManagedResource, { kind: "package" }>;
+type StartupResource = Extract<ManagedResource, { kind: "startup" }>;
 
-function packageState(resource: PackageResource): ResourceSnapshot {
-  const result: unknown = JSON.parse(execFileSync("dsc", [
-    "resource", "get", "--resource", "Microsoft.WinGet/Package", "--file", "-",
-  ], {
-    encoding: "utf8", input: JSON.stringify({ id: resource.id, source: resource.source }),
-    stdio: ["pipe", "pipe", "pipe"], timeout: 60000,
-  }));
-  return parsePackageState(resource, result);
-}
-
-/**
- * Read many packages in one `dsc config get` (one process and one WinGet
- * session instead of one per package).
- */
-export function packageStates(resources: PackageResource[]): ResourceSnapshot[] {
+/** Read many packages in one `dsc config get` (one process instead of one per package). */
+export async function packageStates(resources: PackageResource[]): Promise<ResourceSnapshot[]> {
   if (resources.length === 0) return [];
   const document = {
     $schema: "https://aka.ms/dsc/schemas/v3/bundled/config/document.json",
@@ -558,11 +565,118 @@ export function packageStates(resources: PackageResource[]): ResourceSnapshot[] 
       properties: { id: resource.id, source: resource.source },
     })),
   };
-  const output: unknown = JSON.parse(execFileSync("dsc", ["config", "get", "--file", "-"], {
-    encoding: "utf8", input: JSON.stringify(document),
-    stdio: ["pipe", "pipe", "pipe"], timeout: 60000 + resources.length * 15000, maxBuffer: 64 * 1024 * 1024,
+  const output: unknown = JSON.parse(await captureCommand("dsc", ["config", "get", "--file", "-"], {
+    input: JSON.stringify(document), timeout: 60000 + resources.length * 15000,
   }));
   return parsePackageInventory(resources, output);
+}
+
+/**
+ * Installed package versions from `winget export`: every installed package
+ * winget correlates with a source, in one call (seconds, where a DSC get of
+ * 30 packages takes most of a minute). Keyed by "<source>|<id>", lowercase.
+ */
+export interface WingetExport {
+  /** Sources the export covered; packages of other sources are not known. */
+  sources: Set<string>;
+  /** Versions by "<source>|<id>". More than one means side-by-side installs. */
+  versions: Map<string, string[]>;
+}
+
+export function parseWingetExport(text: string): WingetExport {
+  const parsed: unknown = JSON.parse(text.replace(/^\uFEFF/, ""));
+  if (!parsed || typeof parsed !== "object" || !Array.isArray((parsed as { Sources?: unknown }).Sources)) {
+    throw new Error("Invalid winget export");
+  }
+  const result: WingetExport = { sources: new Set(), versions: new Map() };
+  for (const source of (parsed as { Sources: unknown[] }).Sources) {
+    const name = (source as { SourceDetails?: { Name?: unknown } })?.SourceDetails?.Name;
+    const packages = (source as { Packages?: unknown })?.Packages;
+    if (typeof name !== "string" || !Array.isArray(packages)) throw new Error("Invalid winget export");
+    result.sources.add(name.toLowerCase());
+    for (const pkg of packages as { PackageIdentifier?: unknown; Version?: unknown }[]) {
+      if (typeof pkg?.PackageIdentifier !== "string" || typeof pkg.Version !== "string" || !pkg.Version) {
+        throw new Error("Invalid winget export");
+      }
+      const key = `${name}|${pkg.PackageIdentifier}`.toLowerCase();
+      result.versions.set(key, [...(result.versions.get(key) ?? []), pkg.Version]);
+    }
+  }
+  return result;
+}
+
+async function wingetExport(): Promise<WingetExport> {
+  const directory = await mkdtemp(join(tmpdir(), "winix-inventory-"));
+  try {
+    const file = join(directory, "packages.json");
+    try {
+      await captureCommand("winget", [
+        "export", "--output", file, "--include-versions",
+        "--accept-source-agreements", "--disable-interactivity",
+      ], { timeout: 180000 });
+    } catch (error) {
+      // winget exits non-zero when some installed packages are not available
+      // from any source; the export file is still complete for the rest.
+      if (!await readFile(file, "utf8").then(() => true, () => false)) throw error;
+    }
+    return parseWingetExport(await readFile(file, "utf8"));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Package snapshots from one `winget export`. Packages it cannot answer for
+ * (missing from the export, side-by-side versions, or a source the export did
+ * not cover) are read with DSC, so an install is only ever planned on DSC's
+ * word. Without a usable export, everything is read with DSC.
+ */
+export async function inventoryPackages(
+  resources: PackageResource[],
+  readExport: () => Promise<WingetExport> = wingetExport,
+  readDsc: (resources: PackageResource[]) => Promise<ResourceSnapshot[]> = packageStates,
+): Promise<ResourceSnapshot[]> {
+  if (resources.length === 0) return [];
+  let exported: WingetExport | undefined;
+  try {
+    exported = await readExport();
+  } catch {
+    exported = undefined;
+  }
+  const snapshots: (ResourceSnapshot | undefined)[] = resources.map((resource) => {
+    const versions = exported?.versions.get(`${resource.source}|${resource.id}`.toLowerCase());
+    return versions?.length === 1 ? { version: versions[0] } : undefined;
+  });
+  const unresolved = resources.flatMap((resource, index) => snapshots[index] === undefined ? [index] : []);
+  if (unresolved.length > 0) {
+    const confirmed = await readDsc(unresolved.map((index) => resources[index]));
+    unresolved.forEach((index, position) => { snapshots[index] = confirmed[position]; });
+  }
+  return snapshots as ResourceSnapshot[];
+}
+
+/** Fingerprints of several Startup shortcuts in one PowerShell process. */
+async function startupStates(resources: StartupResource[]): Promise<ResourceSnapshot[]> {
+  if (resources.length === 0) return [];
+  const names = resources.map((resource) => powerShellLiteral(resource.name + ".lnk")).join(", ");
+  const output = await powershellAsync(`$root = [Environment]::GetFolderPath('Startup')
+if (-not $root) { throw 'Windows Startup folder is unavailable' }
+$result = @(foreach ($name in @(${names})) {
+  $path = Join-Path $root $name
+  if (Test-Path -LiteralPath $path) {
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Startup entry is not a file: $path" }
+    (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+  } else { '' }
+})
+ConvertTo-Json -InputObject $result -Compress`);
+  const parsed: unknown = JSON.parse(output);
+  const hashes = Array.isArray(parsed) ? parsed : [parsed];
+  if (hashes.length !== resources.length) throw new Error("Invalid startup fingerprint");
+  return hashes.map((hash) => {
+    if (hash === "") return null;
+    if (typeof hash !== "string" || !/^[a-f0-9]{64}$/.test(hash)) throw new Error("Invalid startup fingerprint");
+    return { fingerprint: hash };
+  });
 }
 
 export function parsePackageInventory(resources: PackageResource[], output: unknown): ResourceSnapshot[] {
@@ -603,23 +717,18 @@ function parsePackageState(resource: PackageResource, result: unknown): Resource
 export const nativeWindowsStateAdapter: WindowsStateAdapter = {
   async inspectMany(resources) {
     const packages = resources.filter((resource): resource is PackageResource => resource.kind === "package");
-    const states = new Map(packageStates(packages).map((snapshot, index) => [packages[index], snapshot]));
-    const out: ResourceSnapshot[] = [];
-    for (const resource of resources) {
-      out.push(resource.kind === "package" ? states.get(resource)! : await nativeWindowsStateAdapter.inspect(resource));
-    }
-    return out;
+    const startups = resources.filter((resource): resource is StartupResource => resource.kind === "startup");
+    const [packageSnapshots, startupSnapshots] = await Promise.all([inventoryPackages(packages), startupStates(startups)]);
+    const states = new Map<ManagedResource, ResourceSnapshot>([
+      ...packages.map((resource, index) => [resource, packageSnapshots[index]] as const),
+      ...startups.map((resource, index) => [resource, startupSnapshots[index]] as const),
+    ]);
+    return resources.map((resource) => states.get(resource)!);
   },
   async inspect(resource) {
-    if (resource.kind === "package") return packageState(resource);
-    const hash = powershell(`${startupPathScript(resource.name)}
-if (Test-Path -LiteralPath $path) {
-  if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Startup entry is not a file: $path" }
-  (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
-}`);
-    if (!hash) return null;
-    if (!/^[a-f0-9]{64}$/.test(hash)) throw new Error("Invalid startup fingerprint");
-    return { fingerprint: hash };
+    // Single checks guard destructive operations: always ask DSC directly.
+    if (resource.kind === "package") return (await packageStates([resource]))[0];
+    return (await startupStates([resource]))[0];
   },
   async remove(resource, snapshot) {
     if (resource.kind === "package") {
@@ -631,7 +740,7 @@ if (Test-Path -LiteralPath $path) {
       ]);
     } else {
       if (!("fingerprint" in snapshot)) throw new Error("Missing shortcut fingerprint for removal");
-      powershell(`${startupPathScript(resource.name)}
+      await powershellAsync(`${startupPathScript(resource.name)}
 if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne ${powerShellLiteral(snapshot.fingerprint)}) {
   throw 'Startup entry changed before removal'
 }

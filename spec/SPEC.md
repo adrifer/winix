@@ -1290,8 +1290,9 @@ For Windows hosts, `winix switch --dry` (alias `winix plan`) prints a plan inste
 of the generated files: each resource's action (`+` install, `~` change, `!`
 conflict, `?` not checked), counts of unchanged resources, elevation and restart
 notes, planned removals from the applied-state inventory, and the activation
-command. On native Windows it is checked against the machine: one batched
-`dsc config get` for packages, every PowerShell-script resource's test script run
+command. On native Windows it is checked against the machine: one
+`winget export` for packages (a batched `dsc config get` confirms any it does
+not list), every PowerShell-script resource's test script run
 in one PowerShell process (each isolated, so one failure marks only that
 resource), and a batched `dsc config test` for other DSC resources (retried one
 by one if the batch aborts). Elsewhere it lists what the host declares. It is

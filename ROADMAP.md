@@ -14,6 +14,18 @@ Currently shipping v0.1.x. Focused on making the authoring experience excellent 
 
 ## Done
 
+- **Switch speed and progress** — packages are read from one `winget export`
+  (2–7 s instead of a 46 s batched DSC read on a 30-package host); DSC confirms
+  any package the export does not list before switch installs it. A switch
+  inventories once and reuses it for the plan, activation and reconciliation,
+  re-reading the machine after applying only when something changed (lock
+  updates use that result too). Startup shortcuts are fingerprinted in one
+  PowerShell process. A no-change plan went from about 60 s to 14 s. In a
+  terminal each phase shows a spinner with elapsed time and one line when done;
+  applying shows the step in progress and the wait for the UAC prompt; switch
+  ends with its total time. Switch prints one "Generated" line and no "Next:"
+  hint, and drops the "Keeping … (locked …)" lines the plan already reports.
+
 - **Fast Windows switch** — `winix switch` no longer runs `winget configure`.
   Hosts generate `resources.json`; switch plans against the machine and applies
   only what is out of date (packages through `winget install`/`upgrade`,

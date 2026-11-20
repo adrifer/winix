@@ -17,7 +17,11 @@ import {
   applyWindowsBatches, formatApplySummary, nativeWindowsBatchRunner, orderBatches, parseApplyResults, planApplyBatches,
   type ApplyBatch, type ApplyStep, type StepResult,
 } from "../src/cli/windows-apply.ts";
-import { inspectResources, parsePackageInventory, type WindowsStateAdapter } from "../src/cli/windows-state.ts";
+import {
+  inspectResources, inventoryPackages, parsePackageInventory, parseWingetExport, type WindowsStateAdapter,
+} from "../src/cli/windows-state.ts";
+import { applyProgress } from "../src/cli/commands/switch.ts";
+import { formatDuration } from "../src/cli/progress.ts";
 import { lockGapWarnings } from "../src/cli/commands/check.ts";
 import { inspectHost } from "../src/cli/commands/inspect.ts";
 import { analyzeWorkspace } from "../src/cli/analysis.ts";
@@ -469,6 +473,70 @@ describe("batched Windows inventory", () => {
       { name: "package 0", result: { actualState: { _exist: true, id: "Other", source: "winget", version: "1" } } },
     ] })).toThrow("identity mismatch");
     expect(() => parsePackageInventory(resources.slice(1), { results: [] })).toThrow("missing No.Pe");
+  });
+});
+
+describe("winget export inventory", () => {
+  const exportText = JSON.stringify({ Sources: [
+    { SourceDetails: { Name: "winget" }, Packages: [
+      { PackageIdentifier: "Git.Git", Version: "2.56.0" },
+      { PackageIdentifier: "Side.BySide", Version: "1.0" }, { PackageIdentifier: "Side.BySide", Version: "2.0" },
+    ] },
+    { SourceDetails: { Name: "msstore" }, Packages: [] },
+  ] });
+  const resource = (id: string, source = "winget") => ({ kind: "package" as const, id, source });
+
+  it("parses exported packages by source and id", () => {
+    const parsed = parseWingetExport("\uFEFF" + exportText);
+    expect(parsed.sources).toEqual(new Set(["winget", "msstore"]));
+    expect(parsed.versions.get("winget|git.git")).toEqual(["2.56.0"]);
+    expect(parsed.versions.get("winget|side.byside")).toEqual(["1.0", "2.0"]);
+    expect(() => parseWingetExport("{}")).toThrow("Invalid winget export");
+  });
+
+  it("answers from the export and confirms everything else with DSC", async () => {
+    const readDsc = vi.fn(async (resources: { id: string }[]) => resources.map((entry) => entry.id === "Missing.App" ? null : { version: "9" }));
+    const resources = [resource("git.git"), resource("Missing.App"), resource("Side.BySide"), resource("Store.App", "custom")];
+    const snapshots = await inventoryPackages(resources, async () => parseWingetExport(exportText), readDsc);
+    expect(snapshots).toEqual([{ version: "2.56.0" }, null, { version: "9" }, { version: "9" }]);
+    // Absent, side-by-side and other-source packages go to DSC in one batch.
+    expect(readDsc).toHaveBeenCalledTimes(1);
+    expect(readDsc.mock.calls[0][0].map((entry) => entry.id)).toEqual(["Missing.App", "Side.BySide", "Store.App"]);
+  });
+
+  it("falls back to DSC for everything when the export fails", async () => {
+    const readDsc = vi.fn(async (resources: unknown[]) => resources.map(() => ({ version: "1" })));
+    const snapshots = await inventoryPackages([resource("Git.Git")], async () => { throw new Error("no winget"); }, readDsc);
+    expect(snapshots).toEqual([{ version: "1" }]);
+    expect(readDsc).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("switch progress", () => {
+  it("formats durations", () => {
+    expect([formatDuration(400), formatDuration(9_940), formatDuration(45_000), formatDuration(125_000)])
+      .toEqual(["0.4s", "9.9s", "45s", "2m 05s"]);
+  });
+
+  it("turns runner lines into one line per finished step", () => {
+    const lines: string[] = [];
+    const log = applyProgress((line) => lines.push(line));
+    for (const line of [
+      "Applying 1 change(s) that need administrator rights; approve the UAC prompt (it can open behind other windows).",
+      "  ~ install  Proton.ProtonPass 1.43.0",
+      "    ✓ Proton.ProtonPass (45s)",
+      "  ~ apply  link C:\\a -> C:\\b",
+      "      some output",
+      "    ✗ link C:\\a -> C:\\b: still not in the desired state after applying",
+    ]) log(line);
+    expect(lines.map((line) => line.replace(/\([\d.]+s\)/, "(T)"))).toEqual([
+      "Applying 1 change(s) that need administrator rights; approve the UAC prompt (it can open behind other windows).",
+      "  ~ install Proton.ProtonPass 1.43.0",
+      "  ✓ install Proton.ProtonPass 1.43.0 (T)",
+      "  ~ apply link C:\\a -> C:\\b",
+      "      some output",
+      "  ✗ apply link C:\\a -> C:\\b (T): still not in the desired state after applying",
+    ]);
   });
 });
 

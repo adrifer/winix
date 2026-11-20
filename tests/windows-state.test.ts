@@ -69,6 +69,29 @@ async function fixture(run: (fixture: {
 }
 
 describe("Windows applied-state reconciliation", () => {
+  it("reuses the pre-activation inventory when activation changed nothing, and returns the result", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-state-reuse-"));
+    try {
+      const inspect = vi.fn(async (resource: ManagedResource) => resource.kind === "startup" ? shortcut : installed);
+      const options = (changed: boolean) => ({
+        statePath: join(dir, "applied.json"), owner: "workspace-A/desktop", desired: [pkg, startup],
+        definitions: { [resourceKey(pkg)]: "same", [resourceKey(startup)]: "same" },
+        dry: false, yes: true, report: () => {},
+        adapter: { inspect, remove: vi.fn() },
+        activate: async () => ({ changed }),
+      });
+      const after = await reconcileWindows(options(false));
+      // One inspection per resource before activation, none after.
+      expect(inspect).toHaveBeenCalledTimes(2);
+      expect(after?.get(resourceKey(pkg))).toEqual(installed);
+      const verify = vi.fn(<T,>(work: () => Promise<T>) => work());
+      await reconcileWindows({ ...options(true), verify });
+      expect(inspect).toHaveBeenCalledTimes(6);
+      expect(verify).toHaveBeenCalledTimes(1);
+      expect(parseAppliedState(await readFile(join(dir, "applied.json"), "utf8")).entries[resourceKey(startup)].snapshot).toEqual(shortcut);
+    } finally { await rm(dir, { recursive: true, force: true }); }
+  });
+
   it("allows unknown floating observations but refuses to remove the package before activation", async () => fixture(async (f) => {
     const requirement = { version: "1.0", exact: false };
     const key = resourceKey(pkg);
