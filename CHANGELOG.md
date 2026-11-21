@@ -12,6 +12,11 @@ Notable changes per release. Every release, with its downloadable assets, is on
   id (installed by another installer, e.g. an organization's PowerShell 7 MSI)
   is kept with a note on how to hand it over to winget, instead of failing the
   switch and skipping everything that depends on it.
+- `winix switch`: a failed package **upgrade** no longer skips what depends on
+  that package; the older version is still installed. The failure is still
+  reported (for example winget's "install technology is different" error, which
+  needs an uninstall and a fresh install). A failed install still skips its
+  dependents.
 
 ## 0.3.0
 

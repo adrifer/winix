@@ -466,6 +466,28 @@ describe("Windows apply (switch)", () => {
     ]);
   });
 
+  it("still applies what depends on a package whose upgrade failed, but not on a failed install", async () => {
+    const upgrade = { id: "Microsoft.PowerShell", source: "winget", version: "7.7.0.0", action: "upgrade" as const };
+    const install = { id: "New.Tool", source: "winget", version: "1.0", action: "install" as const };
+    const batches: ApplyBatch[] = [
+      { elevated: false, steps: [
+        { name: "pwsh", label: "Microsoft.PowerShell", kind: "package", elevated: false, dependsOn: [], package: upgrade },
+        { name: "tool", label: "New.Tool", kind: "package", elevated: false, dependsOn: [], package: install },
+      ] },
+      { elevated: true, steps: [
+        { name: "profile", label: "profile", kind: "script", elevated: true, dependsOn: ["pwsh"] },
+        { name: "config", label: "config", kind: "script", elevated: true, dependsOn: ["tool"] },
+      ] },
+    ];
+    const run = vi.fn(async (batch: ApplyBatch) => batch.steps.map((step): StepResult =>
+      step.kind === "package" ? { name: step.name, status: "failed", error: "winget failed" } : { name: step.name, status: "applied" }));
+    const outcome = await applyWindowsBatches(batches, { run }, () => {});
+    expect(run.mock.calls[1][0].steps.map((step) => step.name)).toEqual(["profile"]);
+    expect(outcome.results.map((result) => [result.name, result.status])).toEqual([
+      ["pwsh", "failed"], ["tool", "failed"], ["config", "skipped"], ["profile", "applied"],
+    ]);
+  });
+
   it("reports a declined UAC prompt (or any runner error) as failures of that batch", async () => {
     const outcome = await applyWindowsBatches(
       [{ elevated: true, steps: [{ name: "m", label: "M", kind: "package", elevated: true, dependsOn: [] }] }],

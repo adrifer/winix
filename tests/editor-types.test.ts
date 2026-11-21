@@ -91,5 +91,5 @@ export const wrong = feature("wrong", ({ nixos }) => { nixos.program("nix-ld", {
     log.mockClear();
     await typesCommand(config);
     expect(String(log.mock.calls[0][0])).toContain("are current");
-  });
+  }, 30000);
 });

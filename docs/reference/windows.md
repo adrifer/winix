@@ -614,6 +614,11 @@ find is kept (`= keep`, with a `!` note) instead of failing the switch and
 skipping everything after it. To let Winix manage it, uninstall that copy and
 switch again: Winix then installs the locked version from winget.
 
+If an upgrade fails anyway (for example winget's "The install technology of the
+newer version specified is different from the current version installed"), the
+switch reports it, but what depends on that package still applies: the older
+version is still installed. A failed install still skips its dependents.
+
 Startup file hashes and installed package versions still protect removals.
 If the installed version is non-numeric or reported as `Unknown` (common for
 self-updating installers), switch warns and emits that floating package without

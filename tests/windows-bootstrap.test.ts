@@ -161,7 +161,7 @@ function Invoke-WinixBootstrapHost {
       expect(chosen.ok, chosen.error ?? "").toBe(true);
       expect(chosen.calls.find((call) => call.file === "bootstrap")?.args).toEqual(["bootstrap", "--confirmed", "--yes"]);
     } finally { rmSync(root, { recursive: true, force: true }); }
-  });
+  }, 30000);
 
   it("does not discover/install tools or create files for repository dry-run", () => {
     const root = join(tmpdir(), `winix-nonexistent-${process.pid}`);

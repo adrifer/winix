@@ -7,7 +7,8 @@
 //   - PowerShell scripts:  test → set → test again (Windows PowerShell scripts in powershell.exe)
 //   - other DSC resources: dsc config set (one resource per call)
 //   - raw commands:        run as given
-// A step whose dependency failed is skipped. User batches run as a normal
+// A step whose dependency failed is skipped (not after a failed upgrade: the
+// older version is still installed). User batches run as a normal
 // child process; elevated batches run the same runner through one UAC prompt.
 
 import { spawn } from "node:child_process";
@@ -167,7 +168,15 @@ export function orderBatches(steps: ApplyStep[]): ApplyBatch[] {
   return batches;
 }
 
-/** Run the batches in order; a failure skips everything that depends on it, later batches included. */
+function isUpgrade(step: ApplyStep): boolean {
+  return step.kind === "package" && step.package?.action === "upgrade";
+}
+
+/**
+ * Run the batches in order; a failure skips everything that depends on it,
+ * later batches included, except a failed upgrade: the package is still
+ * installed (at its older version), so what depends on it still runs.
+ */
 export async function applyWindowsBatches(
   batches: ApplyBatch[], runner: WindowsBatchRunner, log: (line: string) => void = console.log,
 ): Promise<ApplyResult> {
@@ -193,8 +202,10 @@ export async function applyWindowsBatches(
     } catch (error) {
       batchResults = runnable.map((step) => ({ name: step.name, status: "failed" as const, error: (error as Error).message }));
     }
+    const upgrades = new Set(runnable.filter(isUpgrade).map((step) => step.name));
     for (const result of batchResults) {
-      if (result.status === "failed" || result.status === "skipped") failed.add(result.name);
+      // A failed upgrade leaves the older version installed: dependents still run.
+      if (result.status === "skipped" || (result.status === "failed" && !upgrades.has(result.name))) failed.add(result.name);
       results.push(result);
     }
   }
@@ -310,8 +321,14 @@ try {
       $results.Add([pscustomobject]@{ name = $step.name; status = $status })
       if ($status -eq 'applied') { Write-WinixLog ("    ✓ " + $step.label + " (" + [int]((Get-Date) - $started).TotalSeconds + "s)") }
     } catch {
-      [void]$failed.Add($step.name)
       $message = $_.Exception.Message
+      # A failed upgrade leaves the older version installed, which is what its
+      # dependents need; only other failures skip them.
+      if ($step.kind -eq 'package' -and $step.package.action -eq 'upgrade') {
+        $message += ' (kept the installed version; what depends on it still applies)'
+      } else {
+        [void]$failed.Add($step.name)
+      }
       $results.Add([pscustomobject]@{ name = $step.name; status = 'failed'; error = $message })
       Write-WinixLog ("    ✗ " + $step.label + ": " + $message)
     }
