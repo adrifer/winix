@@ -9,5 +9,8 @@ export default defineConfig({
   },
   test: {
     include: ["tests/**/*.test.ts"],
+    // Many tests spawn PowerShell, Git or the CLI; under a full parallel run
+    // on Windows they can take several seconds, past the 5s default.
+    testTimeout: 30000,
   },
 });
