@@ -456,7 +456,7 @@ describe("activation commands", () => {
       "Windows activation is only supported on native Windows"
     );
     expect(() => assertUpdateSupported("win32")).toThrow(
-      "`winix update` is not supported from native Windows yet"
+      "needs the Nix CLI: run it from WSL, Linux, or macOS"
     );
   });
 });
@@ -661,15 +661,54 @@ describe("winix apply Windows output", () => {
         ])
       `);
 
-      // On non-win32 platforms assertUpdateSupported passes, so the
-      // workspace-level guard rejects this before invoking `nix flake update`.
-      // On native Windows, the platform guard rejects first because update
-      // currently requires the Nix CLI.
-      const expectedMessage =
-        process.platform === "win32" ? "not supported from native Windows" : "this workspace has no";
+      // Off Windows, plain update means the flake lock, which this workspace lacks.
       await expect(
-        update(dir, { inputs: [], dry: false })
-      ).rejects.toThrow(expectedMessage);
+        update(dir, { inputs: [], dry: false, platform: "linux" })
+      ).rejects.toThrow("this workspace has no");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("winix update on native Windows updates winix-windows.lock and notes the flake lock", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-update-native-windows-"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      await writeConfig(dir, `
+        host("desktop", platforms.windows(), [
+          windows.package("Fastfetch-cli.Fastfetch"),
+        ]),
+        host("server", platforms.nixos({ stateVersion: "25.05" }), [])
+      `);
+
+      await update(dir, {
+        inputs: [],
+        dry: false,
+        platform: "win32",
+        resolveWindowsPackageVersion: () => "2.65.1",
+      });
+
+      const lock = JSON.parse(await readFile(join(dir, "winix-windows.lock"), "utf-8")) as {
+        packages: Record<string, { version: string }>;
+      };
+      expect(lock.packages["Fastfetch-cli.Fastfetch"].version).toBe("2.65.1");
+      expect(log.mock.calls.map(([line]) => String(line)).join("\n"))
+        .toContain("run `winix update` from WSL, Linux or macOS");
+    } finally {
+      log.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("winix update on native Windows still needs Nix for a workspace without Windows hosts", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-update-native-nix-"));
+    try {
+      await writeConfig(dir, `
+        host("server", platforms.nixos({ stateVersion: "25.05" }), [])
+      `);
+      await expect(
+        update(dir, { inputs: [], dry: false, platform: "win32" })
+      ).rejects.toThrow("needs the Nix CLI");
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

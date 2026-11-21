@@ -702,7 +702,8 @@ object to \`%USERPROFILE%\\.gitconfig\` with \`windows.file.text\`. Recipes live
 - \`winix state forget startup <name>\` / \`winix state forget package <source> <id>\`
   releases Windows removal ownership without deleting anything; accepts --dry.
 - \`winix update [INPUTS...] [--dry] [--windows]\` updates Nix inputs or
-  Windows package locks.
+  Windows package locks. On native Windows, plain \`winix update\` updates
+  winix-windows.lock (the flake lock needs WSL, Linux or macOS).
 - \`winix inspect [--host NAME]\` lists each feature once with its scopes, Nix keys,
   and Windows resources with dependsOn edges; ignored features are marked.
   \`winix inspect --matrix\` shows features x hosts grouped by profile (role):

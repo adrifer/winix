@@ -778,7 +778,8 @@ side-by-side versions are not guaranteed by installation locking.
 Module keys are case-insensitive and source-qualified (repository name plus a
 digest of a configured feed URI); legacy name-only pins remain readable.
 `winix update --windows [names...]` refreshes all or selected package/module
-entries; `--dry` resolves without writing. Existing pins require no discovery
+entries; `--dry` resolves without writing. On native Windows, a workspace with
+Windows hosts treats plain `winix update` as `--windows` (no Nix CLI there). Existing pins require no discovery
 query during apply, but installation may still need the network. Repository
 changes resolve independent pins; different hosts can use different sources for
 the same module. Conflicting sources within a host fail.

@@ -183,7 +183,9 @@ legacy name-only pins remain readable).
 Old package-only locks remain valid. First apply resolves missing entries;
 subsequent applies reuse pins without querying the repository.
 `winix update --windows` refreshes packages and modules, or pass names to update
-only selected entries; `--dry` resolves without writing. Resolution errors never
+only selected entries; `--dry` resolves without writing. On native Windows, plain
+`winix update` does the same (the Nix flake lock is updated from WSL, Linux or
+macOS). Resolution errors never
 replace existing pins. Network access is still needed for installation.
 
 `windows.powershell.module(name, { repository?, prerelease?, dependsOn? })` defaults to

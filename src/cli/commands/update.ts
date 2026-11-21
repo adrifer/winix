@@ -38,6 +38,8 @@ interface UpdateOptions {
   inputs: string[];
   dry: boolean;
   windows?: boolean;
+  /** The OS to behave as (tests); defaults to process.platform. */
+  platform?: NodeJS.Platform;
   resolveWindowsPackageVersion?: WindowsPackageVersionResolver;
   resolveWindowsModuleVersion?: WindowsModuleVersionResolver;
   resolveWindowsWslImage?: WindowsWslImageResolver;
@@ -50,16 +52,27 @@ export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
     return;
   }
 
+  const { workspace, configDir } = await loadWorkspace(cwd);
+  const evaluated = evaluate(workspace, { configDir });
+  const hasNixHost = evaluated.some((host) => platformForEvaluatedHost(host) !== "windows");
+
+  // Native Windows has no Nix CLI, so the lock it can update is
+  // winix-windows.lock: plain `winix update` updates that, like --windows.
+  if ((opts.platform ?? process.platform) === "win32" && evaluated.some(isWindowsHost)) {
+    await updateWindowsLock(cwd, opts);
+    if (hasNixHost) {
+      console.log("\nflake.lock (NixOS/nix-darwin hosts) is updated with the Nix CLI: run `winix update` from WSL, Linux or macOS.");
+    }
+    return;
+  }
+
   if (!opts.dry) {
-    assertUpdateSupported();
+    assertUpdateSupported(opts.platform);
   }
 
   // `winix update` resolves the Nix flake lock. A Windows-only workspace has
   // no flake.nix, so there is nothing to update; fail clearly instead of
   // letting `nix flake update` error out generically.
-  const { workspace, configDir } = await loadWorkspace(cwd);
-  const evaluated = evaluate(workspace, { configDir });
-  const hasNixHost = evaluated.some((host) => platformForEvaluatedHost(host) !== "windows");
   if (!hasNixHost) {
     throw new Error(
       "`winix update` updates the Nix flake lock, but this workspace has no " +
@@ -291,7 +304,7 @@ export function assertUpdateSupported(
   if (osPlatform !== "win32") return;
 
   throw new Error(
-    "`winix update` is not supported from native Windows yet because it requires " +
-    "the Nix CLI. Run it from WSL, Linux, or macOS."
+    "`winix update` updates this workspace's Nix flake lock, which needs the Nix CLI: " +
+    "run it from WSL, Linux, or macOS."
   );
 }

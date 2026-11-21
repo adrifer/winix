@@ -103,7 +103,7 @@ Options:
   --diff          Show a unified diff against current output (apply)
   --offline       Never resolve winix-windows.lock online; fail on missing pins (apply, switch, plan)
   --locked        Fail if winix-windows.lock would change (apply, switch, plan)
-  --windows       Resolve Windows package/module/WSL image lockfile (update)
+  --windows       Resolve Windows package/module/WSL image lockfile (update; the default on native Windows)
   --strict        Treat conflicts as errors (check)
   --escape-report Show escape hatch usage (check)
   --force         Overwrite files (init, install skill, scaffold)
