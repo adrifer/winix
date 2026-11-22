@@ -1286,6 +1286,35 @@ describe.skipIf(process.platform !== "win32")("winix switch Windows ownership", 
     }
   });
 
+  it("raises the lock for every newer package without asking with --update-versions", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-package-update-versions-"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const confirm = vi.spyOn(packageVersionPolicy, "confirmWindowsPackageLockUpdate");
+    const fake = fakeWindowsRunner();
+    try {
+      await writeConfig(dir, `host("desktop", platforms.windows(), [
+        windows.package("A.App"), windows.package("B.App"),
+      ])`);
+      const pin = { version: "7", source: "winget", resolvedAt: "2026-11-13T00:00:00Z" };
+      await writeFile(join(dir, "winix-windows.lock"), JSON.stringify({
+        version: 1, generatedAt: "2026-11-13T00:00:00Z", packages: { "A.App": pin, "B.App": pin },
+      }));
+      await switchCommand(dir, {
+        dry: false, host: "desktop", updateVersions: true, windowsRunner: fake.runner,
+        windowsState: {
+          path: join(dir, "inventory.json"),
+          adapter: { inspect: async () => ({ version: "8" }), remove: async () => { throw new Error("Must not uninstall"); } },
+        },
+      });
+      expect(confirm).not.toHaveBeenCalled();
+      const versions = Object.fromEntries(Object.entries(readWindowsLock(dir)!.packages).map(([id, entry]) => [id, entry.version]));
+      expect(versions).toEqual({ "A.App": "8", "B.App": "8" });
+    } finally {
+      log.mockRestore(); confirm.mockRestore();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("keeps a package winget cannot upgrade and still applies what depends on it", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-package-unmatched-"));
     const log = vi.spyOn(console, "log").mockImplementation(() => {});

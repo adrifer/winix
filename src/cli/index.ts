@@ -38,6 +38,7 @@ const { positionals, values } = parseArgs({
     diff: { type: "boolean", default: false },
     offline: { type: "boolean", default: false },
     locked: { type: "boolean", default: false },
+    "update-versions": { type: "boolean", default: false },
     windows: { type: "boolean", default: false },
     strict: { type: "boolean", default: false },
     force: { type: "boolean", default: false },
@@ -103,6 +104,7 @@ Options:
   --diff          Show a unified diff against current output (apply)
   --offline       Never resolve winix-windows.lock online; fail on missing pins (apply, switch, plan)
   --locked        Fail if winix-windows.lock would change (apply, switch, plan)
+  --update-versions  Raise winix-windows.lock to installed versions newer than it, without asking (switch)
   --windows       Resolve Windows package/module/WSL image lockfile (update; the default on native Windows)
   --strict        Treat conflicts as errors (check)
   --escape-report Show escape hatch usage (check)
@@ -139,6 +141,14 @@ if (values.matrix && command !== "inspect") {
 }
 if ((values.offline || values.locked) && !["apply", "switch", "plan"].includes(command)) {
   console.error("--offline and --locked are only supported by winix apply, switch and plan.");
+  process.exit(2);
+}
+if (values["update-versions"] && (command !== "switch" || values.dry)) {
+  console.error("--update-versions is only supported by winix switch (not --dry, which never writes the lock).");
+  process.exit(2);
+}
+if (values["update-versions"] && values.locked) {
+  console.error("--update-versions changes winix-windows.lock, so it cannot be combined with --locked.");
   process.exit(2);
 }
 if (values.yes && command !== "switch" && command !== "bootstrap" &&
@@ -271,6 +281,7 @@ switch (command) {
         yes: values.yes as boolean,
         offline: values.offline,
         locked: values.locked,
+        updateVersions: values["update-versions"],
       });
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);

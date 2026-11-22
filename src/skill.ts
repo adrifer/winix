@@ -516,7 +516,8 @@ Unequal non-dotted-numeric versions cannot be ordered and require explicit
 resolution. Interactive successful switches offer a separate [y/N] lock update
 for newer floating packages ([y/N/a] when several are newer; a = this and all
 remaining). Declining continues; dry/noninteractive runs do not
-update observed-version pins, and --yes does not accept lock-update prompts.
+update observed-version pins, and --yes does not accept lock-update prompts;
+switch --update-versions accepts them all without asking (not with --locked).
 Plain apply/direct DSC scripts keep lock-based generation.
 External shortcut edits, package downgrades and exact-pin drift still block
 reconciliation; externally modified removals remain protected.

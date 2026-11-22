@@ -17,6 +17,8 @@ Notable changes per release. Every release, with its downloadable assets, is on
   reported (for example winget's "install technology is different" error, which
   needs an uninstall and a fresh install). A failed install still skips its
   dependents.
+- `winix switch --update-versions` raises `winix-windows.lock` to every
+  installed version newer than it, without the per-package prompt.
 - `winix update` on native Windows updates `winix-windows.lock`, like
   `winix update --windows`, instead of failing because there is no Nix CLI. The
   Nix flake lock is still updated from WSL, Linux or macOS.

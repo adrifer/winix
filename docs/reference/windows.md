@@ -144,7 +144,7 @@ windows.package("Valve.Steam", { version: "any" });     // any version
 | `winix-windows.lock` | Records the inline pin | First apply pins the latest winget version; `winix update --windows` refreshes it | No entry |
 | Not installed | Installs that version | Installs the locked version | Installs whatever winget currently offers |
 | Installed version is older | Switch fails ("Exact version mismatch") | Upgraded to the locked version | Left alone |
-| Installed version is newer | Switch fails; never downgraded | Kept ("Keeping X (locked Y)"); switch offers to update the lock | Left alone; no prompt |
+| Installed version is newer | Switch fails; never downgraded | Kept ("Keeping X (locked Y)"); switch offers to update the lock (`switch --update-versions` updates it without asking) | Left alone; no prompt |
 | winget reports `Unknown` | Switch fails | Kept (warning each switch); never reinstalled | Left alone; no warning |
 | Older, installed by another installer winget can't upgrade | Switch fails ("Exact version mismatch") | Kept; the plan says how to hand it to winget | Left alone |
 | Changed outside Winix (Winix-installed) | Switch fails | Newer accepted; older fails | Any change accepted |
@@ -530,6 +530,9 @@ Related commands:
   fails, naming what is missing, when a pin is absent. `--locked` also fails when
   the lock would change at all, including inline versions it does not record yet.
   Use it in CI or on a machine that should only apply what is committed.
+- `--update-versions` (switch) raises the lock to every installed version newer
+  than it without the `[y/N/a]` prompt, also when nothing can answer one (a
+  setup script). It can't be combined with `--locked` or `--dry`.
 - `winix-windows.lock` no longer has a top-level `generatedAt` timestamp, so
   machines sharing one lock stop conflicting on it. Older lock files that still
   contain it remain valid; it disappears on the next change.

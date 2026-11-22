@@ -46,6 +46,8 @@ interface SwitchOptions {
   yes?: boolean;
   offline?: boolean;
   locked?: boolean;
+  /** Raise the lock to every installed version newer than it, without asking. */
+  updateVersions?: boolean;
   windowsState?: { path: string; adapter: WindowsStateAdapter };
   /** Live checks for the plan; defaults to native checks unless the state adapter is replaced. */
   planChecker?: WindowsPlanChecker;
@@ -258,7 +260,7 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
           console.log(`Not updating lock for ${candidate.id}: installed version changed during activation.`);
           return false;
         });
-        let acceptAll = false;
+        let acceptAll = opts.updateVersions === true;
         for (const [index, candidate] of candidates.entries()) {
           if (!acceptAll) {
             const answer = await confirmWindowsPackageLockUpdate(
