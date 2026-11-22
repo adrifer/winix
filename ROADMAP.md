@@ -39,6 +39,11 @@ What's next and what we're considering. Shipped work is in
 - **Packages installed outside WinGet.** Store (MSIX) installs are invisible to
   `winget export`, so a declared package can be installed a second time. Detect
   and report them in `winix plan`.
+- **Two installed copies of one package.** winget can list the same id twice,
+  for example a classic PowerShell 7 (`.exe`/`.msi`) next to winget's MSIX.
+  Winix compares only one entry and reports the package as current, while the
+  older copy comes first on PATH and is what actually runs. `winix plan` should
+  warn and say which copy runs.
 - **Faster `plan`/`switch`.** The package inventory check (~10 s) and config
   evaluation (~2 s) dominate a no-change switch.
 
