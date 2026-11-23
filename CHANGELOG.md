@@ -6,8 +6,8 @@ Notable changes per release. Every release, with its downloadable assets, is on
 ## Unreleased
 
 - `winix switch` (standalone Windows executable): applied and failed steps show
-  a check mark and a cross again, instead of the literal text `✓` and
-  `✗`.
+  a check mark and a cross again, instead of the escape codes for them (backslash-u2713 and
+  backslash-u2717).
 - `windows.wsl()` installs Microsoft.WSL in switch's elevated step. winget
   could pick its MSIX installer for a non-elevated install, which then failed
   with "administrator privileges are required" (0x80073D28) and skipped the
