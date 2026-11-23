@@ -660,7 +660,7 @@ describe("lock pin gaps", () => {
       "Warning: winix-windows.lock is missing 2 pin(s): package Git.Git, PowerShell module Microsoft.Windows.Settings (implicit, used by windows.setting).",
       "  Until the lock contains them, every apply and switch resolves them online (\"Would pin…\" in dry runs), and --offline/--locked fail.",
       "  Pin them now with winix update --windows Git.Git Microsoft.Windows.Settings, then commit winix-windows.lock.",
-      "  A mistyped package id fails at that point; find ids with winix package search <query>.",
+      "  A mistyped package id fails at that point; find ids with winix windows search <query>.",
     ]);
     expect(lockGapWarnings([])).toEqual([]);
   });
@@ -753,5 +753,16 @@ describe("embedded scripts", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("help", () => {
+  it("has help for every command the main help lists, and none for unknown ones", async () => {
+    const { commandHelp, mainHelp } = await import("../src/cli/help.ts");
+    const listed = [...mainHelp().matchAll(/^ {2}([a-z]+)(?: |$)/gm)].map((match) => match[1]);
+    expect(listed).toEqual(expect.arrayContaining(["plan", "switch", "update", "state", "bootstrap"]));
+    for (const command of listed) expect(commandHelp(command), command).toMatch(/^Usage: winix /);
+    expect(commandHelp("bogus")).toBeUndefined();
+    expect(commandHelp("toString")).toBeUndefined();
   });
 });

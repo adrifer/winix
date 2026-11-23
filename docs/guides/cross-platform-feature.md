@@ -73,7 +73,7 @@ host("DESKTOP", platforms.windows(), [everywhere(), powershellTerminal()]);
 
 - **Package names differ.** `home.packages` takes nixpkgs attributes
   ([search.nixos.org](https://search.nixos.org/packages)); `windows.package`
-  takes winget ids. Find those with `winix package search lazygit`.
+  takes winget ids. Find those with `winix windows search lazygit`.
 - **Prefer `home.program` when Home Manager has a module** for the tool
   (`home.program("git", { settings })`); it installs the package and writes the
   config. Windows has no equivalent yet, so the Windows half installs the

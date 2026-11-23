@@ -116,7 +116,7 @@ export default workspace({ hosts: [
 - In `windows.startup.app`/`shortcut`, a `windows.file.*` handle can stand in for the
   executable, an argument, or the working directory. Winix uses its target and
   adds the dependency.
-- `winix package search <query>` finds winget ids. `winix windows import
+- `winix windows search <query>` finds winget ids. `winix windows import
   [--host <name>]` compares `winget export` with the host's declarations and
   prints paste-ready `windows.package(...)` lines for installed, undeclared apps.
   Shared runtimes such as VC++ redistributables are listed on one line, and
@@ -393,7 +393,7 @@ downloads in Local AppData. Nerd Fonts IDs come from official release ZIP
 assets, not a handwritten registry:
 
 ```sh
-winix fonts search JetBrains --provider nerd-fonts
+winix windows fonts JetBrains
 winix update --windows fonts --dry
 ```
 

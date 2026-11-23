@@ -836,7 +836,7 @@ selects PowerShell's normal installed version, not necessarily the locked one.
   `SystemUsesLightTheme`.
 - `WorkspaceDef.inputs` is optional. Nix hosts without a `nixpkgs` input get
   a generation warning.
-- CLI: `winix package search <query>` (winget search) and `winix windows import
+- CLI: `winix windows search <query>` (winget search) and `winix windows import
   [--host]` (`winget export` diff). Both are read-only and Windows-only.
 
 ### Hybrid Windows ↔ WSL
@@ -1090,7 +1090,7 @@ resolve from the config directory. Remote font identity, URL, release and SHA-25
 are locked separately in `winix-windows.lock.fonts`; a supplied digest is trusted
 explicitly, otherwise initial resolution trusts upstream metadata/downloads.
 Missing pins resolve on apply; `update --windows fonts` refreshes fonts only.
-`fonts search [query] --provider nerd-fonts` lists official release ZIP IDs.
+`winix windows fonts [query]` lists official release ZIP IDs.
 Unsafe archives, checksum mismatches, missing fonts, and conflicting installed
 files/registry entries fail. No silent replacement or removal ownership is
 claimed. Family names are read from font metadata; app font selection is separate.

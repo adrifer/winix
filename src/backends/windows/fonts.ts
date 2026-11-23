@@ -126,7 +126,7 @@ export const resolveFontSource: WindowsFontResolver = async (source) => {
   if ("provider" in source) {
     const catalog = await nerdFontsCatalog(source.version);
     const font = catalog.fonts.find((entry) => entry.family === source.family);
-    if (!font) throw new Error(`Nerd Fonts ID "${source.family}" does not exist in ${catalog.version}. Run winix fonts search --provider nerd-fonts.`);
+    if (!font) throw new Error(`Nerd Fonts ID "${source.family}" does not exist in ${catalog.version}. Run winix windows fonts.`);
     ({ url, sha256 } = font);
     version = catalog.version;
     format = "zip";

@@ -320,7 +320,7 @@ through \`dependsOn\`.
   TTF/OTF fonts. URL sources require HTTPS without credentials, optionally sha256;
   files selects exact ZIP members or **/*.ttf / **/*.otf. Nerd Fonts is the only
   provider, with optional exact version vX.Y.Z. Discover IDs with
-  \`winix fonts search [query] --provider nerd-fonts\`; IDs are not installed family
+  \`winix windows fonts [query]\`; IDs are not installed family
   names. Remote sources lock URL/version/checksum; first resolution trusts upstream
   unless an independent sha256 is supplied. \`winix update --windows fonts\`
   refreshes only font pins. Apply reuses pins; dry runs don't write/install.
@@ -340,7 +340,7 @@ through \`dependsOn\`.
   a downgrade. "latest" and "*" are rejected. Removal uninstalls only
   Winix-installed packages, after confirmation; pre-existing ones are never
   uninstalled. Find ids with
-  \`winix package search <query>\`; \`winix windows import [--host]\` prints
+  \`winix windows search <query>\`; \`winix windows import [--host]\` prints
   declarations for installed, undeclared packages. check warns about floating
   packages missing from winix-windows.lock (apply would resolve them online).
 - \`windows.setting()\` manages supported Windows settings. Symlinks automatically
@@ -665,7 +665,7 @@ tool's setup differs so much per platform that one feature would mostly be
 \`\`\`ts
 export const lazygit = feature("lazygit", ({ home, windows }) => {
   home.packages("lazygit");                  // nixpkgs attribute
-  windows.package("JesseDuffield.lazygit");  // winget id (winix package search)
+  windows.package("JesseDuffield.lazygit");  // winget id (winix windows search)
   home.configFiles({ "lazygit/config.yml": home.symlink("./dotfiles/lazygit/config.yml") });
   windows.file.symlink(windows.knownFolder.localAppData("lazygit\\\\config.yml"), "./dotfiles/lazygit/config.yml");
 });

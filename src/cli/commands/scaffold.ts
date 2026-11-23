@@ -49,7 +49,7 @@ export function featureTemplate(name: string, exportName: string): string {
  *
  * To fill in (agents too):
  * - Package names differ per platform: a nixpkgs attribute for home.packages,
- *   a winget id for windows.package (find it with \`winix package search ${name}\`).
+ *   a winget id for windows.package (find it with \`winix windows search ${name}\`).
  * - Paths starting with ./ or ../ are relative to winix.config.ts, on both sides.
  * - Order Windows resources by passing the handles helpers return to dependsOn.
  * - Delete the TODO lines you don't need; uncomment the ones you do.
@@ -62,7 +62,7 @@ export const ${exportName} = feature(${JSON.stringify(name)}, ({ home, windows, 
   // home.configFiles({ ${JSON.stringify(`${name}/config`)}: home.symlink(${JSON.stringify(`./dotfiles/${name}/config`)}) });
 
   // --- Windows ---
-  // TODO: the winget id (winix package search ${name}).
+  // TODO: the winget id (winix windows search ${name}).
   // windows.package("Publisher.Package");
   // TODO: link the same file into the Windows location the tool reads.
   // windows.file.symlink(windows.knownFolder.appData(${JSON.stringify(`${name}\\config`)}), ${JSON.stringify(`./dotfiles/${name}/config`)});

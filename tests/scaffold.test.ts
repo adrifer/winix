@@ -42,7 +42,7 @@ describe("winix scaffold feature", () => {
       expect(result).toEqual({ path: join(dir, "features", "dev-tools.ts"), exportName: "devTools" });
       const text = await useSourceSdk(result.path);
       expect(text).toContain('export const devTools = feature("dev-tools", ({ home, windows, platforms }) => {');
-      expect(text).toContain("winix package search dev-tools");
+      expect(text).toContain("winix windows search dev-tools");
       const { workspace, configDir } = await loadWorkspace(dir);
       const hosts = evaluate(workspace, { configDir });
       const ignored = collectIgnoredFragments(analyzeWorkspace(workspace, { configDir }), hosts);

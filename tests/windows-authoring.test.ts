@@ -274,6 +274,6 @@ export default workspace({ hosts: [host("desktop", platforms.windows(), ({ windo
       (line) => lines.push(line));
     expect(lines[0]).toBe("results");
     expect(lines[1]).toContain('windows.package("<Id>")');
-    expect(() => packageSearch(" ")).toThrow("Usage: winix package search <query>");
+    expect(() => packageSearch(" ")).toThrow("Usage: winix windows search <query>");
   });
 });

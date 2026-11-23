@@ -5,6 +5,14 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
+- `winix --help` is shorter and grouped (day to day, writing configuration,
+  setup), with aligned columns and current descriptions. `winix <command> --help`
+  shows that command's options. Plumbing is no longer listed but still works:
+  `winix run`, `switch --dry` (use `winix plan`) and `bootstrap --command-only`.
+- The Windows authoring helpers are `winix windows search <query>`,
+  `winix windows import` and `winix windows fonts [query]`. The older names
+  `winix package search` and `winix fonts search` still work, and
+  `--provider nerd-fonts` is no longer required.
 - `winix switch` (standalone Windows executable): applied and failed steps show
   a check mark and a cross again, instead of the escape codes for them (backslash-u2713 and
   backslash-u2717).

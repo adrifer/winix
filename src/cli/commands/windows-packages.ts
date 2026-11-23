@@ -1,4 +1,4 @@
-// winix package search / winix windows import — read-only winget helpers for
+// winix windows search / winix windows import — read-only winget helpers for
 // authoring Windows hosts. Neither command installs, removes or writes config.
 
 import { execFileSync } from "node:child_process";
@@ -22,10 +22,10 @@ function assertWindows(command: string): void {
   }
 }
 
-/** `winix package search <query>`: winget search, plus how to declare a result. */
+/** `winix windows search <query>`: winget search, plus how to declare a result. */
 export function packageSearch(query: string, run: WingetRunner = runWinget, print = console.log): void {
-  if (!query || !query.trim()) throw new Error("Usage: winix package search <query>");
-  if (run === runWinget) assertWindows("package search");
+  if (!query || !query.trim()) throw new Error("Usage: winix windows search <query>");
+  if (run === runWinget) assertWindows("windows search");
   const output = run(["search", "--query", query, "--source", "winget", "--accept-source-agreements", "--disable-interactivity"]);
   print(output.trimEnd());
   print('\nDeclare a result with windows.package("<Id>"); add { version: "any" } for apps that update themselves.');

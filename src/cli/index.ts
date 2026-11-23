@@ -21,6 +21,7 @@ import { nerdFontsCatalog } from "../backends/windows/fonts.ts";
 import { packageSearch, windowsImport } from "./commands/windows-packages.ts";
 import { scaffoldFeature, scaffoldNextSteps } from "./commands/scaffold.ts";
 import { refreshEditorTypes, typesCommand } from "./editor-types.ts";
+import { commandHelp, mainHelp } from "./help.ts";
 
 if (process.argv[2] === "run") {
   try { await runCheckout(process.cwd(), process.argv.slice(3)); }
@@ -71,62 +72,12 @@ if (values.skill) {
 }
 
 if (values.help || !command) {
-  console.log(`
-winix - TypeScript-first system configuration
-
-Commands:
-  bootstrap    Validate/preview a trusted checkout, then confirm activation
-  run <args>   Run the checkout's pinned Winix (downloaded when needed; WINIX_SDK=<dir> runs another)
-  init         Scaffold a Winix project
-  install skill Install the agent skill wrapper
-  scaffold feature <name>  Create features/<name>.ts with home.* and windows.* side by side
-  apply        Generate backend output in .winix/out/
-  check        Validate configuration
-  types        Write editor types to .winix/types (also done by every config command) and check tsconfig.json
-  plan         Show what switch would change on this machine (same as switch --dry)
-  switch       Generate output and run the host activation command
-  update       Update generated flake.lock and copy it to project root
-  inspect      Print each host's features and what they declare (--host to pick one;
-               --matrix: a features x hosts table, grouped by role)
-  fonts search [query] --provider nerd-fonts  Search official font release IDs
-  package search <query>  Search winget and show how to declare a package
-  windows import [--host <name>]  Print declarations for installed, undeclared packages
-  state forget Release Windows removal ownership without deleting a resource
-  state owners List Windows applied-state owners and their migration IDs
-  state migrate-owner <id> Transfer an old owner's requirements to this checkout/--host
-
-Options:
-  --host <name>   Target a specific host
-  --prepare-only Stop bootstrap after validation/preview; no activation
-  --command-only  Bootstrap: only install the winix command (and remember --host); no evaluation
-  --dry           Preview generation, activation/cleanup, or owner migration
-  -y, --yes       Confirm bootstrap, managed removals, or explicit owner migration
-  --diff          Show a unified diff against current output (apply)
-  --offline       Never resolve winix-windows.lock online; fail on missing pins (apply, switch, plan)
-  --locked        Fail if winix-windows.lock would change (apply, switch, plan)
-  --update-versions  Raise winix-windows.lock to installed versions newer than it, without asking (switch)
-  --windows       Resolve Windows package/module/WSL image lockfile (update; the default on native Windows)
-  --strict        Treat conflicts as errors (check)
-  --escape-report Show escape hatch usage (check)
-  --force         Overwrite files (init, install skill, scaffold)
-  --skill         Print version-matched agent instructions
-  -h, --help      Show this help
-  -v, --version   Show this binary/package version
-
-Examples:
-  winix init
-  winix scaffold feature lazygit
-  winix install skill
-  winix --skill
-  winix apply
-  winix apply --dry
-  winix apply --host wsl-work
-  winix check --strict
-  winix check --escape-report
-  winix plan --host desktop
-  winix switch --host wsl-work
-  winix update
-`);
+  const help = command ? commandHelp(command) : mainHelp();
+  if (help === undefined) {
+    console.error(`Unknown command: ${command}`);
+    process.exit(2);
+  }
+  console.log(help);
   process.exit(0);
 }
 
@@ -174,33 +125,28 @@ switch (command) {
       process.exit(1);
     }
     break;
-  case "fonts":
-    try {
-      if (positionals[1] !== "search" || positionals.length > 3 || values.provider !== "nerd-fonts") {
-        throw new Error("Usage: winix fonts search [query] --provider nerd-fonts");
-      }
-      const catalog = await nerdFontsCatalog();
-      const query = positionals[2]?.toLowerCase() ?? "";
-      const fonts = catalog.fonts.filter((font) => font.family.toLowerCase().includes(query));
-      if (!fonts.length) throw new Error(`No Nerd Fonts IDs match "${query}"`);
-      console.log(`Nerd Fonts ${catalog.version} (download IDs, not installed family names):`);
-      for (const font of fonts) console.log(`  ${font.family}`);
-    } catch (error) { console.error(`Error: ${(error as Error).message}`); process.exit(1); }
-    break;
+  // `package search` and `fonts search` are the older names of `windows search` and `windows fonts`.
   case "package":
-    try {
-      if (positionals[1] !== "search" || positionals.length < 3) throw new Error("Usage: winix package search <query>");
-      packageSearch(positionals.slice(2).join(" "));
-    } catch (err) {
-      console.error(`\u2717 Error: ${(err as Error).message}`);
-      process.exit(1);
-    }
-    break;
-
+  case "fonts":
   case "windows":
     try {
-      if (positionals[1] !== "import" || positionals.length !== 2) throw new Error("Usage: winix windows import [--host <name>]");
-      await windowsImport(cwd, { host: values.host });
+      const subcommand = command === "windows" ? positionals[1]
+        : positionals[1] === "search" ? (command === "package" ? "search" : "fonts") : undefined;
+      const rest = positionals.slice(2);
+      if (subcommand === "search" && rest.length > 0) {
+        packageSearch(rest.join(" "));
+      } else if (subcommand === "import" && rest.length === 0) {
+        await windowsImport(cwd, { host: values.host });
+      } else if (subcommand === "fonts" && rest.length <= 1 && (values.provider ?? "nerd-fonts") === "nerd-fonts") {
+        const catalog = await nerdFontsCatalog();
+        const query = rest[0]?.toLowerCase() ?? "";
+        const fonts = catalog.fonts.filter((font) => font.family.toLowerCase().includes(query));
+        if (!fonts.length) throw new Error(`No Nerd Fonts IDs match "${query}"`);
+        console.log(`Nerd Fonts ${catalog.version} (download IDs, not installed family names):`);
+        for (const font of fonts) console.log(`  ${font.family}`);
+      } else {
+        throw new Error("Usage: winix windows search <query> | windows import [--host <name>] | windows fonts [query]");
+      }
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
       process.exit(1);

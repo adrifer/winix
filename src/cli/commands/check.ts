@@ -116,7 +116,7 @@ export function lockGapWarnings(gaps: WindowsLockGap[]): string[] {
     `  Pin them now with winix update --windows ${selectors.join(" ")}, then commit winix-windows.lock.`,
   ];
   if (gaps.some((gap) => gap.kind === "package")) {
-    lines.push("  A mistyped package id fails at that point; find ids with winix package search <query>.");
+    lines.push("  A mistyped package id fails at that point; find ids with winix windows search <query>.");
   }
   return lines;
 }
