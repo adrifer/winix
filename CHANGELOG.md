@@ -5,6 +5,11 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
+## 0.3.1
+
+Fixes from setting up a fresh Dev Box end to end, `winix update` and
+`--update-versions` on Windows, and a clearer `winix --help`.
+
 - `winix --help` is shorter and grouped (day to day, writing configuration,
   setup), with aligned columns and current descriptions. `winix <command> --help`
   shows that command's options. Plumbing is no longer listed but still works:
