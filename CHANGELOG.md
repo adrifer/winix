@@ -5,6 +5,13 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
+- `windows.wsl()` installs Microsoft.WSL in switch's elevated step. winget
+  could pick its MSIX installer for a non-elevated install, which then failed
+  with "administrator privileges are required" (0x80073D28) and skipped the
+  distro.
+- Windows bootstrap: when `winget` is missing, it first registers App Installer
+  for this user (a fresh account often has it installed but not registered yet)
+  before opening the Microsoft Store.
 - `winix switch`: when several installed packages are newer than the lock, the
   lock-update prompt accepts `a` to update this one and all the remaining ones
   without asking again.

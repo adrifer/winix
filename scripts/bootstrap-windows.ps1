@@ -233,6 +233,13 @@ Then rerun this bootstrap. No prerequisites have been installed.
 function Initialize-WinixBootstrapWinGet {
     param([switch]$Yes)
     if (Get-WinixBootstrapApplication 'winget.exe') { return }
+    # A new account often has App Installer (winget) installed but not yet
+    # registered for it; registering takes seconds and needs no Store.
+    try {
+        Add-AppxPackage -RegisterByFamilyName -MainPackage 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe' -ErrorAction Stop
+        Update-WinixBootstrapPath
+        if (Get-WinixBootstrapApplication 'winget.exe') { return }
+    } catch { }
     if ($Yes -or [Console]::IsInputRedirected) {
         throw 'WinGet is unavailable. Install or update App Installer (Microsoft Store, 9NBLGGH4NNS1), open a new terminal, and rerun.'
     }
