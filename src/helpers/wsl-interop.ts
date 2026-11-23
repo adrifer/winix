@@ -35,8 +35,10 @@ export function windowsBin(name: string, targets: string | readonly string[]): N
     '  case "$win" in',
     "    *%*)",
     '      [ -n "$cmd" ] && [ -x "$cmd" ] || return 1',
-    // cmd.exe cannot run from a WSL (UNC) working directory.
-    '      win=$(cd "${cmd%/*}" && "$cmd" /d /c "echo $win" 2>/dev/null) || return 1',
+    // cmd.exe cannot run from a WSL (UNC) working directory. </dev/null: WSL
+    // interop forwards stdin to Windows processes, so cmd.exe would swallow the
+    // input meant for the target (git's protocol=/host= for a credential helper).
+    '      win=$(cd "${cmd%/*}" && "$cmd" /d /c "echo $win" </dev/null 2>/dev/null) || return 1',
     "      win=${win%$'\\r'}",
     "      case \"$win\" in *%*) return 1 ;; esac",
     "      ;;",

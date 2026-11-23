@@ -5,6 +5,13 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
+## 0.3.2
+
+- WSL: `home.wsl.gitCredentialManager()` works again. Its shim (any
+  `nix.wsl.windowsBin` path that starts with `%VARIABLE%`) expanded the path
+  through `cmd.exe`, which swallowed stdin, so Git Credential Manager never got
+  Git's request ("fatal: Missing 'protocol' input argument").
+
 ## 0.3.1
 
 Fixes from setting up a fresh Dev Box end to end, `winix update` and

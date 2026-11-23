@@ -116,7 +116,7 @@ resolve() {
   case "$win" in
     *%*)
       [ -n "$cmd" ] && [ -x "$cmd" ] || return 1
-      win=$(cd "''\${cmd%/*}" && "$cmd" /d /c "echo $win" 2>/dev/null) || return 1
+      win=$(cd "''\${cmd%/*}" && "$cmd" /d /c "echo $win" </dev/null 2>/dev/null) || return 1
       win=''\${win%$'\\r'}
       case "$win" in *%*) return 1 ;; esac
       ;;
@@ -152,7 +152,7 @@ resolve() {
   case "$win" in
     *%*)
       [ -n "$cmd" ] && [ -x "$cmd" ] || return 1
-      win=$(cd "''\${cmd%/*}" && "$cmd" /d /c "echo $win" 2>/dev/null) || return 1
+      win=$(cd "''\${cmd%/*}" && "$cmd" /d /c "echo $win" </dev/null 2>/dev/null) || return 1
       win=''\${win%$'\\r'}
       case "$win" in *%*) return 1 ;; esac
       ;;

@@ -270,7 +270,7 @@ describe("nix.wsl.windowsBin", () => {
     expect(shim.expr).not.toMatch(/[^']\$\{/);
     const script = shimScript(shim.expr);
     expect(script).toContain("for candidate in '%LOCALAPPDATA%\\Programs\\Microsoft VS Code Insiders\\bin\\code-insiders'; do");
-    expect(script).toContain('win=$(cd "${cmd%/*}" && "$cmd" /d /c "echo $win" 2>/dev/null) || return 1');
+    expect(script).toContain('win=$(cd "${cmd%/*}" && "$cmd" /d /c "echo $win" </dev/null 2>/dev/null) || return 1');
     const generated = generateNix(workspace({ inputs: {}, hosts: [host("wsl", platforms.wsl(), [home.packages(shim)])] }),
       evaluate(workspace({ inputs: {}, hosts: [host("wsl", platforms.wsl(), [home.packages(shim)])] })));
     expect(generated.hosts["wsl.nix"]).toContain('home.packages = with pkgs; [ (pkgs.writeShellScriptBin "code-insiders" \'\'');
@@ -296,23 +296,26 @@ describe("nix.wsl.windowsBin", () => {
       }
       // Fake interop: wslpath maps C:\ to $root/c; cmd.exe expands %LOCALAPPDATA%.
       await writeFile(join(bin, "wslpath"), `#!/bin/sh\n[ "$1" = -u ] || exit 2\nprintf '%s\\n' "$2" | sed -e 's|^C:|${drive}|' -e 's|\\\\|/|g'\n`);
-      await writeFile(join(drive, "Windows", "System32", "cmd.exe"), `#!/bin/sh\nprintf '%s\\r\\n' "$(printf '%s' "$3" | sed -e 's|^echo ||' -e 's|%LOCALAPPDATA%|C:\\\\Users\\\\alice\\\\AppData\\\\Local|')"\n`);
-      await writeFile(join(drive, "Users", "alice", "AppData", "Local", "Tool", "tool.exe"), `#!/bin/sh\necho "tool:$*"\n`);
+      // Like WSL interop, the fake cmd.exe drains stdin.
+      await writeFile(join(drive, "Windows", "System32", "cmd.exe"), `#!/bin/sh\ncat >/dev/null\nprintf '%s\\r\\n' "$(printf '%s' "$3" | sed -e 's|^echo ||' -e 's|%LOCALAPPDATA%|C:\\\\Users\\\\alice\\\\AppData\\\\Local|')"\n`);
+      await writeFile(join(drive, "Users", "alice", "AppData", "Local", "Tool", "tool.exe"), `#!/bin/sh\necho "tool:$*"\ncat\n`);
       for (const file of [join(bin, "wslpath"), join(drive, "Windows", "System32", "cmd.exe"), join(drive, "Users", "alice", "AppData", "Local", "Tool", "tool.exe")]) {
         await chmod(file, 0o755);
       }
       const script = shimScript(nix.wsl.windowsBin("tool", ["C:\\Missing\\tool.exe", "%LOCALAPPDATA%\\Tool\\tool.exe"]).expr);
       const env = { ...process.env, PATH: `${bin}:${process.env.PATH}` };
-      const run = (body: string, args: string[]) => {
+      const run = (body: string, args: string[], input = "") => {
         try {
-          return { status: 0, stdout: execFileSync("bash", ["-c", body, "tool", ...args], { env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }) };
+          return { status: 0, stdout: execFileSync("bash", ["-c", body, "tool", ...args], { env, encoding: "utf8", input, stdio: ["pipe", "pipe", "pipe"] }) };
         } catch (error) {
           const failure = error as { status: number; stderr: string };
           return { status: failure.status, stdout: failure.stderr };
         }
       };
       if (execFileSync("sh", ["-c", "[ -x /bin/wslpath ] && echo yes || echo no"], { encoding: "utf8" }).trim() === "yes") return;
-      expect(run(script, ["a b", "c"])).toEqual({ status: 0, stdout: "tool:a b c\n" });
+      // The target still gets stdin (git sends a credential helper protocol=/host=).
+      expect(run(script, ["a b", "c"], "protocol=https\nhost=example.com\n"))
+        .toEqual({ status: 0, stdout: "tool:a b c\nprotocol=https\nhost=example.com\n" });
       const missing = shimScript(nix.wsl.windowsBin("tool", ["%NOPE%\\tool.exe"]).expr);
       expect(run(missing, [])).toEqual({ status: 127, stdout: "tool: Windows executable not found at: %NOPE%\\tool.exe\n" });
     } finally {
