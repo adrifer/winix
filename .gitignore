@@ -12,6 +12,10 @@ node_modules/
 # Generated example output
 examples/**/out/
 
+# Docs site: Astro's generated types and the copy of docs/ (site/docs-source.mjs)
+site/.astro/
+site/src/content/docs/
+
 # Editor / OS noise
 .vscode/
 .idea/

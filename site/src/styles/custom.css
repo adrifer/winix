@@ -1,0 +1,53 @@
+/* The `winix plan` terminal in the home page hero (site/home.mdx). */
+.winix-terminal {
+  --winix-term-bg: #0f1419;
+  --winix-term-fg: #e6e8eb;
+  --winix-term-dim: #7d8590;
+  --winix-term-add: #3fb950;
+  --winix-term-change: #d29922;
+  width: 100%;
+  max-width: 34rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: var(--winix-term-bg);
+  color: var(--winix-term-fg);
+  border: 1px solid #2a3038;
+  box-shadow: 0 1.5rem 3rem -1rem rgb(0 0 0 / 0.45);
+  text-align: start;
+}
+
+.winix-terminal__bar {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.7rem 0.9rem;
+  background: #1a2028;
+  border-bottom: 1px solid #2a3038;
+}
+
+.winix-terminal__bar span {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: #3a424d;
+}
+
+.winix-terminal pre {
+  margin: 0;
+  padding: 1rem 1.2rem 1.2rem;
+  font-family: var(--sl-font-mono);
+  font-size: clamp(0.62rem, 1.6vw, 0.82rem);
+  line-height: 1.65;
+  overflow-x: auto;
+  background: transparent;
+  border: 0;
+}
+
+.winix-terminal .dim { color: var(--winix-term-dim); }
+.winix-terminal .add { color: var(--winix-term-add); }
+.winix-terminal .change { color: var(--winix-term-change); }
+.winix-terminal b { font-weight: 600; }
+
+/* Let the hero's image column take the terminal's width. */
+.hero .hero-html {
+  justify-content: center;
+}

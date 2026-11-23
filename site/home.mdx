@@ -1,0 +1,135 @@
+---
+title: Winix
+description: TypeScript-first configuration for Windows, NixOS, WSL and macOS machines.
+template: splash
+pagefind: false
+hero:
+  tagline: Describe every machine you use in typed, composable TypeScript. Nix applies it on NixOS, WSL and macOS; on Windows, Winix shows you a plan and applies it with WinGet.
+  image:
+    html: |
+      <div class="winix-terminal" aria-label="Example output of winix plan">
+        <div class="winix-terminal__bar"><span></span><span></span><span></span></div>
+        <pre><span class="dim">PS&gt;</span> winix plan
+      <b>Plan for DESKTOP</b>: 3 changes, 9 unchanged
+        <span class="add">+ install</span>  JesseDuffield.lazygit  <span class="dim">0.56.0</span>
+        <span class="change">~ upgrade</span>  Git.Git                <span class="dim">2.51.0 → 2.52.0</span>
+        <span class="change">~ apply  </span>  link lazygit config.yml
+        <span class="dim">= 9 unchanged (6 packages, 2 files, 1 font)</span>
+
+      <span class="dim">PS&gt;</span> winix switch</pre>
+      </div>
+  actions:
+    - text: Get started
+      link: /winix/start/introduction/
+      icon: right-arrow
+    - text: Write a cross-platform feature
+      link: /winix/guides/cross-platform-feature/
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/adrifer/winix
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard, TabItem, Tabs } from "@astrojs/starlight/components";
+
+## One tool, every platform
+
+A **feature** declares a tool once, for every operating system it runs on. Each
+namespace applies only where it makes sense: `home.*` through Home Manager on
+NixOS, WSL and macOS, `windows.*` on Windows. A **host** is a machine and the
+features it gets.
+
+<Tabs>
+  <TabItem label="features/lazygit.ts" icon="seti:typescript">
+    ```ts
+    import { feature } from "@adrifer/winix";
+
+    export const lazygit = feature("lazygit", ({ home, windows }) => {
+      home.packages("lazygit");                  // Linux, WSL, macOS (Home Manager)
+      windows.package("JesseDuffield.lazygit");  // Windows (WinGet, version locked)
+
+      // The same config file from your repository, linked on both sides.
+      home.configFiles({ "lazygit/config.yml": home.symlink("./dotfiles/lazygit/config.yml") });
+      windows.file.symlink(windows.knownFolder.localAppData("lazygit\\config.yml"), "./dotfiles/lazygit/config.yml");
+    });
+    ```
+  </TabItem>
+  <TabItem label="winix.config.ts" icon="seti:typescript">
+    ```ts
+    import { defineInputs, host, input, platforms, workspace } from "@adrifer/winix";
+    import { alice } from "./features/alice.ts"; // the user account on Nix hosts
+    import { lazygit } from "./features/lazygit.ts";
+
+    const inputs = defineInputs({
+      nixpkgs: "nixos-unstable",
+      homeManager: input("github:nix-community/home-manager", { follows: { nixpkgs: "nixpkgs" } }),
+      nixDarwin: input("github:nix-darwin/nix-darwin", { nixName: "nix-darwin", follows: { nixpkgs: "nixpkgs" } }),
+      nixosWsl: input("github:nix-community/NixOS-WSL", { follows: { nixpkgs: "nixpkgs" } }),
+    });
+
+    export default workspace({
+      inputs,
+      hosts: [
+        host("DESKTOP", platforms.windows(), [lazygit()]),
+        host("wsl", platforms.wsl({ stateVersion: "25.05" }), [alice(), lazygit()]),
+        host("macbook", platforms.darwin({ stateVersion: 6 }), [alice(), lazygit()]),
+      ],
+    });
+    ```
+  </TabItem>
+  <TabItem label="Terminal" icon="seti:shell">
+    ```bash
+    winix plan      # what would change on this machine
+    winix switch    # apply it
+    winix update    # move the locks to the latest versions
+    ```
+  </TabItem>
+</Tabs>
+
+## Why Winix
+
+<CardGrid>
+  <Card title="TypeScript as the language" icon="seti:typescript">
+    Functions, arrays, conditionals and typed helpers instead of a new language.
+    Completion and type checks in any editor, with no npm install.
+  </Card>
+  <Card title="One config for every machine" icon="laptop">
+    A Windows PC, its WSL distro and a Mac share the same features. `winix
+    inspect --matrix` shows which machine gets what.
+  </Card>
+  <Card title="Nix where Nix runs" icon="nix">
+    NixOS, nix-darwin and Home Manager do the building. Winix writes a normal
+    flake and host modules you can read.
+  </Card>
+  <Card title="Declarative Windows" icon="seti:windows">
+    Packages, files, environment, settings, fonts, startup apps and WSL
+    distros: version-locked, applied only where they differ, with one UAC
+    prompt, and removed when you delete them.
+  </Card>
+</CardGrid>
+
+## Start here
+
+<CardGrid>
+  <LinkCard
+    title="Your first config"
+    description="From an empty folder to your first winix switch, on Windows or on NixOS and WSL."
+    href="/winix/start/first-config/"
+  />
+  <LinkCard
+    title="Write a cross-platform feature"
+    description="Declare a tool once and get it on Linux, WSL, macOS and Windows."
+    href="/winix/guides/cross-platform-feature/"
+  />
+  <LinkCard
+    title="Pair Windows with WSL"
+    description="Have Windows create a NixOS-WSL distro and set it up from the same repository."
+    href="/winix/guides/pair-windows-and-wsl/"
+  />
+  <LinkCard
+    title="Windows hosts"
+    description="Packages and versions, files, settings, startup apps, fonts, plan and switch."
+    href="/winix/reference/windows/"
+  />
+</CardGrid>
