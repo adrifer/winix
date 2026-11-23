@@ -1,6 +1,8 @@
 ---
 title: Share git config across Windows and WSL
 description: One git identity and settings for Git for Windows and Linux git.
+sidebar:
+  order: 5
 ---
 
 # Share git config across Windows and WSL

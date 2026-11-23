@@ -690,8 +690,8 @@ The compiler warns (not errors) on escape hatch use, to encourage migration:
 Windows hosts (`platforms.windows()`) emit `.winix/out/<host>/resources.json`,
 which `winix switch` checks against the machine and applies (plan, then apply).
 How to use each helper is documented in
-[Windows hosts](../docs/reference/windows.md) and
-[WSL from a Windows host](../docs/reference/wsl.md); this section holds the rules
+the [Windows reference](../docs/reference/windows/README.md) and
+[WSL distros](../docs/reference/wsl.md); this section holds the rules
 and guarantees.
 
 ### Resources, handles and `dependsOn`

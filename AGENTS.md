@@ -75,7 +75,7 @@ Platforms are built through `platforms.*` (`platforms.nixos({...})`, `platforms.
 
 ## Windows and WSL
 
-The rules and guarantees are in `spec/SPEC.md` §9 (Windows backend); usage is in `docs/reference/windows.md` and `docs/reference/wsl.md`. The essentials when changing this code:
+The rules and guarantees are in `spec/SPEC.md` §9 (Windows backend); usage is in `docs/reference/windows/` and `docs/reference/wsl.md`, with the model in `docs/concepts/`. The essentials when changing this code:
 
 - **Plan, then apply.** Every resource has a test and a set; `winix plan` (= `switch --dry`) reports what differs, `switch` applies only that. Elevated work is batched into one UAC prompt. Package inventory is one `winget export` per switch (DSC confirms what it doesn't list), reused by the plan, activation and reconciliation.
 - **Handles and order.** Resource helpers return handles accepted by `dependsOn`; cross-host handles are an error.
@@ -127,7 +127,8 @@ cd test-config && node --experimental-transform-types --no-warnings ../src/cli/i
 ## Docs
 
 - `README.md` is the front door: pitch, quick start, layout, links. Keep it short.
-- `docs/reference/*.md` is the user reference (install, authoring, Windows, WSL, CLI); `docs/guides/*.md` are task recipes (Starlight-style front matter, for a future docs site).
+- `docs/` is organised as the reader's path: `start/` (introduction, install, first config, new machine), `concepts/` (the model, explained once), `guides/` (task recipes) and `reference/` (every helper and option; Windows split by topic in `reference/windows/`). Explain an idea in its concept page and link to it, rather than repeating it in reference pages. Every page needs `title` and `description` front matter, and `sidebar.order` for its place in the section.
+- `site/` renders `docs/` as the documentation site (Starlight, its own `package.json`; see `site/README.md`). Keep pages plain Markdown with relative `.md` links so they also read on GitHub; the site rewrites them, and its build fails on a broken link.
 - Guide code is quoted from `examples/cross-platform` (machines/ → roles/ → features/); `tests/cross-platform-example.test.ts` evaluates and generates it, with a Nix snapshot. Change the example and the guides together, and keep the example small.
 - `src/skill.ts` is what agents read (`winix --skill`); update it with user-facing CLI or authoring changes.
 - `CHANGELOG.md` records shipped changes; `ROADMAP.md` holds what's next and ideas.

@@ -57,7 +57,7 @@ winix switch    # apply it
 
 **A new config.** Download the standalone `winix` executable for your platform
 from [GitHub Releases](https://github.com/adrifer/winix/releases) (no Node.js
-needed; details in [Install](docs/reference/install.md)), or use npm, then:
+needed; details in [Install](docs/start/install.md)), or use npm, then:
 
 ```bash
 winix init      # winix.config.ts, tsconfig.json (editor types), .gitignore
@@ -70,7 +70,7 @@ winix switch
 the repository, install prerequisites, download the Winix version it pins, ask
 which host the machine is and apply it, after one confirmation. A dotfiles repo
 can wrap that into two lines; see
-[Bootstrap an existing repository](docs/reference/install.md#bootstrap-an-existing-repository).
+[Set up a new machine](docs/start/new-machine.md).
 Afterwards, `winix switch` from any folder applies the remembered host, and a
 pin bump downloads the new version by itself.
 
@@ -96,12 +96,12 @@ version of this layout.
 
 | | |
 |---|---|
-| [Install and first run](docs/reference/install.md) | Standalone executables, npm, bootstrapping a machine from a repository |
-| [Writing a config](docs/reference/authoring.md) | Workspaces, hosts, features and profiles, helpers, escape hatches, generated Nix, editor types |
-| [Windows hosts](docs/reference/windows.md) | Packages and versions, files, settings, startup apps, fonts, feeds, plan and switch, removal |
-| [WSL from a Windows host](docs/reference/wsl.md) | Create or adopt a NixOS-WSL distro and set it up from the same repository |
-| [CLI](docs/reference/cli.md) | Every command and option, including `winix --skill` for coding agents |
-| [Guides](docs/guides/README.md) | Recipes: cross-platform features, pairing Windows and WSL, shared Git config, PowerShell and Terminal |
+| [Start here](docs/start/introduction.md) | What Winix is, [install](docs/start/install.md), [your first config](docs/start/first-config.md), [set up a new machine](docs/start/new-machine.md) |
+| [Concepts](docs/concepts/features-and-hosts.md) | Features and hosts, organising a config, how changes are applied, versions and locks, what Winix owns |
+| [Guides](docs/guides/README.md) | Cross-platform features, pairing Windows and WSL, moving a Windows machine over, PowerShell and Terminal, shared Git config, updates |
+| [Reference](docs/reference/config.md) | [Workspace and hosts](docs/reference/config.md), [Linux and macOS helpers](docs/reference/nix.md), [Windows](docs/reference/windows/README.md), [WSL distros](docs/reference/wsl.md), [CLI](docs/reference/cli.md) |
+
+The [docs index](docs/README.md) lists every page.
 
 Design and plans: [SPEC](spec/SPEC.md) (the contract),
 [ARCHITECTURE](spec/ARCHITECTURE.md), [ROADMAP](ROADMAP.md),

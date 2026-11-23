@@ -1,6 +1,8 @@
 ---
 title: Pair a Windows host with its WSL host
 description: Have Windows create a NixOS-WSL distro and set it up from the same checkout.
+sidebar:
+  order: 2
 ---
 
 # Pair a Windows host with its WSL host

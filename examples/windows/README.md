@@ -5,7 +5,7 @@ A reference for the lower-level Windows helpers: every form of
 PATH with `windows.env.*` / `windows.path.*`, and any DSC v3 resource with
 `windows.dsc(...)`. For a whole config (files, PowerShell, Terminal, WSL),
 see [`examples/cross-platform`](../cross-platform) and the
-[Windows reference](../../docs/reference/windows.md).
+[Windows reference](../../docs/reference/windows/README.md).
 
 ## What it shows
 

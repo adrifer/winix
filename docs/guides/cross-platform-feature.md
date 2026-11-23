@@ -1,6 +1,8 @@
 ---
 title: Write a cross-platform feature
 description: Declare a tool once and get it on Linux, WSL, macOS and Windows.
+sidebar:
+  order: 1
 ---
 
 # Write a cross-platform feature

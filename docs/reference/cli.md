@@ -1,6 +1,8 @@
 ---
 title: CLI
 description: Every winix command and option.
+sidebar:
+  order: 4
 ---
 
 # CLI
@@ -56,7 +58,7 @@ remembered on this machine, the only host, or the host named like this machine.
 ## Windows ownership records
 
 Winix records which Windows resources it created, and only removes those (see
-[Windows](./windows.md)). These commands change that record:
+[What Winix owns](../concepts/ownership.md)). These commands change that record:
 
 | Command | What it does |
 | --- | --- |
@@ -79,16 +81,9 @@ Not listed in `winix --help`, but they keep working:
 
 ## Generated output
 
-```text
-.winix/out/
-  flake.nix
-  hosts/
-    <host>.nix
-  <windows-host>/
-    resources.json
-```
-
-You can also run the generated flake yourself:
+`winix apply` and `winix switch` write `.winix/out/`
+([Workspace and hosts](config.md#generated-output)). You can run the generated
+flake yourself:
 
 ```bash
 sudo nixos-rebuild switch --flake path:$(pwd)/.winix/out#my-host

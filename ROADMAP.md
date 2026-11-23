@@ -49,8 +49,8 @@ What's next and what we're considering. Shipped work is in
 
 ## Later
 
-- **Documentation site** (Starlight). `docs/` is laid out to move into it; until
-  then the Markdown in the repository is the documentation.
+- **Documentation site:** generate the CLI reference from `winix --help`, and
+  include guide code from `examples/cross-platform` instead of copying it.
 - **Interactive `winix init`** with presets (`minimal`, `wsl`, `cross-platform`)
   that scaffold the machines → roles → features layout when asked.
 - **Machine-readable output:** `--json` for `check` and `inspect`.

@@ -1,6 +1,8 @@
 ---
 title: PowerShell profile and Windows Terminal
 description: Keep your PowerShell profile, prompt and Terminal settings in the repo.
+sidebar:
+  order: 4
 ---
 
 # PowerShell profile and Windows Terminal
