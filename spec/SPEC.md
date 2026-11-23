@@ -895,8 +895,8 @@ Windows-side WSL provisioning uses `windows.optionalFeature(name,
 `windows.wsl.distro(name, { source: "nixos-wsl", installLocation, default?, host?,
 dependsOn?, setup? })`. The grouped enable resource handles WSL and Virtual Machine
 Platform together, with elevation and no automatic restart. `windows.wsl()` also
-declares the `Microsoft.WSL` runtime through normal package/lockfile handling;
-an explicit package declaration may customize its options. Pending changes
+declares the `Microsoft.WSL` runtime through normal package/lockfile handling,
+elevated (its installers all need administrator rights); an explicit package declaration may customize its options. Pending changes
 stop dependent provisioning with instructions to restart Windows and rerun.
 Distro resources require enabled feature declarations and a `Microsoft.WSL`
 package in the same host; the features, optional configuration file, and package

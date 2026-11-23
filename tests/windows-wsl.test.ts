@@ -122,7 +122,7 @@ describe("Windows WSL SDK and backend", () => {
     const resources = setup.windows!.dsc!;
     expect(resources).toHaveLength(2);
     expect(setup.__winixHandle).toEqual({ kind: "dsc", token: resources[1].token });
-    expect(setup.windows!.packages).toEqual({ "Microsoft.WSL": { id: "Microsoft.WSL", source: "winget" } });
+    expect(setup.windows!.packages).toEqual({ "Microsoft.WSL": { id: "Microsoft.WSL", source: "winget", elevated: true } });
     expect(resources[0].dependsOn).toEqual([
       { kind: "package", id: "Microsoft.WSL" }, prerequisite.__winixHandle,
     ]);

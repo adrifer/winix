@@ -26,7 +26,9 @@ host("DESKTOP", platforms.windows(), ({ windows }) => {
 
 `windows.wsl({ config?, backup?, force?, dependsOn? })` declares the `Microsoft.WSL`
 package, enables the WSL and Virtual Machine Platform Windows features, and
-optionally manages `.wslconfig`. The runtime uses normal package locking; a separate
+optionally manages `.wslconfig`. The runtime uses normal package locking and is
+installed in switch's elevated step (every WSL installer needs administrator
+rights); a separate
 `windows.package({ id: "Microsoft.WSL", ... })` can customize its package options.
 Calling `windows.wsl()` without config leaves that file untouched.
 `windows.optionalFeature(name,

@@ -410,7 +410,7 @@ through \`dependsOn\`.
 - \`windows.optionalFeature()\` enables/disables a named Windows optional feature;
   enabled defaults to true. Changes require elevation, never reboot automatically.
 - \`windows.wsl()\` declares the Microsoft.WSL package with normal package locking
-  and enables the WSL and Virtual Machine Platform features. A separate package
+  (installed elevated) and enables the WSL and Virtual Machine Platform features. A separate package
   declaration may customize the runtime's package options.
   Options are config, backup, force, and dependsOn. The optional config manages
   the full current-user .wslconfig with file overwrite protections; omitting it

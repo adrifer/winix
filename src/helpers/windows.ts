@@ -1785,7 +1785,9 @@ export const windows: WindowsHelper = {
     (opts: WinWslOpts = {}): ResourceHandle => {
       normalizeFileOpts(opts, "windows.wsl");
       const content = opts.config === undefined ? undefined : serializeWslConfig(opts.config);
-      const runtime = windows.package("Microsoft.WSL");
+      // Every Microsoft.WSL installer needs administrator rights (the MSI is
+      // machine-wide and the MSIX requires elevation), and `winget show` can't tell.
+      const runtime = windows.package({ id: "Microsoft.WSL", elevated: true });
       const dependencies = opts.dependsOn === undefined ? []
         : Array.isArray(opts.dependsOn) ? opts.dependsOn : [opts.dependsOn];
       const enabled = optionalFeatures(
