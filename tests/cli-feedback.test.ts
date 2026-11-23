@@ -736,3 +736,22 @@ describe("inspect", () => {
     ]);
   });
 });
+
+describe("embedded scripts", () => {
+  // The standalone build writes non-ASCII characters as \uXXXX escapes, which a
+  // String.raw template keeps as literal text (the Windows apply log printed
+  // "✓" instead of a check mark).
+  it("keeps String.raw templates ASCII-only", async () => {
+    const { readdir } = await import("node:fs/promises");
+    const sources = (await readdir("src", { recursive: true })).filter((file) => file.endsWith(".ts"));
+    const offenders: string[] = [];
+    for (const file of sources) {
+      const text = await readFile(join("src", file), "utf8");
+      for (const match of text.matchAll(/String\.raw`([^`]*)`/g)) {
+        const characters = [...match[1]].filter((character) => character.charCodeAt(0) > 0x7f);
+        if (characters.length > 0) offenders.push(`${file}: ${characters.join("")}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});

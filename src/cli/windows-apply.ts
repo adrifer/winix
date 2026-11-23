@@ -230,6 +230,9 @@ const RESULT_MARKER = "WINIX-APPLY:";
  * step. Every step is isolated: an error marks that step failed and skips its
  * dependents.
  */
+// ASCII only: the standalone build writes other characters as escapes (a
+// check mark becomes backslash-u2713), and a raw template keeps the escape as
+// literal text. Use [char]0x2713 and similar instead.
 export const WINDOWS_APPLY_RUNNER = String.raw`param([string]$StepsFile, [string]$ResultsFile, [string]$LogFile)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -244,7 +247,7 @@ function Invoke-WinixNative([string]$Executable, [string[]]$Arguments) {
   return [pscustomobject]@{ Code = $LASTEXITCODE; Lines = $lines }
 }
 function Get-WinixTail([string[]]$Lines) {
-  $useful = @($Lines | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^[\s\-\\|/]+$' -and $_ -notmatch '^[█▒\s]+' })
+  $useful = @($Lines | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^[\s\-\\|/]+$' -and $_ -notmatch "^[$([char]0x2588)$([char]0x2592)\s]+" })
   return ($useful | Select-Object -Last 3) -join ' | '
 }
 function Invoke-WinixWindowsPowerShell([string]$Directory, [string]$Name, [string]$Script, [bool]$IsTest) {
@@ -319,7 +322,7 @@ try {
         default { throw ("unknown step kind: " + $step.kind) }
       }
       $results.Add([pscustomobject]@{ name = $step.name; status = $status })
-      if ($status -eq 'applied') { Write-WinixLog ("    ✓ " + $step.label + " (" + [int]((Get-Date) - $started).TotalSeconds + "s)") }
+      if ($status -eq 'applied') { Write-WinixLog ("    " + [char]0x2713 + " " + $step.label + " (" + [int]((Get-Date) - $started).TotalSeconds + "s)") }
     } catch {
       $message = $_.Exception.Message
       # A failed upgrade leaves the older version installed, which is what its
@@ -330,7 +333,7 @@ try {
         [void]$failed.Add($step.name)
       }
       $results.Add([pscustomobject]@{ name = $step.name; status = 'failed'; error = $message })
-      Write-WinixLog ("    ✗ " + $step.label + ": " + $message)
+      Write-WinixLog ("    " + [char]0x2717 + " " + $step.label + ": " + $message)
     }
   }
 } finally {
