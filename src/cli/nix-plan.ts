@@ -462,6 +462,11 @@ export function nixosToplevel(outDir: string, host: string): string {
   return `path:${outDir.replace(/\\/g, "/")}#nixosConfigurations.${JSON.stringify(host)}.config.system.build.toplevel`;
 }
 
+/** Whether the Nix CLI is installed here (a NixOS host can be planned elsewhere, without building). */
+export async function nixInstalled(runner: NixPlanRunner): Promise<boolean> {
+  return (await runner.capture("nix", ["--version"])).code === 0;
+}
+
 /** What the build will do, before doing it. */
 export async function dryRunBuild(installable: string, runner: NixPlanRunner): Promise<BuildSummary | undefined> {
   const result = await runner.capture("nix", [...NIX_FLAGS, "build", "--dry-run", "--no-link", installable]);

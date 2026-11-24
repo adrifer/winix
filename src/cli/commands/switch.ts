@@ -23,7 +23,7 @@ import {
   applyWindowsBatches, formatApplySummary, nativeWindowsBatchRunner, planApplyBatches, type WindowsBatchRunner,
 } from "../windows-apply.ts";
 import {
-  buildSystem, compareNixosSystems, describeBuild, dryRunBuild, formatNixPlan, nativeNixPlanRunner, nixosToplevel,
+  buildSystem, compareNixosSystems, describeBuild, dryRunBuild, formatNixPlan, nativeNixPlanRunner, nixInstalled, nixosToplevel,
   nixPlanSummary, type NixPlan, type NixPlanPaths, type NixPlanRunner,
 } from "../nix-plan.ts";
 import * as progress from "../progress.ts";
@@ -223,9 +223,16 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
     }
     // NixOS: build, then show what activating it would change (also before a real switch).
     let nixPlan: NixPlan | undefined;
-    const buildable = platform === "nixos" && command !== undefined && process.platform !== "win32" && !opts.noBuild;
+    const nixRunner = opts.nixRunner ?? nativeNixPlanRunner;
+    let buildable = platform === "nixos" && command !== undefined && process.platform !== "win32" && !opts.noBuild;
+    let nixMissing = false;
+    if (buildable && !(await nixInstalled(nixRunner))) {
+      // Planning on a machine without Nix: show the command, as --no-build does.
+      buildable = false;
+      nixMissing = true;
+    }
     if (buildable) {
-      nixPlan = await planNixosHost(configDir, result.outDir, hostName, opts.nixRunner ?? nativeNixPlanRunner, opts.nixPaths);
+      nixPlan = await planNixosHost(configDir, result.outDir, hostName, nixRunner, opts.nixPaths);
       console.log("");
       for (const line of formatNixPlan(nixPlan, { color: colorEnabled() })) console.log(line);
     }
@@ -350,6 +357,7 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
     } else if (opts.dry && command) {
       console.log(`\nWould run: ${command.join(" ")}`);
       if (opts.noBuild && platform === "nixos") console.log("Not built (--no-build): winix plan without it shows what would change.");
+      if (nixMissing) console.log("Not built: Nix isn't installed here. winix plan on the NixOS machine shows what would change.");
     }
   };
   if (statePath) await withWindowsStateLock(statePath, opts.dry, performSwitch);

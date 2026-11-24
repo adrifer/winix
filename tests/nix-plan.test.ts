@@ -156,6 +156,36 @@ async function fakeSystems(root: string) {
   return { current, built, profiles };
 }
 
+describe("winix plan for a NixOS host", () => {
+  it("shows the command, without building, on a machine without Nix", async () => {
+    const { switchCommand } = await import("../src/cli/commands/switch.ts");
+    const { pathToFileURL } = await import("node:url");
+    const dir = await tempDir();
+    const sdk = pathToFileURL(join(process.cwd(), "src", "index.ts")).href;
+    await writeFile(join(dir, "winix.config.mjs"), `
+      import { host, platforms, workspace } from ${JSON.stringify(sdk)};
+      export default workspace({ inputs: { nixpkgs: "nixos-unstable" }, hosts: [host("wsl", platforms.nixos(), [])] });
+    `);
+    const runner = fakeRunner((command) => (command === "nix" ? { code: 127 } : undefined));
+    const lines: string[] = [];
+    const log = console.log;
+    console.log = (...args: unknown[]) => { lines.push(args.join(" ")); };
+    try {
+      await switchCommand(dir, { host: "wsl", dry: true, nixRunner: runner });
+    } finally {
+      console.log = log;
+    }
+    expect(lines.join("\n")).toContain("Would run:");
+    // Native Windows never builds a NixOS host; elsewhere, missing Nix is the reason.
+    if (process.platform !== "win32") {
+      expect(runner.calls).toEqual(["nix --version"]);
+      expect(lines.join("\n")).toContain("Not built: Nix isn't installed here");
+    } else {
+      expect(runner.calls).toEqual([]);
+    }
+  });
+});
+
 describe("compareNixosSystems", () => {
   it("reports packages, /etc, version, generation and estimated services", async () => {
     const root = await tempDir();

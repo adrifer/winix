@@ -5,7 +5,7 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
-## 0.3.3
+## 0.3.4
 
 Install Winix without a repository, a `winix` command that works from any
 folder, and a real `winix plan` on NixOS.
