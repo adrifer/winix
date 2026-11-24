@@ -2,6 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/%40adrifer%2Fwinix?label=npm&logo=npm)](https://www.npmjs.com/package/@adrifer/winix)
 [![npm preview](https://img.shields.io/npm/v/%40adrifer%2Fwinix/preview?label=preview&logo=npm&color=orange)](https://www.npmjs.com/package/@adrifer/winix?activeTab=versions)
+[![Docs](https://img.shields.io/badge/docs-adrifer.github.io%2Fwinix-blue)](https://adrifer.github.io/winix/)
 [![CI](https://github.com/adrifer/winix/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/adrifer/winix/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/types-TypeScript-blue?logo=typescript&logoColor=white)](./types)
@@ -106,12 +107,15 @@ version of this layout.
 
 ## Documentation
 
+Read the full documentation at **[adrifer.github.io/winix](https://adrifer.github.io/winix/)** (or browse the same pages in [`docs/`](docs/README.md)):
+
 | | |
 |---|---|
 | [Start here](docs/start/introduction.md) | What Winix is, [install](docs/start/install.md), [your first config](docs/start/first-config.md), [set up a new machine](docs/start/new-machine.md) |
 | [Concepts](docs/concepts/features-and-hosts.md) | Features and hosts, organising a config, how changes are applied, versions and locks, what Winix owns |
-| [Guides](docs/guides/README.md) | Cross-platform features, pairing Windows and WSL, moving a Windows machine over, PowerShell and Terminal, shared Git config, updates |
-| [Reference](docs/reference/config.md) | [Workspace and hosts](docs/reference/config.md), [Linux and macOS helpers](docs/reference/nix.md), [Windows](docs/reference/windows/README.md), [WSL distros](docs/reference/wsl.md), [CLI](docs/reference/cli.md) |
+| [Guides](docs/guides/README.md) | Cross-platform features, pairing Windows and WSL, moving a Windows or NixOS machine over, PowerShell and Terminal, shared Git config, updates, testing your config |
+| [Reference](docs/reference/config.md) | [Workspace and hosts](docs/reference/config.md), [Linux and macOS helpers](docs/reference/nix.md), [Windows](docs/reference/windows/README.md), [WSL distros](docs/reference/wsl.md), [CLI](docs/reference/cli.md), [Troubleshooting](docs/reference/troubleshooting.md) |
+| [API](docs/api/README.md) | Every exported function, namespace and option, generated from source types and doc comments |
 
 The [docs index](docs/README.md) lists every page.
 
