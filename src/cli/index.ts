@@ -11,7 +11,8 @@ import { inspect } from "./commands/inspect.ts";
 import { switchCommand } from "./commands/switch.ts";
 import { update } from "./commands/update.ts";
 import { renderSkill } from "../skill.ts";
-import { bootstrapCheckout, runCheckout } from "./commands/bootstrap.ts";
+import { bootstrapCheckout, routeRun } from "./commands/bootstrap.ts";
+import { installWinixCommand } from "./winix-home.ts";
 import {
   forgetWindowsResource, windowsStatePath, listWindowsOwners, migrateWindowsOwner, windowsStateOwner,
   type ManagedResource,
@@ -24,8 +25,14 @@ import { refreshEditorTypes, typesCommand } from "./editor-types.ts";
 import { commandHelp, mainHelp } from "./help.ts";
 
 if (process.argv[2] === "run") {
-  try { await runCheckout(process.cwd(), process.argv.slice(3)); }
-  catch (error) { console.error(`Error: ${(error as Error).message}`); process.exit(1); }
+  try { await routeRun(process.cwd(), process.argv.slice(3)); }
+  catch (error) {
+    // The Winix it ran has already reported its own error: pass its exit code on.
+    const exited = /exited with code (\d+)$/.exec((error as Error).message);
+    if (exited) process.exit(Number(exited[1]));
+    console.error(`Error: ${(error as Error).message}`);
+    process.exit(1);
+  }
   process.exit(0);
 }
 
@@ -187,8 +194,17 @@ switch (command) {
     }
     break;
   case "install":
+    if (positionals[1] === "command" && positionals.length === 2) {
+      try {
+        await installWinixCommand();
+      } catch (err) {
+        console.error(`✗ Error: ${(err as Error).message}`);
+        process.exit(1);
+      }
+      break;
+    }
     if (positionals[1] !== "skill" || positionals.length !== 2) {
-      console.error("Usage: winix install skill [--force]");
+      console.error("Usage: winix install command | winix install skill [--force]");
       process.exit(2);
     }
     try {

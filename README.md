@@ -55,9 +55,21 @@ winix switch    # apply it
 
 ## Quick start
 
-**A new config.** Download the standalone `winix` executable for your platform
-from [GitHub Releases](https://github.com/adrifer/winix/releases) (no Node.js
-needed; details in [Install](docs/start/install.md)), or use npm, then:
+**A new config.** Install Winix and its prerequisites with one script (no
+Node.js needed; other ways in [Install](docs/start/install.md)):
+
+```powershell
+# Windows
+irm https://github.com/adrifer/winix/releases/latest/download/install.ps1 -OutFile $env:TEMP\install.ps1
+powershell -ExecutionPolicy Bypass -File $env:TEMP\install.ps1
+```
+
+```bash
+# Linux
+curl -fsSLO https://github.com/adrifer/winix/releases/latest/download/install.sh && bash install.sh
+```
+
+Then, in a new folder:
 
 ```bash
 winix init      # winix.config.ts, tsconfig.json (editor types), .gitignore
@@ -66,10 +78,10 @@ winix plan
 winix switch
 ```
 
-**A fresh machine from your dotfiles repository.** The bootstrap scripts clone
-the repository, install prerequisites, download the Winix version it pins, ask
-which host the machine is and apply it, after one confirmation. A dotfiles repo
-can wrap that into two lines; see
+**A fresh machine from your dotfiles repository.** The same script with
+`-Repository` clones it, installs prerequisites, downloads the Winix version it
+pins, asks which host the machine is and applies it, after one confirmation. A
+dotfiles repo can wrap that into two lines; see
 [Set up a new machine](docs/start/new-machine.md).
 Afterwards, `winix switch` from any folder applies the remembered host, and a
 pin bump downloads the new version by itself.

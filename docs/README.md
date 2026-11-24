@@ -15,7 +15,7 @@ GitHub.
 | [Introduction](start/introduction.md) | What Winix is, how it works, when to use it |
 | [Install](start/install.md) | The standalone executable or the npm package, editor and agent support |
 | [Your first config](start/first-config.md) | From an empty folder to your first `winix switch` |
-| [Set up a new machine](start/new-machine.md) | Bootstrap a fresh PC or Linux machine from your repository |
+| [Set up a new machine](start/new-machine.md) | Set up a fresh PC or Linux machine from your repository with the install script |
 
 ## Concepts
 

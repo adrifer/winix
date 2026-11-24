@@ -1,6 +1,6 @@
 // `winix --help` and `winix <command> --help`.
 //
-// Accepted but not listed: `winix run <args>` (what the `winix` launchers call),
+// Accepted but not listed: `winix run <args>` (what the `winix` command runs),
 // `switch --dry` (= plan), `bootstrap --command-only` (used by WSL setup), and the older names
 // `package search` and `fonts search` (now `windows search` and `windows fonts`).
 
@@ -38,6 +38,7 @@ ${sections([
   ["Setup", [
     ["init", "Create a Winix project"],
     ["bootstrap", "Set up this machine from a checkout (first run)"],
+    ["install command", "Put this winix on your PATH for this user"],
     ["install skill", "Install the agent skill for coding agents"],
     ["state <command>", "Change Winix's record of what it owns on Windows"],
   ]],
@@ -159,10 +160,14 @@ const COMMANDS: Record<string, CommandHelp> = {
     ],
   },
   install: {
-    usage: "winix install skill",
-    description: "Write .agents/skills/winix/SKILL.md, which tells coding agents to run `winix --skill`\n" +
-      "for the instructions that match the installed Winix.",
-    options: [["--force", "Overwrite an edited skill file"]],
+    usage: "winix install command | winix install skill",
+    description: "Install part of Winix.",
+    commands: [
+      ["command", "Copy this Winix to your user folder and put a winix command on PATH. Inside a project it\n" +
+        "runs the version the project pins; elsewhere, this one."],
+      ["skill", "Write .agents/skills/winix/SKILL.md, which tells coding agents to run `winix --skill`"],
+    ],
+    options: [["--force", "Overwrite an edited skill file (skill)"]],
   },
   state: {
     usage: "winix state <command> (Windows)",

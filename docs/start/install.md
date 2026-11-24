@@ -1,78 +1,91 @@
 ---
 title: Install
-description: The standalone winix executable for Windows and Linux, or the npm package, plus editor and agent support.
+description: Install Winix with one script, by hand, or with npm, plus editor and agent support.
 sidebar:
   order: 2
 ---
 
 # Install
 
-There are two ways to run Winix. Both run the same code; pick one.
-
-- **The standalone executable** (Windows and Linux): one file, no Node.js or
-  npm.
-- **The npm package** (any platform with Node.js, and the only option on macOS
-  for now).
-
-Setting up a machine from a repository you already have? Skip this page:
-[Set up a new machine](new-machine.md) downloads the right Winix for you.
-
-## What each platform needs
-
-| Platform | Needs |
+| You have | Do this |
 |---|---|
-| Windows | WinGet (App Installer), PowerShell 7.4+, DSC 3.2+, and Git for repositories. `bootstrap-windows.ps1 -Standalone` installs the missing ones ([details](new-machine.md#only-the-prerequisites)). |
-| NixOS, NixOS-WSL | Nix with flakes, which NixOS has. |
-| macOS | Nix and nix-darwin, plus Node.js for the npm package. |
+| Nothing yet, and want to start a config | [The install script](#the-install-script): prerequisites, the latest Winix and a `winix` command |
+| A repository with your config | [Set up a new machine](new-machine.md): the same script, pointed at your repository |
+| Rules about what you run | [The executable by hand](#the-executable-by-hand), or [npm](#npm-package) |
 
-## Standalone executable
+## The install script
+
+On Windows, in Windows PowerShell or PowerShell 7, as your normal user:
+
+```powershell
+irm https://github.com/adrifer/winix/releases/latest/download/install.ps1 -OutFile $env:TEMP\install.ps1
+powershell -ExecutionPolicy Bypass -File $env:TEMP\install.ps1
+```
+
+On Linux (NixOS, NixOS-WSL, or another distribution with glibc):
+
+```bash
+curl -fsSLO https://github.com/adrifer/winix/releases/latest/download/install.sh
+bash install.sh
+```
+
+It lists what it will do and asks once:
+
+1. **On Windows**, installs what Windows hosts need, if missing: Git,
+   PowerShell 7 and DSC, through WinGet (on a fresh account it registers App
+   Installer first). Installers may ask for administrator approval.
+2. **Downloads the latest Winix**, checked against the release's checksums, into
+   `%LOCALAPPDATA%\Winix` (Windows) or `~/.local/share/winix` (Linux). On NixOS
+   it also sets up a pinned dynamic loader, which NixOS doesn't have by default.
+3. **Puts a `winix` command on your PATH**: `%LOCALAPPDATA%\Winix\bin` (added to
+   your user PATH) or `~/.local/bin/winix`.
+
+Then open a new terminal, make a folder for your config and continue with
+[Your first config](first-config.md):
+
+```bash
+winix init
+```
+
+`-Version 0.3.2` (`--version 0.3.2` on Linux) installs a specific release
+instead of the latest. `-DryRun` (`--dry-run`) only shows what it would do. To
+check the script before running it, compare it with the `install.ps1.sha256`
+or `install.sh.sha256` file in the same release.
+
+## The executable by hand
 
 Every [GitHub release](https://github.com/adrifer/winix/releases) has
 `winix-windows-x64.exe`, `winix-windows-arm64.exe`, `winix-linux-x64`,
-`winix-linux-arm64` and a `SHA256SUMS` file to check them against.
-
-On Windows, in PowerShell:
+`winix-linux-arm64` and a `SHA256SUMS` file to check them against. Download the
+one for your machine, check it, and let it install itself:
 
 ```powershell
-$dir = "$env:LOCALAPPDATA\Programs\winix"
-New-Item -ItemType Directory -Force $dir | Out-Null
 $release = "https://github.com/adrifer/winix/releases/latest/download"
-Invoke-WebRequest "$release/winix-windows-x64.exe" -OutFile "$dir\winix.exe"
-Invoke-WebRequest "$release/SHA256SUMS" -OutFile "$dir\SHA256SUMS"
-
-$expected = ((Select-String -Path "$dir\SHA256SUMS" -Pattern 'winix-windows-x64.exe').Line -split '\s+')[0]
-if ((Get-FileHash "$dir\winix.exe" -Algorithm SHA256).Hash -ne $expected) { throw "Checksum mismatch" }
-& "$dir\winix.exe" --version
+Invoke-WebRequest "$release/winix-windows-x64.exe" -OutFile winix.exe
+Invoke-WebRequest "$release/SHA256SUMS" -OutFile SHA256SUMS
+$expected = ((Select-String -Path SHA256SUMS -Pattern 'winix-windows-x64.exe').Line -split '\s+')[0]
+if ((Get-FileHash winix.exe -Algorithm SHA256).Hash -ne $expected) { throw "Checksum mismatch" }
+.\winix.exe install command
 ```
 
-Then add that folder to your user `PATH` (Settings → System → About → Advanced
-system settings → Environment Variables), or run Winix by its full path.
+`winix install command` copies the executable to `%LOCALAPPDATA%\Winix` (or
+`~/.local/share/winix`) and puts the `winix` command on your PATH, exactly as
+the script does. Skip it to run the file directly instead. Windows hosts still
+need PowerShell 7.4+ and DSC 3.2+; the script is the easy way to get those.
 
-On Linux:
-
-```bash
-mkdir -p ~/.local/bin && cd ~/.local/bin
-curl -fLO https://github.com/adrifer/winix/releases/latest/download/winix-linux-x64
-curl -fLO https://github.com/adrifer/winix/releases/latest/download/SHA256SUMS
-sha256sum --check --ignore-missing SHA256SUMS
-mv winix-linux-x64 winix && chmod +x winix && rm SHA256SUMS
-```
-
-Things to know:
+## Things to know
 
 - **Checksums detect corruption, not the publisher.** The Windows executables
   are not code-signed yet. Follow your organization's policies for running
   downloaded programs, and never turn off TLS verification to get past a proxy.
 - **The Linux executable needs glibc and libstdc++.** NixOS has no standard
-  dynamic linker, so the plain download doesn't run there. On NixOS, use
-  [`bootstrap-linux.sh`](new-machine.md), which sets up a pinned loader, or the
-  npm package.
+  dynamic linker, so the plain download doesn't start there: use the script,
+  which runs it through a pinned loader.
 - **ARM64** builds are cross-compiled and less tested than x64.
 - The release's `LICENSE`, `NOTICE.txt` and `BUN-LICENSE.md` cover the
   executables, which embed the Bun runtime.
-- Once you have a repository, you don't need to update this copy yourself:
-  the repository pins a Winix version, and the `winix` command that
-  [bootstrap](new-machine.md) installs always runs that one
+- **You won't need to update it by hand.** Inside a project, the `winix` command
+  runs the version the project pins, downloading it when needed
   ([The winix command](../concepts/the-winix-command.md)).
 
 ## npm package

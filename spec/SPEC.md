@@ -994,24 +994,15 @@ Registry resources, with their existing user/machine permission boundaries.
 
 ### Prerequisites and standalone executables
 
-`scripts/bootstrap-windows.ps1` provides an out-of-band Windows PowerShell
-5.1/PowerShell 7 prerequisite layer, requiring App Installer/WinGet but not Git,
-Node, or Winix. `-Check` only inspects versions and capabilities, failing when
-not ready. Install mode confirms the prerequisite plan (`-Yes` for automation),
-installs/upgrades missing/outdated Git, Node LTS, PowerShell 7, and DSC via exact
-WinGet IDs/source, then verifies npm,
-Node TypeScript support, PSResourceGet commands, and required DSC resources.
-Supported stable npm runtimes are Node 22.13+ (22.x), 24.x and 26.x; installed LTS
-must pass the same check. The npm launcher/checkout handoff and bootstrap probe
-enable transformation on 22/24 and omit its removed flag on 26. Node 26 supports
-erasable TypeScript only; enum/parameter-property configs require Node 22/24.
-Unsupported majors and prerelease runtimes are rejected rather than guessed.
-`-UseNvm` selects NVM for Windows instead of standalone Node, with manager
-conflict protection. Existing supported versions are kept. No host activation,
-WSL provisioning, persistent execution-policy changes, or automatic reboot is
-performed. Prerequisites remain outside host lock/ownership tracking. Missing
-WinGet requires explicit App Installer installation/registration; config/Winix
-installation and restore orchestration are opt-in through repository mode below.
+`scripts/install.ps1` (Windows PowerShell 5.1 or PowerShell 7) needs only App
+Installer/WinGet. After its single confirmation it registers App Installer for
+the user when it is installed but unregistered (otherwise opens the Store page;
+never unsigned installers), installs or upgrades missing/outdated Git (2.0+),
+PowerShell 7 (7.4+) and DSC (3.2+) by exact WinGet ID and source, then verifies
+PSResourceGet commands and the required DSC resources. Prerelease tools are
+rejected. Installers may ask for elevation; restart requests stop the script
+for a manual restart and rerun. Prerequisites stay outside host lock and
+ownership tracking. No Node/npm is installed.
 
 GitHub releases also provide standalone Windows and glibc Linux executables
 for x64/ARM64 with SHA256SUMS. They embed a Bun runtime and one SDK/evaluator
@@ -1019,8 +1010,6 @@ instance, resolve `@adrifer/winix` imports without node_modules, support local
 TypeScript/JavaScript and Node builtins, and disable automatic npm installation.
 Their version selects the SDK regardless of config package manifests. Editor
 type dependencies and arbitrary third-party imports are not embedded.
-`bootstrap-windows.ps1 -Standalone` skips Node/npm checks/installations, without
-changing native Git/PowerShell/WinGet/DSC requirements or activating any host.
 Standalone WSL setup downloads its exact release's Linux executable, verifies
 the build-embedded SHA256, then launches a private installed copy through a
 wrapper using pinned, GC-rooted Nix libc/compiler libraries. No global Linux
@@ -1029,8 +1018,8 @@ generation execute that binary as the appropriate unprivileged user; only
 activation/ownership operations run as root. The npm path remains supported.
 Standalone setup requires committed flake.lock, not npm manifests/locks.
 Linux binaries need a compatible glibc/libstdc++ environment for direct use;
-automatic WSL setup supplies it on NixOS. Binaries are unsigned. Fresh-image
-activation and ARM64 execution remain unverified.
+`install.sh` and WSL setup supply it on NixOS. Binaries are unsigned. ARM64
+execution remains unverified.
 
 ### Sign-in startup
 
@@ -1164,83 +1153,84 @@ The CLI owns evaluation orchestration, validation, generation, activation, and
 diagnostics. For internal command implementation, see
 [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-### Prerequisite bootstrap on NixOS
-
-`scripts/bootstrap-nixos.sh` requires a running NixOS system (including
-NixOS-WSL) with Nix on PATH. It opens an interactive Bash environment containing
-Git and Node.js 24/npm from a single immutable nixpkgs revision embedded in the
-script. It preserves the working directory, adds `nix-command`/flakes only to
-the child session's `NIX_CONFIG`, skips user Bash startup files, and writes no
-flake lock, profile, or system configuration. Normal Nix store downloads and
-trust/permission checks still apply. Errors from Nix propagate to the caller.
-
-The script does not install NixOS/Winix, clone configs, install npm dependencies,
-select hosts, or activate systems. Users perform those steps themselves and
-declare permanent prerequisites in their configs. Stable/preview GitHub
-releases include the script and SHA256 checksum, as with Windows bootstrap.
-
 ### Commands
 
-#### Repository bootstrap and `winix run`
+#### Install scripts, repository bootstrap and `winix run`
 
-`bootstrap-windows.ps1 -Repository <https-url> -Ref <ref> -Destination <path>
--ConfigDirectory <relative-path> [-HostName <host>]` extends the prerequisite-only
-script with explicit repository orchestration. `bootstrap-linux.sh` provides
-the corresponding `--repository`, `--ref`, `--destination`, `--config-directory`,
-and optional `--host` options on glibc Linux x64/ARM64, with the same single
-confirmation and `winix bootstrap --confirmed` delegation. Linux uses existing Nix for
-temporary Git/Python tooling or requires those tools already installed;
-it never silently installs Nix or converts a distribution into NixOS.
-NixOS binaries use private pinned libc/compiler dependencies.
+`install.ps1` and `install.sh` are release assets with SHA256 checksums.
+Without `-Repository`/`--repository` they install a Winix release (the latest
+from the GitHub API, or `-Version`/`--version`) into the per-user installation,
+`%LOCALAPPDATA%\Winix\runtime\<version>` or `~/.local/share/winix/runtime/<version>`
+(`$XDG_DATA_HOME` respected; Linux behind a generated wrapper, through the
+pinned Nix loader/libraries on NixOS), and run `winix install command`.
 
-Repositories must be credential-free HTTPS URLs. A new clone retains normal Git
-history; an existing checkout must have the exact expected origin and already
-match its requested local ref. Local changes only warn (linked app settings
-rewrite tracked files), so reruns after a restart proceed. No automatic pull/reset/cleanup or
-branch switching occurs for existing repositories. Directory links and config
-path escapes are refused. Host selection is not a machine rename.
+With `-Repository <https-url> -Ref <ref> -Destination <path> -ConfigDirectory
+<relative-path> [-HostName <host>]` (Linux: `--repository`, `--ref`,
+`--destination`, `--config-directory`, `--host`) they also clone or validate the
+checkout. Repositories must be credential-free HTTPS URLs. A new clone retains
+normal Git history; an existing checkout must have the exact expected origin and
+already match its requested local ref. Local changes only warn (linked app
+settings rewrite tracked files), so reruns after a restart proceed. No automatic
+pull/reset/cleanup or branch switching occurs. Directory links and config path
+escapes are refused. Host selection is not a machine rename. The scripts read
+package.json without importing config; the SDK dependency must be an exact
+release or matching official release SDK tarball URL, the sole runtime pin. They
+install that release, then delegate to `winix bootstrap --confirmed [--host
+<host>] [--prepare-only] [--yes]` from the config directory. A config directory
+without winix.config.ts gets the latest (or requested) release, the command, and
+the instruction to run `winix init` there. Linux uses existing Nix for temporary
+Git/Python tooling or requires those tools; it never installs Nix or converts a
+distribution into NixOS.
 
-The entrypoints read package.json without importing config. The SDK dependency
-must be an exact release or matching official release SDK tarball URL; this is
-the sole runtime pin. Executables are architecture-specific, SHA256-verified
-against the versioned release manifest before execution. Windows additionally
-verifies that release's prerequisite-only script. TLS and execution policies
-remain enforced; release hashes are not publisher signatures.
+Executables are architecture-specific and SHA256-verified against the versioned
+release manifest before execution. TLS and execution policies remain enforced;
+release hashes are not publisher signatures. `-DryRun`/`--dry-run` makes no
+changes, downloads, clone or evaluation. Each script asks one confirmation
+listing every step before anything changes or is evaluated.
 
-`-DryRun`/`--dry-run` makes no changes, downloads, clone or evaluation.
-The Windows script asks one confirmation listing every step (clone,
-prerequisites, pinned download, config evaluation, activation or preview), then
-delegates to `winix bootstrap --confirmed [--host <host>] [--prepare-only]`,
-which asks nothing further: without a host it picks the remembered one
-(`.winix/host`), the only candidate for the platform, the one matching the
-computer name, or asks the user to choose, and remembers it; `switch` uses the
-remembered host when no `--host` is given and the computer name matches none.
-With consent given, `check` is followed directly by `switch` (which prints the
+`winix bootstrap --confirmed` asks nothing further: without a host it picks the
+remembered one (`.winix/host`), the only candidate for the platform, the one
+matching the computer name, or asks the user to choose, and remembers it;
+`switch` uses the remembered host when no `--host` is given and the computer
+name matches none. `check` is followed directly by `switch` (which prints the
 plan); `--prepare-only` stops after `switch --dry`. `winix bootstrap` without
 `--confirmed` asks before evaluation and before activation. `-Yes`/`--yes`
-explicitly accepts these operations and switch's managed removals. Failures propagate; no automatic
-restart, WSL shutdown, npm installation or global Winix installation occurs.
+explicitly accepts these operations and switch's managed removals. Failures
+propagate; no automatic restart, WSL shutdown or npm installation occurs.
+Bootstrap then installs the command and records the config directory in
+`<per-user installation>/checkout`.
 
-Bootstrap creates an ignored checkout launcher, `.winix/bin/winix.ps1` or
-`.winix/bin/winix`. `winix run <command> [options]` rereads the manifest and runs
-the pinned release: the matching standalone executable. It never infers another
-Winix from node_modules; `WINIX_SDK=<package dir>` (absolute or config-relative)
-explicitly runs that package's `src/cli/index.ts`, else `dist/cli/index.js`,
-under supported Node, reporting it and the pin. On Windows and Linux a stale standalone downloads the
-pinned release's executable into `.winix/runtime/<version>`, verified against
-its `SHA256SUMS` before running (Linux: behind a generated wrapper, through the
-pinned Nix loader/libraries on NixOS, whose `--version` must match), and the
-launcher prefers it from then on (older runtime folders are then removed,
-keeping the running one and the launcher's fallback); macOS has no standalone
-executable. Bootstrap also installs a per-user command that runs the launcher:
+`winix install command` (standalone only) copies the running executable into the
+per-user installation unless it already runs from there, and writes the command
 `%LOCALAPPDATA%\Winix\bin\winix.cmd` on the Windows user PATH (registry value
 kind and `%VAR%` entries preserved, no elevation) or `~/.local/bin/winix` on
-Linux (PATH is the user's config; a hint is printed). `winix bootstrap
---command-only [--host <host>]` only remembers the host and installs these, with
-no evaluation; standalone Windows-driven WSL setup runs it as the Linux user
-after activation, so the distro is then switched from inside with `winix switch`. The user
-opts into npm with `npm ci` and their approved source. Local npm scripts remain
-the standard npm workflow. New init manifests use exact version pins.
+Linux (PATH is the user's config; a hint is printed). The command runs
+`<installed> run <args>`. Files it did not generate are never replaced; older
+installed versions are removed, keeping the running one. `winix bootstrap
+--command-only [--host <host>]` only remembers the host, installs the command
+and records the checkout, with no evaluation; standalone Windows-driven WSL
+setup runs it as the Linux user after activation, so the distro is then switched
+from inside with `winix switch`.
+
+`winix run <args>` routes from the current directory: inside a project
+(winix.config.ts here or above) with an exact pin, it runs that pinned release
+in the project (without a pin, itself there); elsewhere, commands that need a
+project use the recorded checkout, and project-free commands (`init`, `install`,
+`--version`, `--help`, `--skill`, `windows search`, `windows fonts`) run itself
+in the current directory. `init` always runs in the current directory. Running a
+pinned release never infers another Winix from node_modules;
+`WINIX_SDK=<package dir>` (absolute or project-relative) explicitly runs that
+package's `src/cli/index.ts`, else `dist/cli/index.js`, under supported Node,
+reporting it and the pin. On Windows and Linux a pin that differs from the
+running release downloads that release into the project's
+`.winix/runtime/<version>`, verified against its `SHA256SUMS` before running
+(Linux: behind a generated wrapper whose `--version` must match); older runtime
+folders are then removed, keeping the running one and any older checkout
+launcher's fallback. Checkout launchers (`.winix/bin`) from earlier bootstraps
+keep working: they run `winix run` from the config directory. macOS has no
+standalone executable. The user opts into npm with `npm ci` and their approved
+source. Local npm scripts remain the standard npm workflow. New init manifests
+use exact version pins.
 
 Fresh WSL setup branch refs (including resolved default HEAD) fetch full remote
 branch history and create upstream-tracking local branches at the locked

@@ -131,6 +131,6 @@ All of them: [Windows reference](../reference/windows/README.md).
 
 ## 6. Check it on the next machine
 
-The real test is a fresh PC: run [bootstrap](../start/new-machine.md) there
+The real test is a fresh PC: run the [install script with your repository](../start/new-machine.md) there
 and see what's missing. Whatever you set up by hand afterwards is the next
 thing to declare.

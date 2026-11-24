@@ -1,19 +1,35 @@
 ---
 title: The winix command
-description: How the winix command finds your checkout, runs the Winix version it pins, and updates itself.
+description: How the winix command picks the Winix version and the folder to run in, and how Winix updates itself.
 sidebar:
   order: 6
 ---
 
 # The winix command
 
-After [bootstrap](../start/new-machine.md), `winix` works from any folder and
-always runs the Winix version your repository pins. That's what lets you update
+The [install script](../start/install.md) (or `winix install command`) puts a
+`winix` command on your PATH. It works from any folder, and inside a project it
+always runs the Winix version that project pins. That's what lets you update
 Winix on every machine by changing one line in the repository.
+
+## What it runs
+
+The command runs the installed Winix (in `%LOCALAPPDATA%\Winix` or
+`~/.local/share/winix`), which decides from where you are:
+
+| Where you are | What runs |
+|---|---|
+| Inside a project (a `winix.config.ts` here or in a parent folder) | The version that project pins, in that project. Downloaded (checksum-verified) the first time. |
+| Anywhere else, for commands that need a project (`switch`, `plan`, `update`, `check`…) | The checkout the install script set up on this machine, so `winix switch` from your home folder applies this machine. |
+| Anywhere else, for the rest (`init`, `--version`, `windows search`, `--skill`) | The installed Winix, in the current folder. |
+
+`winix init` always runs in the current folder, even inside another project.
+The host comes from `--host`, or from the project's `.winix/host`, which the
+install script (or `winix bootstrap`) wrote.
 
 ## The pin
 
-Your config's `package.json` pins Winix to an exact version, or to the matching
+A project's `package.json` pins Winix to an exact version, or to the matching
 release tarball on GitHub:
 
 ```json
@@ -24,29 +40,10 @@ release tarball on GitHub:
 }
 ```
 
-Version ranges (`^0.3.2`), local links and other URLs are refused: bootstrap
-and the `winix` command need to know exactly which release to download.
-`winix init` writes an exact pin.
-
-## What runs
-
-```text
-winix switch
-  └─ %LOCALAPPDATA%\Winix\bin\winix.cmd   (Linux: ~/.local/bin/winix)
-      └─ <checkout>\.winix\bin\winix.ps1   (Linux: .winix/bin/winix)
-          └─ winix run switch
-              └─ the pinned release, from .winix/runtime/<version>/
-```
-
-1. The per-user command calls the launcher in the checkout bootstrap set up.
-2. The launcher runs `winix run <your arguments>` from the config directory.
-3. `run` reads the pin. When that release isn't downloaded yet, it downloads
-   the executable and checks it against the release's `SHA256SUMS` before
-   running it. On NixOS it runs through a pinned loader.
-4. The host comes from `--host`, or from `.winix/host`, which bootstrap wrote.
-
-Older downloaded versions are cleaned up, keeping the one the launcher falls
-back to.
+Version ranges (`^0.3.2`), local links and other URLs are refused: the command
+needs to know exactly which release to run. `winix init` pins the version that
+created the project. Pinned releases are kept in the project's ignored
+`.winix/runtime/<version>`; older ones are cleaned up after a download.
 
 ## Updating Winix
 
@@ -59,7 +56,8 @@ winix switch
 
 The first `winix` after the pull downloads the new version. Nothing else to
 install. [Keep everything up to date](../guides/keep-up-to-date.md#winix-itself)
-shows how to move the pin.
+shows how to move the pin. The installed copy that does the routing only needs
+replacing for a new Winix outside your projects: rerun the install script.
 
 ## npm and node_modules
 
@@ -71,11 +69,11 @@ as usual; that's the route on macOS, which has no standalone executable yet.
 
 To run a different Winix through the `winix` command on purpose, such as a
 source checkout while working on Winix itself, set `WINIX_SDK` to its package
-directory (absolute, or relative to the config directory):
+directory (absolute, or relative to the project):
 
 ```powershell
 $env:WINIX_SDK = 'D:\src\winix'; winix plan
 ```
 
-It prints which Winix it runs and the version the checkout pins, and needs
+It prints which Winix it runs and the version the project pins, and needs
 Node.js 22.13+, 24 or 26.

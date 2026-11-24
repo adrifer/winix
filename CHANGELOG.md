@@ -5,6 +5,32 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
+## 0.4.0
+
+Install Winix without a repository, a `winix` command that works from any
+folder, and a real `winix plan` on NixOS.
+
+- **One install script per platform: `install.ps1` and `install.sh`** replace
+  `bootstrap-windows.ps1`, `bootstrap-linux.sh` and `bootstrap-nixos.sh`.
+  Without a repository they install the latest Winix (or `-Version`) and a
+  `winix` command, ready for `winix init`; on Windows they first install Git,
+  PowerShell 7 and DSC when missing. With `-Repository` they set the machine up
+  from it as before, and a repository without a config yet gets the latest
+  Winix and a hint to run `winix init`. The npm-route options (`-Check`,
+  `-Standalone`, `-UseNvm`, Node.js installation) are gone, and repository
+  setup no longer downloads the script a second time. A dotfiles setup script
+  that downloads `bootstrap-windows.ps1` from a release needs to download
+  `install.ps1` from this release on.
+- **`winix install command`** installs the running Winix for your user
+  (`%LOCALAPPDATA%\Winix` or `~/.local/share/winix`) and puts the `winix`
+  command on PATH, also after downloading the executable by hand.
+- **The `winix` command works from anywhere.** Inside a project it runs the
+  version that project pins, there; elsewhere, `switch` and the other project
+  commands use the checkout bootstrap set up, and `init`, `--version` or
+  `windows search` run in the current folder. Before, every command ran in the
+  bootstrapped checkout, so `winix init` in a new folder failed. Bootstrap no
+  longer writes `.winix/bin` launchers; existing ones keep working.
+
 - `winix plan` on NixOS and WSL hosts shows what a switch would change, like on
   Windows: it builds the new system without activating it and compares it with
   the running one. Declared packages installed, upgraded or removed (with

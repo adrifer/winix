@@ -1,5 +1,5 @@
 import { readFile, readdir, mkdir, writeFile, lstat, rename, rm } from "node:fs/promises";
-import { join, dirname, resolve, delimiter } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
@@ -11,7 +11,11 @@ import { standaloneRuntime } from "../../runtime.ts";
 import { resolveWinixVersionRange } from "./init.ts";
 import { runCommand } from "../run.ts";
 import { nodeTypeArguments } from "../node.ts";
-import { loadWorkspace } from "../loader.ts";
+import { findConfig, loadWorkspace } from "../loader.ts";
+import {
+  GENERATED, assertPlainDirectories, defaultExec, installWinixCommand, plainFile, rememberCheckout, rememberedCheckout,
+  writeLinuxWrapper,
+} from "../winix-home.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { platformForEvaluatedHost } from "../activation.ts";
 import { readRememberedHost, rememberHost } from "../host-memory.ts";
@@ -74,29 +78,6 @@ export async function localWinixCommand(
 }
 
 const RELEASES = "https://github.com/adrifer/winix/releases/download";
-/** The nixpkgs revision bootstrap tools come from (matches the Linux/WSL bootstrap scripts). */
-const BOOTSTRAP_NIXPKGS = "github:NixOS/nixpkgs/0bb2eedc20e4739f29e8045034f2828ad7054f8f";
-
-async function assertPlainDirectories(paths: string[]): Promise<void> {
-  for (const path of paths) {
-    try {
-      if (!(await lstat(path)).isDirectory()) throw new Error(`Refusing a linked/non-directory Winix path: ${path}`);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
-  }
-}
-
-/** A plain file at `path` (true), nothing there (false), or an error for anything else. */
-async function plainFile(path: string): Promise<boolean> {
-  try {
-    if ((await lstat(path)).isFile()) return true;
-    throw new Error(`Refusing a linked/non-file Winix executable: ${path}`);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    return false;
-  }
-}
 
 /** Downloads a release asset to `target` only when it matches the release's SHA256SUMS. */
 async function downloadVerified(version: string, asset: string, target: string, request: typeof fetch, mode = 0o644): Promise<void> {
@@ -150,10 +131,6 @@ export async function ensureWindowsRuntime(
   }, `Downloaded Winix ${version} (checksum verified)`);
 }
 
-function shellQuote(value: string): string {
-  return `'${value.replaceAll("'", "'\\''")}'`;
-}
-
 /**
  * The Linux equivalent: .winix/runtime/<version>/winix.bin, verified the same
  * way, behind a generated `winix` wrapper. On NixOS the wrapper starts the
@@ -165,10 +142,7 @@ export async function ensureLinuxRuntime(
   directory: string, version: string, request: typeof fetch = fetch, arch = process.arch,
   running = process.env.WINIX_STANDALONE_EXECUTABLE ?? process.execPath,
   nixos = existsSync("/etc/NIXOS"),
-  exec: (command: string, args: string[]) => string = (command, args) => execFileSync(command, args, {
-    encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-    env: { ...process.env, NIX_CONFIG: [process.env.NIX_CONFIG, "extra-experimental-features = nix-command flakes"].filter(Boolean).join("\n") },
-  }),
+  exec: (command: string, args: string[]) => string = defaultExec,
 ): Promise<string> {
   if (arch !== "x64" && arch !== "arm64") throw new Error(`No standalone Winix release for Linux ${arch}`);
   const { winix, runtime, folder } = runtimeFolders(directory, version);
@@ -180,20 +154,7 @@ export async function ensureLinuxRuntime(
   if (await ready()) return wrapper;
   return progress.step(`Downloading Winix ${version}`, async () => {
     if (!(await plainFile(binary))) await downloadVerified(version, `winix-linux-${arch}`, binary, request, 0o755);
-    let command = [binary];
-    if (nixos) {
-      for (const [name, output] of [["libc", "glibc.out"], ["compiler", "stdenv.cc.cc.lib"]]) {
-        exec("nix", ["build", "--no-write-lock-file", "--out-link", join(folder, name), `${BOOTSTRAP_NIXPKGS}#${output}`]);
-      }
-      const linker = arch === "x64" ? "ld-linux-x86-64.so.2" : "ld-linux-aarch64.so.1";
-      command = [join(folder, "libc", "lib", linker), "--argv0", binary,
-        "--library-path", `${join(folder, "libc", "lib")}:${join(folder, "compiler-lib", "lib")}`, binary];
-    }
-    await writeGenerated(wrapper, [
-      "#!/usr/bin/env bash", GENERATED, "set -euo pipefail",
-      `export WINIX_STANDALONE_EXECUTABLE=${shellQuote(wrapper)}`,
-      `exec ${command.map(shellQuote).join(" ")} "$@"`, "",
-    ].join("\n"), "runtime launcher");
+    await writeLinuxWrapper(folder, arch, nixos, exec);
     const reported = exec(wrapper, ["--version"]).trim();
     if (reported !== version) throw new Error(`Downloaded Winix reports ${reported || "nothing"}, expected ${version}`);
     await pruneRuntimes(directory, [folder, dirname(running)]);
@@ -257,8 +218,8 @@ export async function runCheckout(
   run = runCommand,
   fetchRuntime: RuntimeFetcher | undefined = defaultRuntimeFetcher(directory),
 ): Promise<void> {
-  if (!args.length || ["run", "bootstrap"].includes(args[0])) {
-    throw new Error("Usage: winix run <check|apply|switch|update|inspect|...> [options]; run/bootstrap cannot be nested");
+  if (!args.length || args[0] === "run") {
+    throw new Error("Usage: winix run <check|apply|switch|update|inspect|...> [options]; run cannot be nested");
   }
   const version = (await resolveWinixVersionRange()).replace(/^\^/, "");
   const executable = process.env.WINIX_STANDALONE_EXECUTABLE ?? process.execPath;
@@ -267,14 +228,70 @@ export async function runCheckout(
     const nodeVersion = execFileSync(command.command, ["--version"], { encoding: "utf8" }).trim();
     command.args.unshift(...nodeTypeArguments(nodeVersion));
   }
-  if (!standaloneRuntime() && command.command === process.execPath && command.args.length === 0) {
-    command = {
-      command: process.execPath,
-      args: [...nodeTypeArguments(process.version), "--no-warnings",
-        fileURLToPath(new URL(`../index.${import.meta.url.endsWith(".ts") ? "ts" : "js"}`, import.meta.url))],
-    };
-  }
+  if (command.command === executable && command.args.length === 0) command = selfCommand();
   await run(command.command, [...command.args, ...args], { cwd: directory });
+}
+
+/** This Winix, as a command: the standalone executable, or Node running this CLI. */
+function selfCommand(): { command: string; args: string[] } {
+  if (standaloneRuntime()) return { command: process.env.WINIX_STANDALONE_EXECUTABLE ?? process.execPath, args: [] };
+  return {
+    command: process.execPath,
+    args: [...nodeTypeArguments(process.version), "--no-warnings",
+      fileURLToPath(new URL(`../index.${import.meta.url.endsWith(".ts") ? "ts" : "js"}`, import.meta.url))],
+  };
+}
+
+/** Commands that work without a project, in the current folder. */
+const PROJECT_FREE = new Set(["init", "install", "help", "--help", "-h", "--version", "-v", "--skill"]);
+
+function needsProject(args: string[]): boolean {
+  const [command, sub] = args;
+  if (PROJECT_FREE.has(command)) return false;
+  // Searching WinGet and Nerd Fonts reads nothing from a config.
+  if ((command === "windows" || command === "package") && sub === "search") return false;
+  if ((command === "windows" || command === "fonts") && (sub === "fonts" || sub === "search")) return false;
+  return true;
+}
+
+export interface RouteDeps {
+  runCheckout(directory: string, args: string[]): Promise<void>;
+  run: typeof runCommand;
+  remembered(): string | undefined;
+}
+
+const defaultRouteDeps: RouteDeps = {
+  runCheckout: (directory, args) => runCheckout(directory, args),
+  run: runCommand,
+  remembered: () => rememberedCheckout(),
+};
+
+/**
+ * `winix run <args>`, what the `winix` command runs. It picks the Winix and
+ * the folder from where you are:
+ *
+ * 1. Inside a project (winix.config.ts here or above): the version it pins, there.
+ * 2. Elsewhere, for commands that need a project: the checkout bootstrap set up,
+ *    so `winix switch` from any folder applies this machine.
+ * 3. Otherwise (`init`, `--version`, `windows search`...): this Winix, here.
+ */
+export async function routeRun(cwd: string, args: string[], deps: RouteDeps = defaultRouteDeps): Promise<void> {
+  if (args[0] === "run") throw new Error("winix run cannot be nested");
+  const self = async (directory: string) => {
+    const command = selfCommand();
+    await deps.run(command.command, [...command.args, ...args], { cwd: directory });
+  };
+  // A new project starts in this folder, even inside another one.
+  if (args.length === 0 || args[0] === "init" || args[0] === "install") return self(cwd);
+  const config = findConfig(cwd);
+  if (config) {
+    const directory = dirname(config);
+    let pinned = true;
+    try { await checkoutWinixVersion(directory); } catch { pinned = false; }
+    return pinned ? deps.runCheckout(directory, args) : self(directory);
+  }
+  const checkout = needsProject(args) ? deps.remembered() : undefined;
+  return checkout ? deps.runCheckout(checkout, args) : self(cwd);
 }
 
 async function confirm(message: string, yes: boolean): Promise<void> {
@@ -309,8 +326,14 @@ export interface BootstrapDeps {
   /** Hosts this machine could be (evaluates the trusted config). */
   candidateHosts(directory: string): Promise<string[]>;
   askHost(hosts: string[]): Promise<string>;
-  /** Put a per-user `winix` command on PATH that runs this launcher. */
-  installCommand(launcher: string): Promise<void>;
+  /** Install this Winix and the per-user `winix` command, and remember the checkout for `winix switch` anywhere. */
+  installCommand(checkout: string): Promise<void>;
+}
+
+async function installCommandFor(checkout: string): Promise<void> {
+  await installWinixCommand();
+  await rememberCheckout(checkout);
+  console.log(`Checkout: ${checkout} (winix switch outside a project applies it).`);
 }
 
 async function candidateHosts(directory: string): Promise<string[]> {
@@ -321,7 +344,7 @@ async function candidateHosts(directory: string): Promise<string[]> {
     .map((host) => host.name);
 }
 
-const defaultDeps: BootstrapDeps = { candidateHosts, askHost, installCommand: installUserCommand };
+const defaultDeps: BootstrapDeps = { candidateHosts, askHost, installCommand: installCommandFor };
 
 /**
  * The host to bootstrap: the requested one, the one remembered from an earlier
@@ -346,7 +369,7 @@ export async function bootstrapCheckout(
     host?: string; yes: boolean; prepareOnly: boolean; dry: boolean;
     /** Consent was already given by the repository bootstrap script: no further questions. */
     confirmed?: boolean;
-    /** Only remember the host (when given) and install the launcher and `winix` command; nothing is evaluated. */
+    /** Only remember the host (when given), install the `winix` command and remember the checkout; nothing is evaluated. */
     commandOnly?: boolean;
   },
   run = runCheckout,
@@ -355,7 +378,6 @@ export async function bootstrapCheckout(
   if (opts.host !== undefined && (!opts.host || opts.host.startsWith("-") || /[\0\r\n]/.test(opts.host))) {
     throw new Error("bootstrap --host requires a declared host name");
   }
-  const bin = join(directory, ".winix", "bin");
   if (opts.commandOnly) {
     if (!standaloneRuntime()) throw new Error("bootstrap --command-only needs the standalone Winix executable");
     await checkoutWinixVersion(directory);
@@ -363,12 +385,12 @@ export async function bootstrapCheckout(
       console.log(`Would install the winix command for ${directory}${opts.host ? ` and remember host "${opts.host}"` : ""}. No config was evaluated.`);
       return;
     }
-    await assertPlainDirectories([join(directory, ".winix"), bin]);
+    await assertPlainDirectories([join(directory, ".winix")]);
     if (opts.host) {
       await rememberHost(directory, opts.host);
       console.log(`Host: ${opts.host} (remembered for winix switch on this machine)`);
     }
-    await installLauncher(directory, deps);
+    await deps.installCommand(directory);
     return;
   }
   const expected = await checkoutWinixVersion(directory);
@@ -379,156 +401,18 @@ export async function bootstrapCheckout(
     return;
   }
   if (!opts.confirmed) await confirm("Evaluate trusted TypeScript from this checkout? Config code can execute commands.", opts.yes);
-  await assertPlainDirectories([join(directory, ".winix"), bin]);
+  await assertPlainDirectories([join(directory, ".winix")]);
   const host = await bootstrapHost(directory, opts.host, deps);
   await rememberHost(directory, host);
   console.log(`Host: ${host} (remembered for winix switch on this machine)`);
   await run(directory, ["check"]);
   // With consent given up front, switch shows the plan itself; preview separately only when stopping there or asking.
   if (opts.prepareOnly || !opts.confirmed) await run(directory, ["switch", "--dry", "--host", host]);
-  if (standaloneRuntime()) await installLauncher(directory, deps);
+  if (standaloneRuntime()) await deps.installCommand(directory);
   if (opts.prepareOnly) {
     console.log("Prepared and validated. No host activation performed.");
     return;
   }
   if (!opts.confirmed) await confirm(`Activate host "${host}"? Reboot and WSL shutdown are never automatic.`, opts.yes);
   await run(directory, ["switch", "--host", host, ...(opts.yes ? ["--yes"] : [])]);
-}
-
-/** The checkout launcher (.winix/bin) for the running standalone executable, plus the per-user `winix` command. */
-async function installLauncher(directory: string, deps: BootstrapDeps): Promise<void> {
-  const executable = process.env.WINIX_STANDALONE_EXECUTABLE ?? process.execPath;
-  const bin = join(directory, ".winix", "bin");
-  await mkdir(bin, { recursive: true });
-  const windows = process.platform === "win32";
-  const launcher = join(bin, windows ? "winix.ps1" : "winix");
-  await writeGenerated(launcher, windows ? windowsLauncher(executable) : linuxLauncher(executable), "launcher");
-  console.log(`Checkout launcher: ${launcher}. It runs the pinned Winix release (downloading it when the pin changes); set WINIX_SDK to run another Winix, such as a source checkout.`);
-  await deps.installCommand(launcher);
-}
-
-const GENERATED = "# Generated by Winix bootstrap";
-
-async function writeGenerated(path: string, content: string, what: string): Promise<void> {
-  try {
-    const stat = await lstat(path);
-    if (!stat.isFile() || !(await readFile(path, "utf8")).includes("Generated by Winix bootstrap")) {
-      throw new Error(`Refusing to overwrite an unrecognized ${what}: ${path}`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-  }
-  await writeFile(path, content, { mode: 0o755 });
-}
-
-/**
- * Runs `winix run` from the config directory with the executable for the
- * checkout's current pin when it has been downloaded, else the bootstrap one
- * (which downloads the pinned release itself).
- */
-export function windowsLauncher(executable: string): string {
-  return `${GENERATED}
-$ErrorActionPreference = 'Stop'
-$config = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-Set-Location -LiteralPath $config
-$executable = '${executable.replaceAll("'", "''")}'
-try {
-  $package = Get-Content -LiteralPath (Join-Path $config 'package.json') -Raw | ConvertFrom-Json
-  $spec = $package.dependencies.'@adrifer/winix'
-  if (-not $spec) { $spec = $package.devDependencies.'@adrifer/winix' }
-  if ($spec -match '^(\\d+\\.\\d+\\.\\d+(?:-preview\\.\\d+)?)$' -or $spec -match '/download/v(\\d+\\.\\d+\\.\\d+(?:-preview\\.\\d+)?)/') {
-    $pinned = Join-Path $config ('.winix\\runtime\\' + $Matches[1] + '\\winix.exe')
-    if (Test-Path -LiteralPath $pinned -PathType Leaf) { $executable = $pinned }
-  }
-} catch { }
-& $executable run @args
-exit $LASTEXITCODE
-`;
-}
-
-/** The Linux launcher: same choice as on Windows, reading the pin with sed (no Node/Python needed). */
-export function linuxLauncher(executable: string): string {
-  return `#!/usr/bin/env bash
-${GENERATED}
-set -euo pipefail
-config=$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/../.." && pwd)
-cd -- "$config"
-executable=${shellQuote(executable)}
-spec=$(sed -nE 's/.*"@adrifer\\/winix"[[:space:]]*:[[:space:]]*"([^"]+)".*/\\1/p' package.json 2>/dev/null | head -n 1) || spec=
-version='[0-9]+\\.[0-9]+\\.[0-9]+(-preview\\.[0-9]+)?'
-if [[ $spec =~ ^($version)$ || $spec =~ /download/v($version)/ ]]; then
-  pinned="$config/.winix/runtime/\${BASH_REMATCH[1]}/winix"
-  if [[ -f $pinned && -x $pinned ]]; then executable=$pinned; fi
-fi
-exec "$executable" run "$@"
-`;
-}
-
-/** The per-user command: %LOCALAPPDATA%\Winix\bin\winix.cmd, on the user PATH (no elevation). */
-export function windowsCommandShim(launcher: string): string {
-  return [
-    "@echo off",
-    "rem Generated by Winix bootstrap",
-    `"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "${launcher}" %*`,
-    "exit /b %ERRORLEVEL%",
-    "",
-  ].join("\r\n");
-}
-
-/** The per-user command on Linux: ~/.local/bin/winix. */
-export function linuxCommandShim(launcher: string): string {
-  return `#!/usr/bin/env bash\n${GENERATED}\nexec ${shellQuote(launcher)} "$@"\n`;
-}
-
-/** Adds a directory to the user PATH, keeping %VARIABLE% entries unexpanded, and notifies running apps. */
-export function userPathScript(directory: string): string {
-  return `$ErrorActionPreference = 'Stop'
-$dir = '${directory.replaceAll("'", "''")}'
-$key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $true)
-$changed = $false
-try {
-  $current = [string]$key.GetValue('Path', '', [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
-  $kind = if ($null -ne $key.GetValue('Path')) { $key.GetValueKind('Path') } else { [Microsoft.Win32.RegistryValueKind]::ExpandString }
-  $entries = @($current -split ';' | Where-Object { $_ })
-  if (-not ($entries | Where-Object { $_.TrimEnd('\\') -ieq $dir.TrimEnd('\\') })) {
-    $key.SetValue('Path', (@($entries) + $dir) -join ';', $kind)
-    $changed = $true
-  }
-} finally { $key.Dispose() }
-# Setting a user variable broadcasts WM_SETTINGCHANGE, so new terminals see the PATH.
-if ($changed) { [Environment]::SetEnvironmentVariable('WINIX_PATH_REFRESH', $null, 'User') }
-`;
-}
-
-async function installUserCommand(launcher: string): Promise<void> {
-  if (process.platform !== "win32") {
-    await installLinuxCommand(launcher);
-    return;
-  }
-  const localAppData = process.env.LOCALAPPDATA;
-  if (!localAppData) throw new Error("LOCALAPPDATA is not set; cannot install the winix command");
-  const bin = join(localAppData, "Winix", "bin");
-  await assertPlainDirectories([join(localAppData, "Winix"), bin]);
-  await mkdir(bin, { recursive: true });
-  const shim = join(bin, "winix.cmd");
-  await writeGenerated(shim, windowsCommandShim(launcher), "winix command");
-  execFileSync("powershell.exe", [
-    "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(userPathScript(bin), "utf16le").toString("base64"),
-  ], { stdio: ["ignore", "ignore", "pipe"], timeout: 60000 });
-  console.log(`Command: winix (${shim}, on your user PATH; open a new terminal to use it).`);
-}
-
-/** Writes ~/.local/bin/winix; PATH itself belongs to the user's shell/Home Manager config, so only a hint is printed. */
-export async function installLinuxCommand(launcher: string, home = process.env.HOME, path = process.env.PATH ?? ""): Promise<string> {
-  if (!home) throw new Error("HOME is not set; cannot install the winix command");
-  const bin = join(home, ".local", "bin");
-  await assertPlainDirectories([join(home, ".local"), bin]);
-  await mkdir(bin, { recursive: true });
-  const shim = join(bin, "winix");
-  await writeGenerated(shim, linuxCommandShim(launcher), "winix command");
-  const onPath = path.split(delimiter).some((entry) => entry.replace(/[\\/]+$/, "") === bin);
-  console.log(onPath
-    ? `Command: winix (${shim}).`
-    : `Command: winix (${shim}). ~/.local/bin is not on PATH: add it in your config, e.g. home.path(nix.homePath(".local/bin")).`);
-  return shim;
 }

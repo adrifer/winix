@@ -33,7 +33,7 @@ src/
     editor-types.ts         .winix/types for editors
     progress.ts / style.ts  Spinner and colours
     commands/               apply, check, switch (plan), update, inspect, init, bootstrap, scaffold, ...
-scripts/                    bootstrap-windows.ps1, bootstrap-linux.sh, release and build scripts
+scripts/                    install.ps1, install.sh (install Winix, or set a machine up from a repository), release and build scripts
 ```
 
 ## Key concepts

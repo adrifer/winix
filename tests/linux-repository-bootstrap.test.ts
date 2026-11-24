@@ -9,14 +9,14 @@ const available = (() => {
     return true;
   } catch { return false; }
 })();
-const script = readFileSync("scripts/bootstrap-linux.sh", "utf8");
+const script = readFileSync("scripts/install.sh", "utf8");
 const source = script.split('python3 - "$@" <<\'PY\'\n')[1].split("\nPY")[0];
 
-describe.skipIf(!available)("Linux repository bootstrap with mocked downloads/activation", () => {
-  it("accepts and declines interactive trust using a real non-seekable terminal", () => {
+describe.skipIf(!available)("install.sh with mocked downloads and Winix", () => {
+  it("accepts and declines the confirmation using a real non-seekable terminal", () => {
     const test = `
 import os, pty, select, time
-namespace = {"__name__":"bootstrap_test"}
+namespace = {"__name__":"install_test"}
 exec(${JSON.stringify(source)}, namespace)
 master, slave = pty.openpty()
 path = os.ttyname(slave)
@@ -30,14 +30,14 @@ def read_until(expected, seconds=5):
     return data
 try:
     os.write(master, b"yes\\n")
-    namespace["confirm"]("Trust repository?", False)
-    assert b"Trust repository? [y/N]" in read_until(b"Trust repository? [y/N]")
+    namespace["confirm"](["This will:"], False)
+    assert b"Continue? [y/N]" in read_until(b"Continue? [y/N]")
     os.write(master, b"no\\n")
     try:
-        namespace["confirm"]("Activate?", False)
-        raise AssertionError("Declined trust was accepted")
+        namespace["confirm"](["This will:"], False)
+        raise AssertionError("Declined confirmation was accepted")
     except RuntimeError as error:
-        assert "cancelled" in str(error)
+        assert "Cancelled" in str(error)
 finally:
     os.close(slave)
     os.close(master)
@@ -48,15 +48,17 @@ print("WINIX_INTERACTIVE_TRUST_SUCCESS")
     expect(output).toContain("WINIX_INTERACTIVE_TRUST_SUCCESS");
   });
 
-  it("verifies downloads, preserves existing checkouts and propagates safety failures", () => {
+  it("installs, sets up repositories, verifies downloads and refuses unsafe checkouts", () => {
     const test = `
 import hashlib, json, os, pathlib, tempfile, sys
-namespace = {"__name__": "bootstrap_test"}
+namespace = {"__name__": "install_test"}
 exec(${JSON.stringify(source)}, namespace)
 namespace["platform"].machine = lambda: "x86_64"
 namespace["sys"].platform = "linux"
-with tempfile.TemporaryDirectory(prefix="winix-bootstrap-") as root:
-    for scenario in ("prepare", "activate", "origin", "dirty", "nohost", "ssh", "floating", "hash", "escape", "existing"):
+with tempfile.TemporaryDirectory(prefix="winix-install-") as root:
+    for scenario in ("install", "version", "empty", "prepare", "activate", "origin", "dirty", "nohost", "ssh", "floating", "hash", "escape", "existing"):
+        # Each scenario installs into its own folder (a verified binary there is reused).
+        os.environ["XDG_DATA_HOME"] = str(pathlib.Path(root) / ("data-" + scenario))
         destination = pathlib.Path(root) / scenario
         destination.mkdir()
         (destination / ".git").mkdir()
@@ -65,15 +67,19 @@ with tempfile.TemporaryDirectory(prefix="winix-bootstrap-") as root:
             outside = pathlib.Path(root) / "outside"
             outside.mkdir()
             config.symlink_to(outside, target_is_directory=True)
-        else:
+        elif scenario != "empty":
             config.mkdir()
-        spec = "^0.3.0" if scenario == "floating" else "0.3.0-preview.1"
-        (config / "package.json").write_text(json.dumps({"dependencies":{"@adrifer/winix":spec}}))
+        if scenario not in ("empty", "escape"):
+            (config / "winix.config.ts").write_text("export default {}")
+            spec = "^0.3.0" if scenario == "floating" else "0.3.0-preview.1"
+            (config / "package.json").write_text(json.dumps({"dependencies":{"@adrifer/winix":spec}}))
         calls = []
         data = b"verified executable"
         expected = hashlib.sha256(data).hexdigest()
         def fake_fetch(url):
             calls.append(("download", url))
+            if "api.github.com" in url:
+                return json.dumps({"tag_name": "v0.9.0"}).encode()
             if url.endswith("/SHA256SUMS"):
                 return (expected + "  winix-linux-x64\\n").encode()
             return b"corrupt" if scenario == "hash" else data
@@ -86,27 +92,44 @@ with tempfile.TemporaryDirectory(prefix="winix-bootstrap-") as root:
             if args[:2] == ["git", "rev-parse"]:
                 return "a" * 40
             if args[-1:] == ["--version"]:
-                return "0.3.0-preview.1"
-            if args[:2] == ["nix", "build"]:
+                return pathlib.Path(args[0]).parent.name
+            if args[:2] == ["nix", "build"] or args[-2:] == ["install", "command"]:
                 return ""
             raise AssertionError("Unexpected command: " + repr(args))
         namespace["fetch"] = fake_fetch
         namespace["run"] = fake_run
         original = namespace["subprocess"].run
-        namespace["subprocess"].run = lambda args, **kwargs: calls.append(("activation", args))
-        sys.argv = ["bootstrap", "--repository", "https://example.com/dotfiles.git",
-                    *([] if scenario == "nohost" else ["--host", "linux"]),
-                    "--destination", str(destination), "--yes"]
-        if scenario != "activate":
-            sys.argv.append("--prepare-only")
+        namespace["subprocess"].run = lambda args, **kwargs: calls.append(("winix", args))
+        if scenario in ("install", "version"):
+            sys.argv = ["install", "--yes", *(["--version", "0.3.2"] if scenario == "version" else [])]
+        else:
+            sys.argv = ["install", "--repository", "https://example.com/dotfiles.git",
+                        *([] if scenario == "nohost" else ["--host", "linux"]),
+                        "--destination", str(destination), "--yes"]
+            if scenario not in ("activate", "empty"):
+                sys.argv.append("--prepare-only")
         try:
-            if scenario in ("prepare", "activate", "existing", "dirty", "nohost", "ssh"):
+            if scenario in ("install", "version", "empty"):
                 namespace["main"]()
-                activations = [args for kind,args in calls if kind == "activation"]
-                assert len(activations) == 1, calls
-                assert ("--prepare-only" in activations[0]) == (scenario != "activate")
-                assert "--yes" in activations[0] and "--confirmed" in activations[0]
-                assert ("--host" in activations[0]) == (scenario != "nohost")
+                version = "0.3.2" if scenario == "version" else "0.9.0"
+                assert any(kind == "download" and "/v" + version + "/" in url for kind, url in calls), calls
+                assert ("download", "https://api.github.com/repos/adrifer/winix/releases/latest") in calls if scenario != "version" else True
+                assert any(kind == "command" and args[-2:] == ["install", "command"] for kind, args in calls), calls
+                assert not any(kind == "winix" for kind, args in calls), calls
+                runtime = pathlib.Path(os.environ["XDG_DATA_HOME"]) / "winix" / "runtime" / version
+                assert (runtime / "winix.bin").read_bytes() == data
+                assert (runtime / "winix").read_text().startswith("#!/usr/bin/env bash\\n# Generated by Winix bootstrap\\n")
+                if scenario == "empty":
+                    assert config.is_dir()
+            elif scenario in ("prepare", "activate", "existing", "dirty", "nohost", "ssh"):
+                namespace["main"]()
+                handoffs = [args for kind, args in calls if kind == "winix"]
+                assert len(handoffs) == 1, calls
+                assert handoffs[0][1:3] == ["bootstrap", "--confirmed"]
+                assert ("--prepare-only" in handoffs[0]) == (scenario != "activate")
+                assert "--yes" in handoffs[0]
+                assert ("--host" in handoffs[0]) == (scenario != "nohost")
+                assert any(kind == "download" and "/v0.3.0-preview.1/" in url for kind, url in calls), calls
                 if scenario == "existing":
                     calls.clear()
                     namespace["main"]()
@@ -116,64 +139,54 @@ with tempfile.TemporaryDirectory(prefix="winix-bootstrap-") as root:
                     namespace["main"]()
                     raise AssertionError("Unexpected success: " + scenario)
                 except RuntimeError as error:
-                    expected_error = {"origin":"different origin", "floating":"exact version",
-                                      "hash":"checksum mismatch", "escape":"Unsafe bootstrap directory"}[scenario]
+                    expected_error = {"origin":"different origin", "floating":"exact",
+                                      "hash":"checksum mismatch", "escape":"Unsafe directory"}[scenario]
                     assert expected_error.lower() in str(error).lower(), str(error)
-                assert not any(kind == "activation" for kind,args in calls), calls
-                assert not any(kind == "command" and args[-1:] == ["--version"] for kind,args in calls), calls
+                assert not any(kind == "winix" for kind,args in calls), calls
+                assert not any(kind == "command" and args[-1:] == ["--version"] for kind,args in calls) or scenario == "hash", calls
         finally:
             namespace["subprocess"].run = original
-print("WINIX_BOOTSTRAP_TEST_SUCCESS")
+print("WINIX_INSTALL_TEST_SUCCESS")
 `;
     const output = execFileSync(windows ? "wsl.exe" : "python3", windows
       ? ["--", "python3", "-"] : ["-"], { input: test, encoding: "utf8", timeout: 30000 });
-    expect(output).toContain("WINIX_BOOTSTRAP_TEST_SUCCESS");
+    expect(output).toContain("WINIX_INSTALL_TEST_SUCCESS");
   });
 
-  it("keeps help/dry-run free of downloads and rejects unknown options", () => {
+  it("keeps help and dry runs free of downloads and rejects unknown options", () => {
     const input = `
 set -euo pipefail
-bash scripts/bootstrap-linux.sh --repository https://example.com/dotfiles.git --host test --dry-run
-bash scripts/bootstrap-linux.sh --help
-if bash scripts/bootstrap-linux.sh --repository https://example.com/dotfiles.git --host test --dry-run --unknown; then exit 90; fi
+bash scripts/install.sh --dry-run
+bash scripts/install.sh --repository https://example.com/dotfiles.git --host test --dry-run
+bash scripts/install.sh --help
+if bash scripts/install.sh --repository https://example.com/dotfiles.git --host test --dry-run --unknown; then exit 90; fi
 `;
     const output = execFileSync(windows ? "wsl.exe" : "bash", windows
       ? ["--cd", process.cwd(), "--", "bash", "-s"] : ["-s"], { input, encoding: "utf8", timeout: 30000 });
-    expect(output).toContain("No changes or config evaluation");
-    expect(output).toContain("Usage: bash bootstrap-linux.sh");
+    expect(output).toContain("would download the latest Winix");
+    expect(output).toContain("would clone or check https://example.com/dotfiles.git");
+    expect(output).toContain("Usage: bash install.sh");
     expect(output).not.toContain("Preparing a temporary");
   });
 });
 
-describe.skipIf(!available)("Linux checkout launcher and winix command (real bash)", () => {
-  it("prefers the pinned runtime, falls back to the bootstrap executable, and works through the command", async () => {
-    const { linuxLauncher, linuxCommandShim } = await import("../src/cli/commands/bootstrap.ts");
+describe.skipIf(!available)("Linux winix command (real bash)", () => {
+  it("runs the installed Winix's router with every argument, from where you are", async () => {
+    const { linuxCommandShim } = await import("../src/cli/winix-home.ts");
     const b64 = (text: string) => Buffer.from(text).toString("base64");
     const input = `
 set -euo pipefail
 root=$(mktemp -d); trap 'rm -rf -- "$root"' EXIT
-config="$root/my dotfiles/winix"
-mkdir -p "$config/.winix/bin" "$config/.winix/runtime/0.3.1" "$root/bin" "$root/elsewhere"
-printf '%s\n' '{ "dependencies": { "@adrifer/winix": "https://github.com/adrifer/winix/releases/download/v0.3.1/adrifer-winix-0.3.1.tgz" } }' > "$config/package.json"
-printf '#!/usr/bin/env bash\necho "fallback $PWD $*"\n' > "$root/bin/fallback"
-printf '#!/usr/bin/env bash\necho "pinned $*"\n' > "$config/.winix/runtime/0.3.1/winix"
-chmod +x "$root/bin/fallback" "$config/.winix/runtime/0.3.1/winix"
-echo '${b64(linuxLauncher("/PLACEHOLDER/fallback"))}' | base64 -d | sed "s#/PLACEHOLDER#$root/bin#" > "$config/.winix/bin/winix"
-chmod +x "$config/.winix/bin/winix"
-echo '${b64(linuxCommandShim("/PLACEHOLDER"))}' | base64 -d | sed "s#/PLACEHOLDER#$config/.winix/bin/winix#" > "$root/winix"
+mkdir -p "$root/installed" "$root/my folder"
+printf '#!/usr/bin/env bash\necho "installed $PWD $*"\n' > "$root/installed/winix"
+chmod +x "$root/installed/winix"
+echo '${b64(linuxCommandShim("/PLACEHOLDER/winix"))}' | base64 -d | sed "s#/PLACEHOLDER#$root/installed#" > "$root/winix"
 chmod +x "$root/winix"
-cd "$root/elsewhere"
-"$root/winix" switch --dry
-rm "$config/.winix/runtime/0.3.1/winix"
+cd "$root/my folder"
 "$root/winix" plan "two words"
-printf '%s\n' '{ "dependencies": { "@adrifer/winix": "^0.3.0" } }' > "$config/package.json"
-"$root/winix" check
 `;
     const output = execFileSync(windows ? "wsl.exe" : "bash", windows ? ["--", "bash", "-s"] : ["-s"],
       { input, encoding: "utf8", timeout: 30000 });
-    const lines = output.trim().split("\n");
-    expect(lines[0]).toBe("pinned run switch --dry");
-    expect(lines[1]).toMatch(/^fallback .*\/my dotfiles\/winix run plan two words$/);
-    expect(lines[2]).toMatch(/^fallback .* run check$/);
+    expect(output.trim()).toMatch(/^installed .*\/my folder run plan two words$/);
   });
 });

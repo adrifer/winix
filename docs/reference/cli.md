@@ -52,7 +52,8 @@ remembered on this machine, the only host, or the host named like this machine.
 | Command | What it does |
 | --- | --- |
 | `winix init` | Create a Winix project in this directory. |
-| `winix bootstrap` | Set up this machine from a trusted checkout: validate, preview, confirm once, then apply the host. It remembers the host. `--prepare-only` stops before applying. |
+| `winix bootstrap` | Set up this machine from a trusted checkout: validate, preview, confirm once, then apply the host. It remembers the host and the checkout. `--prepare-only` stops before applying. The install script runs it for you. |
+| `winix install command` | Copy this Winix to your user folder and put the `winix` command on PATH ([details](../concepts/the-winix-command.md)). |
 | `winix install skill` | Install the agent skill, so coding agents read `winix --skill` for this version. |
 | `winix --skill` | Print the instructions for coding agents that match this version. |
 
@@ -75,9 +76,9 @@ Not listed in `winix --help`, but they keep working:
 
 | Command | What it does |
 | --- | --- |
-| `winix run <args>` | Run the checkout's pinned Winix with these arguments, downloading it (checksum-verified) when needed. The `winix` command's launchers call this, so `winix switch` is `winix run switch`. `WINIX_SDK=<dir>` runs another Winix, such as a source checkout. |
+| `winix run <args>` | What the `winix` command runs: picks the Winix and folder from where you are (the project's pinned version, the remembered checkout, or itself) and runs it with these arguments ([details](../concepts/the-winix-command.md)). `WINIX_SDK=<dir>` runs another Winix, such as a source checkout. |
 | `winix switch --dry` | Same as `winix plan`. |
-| `winix bootstrap --command-only` | Only install the `winix` command and remember `--host`, without evaluating the configuration. WSL setup uses it inside a new distro. |
+| `winix bootstrap --command-only` | Only install the `winix` command, remember the checkout and `--host`, without evaluating the configuration. WSL setup uses it inside a new distro. |
 | `winix package search`, `winix fonts search` | The older names of `winix windows search` and `winix windows fonts`. |
 
 ## Generated output

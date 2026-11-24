@@ -47,9 +47,8 @@
   },
   "files": [
     "scripts/winix.mjs",
-    "scripts/bootstrap-windows.ps1",
-    "scripts/bootstrap-nixos.sh",
-    "scripts/bootstrap-linux.sh",
+    "scripts/install.ps1",
+    "scripts/install.sh",
     "dist",
     "types",
     "index.d.ts",
