@@ -698,6 +698,12 @@ object to \`%USERPROFILE%\\.gitconfig\` with \`windows.file.text\`. Recipes live
   tell the user to expect (and approve) one UAC prompt.
   \`--offline\` fails on missing lock pins; \`--locked\` also fails if the lock
   would change.
+  On NixOS/WSL hosts, plan builds the system (no activation) and compares it
+  with /run/current-system: declared packages installed/upgraded/removed, Home
+  Manager files, /etc files, services (exact when \`sudo -n\` works, otherwise
+  estimated), and a restart notice for kernel changes. The build can take
+  minutes; switch reuses it and skips activation when nothing changed.
+  \`plan --no-build\` only prints the nixos-rebuild command.
 - \`winix switch [--host NAME] [--dry] [--yes]\` generates and activates one host, automatically cleaning up unused owned Windows packages and startup commands.
   Prune is Windows-only and uninstalls unused Winix-owned packages.
 - \`winix state forget startup <name>\` / \`winix state forget package <source> <id>\`

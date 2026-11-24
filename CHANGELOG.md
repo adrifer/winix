@@ -5,6 +5,16 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
+- `winix plan` on NixOS and WSL hosts shows what a switch would change, like on
+  Windows: it builds the new system without activating it and compares it with
+  the running one. Declared packages installed, upgraded or removed (with
+  versions), changed Home Manager files and `/etc` files, services that would
+  start, stop, restart or reload (from NixOS's own dry run when `sudo` needs no
+  password, otherwise estimated), the NixOS version, and a restart notice when
+  the kernel changes. `winix switch` shows the same plan before activating, and
+  skips activation when the system is unchanged. `winix plan --no-build` skips
+  the build and only shows the command.
+
 ## 0.3.2
 
 - WSL: `home.wsl.gitCredentialManager()` works again. Its shim (any

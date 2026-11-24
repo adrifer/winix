@@ -18,8 +18,8 @@ remembered on this machine, the only host, or the host named like this machine.
 
 | Command | What it does |
 | --- | --- |
-| `winix plan` | Show what `switch` would change on this machine, without changing anything. |
-| `winix switch` | Generate the host's output and apply it. On Windows, Winix applies what differs (one UAC prompt); on NixOS and macOS, it runs `nixos-rebuild` or `darwin-rebuild`. |
+| `winix plan` | Show what `switch` would change on this machine, without changing anything. On NixOS and WSL it builds the new system and compares it with the running one ([details](../concepts/applying-changes.md#the-plan-on-nixos-and-wsl)). |
+| `winix switch` | Generate the host's output and apply it. On Windows, Winix applies what differs (one UAC prompt); on NixOS it builds, shows the plan and runs `nixos-rebuild` (skipped when nothing changed); on macOS it runs `darwin-rebuild`. |
 | `winix update [<name>...]` | Update the locks to the latest versions: `winix-windows.lock` on Windows, the Nix `flake.lock` elsewhere. Names limit it to those packages, PowerShell modules or flake inputs, or to `fonts`, `nixos-wsl` (WSL images) or `wsl-setup`. |
 | `winix check` | Validate the configuration and report conflicts and missing pins. |
 
@@ -28,6 +28,7 @@ remembered on this machine, the only host, or the host named like this machine.
 | `--dry` | `update` | Only show what would be updated |
 | `-y`, `--yes` | `switch` | Confirm removing resources no longer declared |
 | `--update-versions` | `switch` | Raise `winix-windows.lock` to newer installed versions without asking |
+| `--no-build` | `plan` | NixOS: skip the build and only show the command a switch would run |
 | `--offline` | `plan`, `switch`, `apply` | Never look up versions online; fail when a pin is missing |
 | `--locked` | `plan`, `switch`, `apply` | Fail instead of changing `winix-windows.lock` |
 | `--windows` | `update` | Update `winix-windows.lock` from WSL, Linux or macOS (the default on Windows). Fonts and WSL pins resolve anywhere; packages need WinGet |

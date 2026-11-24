@@ -67,13 +67,15 @@ const LOCKED: Row = ["--locked", "Fail instead of changing winix-windows.lock"];
 const COMMANDS: Record<string, CommandHelp> = {
   plan: {
     usage: "winix plan [--host <name>]",
-    description: "Show what `winix switch` would change on this machine, without changing anything.",
-    options: [HOST, OFFLINE, LOCKED],
+    description: "Show what `winix switch` would change on this machine, without changing anything.\n" +
+      "On NixOS and WSL it builds the new system and compares it with the running one.",
+    options: [HOST, ["--no-build", "NixOS: skip the build and only show the command switch would run"], OFFLINE, LOCKED],
   },
   switch: {
     usage: "winix switch [--host <name>]",
     description: "Generate the host's output and apply it. On Windows, Winix applies what differs (one UAC prompt);\n" +
-      "on NixOS and macOS, it runs nixos-rebuild or darwin-rebuild. `winix plan` shows the changes first.",
+      "on NixOS it builds, shows the plan and runs nixos-rebuild (nothing when the system is unchanged);\n" +
+      "on macOS it runs darwin-rebuild. `winix plan` shows the changes without applying them.",
     options: [
       HOST,
       ["-y, --yes", "Confirm removing resources no longer declared"],

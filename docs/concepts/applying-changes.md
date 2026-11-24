@@ -23,17 +23,67 @@ Winix writes an ordinary Nix flake:
   hosts/<host>.nix   the merged NixOS, nix-darwin and Home Manager options
 ```
 
-`switch` then runs the platform's own tool on it:
+### The plan on NixOS and WSL
+
+`winix plan` builds the new system, without activating it, and compares it with
+the one running (`/run/current-system`):
+
+```text
+✓ Evaluated wsl-work: 3 to build, 41 to download (180.4 MiB) (38s)
+✓ Built wsl-work (1m 02s)
+✓ Compared with the running system (1.1s)
+
+Plan for wsl-work: 9 changes
+  NixOS 26.11.20261107.f4a03c0 → 26.11.20261113.d5cc683
+  Packages
+    + install  ripgrep   14.1.1
+    ~ upgrade  lazygit   0.66.2 → 0.66.3
+    - remove   neofetch  7.1.0
+    = 25 dependencies changed version
+  Home files (alice)
+    ~ change  .config/git/config
+  /etc
+    ~ change  ssh/sshd_config
+  Services
+    ~ restart  sshd.service
+    ~ reload   dbus-broker.service
+    + start    syncthing.service
+
+winix switch would activate this as generation 237 (undo with sudo nixos-rebuild switch --rollback).
+```
+
+| Section | Compares |
+|---|---|
+| Packages | The packages your config declares (system, user and Home Manager packages), by version. Everything else in the system counts as a dependency. |
+| Home files | Each user's Home Manager files, by content. |
+| /etc | System config files, by content. A dependency's new version or hash doesn't count as a change. |
+| Services | What NixOS's own dry run (`switch-to-configuration dry-activate`) reports. It needs root, so Winix uses it when `sudo` works without a password (NixOS-WSL's default) and otherwise estimates from the unit files, saying so. |
+
+When the kernel or initrd changes, the plan says to restart the machine to use
+it. When the build is the system already running, it says "no changes".
+
+The first build after a change can take minutes and download a lot. It isn't
+wasted: the build stays referenced from `.winix/result-<host>`, and `switch`
+reuses it. `winix plan --no-build` skips the build and only shows the command a
+switch would run.
+
+### Switching
+
+`switch` builds and shows the same plan, then activates it with the platform's
+own tool:
 
 ```bash
 sudo nixos-rebuild switch --flake path:/home/alice/dotfiles/.winix/out#wsl-work
 sudo darwin-rebuild switch --flake path:/Users/alice/dotfiles/.winix/out#macbook
 ```
 
-From there it's plain Nix: builds, generations and rollbacks work as they
-always do. `winix plan` prints the command; `winix apply --dry` prints the
-generated files and `winix apply --diff` what changed since the last run. You
-can run the flake yourself without Winix.
+When nothing changed, a NixOS switch stops after the plan. From there it's plain
+Nix: generations and rollbacks work as they always do. `winix apply --dry`
+prints the generated files and `winix apply --diff` what changed since the last
+run. You can run the flake yourself without Winix.
+
+On macOS, `plan` shows the `darwin-rebuild` command for now; a full plan there
+is planned.
 
 ## Windows
 

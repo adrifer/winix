@@ -1390,6 +1390,18 @@ Activation by platform:
 | Home Manager only | `home-manager switch --flake .winix/out` |
 | Windows | Winix applies the plan itself (below) |
 
+On NixOS (including WSL), `plan` and `switch` first build
+`nixosConfigurations.<host>.config.system.build.toplevel` (out-link
+`.winix/result-<host>`, outside the hashed flake directory) and compare it with
+`/run/current-system`: declared packages (references of `sw`, per-user
+profiles and Home Manager `home-path`) via `nix store diff-closures`, Home
+Manager files and `/etc` by content with store hashes and dependency versions
+normalized, services via `switch-to-configuration dry-activate` when `sudo -n`
+succeeds (otherwise estimated from unit files and marked so), and kernel/initrd
+changes. Planning never activates. A build identical to the running system
+makes `switch` skip activation. `plan --no-build` prints the activation command
+only. nix-darwin hosts still print their command.
+
 Windows hosts generate `.winix/out/<host>/resources.json` (each resource with
 its category, dependencies, elevation and how to check and apply it). `winix
 switch` plans against the machine and applies only out-of-date resources in

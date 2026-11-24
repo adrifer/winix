@@ -129,8 +129,10 @@ Plan for DESKTOP: 3 changes, 0 unchanged
   ~ apply    EDITOR=code --wait (user)
 ```
 
-On NixOS and WSL, `plan` prints the `nixos-rebuild` command `switch` would run.
-`winix apply --dry` shows the Nix Winix generated for it.
+On NixOS and WSL, `plan` builds the new system without activating it and
+compares it with the running one: packages installed, upgraded or removed,
+changed dotfiles and `/etc` files, and services that would restart. The first
+build can take a while; `switch` reuses it.
 
 ## 5. Apply it
 
@@ -144,8 +146,8 @@ UAC prompt. The first switch also writes `winix-windows.lock` with the exact
 package versions it installed.
 
 On NixOS and WSL, run `winix update` once first: it writes `flake.lock`, which
-pins nixpkgs and the other inputs to exact commits. Then `switch` generates the
-flake and runs `sudo nixos-rebuild switch` with it.
+pins nixpkgs and the other inputs to exact commits. Then `switch` builds, shows
+the same plan and runs `sudo nixos-rebuild switch` to activate it.
 
 Run `winix plan` again: nothing to change. On Windows, remove the ripgrep line
 and plan again: it's marked `- remove`. Winix uninstalls packages it installed

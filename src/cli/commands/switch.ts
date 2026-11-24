@@ -1,5 +1,6 @@
+import { realpathSync } from "node:fs";
 import { hostname } from "node:os";
-import { posix } from "node:path";
+import { join, posix } from "node:path";
 import type { WorkspaceDef } from "../../core/types.ts";
 import type { EvaluatedHost } from "../../evaluator/index.ts";
 import { windowsWslSetupTargets } from "../../backends/windows/wsl-setup-runtime.ts";
@@ -21,6 +22,10 @@ import {
 import {
   applyWindowsBatches, formatApplySummary, nativeWindowsBatchRunner, planApplyBatches, type WindowsBatchRunner,
 } from "../windows-apply.ts";
+import {
+  buildSystem, compareNixosSystems, describeBuild, dryRunBuild, formatNixPlan, nativeNixPlanRunner, nixosToplevel,
+  nixPlanSummary, type NixPlan, type NixPlanPaths, type NixPlanRunner,
+} from "../nix-plan.ts";
 import * as progress from "../progress.ts";
 import { colorEnabled, plural } from "../style.ts";
 import { evaluate } from "../../evaluator/index.ts";
@@ -53,6 +58,44 @@ interface SwitchOptions {
   planChecker?: WindowsPlanChecker;
   /** Applies Windows changes; defaults to the native PowerShell runner. */
   windowsRunner?: WindowsBatchRunner;
+  /** `winix plan --no-build`: for NixOS hosts, show the command without building. */
+  noBuild?: boolean;
+  /** Runs nix, nix-store, sudo and systemctl for the NixOS plan; replaced in tests. */
+  nixRunner?: NixPlanRunner;
+  /** The running system and the profiles directory; replaced in tests. */
+  nixPaths?: NixPlanPaths;
+}
+
+/**
+ * Build a NixOS host without activating it and compare it with the running
+ * system. The build stays referenced from .winix/result-<host> (outside the
+ * flake directory, whose contents Nix hashes) until the next one, so a switch
+ * right after reuses it.
+ */
+async function planNixosHost(
+  configDir: string, outDir: string, host: string, runner: NixPlanRunner, paths?: NixPlanPaths,
+): Promise<NixPlan> {
+  const installable = nixosToplevel(outDir, host);
+  const summary = await progress.step(`Evaluating ${host}`, () => dryRunBuild(installable, runner),
+    (result) => `Evaluated ${host}: ${describeBuild(result)}`);
+  const outLink = join(configDir, ".winix", `result-${host}`);
+  const started = Date.now();
+  let built: string;
+  if (summary && summary.build === 0 && summary.fetch === 0) {
+    built = await progress.step(`Building ${host}`, async () => {
+      const result = await runner.capture("nix", ["--extra-experimental-features", "nix-command flakes", "build", "--out-link", outLink, installable]);
+      if (result.code !== 0) throw new Error(`Building ${host} failed:\n${result.stderr.trim()}`);
+      return realpathSync(outLink);
+    }, `Built ${host}`);
+  } else {
+    // The build's own progress output, uninterrupted.
+    progress.stop();
+    console.log(`Building ${host} (${describeBuild(summary)})`);
+    built = await buildSystem(installable, outLink, runner);
+    console.log(`✓ Built ${host} (${progress.formatDuration(Date.now() - started)})`);
+  }
+  return progress.step("Comparing with the running system",
+    () => compareNixosSystems({ host, built, runner, paths }), "Compared with the running system");
 }
 
 export async function switchCommand(cwd: string, opts: SwitchOptions): Promise<void> {
@@ -177,8 +220,14 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
           delete requirements[resourceKey({ kind: "package", id: entry.resource.package.id, source: entry.resource.package.source })];
         }
       }
-    } else if (command) {
-      console.log(`\nRunning: ${command.join(" ")}`);
+    }
+    // NixOS: build, then show what activating it would change (also before a real switch).
+    let nixPlan: NixPlan | undefined;
+    const buildable = platform === "nixos" && command !== undefined && process.platform !== "win32" && !opts.noBuild;
+    if (buildable) {
+      nixPlan = await planNixosHost(configDir, result.outDir, hostName, opts.nixRunner ?? nativeNixPlanRunner, opts.nixPaths);
+      console.log("");
+      for (const line of formatNixPlan(nixPlan, { color: colorEnabled() })) console.log(line);
     }
     let removalCount = 0;
     /** The plan, with what reconciliation would remove (known only on native Windows). */
@@ -219,6 +268,12 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
         return { changed: outcome.results.some((entry) => entry.status === "applied") };
       }
       if (opts.dry || !command) return;
+      if (nixPlan?.same) {
+        console.log("\nNothing to change.");
+        return;
+      }
+      // nixos-rebuild evaluates again (cached) and activates the system just built.
+      console.log(`\nRunning: ${command.join(" ")}`);
       await runCommand(command[0], command.slice(1), { dry: opts.dry });
     };
     if (statePath) {
@@ -290,8 +345,11 @@ async function runSwitch(cwd: string, opts: SwitchOptions): Promise<void> {
     }
     if (windowsDry) {
       console.log(`\n${dryRunSummary(planned, live, removalCount)}`);
+    } else if (opts.dry && nixPlan) {
+      console.log(`\n${nixPlanSummary(nixPlan)}`);
     } else if (opts.dry && command) {
       console.log(`\nWould run: ${command.join(" ")}`);
+      if (opts.noBuild && platform === "nixos") console.log("Not built (--no-build): winix plan without it shows what would change.");
     }
   };
   if (statePath) await withWindowsStateLock(statePath, opts.dry, performSwitch);

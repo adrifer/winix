@@ -40,6 +40,7 @@ const { positionals, values } = parseArgs({
     offline: { type: "boolean", default: false },
     locked: { type: "boolean", default: false },
     "update-versions": { type: "boolean", default: false },
+    "no-build": { type: "boolean", default: false },
     windows: { type: "boolean", default: false },
     strict: { type: "boolean", default: false },
     force: { type: "boolean", default: false },
@@ -96,6 +97,10 @@ if ((values.offline || values.locked) && !["apply", "switch", "plan"].includes(c
 }
 if (values["update-versions"] && (command !== "switch" || values.dry)) {
   console.error("--update-versions is only supported by winix switch (not --dry, which never writes the lock).");
+  process.exit(2);
+}
+if (values["no-build"] && !(command === "plan" || (command === "switch" && values.dry))) {
+  console.error("--no-build is only supported by winix plan (a switch builds what it activates).");
   process.exit(2);
 }
 if (values["update-versions"] && values.locked) {
@@ -228,6 +233,7 @@ switch (command) {
         offline: values.offline,
         locked: values.locked,
         updateVersions: values["update-versions"],
+        noBuild: values["no-build"],
       });
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
