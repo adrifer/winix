@@ -20,6 +20,7 @@ host("DESKTOP", platforms.windows(), ({ windows }) => {
 ```
 
 How they're checked and applied: [How changes are applied](../../concepts/applying-changes.md).
+Every signature and option: [API: windows](../../api/windows.md).
 
 ## Every helper
 

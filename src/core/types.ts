@@ -121,8 +121,11 @@ export interface PlatformLazyFragment extends LazyFragment {
  * A fragment factory: callable to produce a LazyFragment, with .isActive getter.
  */
 export interface FragmentFactory<T extends unknown[] = []> {
+  /** The feature or profile, to include in a host or profile. */
   (...args: T): LazyFragment;
+  /** True while building a host that includes this feature or profile. */
   readonly isActive: boolean;
+  /** The id it was declared with. */
   readonly id: string;
 }
 
@@ -135,8 +138,11 @@ export interface ProfileFactory<T extends unknown[] = []> extends FragmentFactor
  * A platform factory: callable to produce a PlatformLazyFragment, with .isActive getter.
  */
 export interface PlatformFactory<T extends unknown[] = []> {
+  /** The platform, with its options: the second argument of `host()`. */
   (...args: T): PlatformLazyFragment;
+  /** True while building a host on this platform (inside a feature or host body). */
   readonly isActive: boolean;
+  /** The platform's id: "nixos" (also for WSL), "darwin" or "windows". */
   readonly id: string;
 }
 
@@ -147,7 +153,9 @@ export type InputDef = string | InputWithOptions;
 
 export interface InputWithOptions {
   url: string;
+  /** This input's own inputs, set to yours: `{ nixpkgs: "nixpkgs" }`. */
   follows?: Record<string, string>;
+  /** The input's name in the flake, when not the kebab-case of its key. */
   nixName?: string;
 }
 
@@ -160,6 +168,7 @@ export interface WorkspaceDef {
    * nix-darwin hosts; optional for Windows-only workspaces.
    */
   inputs?: Record<string, InputDef>;
+  /** Every host, from `host()`. */
   hosts: HostDef[];
 }
 

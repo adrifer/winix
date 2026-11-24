@@ -24,17 +24,22 @@ export interface WindowsLockPackage {
 }
 
 export interface WindowsLock {
+  /** Lockfile format version (currently `1`). */
   version: typeof WINDOWS_LOCK_VERSION;
   /**
    * Legacy timestamp. No longer written: it changed on every resolution and
    * caused merge conflicts between machines. Older lock files may carry it.
    */
   generatedAt?: string;
+  /** Pinned winget package versions, keyed by package id. */
   packages: Record<string, WindowsLockPackage>;
+  /** Pinned font archives and hashes, keyed by font source. */
   fonts?: Record<string, WindowsFontPin>;
   /** Source-qualified lowercase keys; legacy name-only entries remain readable. */
   modules?: Record<string, WindowsLockModule>;
+  /** Pinned NixOS-WSL release images, keyed by architecture. */
   wslImages?: Record<string, WindowsLockWslImage>;
+  /** Pinned WSL setup repository commits, keyed by repository spec. */
   wslRepositories?: Record<string, WindowsLockWslRepository>;
 }
 

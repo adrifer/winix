@@ -36,8 +36,10 @@ export default defineConfig({
             { label: "Windows", items: [{ autogenerate: { directory: "reference/windows" } }] },
             "reference/wsl",
             "reference/cli",
+            "reference/troubleshooting",
           ],
         },
+        { label: "API", collapsed: true, items: [{ autogenerate: { directory: "api" } }] },
         {
           label: "Project",
           items: [

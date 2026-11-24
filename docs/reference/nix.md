@@ -9,7 +9,10 @@ sidebar:
 
 On NixOS, WSL and macOS hosts, every helper writes NixOS, Home Manager or
 nix-darwin options. Your editor completes and checks them against the bundled
-option types, so this page lists the helpers, not every option.
+option types, so this page lists the helpers, not every option. Every
+signature: [home](../api/home.md), [nixos](../api/nixos.md),
+[darwin](../api/darwin.md), [nix and overlay](../api/nix.md),
+[account](../api/account.md).
 
 Helpers fall into three kinds:
 
@@ -41,7 +44,23 @@ For an option without a helper, a plain object works:
 | `home.wsl.gitCredentialManager({ paths? })` | Git on WSL using Git for Windows' Credential Manager ([WSL](wsl.md#reach-windows-from-wsl)) |
 
 `home.symlink()` links to the file in the checkout, so edits apply without a
-switch (Home Manager's `mkOutOfStoreSymlink`).
+switch (Home Manager's `mkOutOfStoreSymlink`). Paths starting with `./` or `../`
+resolve against the folder holding `winix.config.ts`; paths starting with `~/`
+resolve against the user's home directory. Use `{ text }` or `{ source }` when
+you want the file managed read-only in the Nix store instead.
+
+```ts
+// Live-linked dotfiles and an activation hook
+home.configFiles({
+  "nvim": home.symlink("./dotfiles/nvim"),
+  "ripgrep/config": { text: "--smart-case\n" },
+});
+
+home.activation("ensureDirs", {
+  after: ["writeBoundary"],
+  script: 'mkdir -p "${config.home.homeDirectory}/work"',
+});
+```
 
 ## nixos.*
 
@@ -60,6 +79,32 @@ switch (Home Manager's `mkOutOfStoreSymlink`).
 | `nixos.virtualisation.ociContainer(name, { ... })` | One OCI container, by name |
 | `nixos.imports("inputs.x.nixosModules.y")` | Module imports |
 | `nixos.raw("...")` | A raw Nix snippet in the host module |
+
+Keyed helpers keep services, links and containers self-contained inside a
+feature:
+
+```ts
+nixos.systemd.service("backup", {
+  description: "Nightly backup",
+  script: nix.script`
+    ${nix.bin("restic", "restic")} backup /home
+  `,
+  startAt: "daily",
+});
+
+nixos.systemd.tmpfiles.link("/usr/bin/bash", "/run/current-system/sw/bin/bash");
+
+nixos.virtualisation.ociContainer("whoami", {
+  image: "traefik/whoami:latest",
+  ports: ["127.0.0.1:8080:80"],
+});
+```
+
+**`account.user` vs `nixos.users`:** use [`account.user()`](config.md#account)
+for login users—it declares both the NixOS user and its Home Manager target so
+`home.*` applies to that user. Use `nixos.users()` only for raw NixOS options
+that don't belong to a Home Manager user (such as `mutableUsers: false` or
+service-only accounts).
 
 ## darwin.* (nix-darwin)
 
@@ -95,6 +140,17 @@ build it with `nix.*` (imported from `@adrifer/winix`):
 
 String content is quoted safely. Paths use `/`; a backslash is kept as a
 literal character.
+
+Use `nix.lib.mkDefault` when a shared feature sets a fallback that a host or
+other feature may override, and `nix.lib.mkForce` when overriding a default set
+by a NixOS module:
+
+```ts
+nixos.networking({
+  useDHCP: nix.lib.mkDefault(true),
+  firewall: { enable: nix.lib.mkForce(true) },
+});
+```
 
 ## nix.binaryRelease
 
@@ -132,11 +188,28 @@ home.packages(
 ## Overlays
 
 ```ts
-import { overlay } from "@adrifer/winix";
+import { defineInputs, host, nix, overlay, platforms } from "@adrifer/winix";
 
-overlay.stable("nixpkgsStable")   // pkgs.stable from another nixpkgs input
+const inputs = defineInputs({
+  nixpkgs: "nixos-unstable",
+  nixpkgsStable: "nixos-25.05", // becomes `nixpkgs-stable` in flake.nix
+});
+
+// Make `pkgs.stable` available on the host, then pick a package from it:
+host("box", platforms.nixos({ stateVersion: "25.05" }), ({ home }) => {
+  home.packages(nix.pkg.stable("terraform"));
+  return [overlay.stable("nixpkgs-stable")];
+});
+```
+
+`overlay.stable()` takes the **flake input name** (kebab-case:
+`"nixpkgs-stable"` for a `nixpkgsStable` input, or whatever `nixName` sets).
+`overlay` is a top-level import rather than an injected namespace, so return it
+from a feature or host body (or place it in a host/profile array).
+
+```ts
 overlay.custom("(final: prev: { ... })")
-overlay.darwin.stable(...), overlay.darwin.custom(...)   // macOS only
+overlay.darwin.stable("nixpkgs-stable"), overlay.darwin.custom("...") // macOS only
 ```
 
 ## Existing Nix modules
@@ -144,4 +217,5 @@ overlay.darwin.stable(...), overlay.darwin.custom(...)   // macOS only
 `rawModule("./hardware-configuration.nix")` (and `.homeManager(...)`,
 `.darwin(...)`) includes a Nix module file as it is: the way to bring an
 existing NixOS configuration over in pieces
-([Workspace and hosts](config.md#rawmodule)).
+([Move a NixOS machine to Winix](../guides/move-a-nixos-machine.md),
+[Workspace and hosts](config.md#rawmodule)).

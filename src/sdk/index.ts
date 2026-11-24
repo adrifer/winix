@@ -61,10 +61,24 @@ export function getOptionalEvalContext(): EvalContext | null {
 
 // --- platform() ---
 
+/**
+ * Define a platform factory, such as the built-in `platforms.nixos`,
+ * `platforms.wsl`, `platforms.darwin` and `platforms.windows`. Call the
+ * returned factory to pass it as the second argument of `host()`.
+ * `factory.isActive` is true while building a host on this platform (and
+ * matching `variant`, when set).
+ *
+ * ```ts
+ * export const customLinux = platform("nixos", () => ({ nixos: {} }));
+ * ```
+ */
 export function platform<T extends unknown[]>(
   id: string,
   factory: (...args: T) => Fragment,
-  options: { variant?: string } = {}
+  options: {
+    /** Platform variant within the platform id, such as `"wsl"` for NixOS-WSL. */
+    variant?: string;
+  } = {}
 ): PlatformFactory<T> {
   const { variant } = options;
   const fn = ((...args: T): PlatformLazyFragment => {
@@ -96,6 +110,21 @@ export function platform<T extends unknown[]>(
 
 // --- feature() ---
 
+/**
+ * Declare something: a tool, its config files, a setting. The body receives
+ * `{ home, nixos, darwin, windows, platforms }`; calls through them declare for
+ * the host being built, and namespaces that don't apply to its platform are
+ * ignored. Call the returned factory (with any arguments the body takes) to
+ * include the feature in a host or profile. `factory.isActive` is true while
+ * building a host that includes it.
+ *
+ * ```ts
+ * export const lazygit = feature("lazygit", ({ home, windows }) => {
+ *   home.packages("lazygit");
+ *   windows.package("JesseDuffield.lazygit");
+ * });
+ * ```
+ */
 export function feature<T extends unknown[]>(
   id: string,
   factory: (ctx: WinixContext, ...args: T) => AuthoringResult
@@ -136,6 +165,14 @@ export function feature<T extends unknown[]>(
 // The model is: features declare (effects/return), profiles group features.
 // If a grouping needs logic or injected namespaces, put that logic in a
 // feature() and add that feature to the profile's array.
+/**
+ * A named group of features, profiles and fragments, such as a role
+ * ("everywhere", "dev"). Array only: logic belongs in a feature.
+ *
+ * ```ts
+ * export const dev = profile("dev", [node(), docker(), lazygit()]);
+ * ```
+ */
 export function profile(
   id: string,
   entries: readonly FragmentEntry[]
@@ -166,6 +203,16 @@ export function profile(
 
 // --- host() ---
 
+/**
+ * One machine (or one WSL distro) on one platform, with what it gets: an
+ * array of features, profiles and fragments, or a body like a feature's. The
+ * name selects it (`--host`) and is the hostname on Nix hosts.
+ *
+ * ```ts
+ * host("DESKTOP", platforms.windows(), [everywhere(), dev()]);
+ * host("wsl", platforms.wsl({ stateVersion: "25.05" }), ({ home }) => { home.packages("ripgrep"); });
+ * ```
+ */
 export function host(
   name: string,
   platform: PlatformLazyFragment,
@@ -206,25 +253,48 @@ export function host(
 
 // --- workspace() ---
 
+/** The config: its hosts and the Nix inputs they use. The default export of winix.config.ts. */
 export function workspace(def: WorkspaceDef): WorkspaceDef {
   return def;
 }
 
 // --- input() ---
 
+/**
+ * A flake input with options.
+ *
+ * ```ts
+ * input("github:nix-community/home-manager", { follows: { nixpkgs: "nixpkgs" } })
+ * ```
+ */
 export function input(url: string, opts?: Omit<InputWithOptions, "url">): InputWithOptions {
   return { url, ...opts };
 }
 
 // --- defineInputs() ---
 
+/**
+ * Flake inputs by name (camelCase; kebab-case in the flake). A string is a
+ * nixpkgs branch ("nixos-unstable") or a `github:` URL. Only adds type inference.
+ */
 export function defineInputs<T extends Record<string, InputDef>>(inputs: T): T {
   return inputs;
 }
 
 export interface RawModuleHelper {
+  /**
+   * Include an existing NixOS module file as it is. The path is relative to
+   * winix.config.ts and must stay inside the project; the file is copied into
+   * the generated output.
+   *
+   * ```ts
+   * rawModule("./hardware-configuration.nix")
+   * ```
+   */
   (path: string): Fragment;
+  /** Include an existing Home Manager module file. */
   homeManager(path: string): Fragment;
+  /** Include an existing nix-darwin module file. */
   darwin(path: string): Fragment;
 }
 
@@ -376,8 +446,30 @@ function normalizeRawModulePath(path: string): string {
 
 // --- Testing helper ---
 
+/**
+ * Run a callback with a synthetic evaluation context, for unit-testing
+ * features and `.isActive` checks outside `evaluate()`. Restores the previous
+ * context when `fn` finishes or throws.
+ *
+ * ```ts
+ * withContext({ platform: "windows", features: ["dev"] }, () => {
+ *   return platforms.windows.isActive;
+ * });
+ * ```
+ */
 export function withContext<R>(
-  ctx: { platform: string; variant?: string; hostname?: string; features?: string[]; configDir?: string },
+  ctx: {
+    /** Platform id, such as `"nixos"`, `"darwin"` or `"windows"`. */
+    platform: string;
+    /** Platform variant, such as `"wsl"` for NixOS-WSL hosts. */
+    variant?: string;
+    /** Hostname exposed to fragments. Defaults to `"test"`. */
+    hostname?: string;
+    /** Active feature and profile ids for `.isActive` checks. */
+    features?: string[];
+    /** Directory containing `winix.config.ts`, for config-relative helpers. */
+    configDir?: string;
+  },
   fn: () => R
 ): R {
   const prev = G.__winixEvalContext ?? null;

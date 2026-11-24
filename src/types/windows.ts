@@ -33,7 +33,9 @@ export type WinFontSource = string | {
 };
 
 export interface WinWallpaper {
+  /** The image: a path relative to winix.config.ts, an absolute or `%VARIABLE%` path, or a known folder. */
   source: WinFilePath;
+  /** How the image fits the screen. Defaults to "Fill". */
   style?: "Fill" | "Fit" | "Stretch" | "Tile" | "Center" | "Span";
 }
 
@@ -43,17 +45,32 @@ export interface WinPersonalization {
    * sets them separately. Same registry values as windows.setting
    * AppColorMode/SystemColorMode; declare each in one place only.
    */
-  colorMode?: "Light" | "Dark" | { apps?: "Light" | "Dark"; system?: "Light" | "Dark" };
+  colorMode?: "Light" | "Dark" | {
+    /** Apps' color mode. */
+    apps?: "Light" | "Dark";
+    /** The taskbar's and Start's color mode. */
+    system?: "Light" | "Dark";
+  };
+  /** Accent color as "#RRGGBB"; turns off automatic accent coloring. */
   accentColor?: string;
+  /** File Explorer options. */
   explorer?: {
+    /** Show file name extensions. */
     showExtensions?: boolean;
+    /** Show hidden files (protected operating-system files stay hidden). */
     showHiddenFiles?: boolean;
+    /** The folder a new Explorer window opens. */
     openTo?: "ThisPC" | "Home";
   };
+  /** Taskbar options. */
   taskbar?: {
+    /** Hide the taskbar until the pointer reaches it. */
     autoHide?: boolean;
+    /** How search shows on the taskbar. */
     search?: "Hidden" | "Icon" | "IconAndLabel" | "Box";
+    /** Show the Task View button. */
     taskView?: boolean;
+    /** Show the Widgets button. */
     widgets?: boolean;
   };
 }
@@ -90,13 +107,16 @@ export interface WinPowerShellModule {
 export interface WinPowerShellRepositoryPolicy {
   /** Named HTTPS feeds to register for the current Windows user. No credentials in URLs. */
   repositories: Record<string, { uri: string }>;
+  /** The repository for modules that don't name one (and for the module windows.setting needs). */
   default: string;
   /** When specified, reject other repositories instead of falling back. */
   allowed?: string[];
 }
 
 export interface WinNpmRegistryPolicy {
+  /** Named registries: HTTPS URLs without credentials, queries or fragments. */
   registries: Record<string, { uri: string }>;
+  /** The registry npm uses by default (`registry` in .npmrc). */
   default: string;
   /** npm scope (including @) mapped to a declared registry name. */
   scopes?: Record<string, string>;
@@ -104,6 +124,7 @@ export interface WinNpmRegistryPolicy {
 
 export interface WinWslDistro {
   name: string;
+  /** The image: "nixos-wsl", the official NixOS-WSL release (pinned in winix-windows.lock). */
   source: "nixos-wsl";
   /** Creation destination; an adopted distro keeps its registered location. */
   installLocation: WinFilePath;
@@ -135,19 +156,32 @@ export interface WinWslSetup {
 }
 
 export interface WinWslConfig {
+  /** The `[wsl2]` section of .wslconfig. */
   wsl2?: {
+    /** Memory limit for the WSL VM, e.g. "16GB". */
     memory?: string;
+    /** Number of virtual processors. */
     processors?: number;
+    /** Swap size, e.g. "8GB"; "0" turns swap off. */
     swap?: string;
+    /** Reach WSL's localhost ports from Windows. */
     localhostForwarding?: boolean;
+    /** How WSL networks: NAT (default), mirrored with Windows, none, or virtio proxy. */
     networkingMode?: "nat" | "mirrored" | "none" | "virtioproxy";
+    /** Resolve DNS through Windows instead of a network packet. */
     dnsTunneling?: boolean;
+    /** Apply Windows Firewall rules to WSL traffic. */
     firewall?: boolean;
+    /** Use Windows' HTTP proxy settings in WSL. */
     autoProxy?: boolean;
+    /** Run Linux GUI apps (WSLg). */
     guiApplications?: boolean;
   };
+  /** The `[experimental]` section of .wslconfig. */
   experimental?: {
+    /** Give unused memory back to Windows. */
     autoMemoryReclaim?: "disabled" | "gradual" | "dropCache";
+    /** Shrink new distros' virtual disks automatically. */
     sparseVhd?: boolean;
   };
 }
@@ -348,28 +382,49 @@ export type WinStartFolder =
  * `Microsoft.Windows.Settings/WindowsSettings`.
  */
 export interface WinSettings {
+  /** Taskbar icons on the left or centered. */
   TaskbarAlignment?: WinTaskbarAlignment;
+  /** Apps' light or dark mode. */
   AppColorMode?: WinColorMode;
+  /** Windows' own light or dark mode (taskbar, Start). */
   SystemColorMode?: WinColorMode;
+  /** Developer Mode, which allows symlinks without elevation (Winix orders it before every symlink). */
   DeveloperMode?: boolean;
+  /** Set the time zone from the location. */
   SetTimeZoneAutomatically?: boolean;
   /** Windows time zone ID. Winix validates only that this is non-empty; the target validates the ID. */
   TimeZone?: string;
+  /** Transparency effects. */
   EnableTransparency?: boolean;
+  /** Accent color on Start and the taskbar. */
   ShowAccentColorOnStartAndTaskbar?: boolean;
+  /** Accent color on title bars and window borders. */
   ShowAccentColorOnTitleBarsAndWindowBorders?: boolean;
+  /** Pick the accent color from the wallpaper. */
   AutoColorization?: boolean;
+  /** Folders shown next to Start's power button. */
   StartFolders?: WinStartFolder[];
+  /** Recently opened items in Start. */
   ShowRecentList?: boolean;
+  /** Recommendations in Start. */
   ShowRecommendedList?: boolean;
+  /** Badges (unread counts) on taskbar apps. */
   TaskbarBadges?: boolean;
+  /** Windows' DesktopTaskbarBadges setting: like TaskbarBadges. */
   DesktopTaskbarBadges?: boolean;
+  /** When taskbar buttons of one app combine. */
   TaskbarGroupingMode?: WinTaskbarGroupingMode;
+  /** Show the taskbar on every display. */
   TaskbarMultiMon?: boolean;
+  /** Windows' DesktopTaskbarMultiMon setting: like TaskbarMultiMon. */
   DesktopTaskbarMultiMon?: boolean;
+  /** Which taskbar shows a window's button with several displays. */
   TaskbarMultiMonMode?: WinTaskbarMultiMonMode;
+  /** Windows' DesktopTaskbarMultiMonMode setting: like TaskbarMultiMonMode. */
   DesktopTaskbarMultiMonMode?: WinTaskbarMultiMonMode;
+  /** Notify about USB connection problems. */
   NotifyOnUsbErrors?: boolean;
+  /** Notify when a charger is too weak. */
   NotifyOnWeakCharger?: boolean;
 }
 

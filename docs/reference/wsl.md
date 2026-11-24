@@ -129,19 +129,67 @@ switch` there); a later change to `setup` only prints a note. After every
 Windows switch Winix prints the command that applies Linux changes in each
 distro.
 
+## Inside NixOS-WSL
+
+A WSL host is a NixOS host built with `platforms.wsl({ stateVersion })`, which
+imports NixOS-WSL and sets `wsl.enable = true`.
+
+### Platform checks and default user
+
+Because WSL runs NixOS, **both** `platforms.nixos.isActive` and
+`platforms.wsl.isActive` are true inside features evaluated for a WSL host.
+Guard WSL-only setup with `platforms.wsl.isActive` so bare-metal NixOS hosts
+skip it:
+
+```ts
+const dev = feature("dev", ({ home, platforms }) => {
+  home.packages("ripgrep");
+  if (platforms.wsl.isActive) {
+    home.wsl.gitCredentialManager();
+  }
+});
+```
+
+Set `wslDefault: true` on an [`account.user()`](config.md#account) to make that
+user `wsl.defaultUser` automatically (as a `mkDefault`, so an explicit
+`wsl.defaultUser` still overrides it).
+
+### NixOS-WSL options
+
+Any [NixOS-WSL](https://nix-community.github.io/NixOS-WSL/options.html) option
+can be passed as a plain `nixos` fragment:
+
+```ts
+nixos({
+  wsl: {
+    startMenuLaunchers: true,
+    interop: { register: true },
+    usbip: { enable: true },
+  },
+});
+```
+
 ## Reach Windows from WSL
 
 ```ts
-home.packages(nix.wsl.windowsBin("code", "%LOCALAPPDATA%\\Programs\\Microsoft VS Code\\bin\\code"));
+home.packages(
+  nix.wsl.windowsBin("code", [
+    "%LOCALAPPDATA%\\Programs\\Microsoft VS Code\\bin\\code",
+    "%ProgramFiles%\\Microsoft VS Code\\bin\\code",
+  ]),
+  nix.wsl.windowsBin("op", "%LOCALAPPDATA%\\Microsoft\\WinGet\\Links\\op.exe"),
+);
 home.wsl.gitCredentialManager();
 ```
 
 `nix.wsl.windowsBin(name, paths)` builds a `bin/<name>` command that runs the
-first of `paths` that exists on Windows. Paths are absolute (`C:\...`) or start
-with an environment variable (`%LOCALAPPDATA%\...`), expanded through
-`cmd.exe` when it runs (about 50 ms), so nothing hard-codes your Windows user
-name. It exits with 127, listing the paths it tried, when none exist.
+first of `paths` that exists on Windows (pass a single path or an array of
+fallbacks). Paths are absolute (`C:\...`) or start with an environment variable
+(`%LOCALAPPDATA%\...`), expanded through `cmd.exe` when it runs (about 50 ms),
+so nothing hard-codes your Windows user name. It exits with 127, listing the
+paths it tried, when none exist.
 
 `home.wsl.gitCredentialManager({ paths? })` enables Git in Home Manager and
 sets its credential helper to Git for Windows' Credential Manager through such
-a command, so Git inside WSL uses your Windows sign-ins.
+a command, so Git inside WSL uses your Windows sign-ins. Pass `paths` if Git
+for Windows is installed in a non-default location.

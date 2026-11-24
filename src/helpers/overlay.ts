@@ -4,10 +4,22 @@ import type { Fragment, NixExpr } from "../core/types.ts";
  * Add a nixpkgs overlay.
  */
 export interface OverlayHelper {
+  /**
+   * Make another nixpkgs input available as `pkgs.stable` (for `nix.pkg.stable`),
+   * on NixOS and macOS hosts.
+   *
+   * ```ts
+   * overlay.stable("nixpkgsStable")
+   * ```
+   */
   stable(inputName: string): Fragment;
+  /** Add an overlay written in Nix (`final: prev: { ... }`) on NixOS and macOS hosts. */
   custom(expr: string): Fragment;
+  /** The same, for macOS hosts only. */
   darwin: {
+    /** `overlay.stable`, for macOS hosts only. */
     stable(inputName: string): Fragment;
+    /** `overlay.custom`, for macOS hosts only. */
     custom(expr: string): Fragment;
   };
 }

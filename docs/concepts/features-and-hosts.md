@@ -174,20 +174,27 @@ users.
 
 ## How declarations combine
 
-Everything a host gets is merged into one configuration per host:
+Everything a host gets is evaluated in host order and merged into one
+configuration per host:
 
-- **objects merge** key by key, at any depth;
-- **arrays append** (two features adding packages get both);
-- **single values**: the last one wins, and `winix check` reports conflicting
-  values.
+| Value type | Nix (`nixos`, `homeManager`, `darwin`) | Windows (`windows`) |
+|---|---|---|
+| **Objects** | Merged recursively, key by key | Merged by resource identity (package id, file target path, env var name, setting key) |
+| **Arrays** | Appended in declaration order (two features adding packages get both) | Appended (`dependsOn`, PATH entries, raw commands); duplicates de-duplicated where appropriate |
+| **Scalars** | Last declaration wins; `winix check` warns on conflicting values across features | Contradictory declarations (e.g. two different exact versions for one package, or two files at the same target path) fail evaluation with an error |
 
-Windows resources are identified by what they manage (a package id, a file
-path), so two features can declare the same package. Declarations that
-contradict each other, such as two different exact versions of one package,
-fail with an error instead of one silently winning.
+### Resolving conflicts
 
-`winix inspect --host <name>` shows what each feature contributed to a host;
-`winix inspect --matrix` shows every feature against every host.
+- **Order in the host list** determines which scalar wins on Nix hosts; put
+  host-specific overrides after shared roles (`[everywhere(), dev(), hostOverrides()]`).
+- **Nix option priorities:** use `nix.lib.mkDefault(value)` for a fallback a
+  host can override without a conflict, or `nix.lib.mkForce(value)` to override
+  a value set by an upstream NixOS/Home Manager module.
+- **Strict checks:** `winix check --strict` turns scalar-conflict warnings into
+  errors—useful in CI to catch accidental overrides across features.
+- **Inspecting what won:** `winix inspect --host <name>` shows what each
+  feature contributed to a host; `winix inspect --matrix` shows every feature
+  against every host.
 
 Every helper and option: [Workspace and hosts](../reference/config.md),
 [Linux and macOS helpers](../reference/nix.md), [Windows](../reference/windows/README.md).

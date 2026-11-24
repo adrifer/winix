@@ -107,10 +107,7 @@ const POWERSHELL_SCRIPT_TYPE = "Microsoft.DSC.Transitional/PowerShellScript";
 const WINDOWS_POWERSHELL_SCRIPT_TYPE = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
 const WINDOWS_SETTINGS_MODULE_COMMAND_NAME = "Ensure Microsoft Windows Settings module";
 
-/**
- * Generate Windows bundles for every Windows host in the evaluated workspace.
- * Non-Windows hosts are skipped.
- */
+/** Options for `generateWindows()`. */
 export interface GenerateWindowsOptions {
   /**
    * Floating package ids whose installed version is not comparable (winget
@@ -120,6 +117,10 @@ export interface GenerateWindowsOptions {
   presenceOnlyPackages?: ReadonlySet<string>;
 }
 
+/**
+ * Generate Windows bundles for every Windows host in the evaluated workspace.
+ * Non-Windows hosts are skipped.
+ */
 export function generateWindows(
   evaluatedHosts: EvaluatedHost[],
   lock: WindowsLock = emptyWindowsLock(),

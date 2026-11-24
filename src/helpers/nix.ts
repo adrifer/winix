@@ -7,8 +7,11 @@ type NixCondition = boolean | string | NixExpr;
 type NixStringPart = string | NixExpr;
 
 export interface NixNamespace {
+  /** Any Nix expression, written as is: `nix.expr("pkgs.lib.licenses.unfree")`. */
   expr(expr: string): NixExpr;
+  /** A nixpkgs package: `nix.pkg("zsh")` is `pkgs.zsh`. */
   pkg: PkgHelper;
+  /** The path of an executable in a package: `nix.bin("git", "git")` is `"${pkgs.git}/bin/git"`. */
   bin(packageName: string, executable: string): NixExpr;
   /**
    * Build a safely quoted path below `config.home.homeDirectory`.
@@ -20,13 +23,24 @@ export interface NixNamespace {
    * Leading `/` characters are ignored; other characters are preserved.
    */
   pkgPath(packageName: string, relativePath: string): NixExpr;
+  /**
+   * A Nix string with expressions interpolated:
+   * nix.str`${nix.pkg("neovim")}/bin/nvim` is `"${pkgs.neovim}/bin/nvim"`.
+   */
   str(strings: TemplateStringsArray, ...values: NixStringPart[]): NixExpr;
+  /** A multi-line Nix string (`'' ... ''`) for scripts, with expressions interpolated and indentation trimmed. */
   script: ScriptHelper;
+  /** Strings and expressions joined with Nix's `+`. */
   concat(...parts: NixStringPart[]): NixExpr;
+  /** A package list: `nix.withPkgs(["git", "curl"])` is `with pkgs; [ git curl ]`. */
   withPkgs(packages: string[]): NixExpr;
+  /** Attributes included only when `condition` holds, decided by Nix (`lib.optionalAttrs`). */
   optionalAttrs(condition: NixCondition, attrs: Record<string, unknown>): NixExpr;
+  /** A string included only when `condition` holds, decided by Nix (`lib.optionalString`). */
   optionalString(condition: NixCondition, value: NixStringPart): NixExpr;
+  /** `pkgs.stdenv.isDarwin`, for conditions. */
   isDarwin: NixExpr;
+  /** `pkgs.stdenv.isLinux`, for conditions. */
   isLinux: NixExpr;
   /**
    * Build a `stdenvNoCC.mkDerivation` for a prebuilt single-binary CLI
@@ -87,12 +101,19 @@ export interface NixNamespace {
      */
     windowsBin(name: string, paths: string | readonly string[]): NixExpr;
   };
+  /** nixpkgs `lib` functions for option priorities and ordering. */
   lib: {
+    /** A value other declarations override (`lib.mkDefault`). */
     mkDefault(value: NixValue): NixExpr;
+    /** A value that overrides other declarations (`lib.mkForce`). */
     mkForce(value: NixValue): NixExpr;
+    /** List or string content placed before the rest (`lib.mkBefore`). */
     mkBefore(value: NixValue): NixExpr;
+    /** List or string content placed after the rest (`lib.mkAfter`). */
     mkAfter(value: NixValue): NixExpr;
+    /** Same as `nix.optionalAttrs`. */
     optionalAttrs(condition: NixCondition, attrs: Record<string, unknown>): NixExpr;
+    /** Same as `nix.optionalString`. */
     optionalString(condition: NixCondition, value: NixStringPart): NixExpr;
   };
 }
@@ -122,7 +143,9 @@ export interface BinaryReleasePlatform {
 }
 
 export interface BinaryReleaseMeta {
+  /** One line about the tool (`meta.description`). */
   description: string;
+  /** Its home page (`meta.homepage`). */
   homepage?: string;
   /** nixpkgs `lib.licenses` attribute name (e.g. `"mit"`, `"asl20"`,
    *  `"unfree"`). **Not** an SPDX identifier: `"MIT"` and `"Apache-2.0"`
@@ -173,17 +196,31 @@ export interface BinaryReleaseOpts {
    *  Adds `installShellFiles` to `nativeBuildInputs` and runs
    *  `installShellCompletion` in `postInstall`. */
   completions?: BinaryReleaseCompletions;
+  /** The package's metadata. */
   meta: BinaryReleaseMeta;
 }
 
 export interface PkgHelper {
+  /** `pkgs.<name>`. */
   (name: string): NixExpr;
+  /** `pkgs.stable.<name>`, from the nixpkgs input `overlay.stable` adds. */
   stable(name: string): NixExpr;
 }
 
 export interface ScriptHelper {
+  /**
+   * A script as a multi-line Nix string (`'' ... ''`), indentation trimmed;
+   * expressions in the template are interpolated.
+   *
+   * ```ts
+   * nix.script`
+   *   echo "hello from activation"
+   * `
+   * ```
+   */
   (body: string): NixExpr;
   (strings: TemplateStringsArray, ...values: NixStringPart[]): NixExpr;
+  /** Like `nix.script`, but backslashes stay exactly as typed (a raw template). */
   raw(strings: TemplateStringsArray, ...values: NixStringPart[]): NixExpr;
 }
 

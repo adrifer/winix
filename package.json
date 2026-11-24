@@ -63,6 +63,7 @@
     "test": "vitest",
     "lint": "eslint src/",
     "check": "tsc --noEmit",
+    "api-docs": "node scripts/api-docs.mjs",
     "prepack": "npm run build",
     "release:stable": "node scripts/release.mjs stable",
     "release:preview": "node scripts/release.mjs preview",

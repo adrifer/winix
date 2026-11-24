@@ -2,19 +2,30 @@ import { platform, getOptionalEvalContext } from "../sdk/index.ts";
 import type { Fragment, PlatformFactory } from "../core/types.ts";
 
 export interface NixosPlatformOpts {
+  /** The Nix system, e.g. "aarch64-linux". Defaults to "x86_64-linux". */
   system?: string;
+  /** `system.stateVersion`: the NixOS release this machine was first installed with (not the latest). */
   stateVersion?: string;
+  /** Allow unfree packages. Defaults to true. */
   allowUnfree?: boolean;
+  /** Include Home Manager (as a NixOS module, with `useGlobalPkgs` and `useUserPackages`). Defaults to true. */
   homeManager?: boolean;
+  /** `networking.hostName`. Defaults to the host's name; false leaves it unset. */
   hostname?: string | false;
 }
 
 export interface DarwinPlatformOpts {
+  /** The Nix system. Defaults to "aarch64-darwin". */
   system?: string;
+  /** nix-darwin's `system.stateVersion`. */
   stateVersion?: number | string;
+  /** Allow unfree packages. Defaults to true. */
   allowUnfree?: boolean;
+  /** Include Home Manager (as a nix-darwin module). Defaults to true. */
   homeManager?: boolean;
+  /** Manage Homebrew through nix-homebrew (needs a nix-homebrew input). Defaults to false. */
   homebrew?: boolean;
+  /** `networking.hostName`. Defaults to the host's name; false leaves it unset. */
   hostname?: string | false;
 }
 
@@ -32,6 +43,7 @@ export interface WindowsPlatformOpts {
 }
 
 export interface PlatformsHelper {
+  /** NixOS, applied with nixos-rebuild. */
   nixos: PlatformFactory<[opts?: NixosPlatformOpts]>;
   /**
    * NixOS running under WSL: imports the NixOS-WSL module and enables it.
@@ -39,7 +51,9 @@ export interface PlatformsHelper {
    * true; `platforms.wsl.isActive` is true only for WSL hosts.
    */
   wsl: PlatformFactory<[opts?: WslPlatformOpts]>;
+  /** macOS with nix-darwin, applied with darwin-rebuild. */
   darwin: PlatformFactory<[opts?: DarwinPlatformOpts]>;
+  /** Windows, applied by Winix itself (WinGet, PowerShell, DSC). */
   windows: PlatformFactory<[opts?: WindowsPlatformOpts]>;
 }
 

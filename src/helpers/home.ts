@@ -20,31 +20,63 @@ export interface HomeProgramOptions {}
 export interface HomeServiceOptions {}
 
 export interface HomeHelper {
+  /** Any Home Manager options, as an object: `home({ programs: { ... } })`. */
   (config: HomeOptions): Fragment;
+  /** Import Home Manager modules (`home-manager` module paths or `inputs.x.homeManagerModules.y`). */
   imports(imports: string[]): Fragment;
   imports(...imports: string[]): Fragment;
+  /**
+   * Enable a Home Manager program, with its options: `programs.<name>` with
+   * `enable = true`. Installs the program and writes its config.
+   *
+   * ```ts
+   * home.program("git", { settings: { user: { name: "Alice" } } });
+   * ```
+   */
   program<const K extends string>(
     name: K,
     opts?: ProgramOptions<HomeProgramOptions, K>
   ): Fragment;
+  /** Enable a Home Manager service, with its options: `services.<name>` with `enable = true`. */
   service<const K extends string>(
     name: K,
     opts?: ServiceOptions<HomeServiceOptions, K>
   ): Fragment;
+  /** Session environment variables (`home.sessionVariables`). */
   env(vars: Record<string, string | NixExpr>): Fragment;
+  /** Add folders to PATH (`home.sessionPath`). */
   path(paths: (string | NixExpr)[]): Fragment;
   path(...paths: (string | NixExpr)[]): Fragment;
+  /**
+   * Install packages for the user (`home.packages`), by nixpkgs attribute name
+   * or `nix.pkg(...)`/`nix.binaryRelease(...)`.
+   *
+   * ```ts
+   * home.packages("ripgrep", "fd");
+   * ```
+   */
   packages(packages: PackageRef[]): Fragment;
   packages(...packages: PackageRef[]): Fragment;
+  /** Files in the home directory (`home.file`), by path relative to it. */
   files(files: Record<string, HomeFile>): Fragment;
+  /** One file in ~/.config (`xdg.configFile`). */
   configFile(name: string, opts: HomeFile): Fragment;
+  /**
+   * Files in ~/.config (`xdg.configFile`), by path relative to it.
+   *
+   * ```ts
+   * home.configFiles({ "lazygit/config.yml": home.symlink("./dotfiles/lazygit/config.yml") });
+   * ```
+   */
   configFiles(files: Record<string, HomeFile>): Fragment;
   /**
    * Out-of-store symlink source. `~/` paths are home-relative; `./` and
    * `../` paths are relative to the directory holding winix.config.ts.
    */
   symlink(path: string, opts?: Omit<HomeFile, "source" | "text">): HomeFile;
+  /** A raw Nix snippet added to the Home Manager module, as written. */
   raw(config: string): Fragment;
+  /** A Home Manager activation script (`home.activation.<name>`), run on every switch. */
   activation(name: string, opts: ActivationOpts): Fragment;
   /** Home Manager helpers for NixOS-WSL hosts. */
   wsl: HomeWslHelper;

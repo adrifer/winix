@@ -48,7 +48,9 @@ import type { WinNpmRegistryPolicy } from "../types/windows.ts";
  * - `{ id, source?, version? }` → explicit form
  */
 export interface WinPackageSpec {
+  /** WinGet id (`Git.Git`, case-insensitive) or Microsoft Store product id. Find ids with `winix windows search`. */
   id: string;
+  /** "winget" (default) or "msstore". */
   source?: WinPackageSource;
   /**
    * Omitted: pinned in winix-windows.lock (newer installs are kept).
@@ -57,6 +59,7 @@ export interface WinPackageSpec {
    * compared or downgraded.
    */
   version?: string;
+  /** The installers need administrator rights though WinGet can't tell: install in switch's elevated step. */
   elevated?: boolean;
   /**
    * Resources this package must be applied after. Accepts a single handle or
@@ -74,8 +77,11 @@ export type WinPackageOpts = Omit<WinPackageSpec, "id">;
  * Accepted object shape for `windows.raw(...)`.
  */
 export interface WinRawCommandSpec {
+  /** A stable name for the resource (in the plan and in dependsOn ordering). Defaults to one derived from the command. */
   name?: string;
+  /** The program to run: a path or a name on PATH. */
   executable: string;
+  /** Its arguments, passed as they are (no shell). */
   arguments?: string[];
   /**
    * Resources this command must run after. Accepts a single handle or an array
@@ -92,14 +98,19 @@ export type WinRawCommandArg = string | WinRawCommandSpec;
  * free-form JSON-like object serialized verbatim to YAML.
  */
 export interface WinDscSpec {
+  /** Fully qualified DSC resource type, e.g. "Microsoft.Windows/Service". */
   type: string;
+  /** A stable name for the resource (in the plan and the generated configuration). */
   name?: string;
+  /** The resource's properties, passed to DSC as they are. */
   properties?: WinDscProperties;
+  /** Resources to apply first. */
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
 /** Options for `windows.setting(...)`. */
 export interface WinSettingOpts {
+  /** Resources to apply first. */
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -108,6 +119,7 @@ export interface WinPowerShellModuleOpts {
   repository?: string;
   /** Include prereleases during lock resolution. Defaults to stable releases only. */
   prerelease?: boolean;
+  /** Resources to install first. A declared Microsoft.PowerShell package is added automatically. */
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -118,8 +130,11 @@ interface WinStartupSpecBase extends Omit<WinStartupCommand, "executable" | "arg
    * workingDirectory.
    */
   executable: WinFilePath | ResourceHandle;
+  /** Arguments, passed as they are (standard Windows quoting). Known folders and file handles become their paths. */
   arguments?: (WinFilePath | ResourceHandle)[];
+  /** The folder it starts in. Defaults to the user profile; must exist when the switch runs. */
   workingDirectory?: WinFilePath | ResourceHandle;
+  /** Resources to apply first, such as the program's package. */
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -131,9 +146,11 @@ export interface WinStartupAppSpec extends WinStartupSpecBase {
 }
 
 export interface WinStartupShortcutSpec extends WinStartupSpecBase {
+  /** "normal" (default), "minimized" or "maximized". */
   windowStyle?: WinStartupWindowStyle;
   /** Move a different existing shortcut of this name to %LOCALAPPDATA%\Winix\startup-backups (default unless force). */
   backup?: boolean;
+  /** Replace a different existing shortcut without a backup. */
   force?: boolean;
 }
 
@@ -156,7 +173,9 @@ export interface WinStartupNamespace {
 }
 
 export interface WinOptionalFeatureOpts {
+  /** true (default) enables the feature, false disables it. */
   enabled?: boolean;
+  /** Resources to apply first. */
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -182,15 +201,18 @@ export interface WinWslSetupSpec extends Omit<WinWslSetup, "repository" | "confi
 }
 
 export interface WinWslDistroSpec extends Omit<WinWslDistro, "name" | "default" | "host" | "setup" | "setupRefFromCheckout"> {
+  /** Make it the default distro (`wsl` without `-d`). At most one per host; only for distros Winix creates. */
   default?: boolean;
   /** Expected Linux hostname for adoption (a name or `host(...)` value); defaults to setup.host. */
   host?: string | HostDef;
   /** First-run setup for Winix-created distros; never run for adopted distros. */
   setup?: WinWslSetupSpec;
+  /** Extra resources to apply first; WSL itself, its features and .wslconfig are added automatically. */
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
 export interface WinWslOpts extends Pick<WinFileOpts, "backup" | "force" | "dependsOn"> {
+  /** Manage the whole ~/.wslconfig (left alone when omitted). Applies when WSL restarts. */
   config?: WinWslConfig;
 }
 
@@ -246,7 +268,9 @@ export type WinEnvScope = "user" | "machine";
 
 /** Options shared by `windows.env.*` and `windows.path.*` methods. */
 export interface WinEnvOpts {
+  /** "user" (default) or "machine" (needs administrator rights; joins the elevated step). */
   scope?: WinEnvScope;
+  /** Resources to apply first. */
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -254,11 +278,17 @@ export type WinFileEncoding = "utf8" | "utf8bom" | "ascii";
 
 /** Options shared by `windows.file.*` methods. */
 export interface WinFileOpts {
+  /** Replace a differing target without a backup (`backup: true` still backs up). Never deletes a directory with files. */
   force?: boolean;
+  /** Default true: move a differing existing target to `<target>.bak` first. false: fail instead of replacing it. */
   backup?: boolean;
+  /** symlink of a directory: create the tree and link each file, instead of linking the directory itself. */
   recursive?: boolean;
+  /** Write in switch's elevated step, for targets the user can't write. */
   elevate?: boolean;
+  /** text: "utf8" (default), "utf8bom" or "ascii". */
   encoding?: WinFileEncoding;
+  /** Resources to apply first. */
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
@@ -1596,28 +1626,64 @@ function normalizeStartupExplorer(options: WinStartupExplorerOptions, opts: WinS
 }
 
 export interface WinEnvNamespace {
+  /** Set an environment variable for the user (default) or the machine. New terminals see it; running programs keep their old environment. */
   set(name: string, value: string, opts?: WinEnvOpts): ResourceHandle;
+  /** Make sure an environment variable is not set. */
   remove(name: string, opts?: WinEnvOpts): ResourceHandle;
 }
 
 export interface WinPathNamespace {
+  /** Add one entry to PATH, leaving the rest as it is. `%VARIABLE%` entries stay unexpanded. */
   add(value: string, opts?: WinEnvOpts): ResourceHandle;
+  /** Remove one entry from PATH. */
   remove(value: string, opts?: WinEnvOpts): ResourceHandle;
 }
 
 export interface WinFileNamespace {
+  /** A file with exactly this content. */
   text(target: WinFilePath, content: string, opts?: WinFileOpts): ResourceHandle;
+  /**
+   * A link to `source` (relative to winix.config.ts, or absolute). Live: editing
+   * the file in the checkout changes it on the machine, with no switch. Needs
+   * Developer Mode or elevation.
+   */
   symlink(target: WinFilePath, source: string | URL, opts?: WinFileOpts): ResourceHandle;
+  /** A copy of `source` (relative to winix.config.ts, or absolute); a copy changed on the machine is replaced by the next switch. */
   copy(target: WinFilePath, source: string | URL, opts?: WinFileOpts): ResourceHandle;
+  /** Make sure `target` doesn't exist. */
   remove(target: WinFilePath, opts?: WinFileOpts): ResourceHandle;
 }
 
 export interface WindowsHelper {
-  npm: { registries(policy: WinNpmRegistryPolicy): Fragment };
-  fonts(spec: { sources: WinFontSource[]; dependsOn?: ResourceHandle | ResourceHandle[] }): ResourceHandle;
-  wallpaper(spec: WinWallpaper & { dependsOn?: ResourceHandle | ResourceHandle[] }): ResourceHandle;
+  /** npm settings for the current user. */
+  npm: {
+    /**
+     * Set npm's default registry and `@scope` registries in the user's .npmrc,
+     * leaving authentication, comments and other settings as they are.
+     */
+    registries(policy: WinNpmRegistryPolicy): Fragment;
+  };
+  /**
+   * Install fonts for the current user: local .ttf/.otf files, HTTPS
+   * downloads and ZIPs, or Nerd Fonts releases. Downloads are pinned and
+   * checked; find Nerd Fonts names with `winix windows fonts`.
+   */
+  fonts(spec: {
+    /** Paths relative to winix.config.ts, `{ url, files?, sha256? }`, or `{ provider: "nerd-fonts", family, version? }`. */
+    sources: WinFontSource[];
+    /** Resources to apply first. */
+    dependsOn?: ResourceHandle | ResourceHandle[];
+  }): ResourceHandle;
+  /** Set the desktop background (one image for every display). */
+  wallpaper(spec: WinWallpaper & {
+    /** Resources to apply first. */
+    dependsOn?: ResourceHandle | ResourceHandle[];
+  }): ResourceHandle;
+  /** Color mode, accent color, and Explorer and taskbar options. Only the values you declare change. */
   personalization(options: WinPersonalization, opts?: WinSettingOpts): ResourceHandle;
+  /** Enable (or with `enabled: false`, disable) a Windows optional feature. Needs administrator rights; a requested restart is left to you. */
   optionalFeature(name: string, opts?: WinOptionalFeatureOpts): ResourceHandle;
+  /** WSL itself (`windows.wsl()`) and its distros (`windows.wsl.distro()`). */
   wsl: WinWslNamespace;
   /** Programs started at sign-in (logon tasks or Startup shortcuts), never run during apply. */
   startup: WinStartupNamespace;

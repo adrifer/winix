@@ -4,27 +4,48 @@ import { feature, getEvalContext } from "../sdk/index.ts";
 import { nix } from "./nix.ts";
 
 export interface AccountOpts {
+  /** On NixOS, add the user to `wheel`. */
   admin?: boolean;
+  /** Login shell, by package name ("zsh") or reference. Also enables the shell's NixOS or nix-darwin program. */
   shell?: string | PackageRef;
+  /** The user's full name or description. */
   description?: string;
+  /** The home directory. Defaults to /home/<name>, or /Users/<name> on macOS. */
   homeDirectory?: string;
+  /** Same as `homeDirectory`. */
   home?: string;
+  /** Home Manager's `home.stateVersion`: the release this user's Home Manager setup started on. */
   stateVersion?: string;
+  /** Home Manager session variables. */
   sessionVariables?: Record<string, string>;
+  /** NixOS groups to add the user to. */
   groups?: string[];
+  /** More NixOS groups (merged with `groups`). */
   extraGroups?: string[];
+  /** The user id. */
   uid?: number;
+  /** The primary group id (macOS). */
   gid?: number;
+  /** The primary group (NixOS). */
   group?: string;
+  /** A normal (login) user. Defaults to true unless `isSystemUser`. */
   isNormalUser?: boolean;
+  /** A system user, without a login. */
   isSystemUser?: boolean;
+  /** Packages for this user (NixOS). */
   packages?: PackageRef[];
+  /** SSH keys that may log in as this user. */
   openssh?: {
+    /** Public keys, as text. */
     authorizedKeys?: string[];
+    /** Files with public keys. */
     authorizedKeyFiles?: string[];
   };
+  /** A file with the user's hashed password (NixOS). */
   hashedPasswordFile?: string;
+  /** More Home Manager configuration for this user, as a fragment. */
   homeManager?: Fragment;
+  /** Make the user `wsl.defaultUser` on NixOS-WSL, unless the host sets one. */
   wslDefault?: boolean;
 }
 
@@ -45,15 +66,28 @@ export interface AccountGroupFactory<T extends unknown[] = []> extends FragmentF
 }
 
 export interface AccountGroupOpts extends Record<string, unknown> {
+  /** The group id. */
   gid?: number;
+  /** Users in the group, by name or by their `account.user` value. */
   members?: AccountGroupMember[];
 }
 
 export interface AccountNamespace {
+  /**
+   * A user on NixOS and macOS hosts, with its Home Manager configuration (so
+   * `home.*` has someone to apply to). Call the result to include it in a
+   * host; pass it to a WSL distro's `setup.user`.
+   *
+   * ```ts
+   * export const alice = account.user("alice", () => ({ admin: true, shell: "zsh", stateVersion: "25.05" }));
+   * host("wsl", platforms.wsl({ stateVersion: "25.05" }), [alice()]);
+   * ```
+   */
   user<T extends unknown[]>(
     name: string,
     factory: (...args: T) => AccountOpts
   ): AccountUserFactory<T>;
+  /** A group on NixOS and macOS hosts. */
   group<T extends unknown[]>(
     name: string,
     factory?: (...args: T) => AccountGroupOpts

@@ -9,6 +9,7 @@ sidebar:
 
 Everything on this page is imported from `@adrifer/winix`. How the pieces fit
 together: [Features, profiles and hosts](../concepts/features-and-hosts.md).
+Every signature and option: [API](../api/config.md).
 
 ## workspace
 

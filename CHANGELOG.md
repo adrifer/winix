@@ -5,6 +5,10 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
+- Every public helper and option has a doc comment, shown on hover in your
+  editor, and the docs have an **API** section generated from them: one page
+  per namespace, every call with its signature and options.
+
 ## 0.3.6
 
 - **`winix upgrade`** moves your config's Winix pin to the latest release (or
