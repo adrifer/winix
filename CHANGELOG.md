@@ -5,6 +5,11 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
+## 0.3.7
+
+- `winix update` on Linux, WSL and macOS now generates only Nix hosts when
+  updating `flake.lock`, instead of also generating Windows hosts (which failed
+  in the Linux standalone executable when a Windows host declared WSL setup).
 - Every public helper and option has a doc comment, shown on hover in your
   editor, and the docs have an **API** section generated from them: one page
   per namespace, every call with its signature and options.

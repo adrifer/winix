@@ -81,7 +81,12 @@ export async function update(cwd: string, opts: UpdateOptions): Promise<void> {
     );
   }
 
-  const result = await applyWorkspace(cwd, { dry: false, diff: false });
+  const result = await applyWorkspace(cwd, {
+    dry: false,
+    diff: false,
+    nixOnly: true,
+    loaded: { workspace, configDir, hosts: evaluated },
+  });
 
   const updateDir = await mkdtemp(join(tmpdir(), "winix-update-"));
   await cp(result.outDir, updateDir, { recursive: true });

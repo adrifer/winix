@@ -362,6 +362,37 @@ export default workspace({inputs:{},hosts:[host("desktop",platforms.windows(),({
       expect(readWindowsLock(dir)?.wslRepositories?.[wslRepositoryKey(setup)].revision).toBe("b".repeat(40));
     } finally { log.mockRestore(); warn.mockRestore(); await rm(dir, { recursive: true, force: true }); }
   });
+
+  it("updates flake.lock on Linux standalone without generating Windows WSL setup or resolving Windows locks", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-update-linux-standalone-"));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const metadata = vi.spyOn(runtime, "standaloneRuntime").mockReturnValue({
+      version: "0.3.6",
+      linuxAssets: {},
+    });
+    try {
+      const sdk = pathToFileURL(join(process.cwd(), "src", "index.ts")).href;
+      await writeFile(join(dir, "winix.config.mjs"), `
+import {workspace,host,platforms} from ${JSON.stringify(sdk)};
+export default workspace({
+  inputs: { nixpkgs: "nixos-unstable" },
+  hosts: [
+    host("desktop", platforms.windows(), ({windows}) => {
+      windows.package("Git.Git");
+      windows.package({id:"Microsoft.WSL",version:"3.0.5"});
+      windows.wsl();
+      windows.wsl.distro("NixOS",{source:"nixos-wsl",installLocation:"C:/WSL/NixOS",setup:${JSON.stringify(setup)}});
+    }),
+    host("linux", platforms.wsl({stateVersion:"25.05"}), [{nixos:{users:{users:{alice:{isNormalUser:true}}}}}]),
+  ],
+});`);
+      await update(dir, { inputs: [], dry: true, platform: "linux" });
+      expect(await readFile(join(dir, ".winix", "out", "flake.nix"), "utf8")).toContain("nixosConfigurations.linux");
+      await expect(readFile(join(dir, ".winix", "out", "desktop", "resources.json"))).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(readFile(join(dir, "winix-windows.lock"))).rejects.toMatchObject({ code: "ENOENT" });
+    } finally { metadata.mockRestore(); log.mockRestore(); warn.mockRestore(); await rm(dir, { recursive: true, force: true }); }
+  });
 });
 
 describe.skipIf(!linuxAvailable)("Linux WSL setup state machine with mocked system commands", () => {

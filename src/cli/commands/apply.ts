@@ -53,6 +53,8 @@ interface ApplyOptions {
   compact?: boolean;
   /** An already loaded and evaluated workspace (switch evaluates it once). */
   loaded?: { workspace: WorkspaceDef; configDir: string; hosts: ReturnType<typeof evaluate> };
+  /** Only generate Nix hosts (skip Windows lock resolution and bundles). */
+  nixOnly?: boolean;
   offline?: boolean;
   locked?: boolean;
   windowsLockDry?: boolean;
@@ -95,6 +97,10 @@ export async function applyWorkspace(
         allHosts.map((h) => `  - ${h.name}`).join("\n")
       );
     }
+  }
+
+  if (opts.nixOnly) {
+    evaluated = evaluated.filter((h) => platformForEvaluatedHost(h) !== "windows");
   }
 
   const hostPlatforms = platformsForHosts(evaluated);
