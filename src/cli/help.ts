@@ -24,6 +24,7 @@ ${sections([
     ["plan", "Show what switch would change on this machine"],
     ["switch", "Apply this machine's host"],
     ["update", "Update the locks to the latest versions"],
+    ["upgrade", "Move the config to the latest Winix release"],
     ["check", "Validate the configuration"],
   ]],
   ["Writing configuration", [
@@ -89,12 +90,19 @@ const COMMANDS: Record<string, CommandHelp> = {
     usage: "winix update [<name>...]",
     description: "Update the locks to the latest versions. On Windows: winix-windows.lock. Elsewhere: the Nix flake.lock,\n" +
       "copied back to the project. Names limit it to those packages, PowerShell modules or flake inputs,\n" +
-      "or to fonts, nixos-wsl (WSL images) or wsl-setup.",
+      "or to fonts, nixos-wsl (WSL images) or wsl-setup. Winix itself moves with winix upgrade.",
     options: [
       ["--windows", "Update winix-windows.lock from WSL, Linux or macOS (fonts and WSL pins; packages need WinGet)"],
       ["--dry", "Only show what would be updated"],
     ],
     examples: ["winix update", "winix update JesseDuffield.lazygit", "winix update --windows wsl-setup", "winix update nixpkgs"],
+  },
+  upgrade: {
+    usage: "winix upgrade [version]",
+    description: "Move this config's Winix pin (package.json) to the latest release, or to the one named.\n" +
+      "The next winix command downloads it. winix update never changes Winix; it says when a newer one exists.",
+    options: [["--dry", "Only show the change"]],
+    examples: ["winix upgrade", "winix upgrade --dry", "winix upgrade 0.3.5"],
   },
   check: {
     usage: "winix check",

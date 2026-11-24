@@ -7,17 +7,18 @@ sidebar:
 
 # Versions and locks
 
-Every machine built from the same commit gets the same versions. Two files in
-your repository make that true; commit both:
+Every machine built from the same commit gets the same versions. Three files in
+your repository make that true; commit them:
 
 | File | Pins | Written by |
 |---|---|---|
 | `flake.lock` | Nix inputs (nixpkgs, Home Manager, NixOS-WSL, nix-darwin) at exact commits, and through them every Nix package | `winix update` |
 | `winix-windows.lock` | WinGet packages, PowerShell modules, fonts, NixOS-WSL images and the commit a new WSL distro is set up from | the first `winix switch` that needs a pin, and `winix update` |
+| `package.json` | Winix itself (`@adrifer/winix`) | `winix init`, and `winix upgrade` |
 
 Nothing changes version behind your back: versions move when you run
-`winix update` (or accept the switch prompt below), and the change shows up as
-a diff in your repository.
+`winix update` (or accept the switch prompt below) and Winix itself when you
+run `winix upgrade`, and the change shows up as a diff in your repository.
 
 ## Windows package versions
 

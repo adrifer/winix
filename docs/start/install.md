@@ -90,7 +90,8 @@ need PowerShell 7.4+ and DSC 3.2+; the script is the easy way to get those.
 
 ## npm package
 
-With Node.js 22.13 or later (22.x, 24.x or 26.x):
+For macOS, until it has a standalone executable. With Node.js 22.13 or later
+(22.x, 24.x or 26.x):
 
 ```bash
 mkdir my-config && cd my-config
@@ -99,8 +100,9 @@ npm install
 npx winix check
 ```
 
-`init` adds `@adrifer/winix` to `package.json`, pinned to an exact version, so
-`npm install` gives everyone the same Winix. Node 26 only runs TypeScript that
+Run Winix as `npx winix`. `init` adds `@adrifer/winix` to `package.json`, pinned
+to an exact version; after `winix upgrade` moves that pin, run `npm install`
+again. Node 26 only runs TypeScript that
 can be erased (no `enum`, no constructor parameter properties); use Node 24 if
 your config needs those.
 

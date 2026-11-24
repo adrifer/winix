@@ -431,6 +431,15 @@ describe("winix run (what the winix command runs)", () => {
     expect(await routed(somewhere, ["switch"])).toEqual([["self", somewhere, ["switch"]]]);
   });
 
+  it("runs upgrade with this Winix, since the pinned one may not have it", async () => {
+    const project = await fixture("0.3.0");
+    await writeFile(join(project, "winix.config.ts"), "");
+    expect(await routed(project, ["upgrade"], "/elsewhere")).toEqual([["self", project, ["upgrade"]]]);
+    const somewhere = await mkdtemp(join(tmpdir(), "winix-nowhere-"));
+    temporary.push(somewhere);
+    expect(await routed(somewhere, ["upgrade", "--dry"], project)).toEqual([["self", project, ["upgrade", "--dry"]]]);
+  });
+
   it("always starts a new project in the current folder, even inside another one", async () => {
     const project = await fixture("0.3.0");
     await writeFile(join(project, "winix.config.ts"), "");

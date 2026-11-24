@@ -1237,6 +1237,20 @@ branch history and create upstream-tracking local branches at the locked
 activation commit, not the current upstream tip. Tags/commit pins remain detached.
 Completed setups are never retroactively migrated, pulled or reapplied.
 
+#### `winix upgrade`
+
+`winix upgrade [version] [--dry]` rewrites the `@adrifer/winix` pin in the
+project's package.json (found from winix.config.ts here or above, else the
+recorded checkout) to the latest stable GitHub release, or to the named release
+after checking it exists, keeping the pin's form (version or release tarball
+URL) and the file's formatting. It does nothing when already at the latest or
+pinned past it; an explicit older version is allowed. It never downloads or
+runs anything; the next command downloads the pinned release. The `winix`
+command runs it with the installed Winix, not the pinned one, so a pin from
+before the command existed can still be upgraded. `winix update` never changes
+the Winix pin; it ends with a notice when a newer release exists (silently
+skipped when offline).
+
 #### `winix init`
 
 Scaffold a new Winix project. Creates `winix.config.ts`, `tsconfig.json`,

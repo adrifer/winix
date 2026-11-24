@@ -9,7 +9,7 @@ sidebar:
 
 Run commands from a Winix project (any folder below `winix.config.ts`).
 `winix --help` lists the commands and `winix <command> --help` shows a command's
-options. With npm instead of the `winix` command, use `npx @adrifer/winix`.
+options.
 
 `--host <name>` picks the host. Without it, Winix uses the host `winix bootstrap`
 remembered on this machine, the only host, or the host named like this machine.
@@ -21,11 +21,12 @@ remembered on this machine, the only host, or the host named like this machine.
 | `winix plan` | Show what `switch` would change on this machine, without changing anything. On NixOS and WSL it builds the new system and compares it with the running one ([details](../concepts/applying-changes.md#the-plan-on-nixos-and-wsl)). |
 | `winix switch` | Generate the host's output and apply it. On Windows, Winix applies what differs (one UAC prompt); on NixOS it builds, shows the plan and runs `nixos-rebuild` (skipped when nothing changed); on macOS it runs `darwin-rebuild`. |
 | `winix update [<name>...]` | Update the locks to the latest versions: `winix-windows.lock` on Windows, the Nix `flake.lock` elsewhere. Names limit it to those packages, PowerShell modules or flake inputs, or to `fonts`, `nixos-wsl` (WSL images) or `wsl-setup`. |
+| `winix upgrade [<version>]` | Move the config's Winix pin (`package.json`) to the latest release, or to the one named; the next `winix` command downloads it. `winix update` never changes Winix, and says when a newer release exists. |
 | `winix check` | Validate the configuration and report conflicts and missing pins. |
 
 | Option | Commands | What it does |
 | --- | --- | --- |
-| `--dry` | `update` | Only show what would be updated |
+| `--dry` | `update`, `upgrade` | Only show what would change |
 | `-y`, `--yes` | `switch` | Confirm removing resources no longer declared |
 | `--update-versions` | `switch` | Raise `winix-windows.lock` to newer installed versions without asking |
 | `--no-build` | `plan` | NixOS: skip the build and only show the command a switch would run |

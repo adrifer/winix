@@ -47,7 +47,9 @@ created the project. Pinned releases are kept in the project's ignored
 
 ## Updating Winix
 
-Change the pin, commit, and on each machine:
+`winix upgrade` moves the pin to the latest release
+([Keep everything up to date](../guides/keep-up-to-date.md#winix-itself)).
+Commit it, and on each other machine:
 
 ```bash
 git -C ~/dotfiles pull
@@ -55,15 +57,13 @@ winix switch
 ```
 
 The first `winix` after the pull downloads the new version. Nothing else to
-install. [Keep everything up to date](../guides/keep-up-to-date.md#winix-itself)
-shows how to move the pin. The installed copy that does the routing only needs
-replacing for a new Winix outside your projects: rerun the install script.
+install. The installed copy that does the routing only matters outside your
+projects (`winix init`, `--version`); rerun the install script to refresh it.
 
-## npm and node_modules
+## node_modules
 
 An installed `node_modules/@adrifer/winix` never changes what the `winix`
-command runs. `npx winix` and `npm run` scripts keep using the local npm copy
-as usual; that's the route on macOS, which has no standalone executable yet.
+command runs.
 
 ## Running another Winix
 

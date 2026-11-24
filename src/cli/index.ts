@@ -10,6 +10,7 @@ import { installSkill } from "./commands/install.ts";
 import { inspect } from "./commands/inspect.ts";
 import { switchCommand } from "./commands/switch.ts";
 import { update } from "./commands/update.ts";
+import { upgrade, upgradeNotice } from "./commands/upgrade.ts";
 import { renderSkill } from "../skill.ts";
 import { bootstrapCheckout, routeRun } from "./commands/bootstrap.ts";
 import { installWinixCommand } from "./winix-home.ts";
@@ -263,6 +264,20 @@ switch (command) {
         windows: values.windows as boolean,
         inputs: positionals.slice(1),
       });
+      // Winix itself moves only with `winix upgrade`; say when there is a newer one.
+      await upgradeNotice(cwd);
+    } catch (err) {
+      console.error(`\u2717 Error: ${(err as Error).message}`);
+      process.exit(1);
+    }
+    break;
+  case "upgrade":
+    if (positionals.length > 2) {
+      console.error("Usage: winix upgrade [version] [--dry]");
+      process.exit(2);
+    }
+    try {
+      await upgrade(cwd, { dry: values.dry as boolean, version: positionals[1] });
     } catch (err) {
       console.error(`\u2717 Error: ${(err as Error).message}`);
       process.exit(1);

@@ -5,6 +5,15 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
+## 0.3.6
+
+- **`winix upgrade`** moves your config's Winix pin to the latest release (or
+  `winix upgrade 0.3.5`), keeping the pin's form, with `--dry` to preview and a
+  link to the changelog. The next `winix` command downloads it. `winix update`
+  still never changes Winix, and now ends with a line when a newer release
+  exists. The docs no longer use `npm install` to update Winix; npm remains the
+  macOS route until macOS has a standalone executable.
+
 ## 0.3.5
 
 Install Winix without a repository, a `winix` command that works from any

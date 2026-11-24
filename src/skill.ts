@@ -696,7 +696,13 @@ object to \`%USERPROFILE%\\.gitconfig\` with \`windows.file.text\`. Recipes live
   releases Windows removal ownership without deleting anything; accepts --dry.
 - \`winix update [INPUTS...] [--dry] [--windows]\` updates Nix inputs or
   Windows package locks. On native Windows, plain \`winix update\` updates
-  winix-windows.lock (the flake lock needs WSL, Linux or macOS).
+  winix-windows.lock (the flake lock needs WSL, Linux or macOS). It never
+  changes Winix itself; it ends with a line when a newer release exists.
+- \`winix upgrade [VERSION] [--dry]\` moves the config's Winix pin
+  (package.json @adrifer/winix, keeping its form) to the latest release or the
+  one named; the next winix command downloads it. Commit it; other machines get
+  it with git pull. Before 1.0 a minor release can need config changes: read
+  the CHANGELOG first.
 - \`winix inspect [--host NAME]\` lists each feature once with its scopes, Nix keys,
   and Windows resources with dependsOn edges; ignored features are marked.
   \`winix inspect --matrix\` shows features x hosts grouped by profile (role):

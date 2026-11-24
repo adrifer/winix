@@ -71,22 +71,19 @@ An update of nixpkgs updates every Nix package at once. If something breaks,
 ## Winix itself
 
 Your config pins one Winix version, which every machine runs
-([The winix command](../concepts/the-winix-command.md)). To move to a new
-release, read the [CHANGELOG](../../CHANGELOG.md), then change the pin in your
-config's `package.json`:
-
-```json
-"@adrifer/winix": "0.3.2"
-```
-
-If you use the npm package and commit `package-lock.json`, let npm change both:
+([The winix command](../concepts/the-winix-command.md)). `winix update` never
+changes it; it ends with a line when a newer release exists. To move to it:
 
 ```bash
-npm install --save-exact @adrifer/winix@0.3.2
+winix upgrade --dry   # which release, and a link to what changed
+winix upgrade         # move the pin in package.json
+winix plan            # downloads the new Winix and checks the config with it
+git commit -am "Upgrade Winix"
 ```
 
-Run `winix check` and `winix plan` (the first run downloads the new version),
-then commit.
+Read the [CHANGELOG](../../CHANGELOG.md) for the versions in between: before
+1.0, a minor release (0.3 → 0.4) can need changes to your config.
+`winix upgrade 0.3.5` moves to a specific release instead, also an older one.
 
 ## Rolling it out
 

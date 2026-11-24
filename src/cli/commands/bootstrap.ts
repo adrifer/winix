@@ -284,6 +284,9 @@ export async function routeRun(cwd: string, args: string[], deps: RouteDeps = de
   // A new project starts in this folder, even inside another one.
   if (args.length === 0 || args[0] === "init" || args[0] === "install") return self(cwd);
   const config = findConfig(cwd);
+  // Upgrading changes the pin, so it can't depend on the pinned Winix having the
+  // command: this Winix runs it, in the project (or the remembered checkout).
+  if (args[0] === "upgrade") return self(config ? cwd : deps.remembered() ?? cwd);
   if (config) {
     const directory = dirname(config);
     let pinned = true;
