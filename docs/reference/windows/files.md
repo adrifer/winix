@@ -49,7 +49,7 @@ Creating symlinks on Windows needs Developer Mode or an elevated process.
 Declare it once and Winix orders it before every link:
 
 ```ts
-windows.setting({ DeveloperMode: true });
+windows.settings.developer({ mode: true });
 ```
 
 Winix never turns Developer Mode on just because you declared a link. Without

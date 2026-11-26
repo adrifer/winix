@@ -832,8 +832,8 @@ selects PowerShell's normal installed version, not necessarily the locked one.
   `backup: !force`. A differing existing target moves to `<target>.bak`, and a
   backup collision fails. `backup: false` restores the refuse-to-replace
   behavior, and `force: true` alone deletes without a backup.
-- `windows.personalization({ colorMode })` writes `AppsUseLightTheme` and
-  `SystemUsesLightTheme`.
+- `windows.settings({ theme: { colorMode } })` (and `windows.settings.theme({ colorMode })`)
+  writes `AppsUseLightTheme` and `SystemUsesLightTheme` under HKCU without elevation.
 - `WorkspaceDef.inputs` is optional. Nix hosts without a `nixpkgs` input get
   a generation warning.
 - CLI: `winix windows search <query>` (winget search) and `winix windows import
@@ -1036,7 +1036,7 @@ services, elevation mechanisms, or all-users startup facilities.
 `windowStyle`, and `dependsOn`; apps add `delay` (whole seconds, 0–3600) and
 the `hidden` style (headless console host), shortcuts add `backup` and
 `force`. App `minimized`/`maximized` start through a headless PowerShell
-launcher. `windows.startup.explorer({ delay?, waitForIdle? })` sets or clears
+launcher. `windows.settings.explorer({ startupDelay?, waitForIdle? })` sets or clears
 `StartupDelayInMSec`/`WaitForIdleState` under HKCU
 `...\Explorer\Serialize`. Executable paths may use environment variables/known folders or
 an application name on PATH. Working directories must be absolute or resolved
@@ -1065,10 +1065,16 @@ package installation, automatic npm setup, token management or cleanup is
 implied; project/environment/CLI npm settings can override it. Bootstrap and
 Linux WSL setup remain independent.
 
-Windows personalization uses current-user DSC PowerShell resources:
+Windows desktop appearance and OS settings use typed DSC resources:
 `windows.wallpaper({ source, style })` manages a content-addressed local image
-with the desktop API; `windows.personalization({ accentColor, explorer, taskbar })`
-manages only declared accent/Explorer/taskbar preferences and taskbar auto-hide.
+with the desktop API; `windows.settings({ ... })` (and its 1-to-1 section
+helpers `windows.settings.theme()`, `.explorer()`, `.taskbar()`, `.start()`,
+`.developer()`, `.clipboard()`, `.time()`, `.keyboard()`, `.mouse()`,
+`.notifications()`) manages only declared values with automatic per-key
+elevation (`Microsoft.Windows.Settings` is installed and locked only when a
+key backed by it is declared). `windows.registry.set()` and
+`windows.registry.remove()` manage arbitrary registry keys and values through
+`Microsoft.Windows/Registry`, elevating machine hives automatically.
 No automatic Explorer restart, per-monitor images, lock-screen policy or app
 theme selection is implied. Registry preferences can require signing out and
 remain dependent on Windows version/policy.

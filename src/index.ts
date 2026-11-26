@@ -59,12 +59,26 @@ export type {
   WinPackageSource,
   WinRawCommand,
   WinSettings,
+  WinThemeSettings,
+  WinExplorerSettings,
+  WinTaskbarSettings,
+  WinStartSettings,
+  WinDeveloperSettings,
+  WinClipboardSettings,
+  WinTimeSettings,
+  WinKeyboardSettings,
+  WinMouseSettings,
+  WinNotificationSettings,
   WinFontSource,
   WinWallpaper,
-  WinPersonalization,
+  WinSudoMode,
+  WinRegistryValue,
+  WinRegistryValueType,
   WinColorMode,
+  WinExplorerOpenTo,
   WinStartFolder,
   WinTaskbarAlignment,
+  WinTaskbarSearchMode,
   WinTaskbarGroupingMode,
   WinTaskbarMultiMonMode,
   WinKnownFolder,
@@ -76,7 +90,6 @@ export type {
   WinStartupCommand,
   WinStartupWindowStyle,
   WinStartupAppWindowStyle,
-  WinStartupExplorerOptions,
 } from "./types/index.ts";
 export { platform, feature, profile, host, workspace, input, defineInputs, rawModule, withContext } from "./sdk/index.ts";
 export type { WinixContext } from "./sdk/context.ts";
@@ -89,4 +102,4 @@ export type { WindowsOutput, WindowsHostOutput } from "./backends/windows/index.
 export { account, darwin, home, nix, nixos, overlay, platforms, windows } from "./helpers/index.ts";
 export type { WinPowerShellModuleOpts, WinStartupAppSpec, WinStartupShortcutSpec, WinStartupNamespace, WinOptionalFeatureOpts, WinWslDistroSpec, WinWslSetupSpec, WinWslOpts, WinWslNamespace } from "./helpers/index.ts";
 export type { WinWslConfig, WinWslDistro, WinWslSetup } from "./types/index.ts";
-export type { AccountGroupFactory, AccountGroupMember, AccountGroupOpts, AccountNamespace, AccountOpts, AccountUserFactory, AccountUserRef, ActivationOpts, BinaryReleaseArch, BinaryReleaseCompletions, BinaryReleaseFormat, BinaryReleaseMeta, BinaryReleaseOpts, BinaryReleasePlatform, DarwinHelper, DarwinPlatformOpts, DarwinProgramOptions, DarwinServiceOptions, HomeHelper, HomeProgramOptions, HomeServiceOptions, LaunchdHelper, NixNamespace, NixosHelper, NixosPlatformOpts, NixosProgramOptions, NixosServiceOptions, OverlayHelper, PkgHelper, PlatformsHelper, ScriptHelper, SysctlSettings, SystemdHelper, VirtualisationHelper, WindowsHelper, WindowsPlatformOpts, WslPlatformOpts, WinEnvNamespace, WinEnvOpts, WinEnvScope, WinFileEncoding, WinFileNamespace, WinFileOpts, WinPackageArg, WinPackageSpec, WinPackageOpts, WinLinkedFileOpts, WinPowerShellProfileOpts, WinTerminalSettingsOpts, WinPathNamespace, WinRawCommandArg, WinRawCommandSpec, WinSettingOpts } from "./helpers/index.ts";
+export type { AccountGroupFactory, AccountGroupMember, AccountGroupOpts, AccountNamespace, AccountOpts, AccountUserFactory, AccountUserRef, ActivationOpts, BinaryReleaseArch, BinaryReleaseCompletions, BinaryReleaseFormat, BinaryReleaseMeta, BinaryReleaseOpts, BinaryReleasePlatform, DarwinHelper, DarwinPlatformOpts, DarwinProgramOptions, DarwinServiceOptions, HomeHelper, HomeProgramOptions, HomeServiceOptions, LaunchdHelper, NixNamespace, NixosHelper, NixosPlatformOpts, NixosProgramOptions, NixosServiceOptions, OverlayHelper, PkgHelper, PlatformsHelper, ScriptHelper, SysctlSettings, SystemdHelper, VirtualisationHelper, WindowsHelper, WindowsPlatformOpts, WslPlatformOpts, WinEnvNamespace, WinEnvOpts, WinEnvScope, WinFileEncoding, WinFileNamespace, WinFileOpts, WinPackageArg, WinPackageSpec, WinPackageOpts, WinLinkedFileOpts, WinPowerShellProfileOpts, WinTerminalSettingsOpts, WinPathNamespace, WinRawCommandArg, WinRawCommandSpec, WinSettingOpts, WinSettingsNamespace, WinRegistrySetOpts, WinRegistryRemoveOpts, WinRegistryNamespace } from "./helpers/index.ts";

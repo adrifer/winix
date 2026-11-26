@@ -1,10 +1,17 @@
 import type { WinDscProperties, WinWallpaper } from "../../types/windows.ts";
-import type { PersonalizationRegistryValue } from "../../helpers/windows-personalization.ts";
+import type { PersonalizationRegistryValue } from "../../helpers/windows-settings.ts";
 import { powerShellLiteral as quote } from "../../helpers/utils.ts";
 import { filePathExpression, filePathPrelude, resolveWindowsSource } from "../../helpers/windows.ts";
 import { windowsSourcePath } from "./paths.ts";
 
-export function personalizationProperties(values: PersonalizationRegistryValue[], autoHide?: boolean): WinDscProperties {
+const CLASSIC_CONTEXT_MENU_KEY = "Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
+const CLASSIC_CONTEXT_MENU_SUBKEY = `${CLASSIC_CONTEXT_MENU_KEY}\\InprocServer32`;
+
+export function personalizationProperties(
+  values: PersonalizationRegistryValue[],
+  extras: { autoHide?: boolean; classicContextMenu?: boolean } = {},
+): WinDscProperties {
+  const { autoHide, classicContextMenu } = extras;
   const appBar = autoHide === undefined ? "" : `
 if (-not ('WinixAppBarNative' -as [type])) {
   Add-Type @'
@@ -21,12 +28,26 @@ public static class WinixAppBarNative {
 $appBar = [WinixAppBarNative+Data]::new()
 $appBar.size = [Runtime.InteropServices.Marshal]::SizeOf($appBar)
 `;
+  const classicMenuTest = classicContextMenu === undefined ? "" : classicContextMenu ? `
+  $ctxKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey(${quote(CLASSIC_CONTEXT_MENU_SUBKEY)})
+  if ($null -eq $ctxKey) { return $false }
+  try {
+    if ($ctxKey.GetValueNames() -notcontains '' -or
+        $ctxKey.GetValueKind('') -ne [Microsoft.Win32.RegistryValueKind]::String -or
+        $ctxKey.GetValue('') -ne '') { return $false }
+  } finally { $ctxKey.Dispose() }` : `
+  $ctxKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey(${quote(CLASSIC_CONTEXT_MENU_KEY)})
+  if ($null -ne $ctxKey) { $ctxKey.Dispose(); return $false }`;
+  const classicMenuSet = classicContextMenu === undefined ? "" : classicContextMenu ? `
+$ctxKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey(${quote(CLASSIC_CONTEXT_MENU_SUBKEY)})
+try { $ctxKey.SetValue('', '', [Microsoft.Win32.RegistryValueKind]::String) } finally { $ctxKey.Dispose() }` : `
+[Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree(${quote(CLASSIC_CONTEXT_MENU_KEY)}, $false)`;
   const prelude = `
 $ErrorActionPreference = 'Stop'
 $values = ConvertFrom-Json ${quote(JSON.stringify(values))}
 ${appBar}
 function Test-WinixPersonalization {
-  ${autoHide === undefined ? "" : `if ((([WinixAppBarNative]::SHAppBarMessage(4, [ref]$appBar).ToUInt64() -band 1) -ne 0) -ne $${autoHide}) { return $false }`}
+  ${autoHide === undefined ? "" : `if ((([WinixAppBarNative]::SHAppBarMessage(4, [ref]$appBar).ToUInt64() -band 1) -ne 0) -ne $${autoHide}) { return $false }`}${classicMenuTest}
   foreach ($item in $values) {
     $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($item.path)
     if ($null -eq $key) { return $false }
@@ -47,7 +68,7 @@ ${autoHide === undefined ? "" : `
 $state = [WinixAppBarNative]::SHAppBarMessage(4, [ref]$appBar).ToUInt64()
 $appBar.param = [IntPtr](($state -band 2) -bor ${autoHide ? 1 : 0})
 [WinixAppBarNative]::SHAppBarMessage(10, [ref]$appBar) | Out-Null
-`}
+`}${classicMenuSet}
 foreach ($item in $values) {
   $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($item.path)
   try {

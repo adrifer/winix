@@ -197,14 +197,14 @@ describe("Windows shell primitives", () => {
   });
 
   it("sets Explorer's startup pacing in the current user's registry", () => {
-    const resource = windows.startup.explorer({ delay: false, waitForIdle: true }).windows!.dsc![0];
+    const resource = windows.settings.explorer({ startupDelay: false, waitForIdle: true }).windows!.dsc![0];
     expect(resource.winix).toEqual({ kind: "startup-explorer", label: "Explorer startup: startup delay off, wait for idle default" });
     const set = resource.properties!.setScript as string;
     expect(set).toContain("HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize");
     expect(set).toContain("'StartupDelayInMSec' = $false; 'WaitForIdleState' = $true");
     expect(resource.elevated).toBeUndefined();
-    expect(() => windows.startup.explorer({})).toThrow(/delay and\/or waitForIdle/);
-    expect(() => windows.startup.explorer({ delay: 0 as never })).toThrow(/booleans/);
+    expect(() => windows.settings.explorer({})).toThrow(/at least one/);
+    expect(() => windows.settings.explorer({ startupDelay: 0 as never })).toThrow(/boolean/);
   });
 });
 
@@ -284,7 +284,7 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
     function workAndPersonal() {
       const shell = feature("shell", ({ windows }) => {
         windows.powershell.module("Terminal-Icons");
-        windows.setting({ DeveloperMode: true });
+        windows.settings.developer({ mode: true });
       });
       const workRepositories = feature("work-repositories", ({ windows }) => {
         windows.powershell.repositories(policy);

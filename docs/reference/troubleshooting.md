@@ -15,10 +15,10 @@ Windows restricts creating symbolic links unless **Developer Mode** is enabled
 or the shell is elevated. Declare it in your Windows host:
 
 ```ts
-windows.setting({ DeveloperMode: true });
+windows.settings.developer({ mode: true });
 ```
 
-Winix automatically orders `DeveloperMode` before every `windows.file.symlink()`,
+Winix automatically orders `developer.mode` before every `windows.file.symlink()`,
 `windows.powershell.profile()` and `windows.terminal.settings()` link. If it
 was just turned on for the first time, run `winix switch` once so the elevated
 step enables it.

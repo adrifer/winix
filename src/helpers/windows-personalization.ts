@@ -1,4 +1,4 @@
-import type { WinFontSource, WinPersonalization, WinWallpaper } from "../types/windows.ts";
+import type { WinFontSource, WinWallpaper } from "../types/windows.ts";
 
 export function fontHttpsUrl(value: string): string {
   let url: URL;
@@ -64,84 +64,4 @@ export function validateWallpaper(wallpaper: WinWallpaper): void {
       !["Fill", "Fit", "Stretch", "Tile", "Center", "Span"].includes(wallpaper.style)) {
     throw new Error("Unsupported wallpaper style");
   }
-}
-
-export interface PersonalizationRegistryValue {
-  path: string;
-  name: string;
-  value: number;
-}
-
-export function personalizationValues(options: WinPersonalization): PersonalizationRegistryValue[] {
-  if (!options || typeof options !== "object" || Array.isArray(options)) {
-    throw new Error("windows.personalization requires an object");
-  }
-  const values: PersonalizationRegistryValue[] = [];
-  const advanced = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced";
-  const add = (path: string, name: string, value: number) => values.push({ path, name, value });
-  for (const key of Object.keys(options)) {
-    if (!["colorMode", "accentColor", "explorer", "taskbar"].includes(key)) throw new Error(`Unknown personalization option ${key}`);
-  }
-  if (options.colorMode !== undefined) {
-    const mode = options.colorMode;
-    const both = typeof mode === "string" ? { apps: mode, system: mode } : mode;
-    if (!both || typeof both !== "object" || Array.isArray(both) ||
-        Object.keys(both).some((key) => key !== "apps" && key !== "system") ||
-        Object.values(both).some((value) => value !== "Light" && value !== "Dark") ||
-        Object.keys(both).length === 0) {
-      throw new Error('colorMode must be "Light", "Dark", or { apps?, system? } with those values');
-    }
-    const personalize = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-    if (both.apps) add(personalize, "AppsUseLightTheme", both.apps === "Light" ? 1 : 0);
-    if (both.system) add(personalize, "SystemUsesLightTheme", both.system === "Light" ? 1 : 0);
-  }
-  if (options.accentColor !== undefined) {
-    if (!/^#[a-f0-9]{6}$/i.test(options.accentColor)) throw new Error("accentColor must be #RRGGBB");
-    const rgb = options.accentColor.slice(1);
-    const bgr = parseInt(`${rgb.slice(4)}${rgb.slice(2, 4)}${rgb.slice(0, 2)}`, 16);
-    add("Software\\Microsoft\\Windows\\DWM", "AccentColor", (0xff000000 + bgr) >>> 0);
-    add("Software\\Microsoft\\Windows\\DWM", "ColorizationColor", (0xff000000 + parseInt(rgb, 16)) >>> 0);
-    add("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Accent", "AccentColorMenu", (0xff000000 + bgr) >>> 0);
-    add("Control Panel\\Desktop", "AutoColorization", 0);
-  }
-  if (options.explorer !== undefined) {
-    if (!options.explorer || typeof options.explorer !== "object" || Array.isArray(options.explorer)) {
-      throw new Error("explorer personalization must be an object");
-    }
-    for (const [key, value] of Object.entries(options.explorer)) {
-      if (key === "openTo") {
-        if (value !== "ThisPC" && value !== "Home") throw new Error("explorer.openTo must be ThisPC or Home");
-        add(advanced, "LaunchTo", value === "ThisPC" ? 1 : 2);
-      } else {
-        if (!["showExtensions", "showHiddenFiles"].includes(key) || typeof value !== "boolean") {
-          throw new Error(`Invalid explorer personalization ${key}`);
-        }
-        add(advanced, key === "showExtensions" ? "HideFileExt" : "Hidden",
-          key === "showExtensions" ? (value ? 0 : 1) : (value ? 1 : 2));
-      }
-    }
-  }
-  if (options.taskbar !== undefined) {
-    if (!options.taskbar || typeof options.taskbar !== "object" || Array.isArray(options.taskbar)) {
-      throw new Error("taskbar personalization must be an object");
-    }
-    for (const [key, value] of Object.entries(options.taskbar)) {
-      if (key === "autoHide") {
-        if (typeof value !== "boolean") throw new Error("taskbar.autoHide must be boolean");
-        continue;
-      }
-      if (key === "search") {
-        const modes = ["Hidden", "Icon", "Box", "IconAndLabel"];
-        if (typeof value !== "string" || !modes.includes(value)) throw new Error("Invalid taskbar.search mode");
-        add("Software\\Microsoft\\Windows\\CurrentVersion\\Search", "SearchboxTaskbarMode", modes.indexOf(value));
-      } else {
-        if (!["taskView", "widgets"].includes(key) || typeof value !== "boolean") {
-          throw new Error(`Invalid taskbar personalization ${key}`);
-        }
-        add(advanced, key === "taskView" ? "ShowTaskViewButton" : "TaskbarDa", value ? 1 : 0);
-      }
-    }
-  }
-  if (!values.length && options.taskbar?.autoHide === undefined) throw new Error("windows.personalization requires at least one setting");
-  return values;
 }

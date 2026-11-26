@@ -3,7 +3,35 @@
 Notable changes per release. Every release, with its downloadable assets, is on
 [GitHub Releases](https://github.com/adrifer/winix/releases).
 
-## Unreleased
+## 0.4.0
+
+- **Unified `windows.settings()` API (breaking change):**
+  - Replaces `windows.setting()`, `windows.personalization()`, and
+    `windows.startup.explorer()` with a single camelCase `windows.settings({ ... })`
+    helper and 1-to-1 section helpers: `windows.settings.theme()`,
+    `windows.settings.explorer()`, `windows.settings.taskbar()`,
+    `windows.settings.start()`, `windows.settings.developer()`,
+    `windows.settings.clipboard()`, `windows.settings.time()`,
+    `windows.settings.keyboard()`, `windows.settings.mouse()`, and
+    `windows.settings.notifications()`.
+  - Elevation and backend routing are automatic per key: per-user preferences
+    apply without administrator rights, machine-wide keys join `winix switch`'s
+    single elevated step, and `Microsoft.Windows.Settings` is only installed and
+    locked when a key backed by it is declared.
+  - Adds new typed settings:
+    - `developer.sudo` (`"disabled" | "newWindow" | "disableInput" | "inline"`)
+      and `developer.longPaths` (Win32 paths over 260 characters).
+    - `explorer.classicContextMenu`, `explorer.showFullPathInTitleBar`,
+      `explorer.compactMode`, `explorer.startupDelay`, and `explorer.waitForIdle`.
+    - `taskbar.endTask` (right-click "End task").
+    - `clipboard.history` (per-user `Win+V` Clipboard History).
+    - `keyboard` (`repeatDelay`, `repeatSpeed`) and `mouse` (`speed`,
+      `enhancePointerPrecision`, `swapButtons`), applied live via
+      `SystemParametersInfo`.
+- **Declarative Windows registry helper:**
+  - `windows.registry.set()` and `windows.registry.remove()` manage registry
+    keys and values via `Microsoft.Windows/Registry`, with automatic elevation on
+    machine hives and inferred or explicit value types.
 
 ## 0.3.7
 

@@ -122,7 +122,7 @@ feature, for host-only details:
 
 ```ts
 host("DESKTOP", platforms.windows(), ({ windows }) => {
-  windows.setting({ DeveloperMode: true });
+  windows.settings.developer({ mode: true });
   return [everywhere(), dev()];
 });
 ```

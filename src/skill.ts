@@ -304,16 +304,48 @@ through \`dependsOn\`.
   known-folder path. Styles: Fill, Fit, Stretch, Tile, Center, Span. Source
   hashes detect changed images; remote wallpapers and per-monitor assignments
   are not supported.
-- \`windows.personalization({ colorMode: "Dark" })\` (or \`{ apps, system }\`) sets
-  light/dark mode, the same values as windows.setting AppColorMode/SystemColorMode;
-  declare each in one place.
-- \`windows.personalization({ accentColor: "#336699", explorer: {
-  showExtensions: true, showHiddenFiles: false, openTo: "ThisPC" }, taskbar: {
-  autoHide: false, search: "Hidden", taskView: true, widgets: false } })\`
-  changes only declared current-user values. Accent disables automatic coloring;
-  do not contradict it with windows.setting AutoColorization. Explorer openTo is
-  ThisPC/Home; search is Hidden/Icon/IconAndLabel/Box. Some preferences require
-  signing out and depend on Windows version/policy; never restart Explorer.
+- \`windows.settings({ ... })\` is the unified Windows OS settings helper, with
+  1-to-1 section helpers (\`windows.settings.theme()\`,
+  \`windows.settings.explorer()\`, \`windows.settings.taskbar()\`,
+  \`windows.settings.start()\`, \`windows.settings.developer()\`,
+  \`windows.settings.clipboard()\`, \`windows.settings.time()\`,
+  \`windows.settings.keyboard()\`, \`windows.settings.mouse()\`,
+  \`windows.settings.notifications()\`). All keys and enum values
+  are camelCase. Only declared settings change; per-user keys apply without
+  elevation, while machine-wide keys join switch's single elevated step.
+  \`Microsoft.Windows.Settings\` is only installed and locked when a key backed by
+  it is declared (e.g., \`developer.mode\`, \`taskbar.alignment\`, \`start.*\`,
+  \`time.*\`, \`notifications.*\`, or \`theme\` transparency/accent toggles):
+  - \`theme\`: \`colorMode\` ("light" | "dark" | { apps?, system? }), \`accentColor\`
+    ("#RRGGBB", cannot combine with \`autoColorization: true\`), \`autoColorization\`,
+    \`transparency\`, \`accentOnStartAndTaskbar\`, \`accentOnTitleBars\`.
+  - \`explorer\`: \`showExtensions\`, \`showHiddenFiles\`, \`openTo\` ("thisPC" | "home"),
+    \`showFullPathInTitleBar\`, \`classicContextMenu\`, \`compactMode\`,
+    \`startupDelay\` (false disables Explorer's startup delay), \`waitForIdle\`
+    (false disables waiting for idle at sign-in). All per-user, un-elevated.
+  - \`taskbar\`: \`alignment\` ("left" | "center"), \`autoHide\` (live), \`search\`
+    ("hidden" | "icon" | "iconAndLabel" | "box"), \`taskView\`, \`widgets\`,
+    \`endTask\`, \`badges\`, \`grouping\` ("always" | "whenFull" | "never"),
+    \`multiMonitor\`, \`multiMonitorMode\` ("duplicate" | "primaryAndWindow" | "windowOnly").
+  - \`start\`: \`folders\` (documents/downloads/music/pictures/videos/network/userProfile/explorer/settings),
+    \`showRecent\`, \`showRecommended\`.
+  - \`developer\`: \`mode\` (Developer Mode — symlinks automatically depend on
+    same-host \`developer: { mode: true }\`, never enabling it themselves),
+    \`sudo\` ("disabled" | "newWindow" | "disableInput" | "inline"), \`longPaths\`.
+  - \`clipboard\`: \`history\` (per-user Win+V Clipboard History).
+  - \`time\`: \`zone\` (Windows time zone ID), \`automaticZone\`.
+  - \`keyboard\`: \`repeatDelay\` (0..3), \`repeatSpeed\` (0..31) — applied live via
+    SystemParametersInfo without sign-out or elevation.
+  - \`mouse\`: \`speed\` (1..20), \`enhancePointerPrecision\`, \`swapButtons\` —
+    applied live via SystemParametersInfo without sign-out or elevation.
+  - \`notifications\`: \`usbErrors\`, \`weakCharger\`.
+- \`windows.registry.set(keyPath, valueName, value, opts?)\` and
+  \`windows.registry.remove(keyPath, valueName?, opts?)\` manage registry keys
+  and values declaratively via Microsoft.Windows/Registry. Use standard hive
+  prefixes (HKCU\\..., HKLM\\...) without PowerShell colons; machine hives
+  elevate automatically unless overridden with opts.elevated. Pass "" for the
+  (Default) value; opts.type supports string, expandString, dword, qword,
+  multiString, and binary (inferred when omitted).
 - \`windows.fonts({ sources: ["../fonts/font.ttf", {
   url: "https://example.com/fonts.zip", files: ["**/*.ttf"] }, {
   provider: "nerd-fonts", family: "JetBrainsMono" }] })\` installs current-user
@@ -343,10 +375,6 @@ through \`dependsOn\`.
   \`winix windows search <query>\`; \`winix windows import [--host]\` prints
   declarations for installed, undeclared packages. check warns about floating
   packages missing from winix-windows.lock (apply would resolve them online).
-- \`windows.setting()\` manages supported Windows settings. Symlinks automatically
-  depend on same-host typed settings declaring DeveloperMode: true. Declare that
-  policy explicitly; symlinks never enable Developer Mode themselves. Without the
-  declaration, existing Developer Mode or elevation is still required.
 - \`windows.env.set()\` and \`windows.env.remove()\` manage environment
   variables.
 - \`windows.path.add()\` and \`windows.path.remove()\` manage PATH entries.
@@ -365,9 +393,7 @@ through \`dependsOn\`.
   without a window), delay (seconds), and dependsOn.
 - \`windows.startup.shortcut(name, spec)\` manages a named current-user Startup
   shortcut instead (same options without delay/hidden, plus backup and force);
-  only when a Startup-folder shortcut is specifically wanted.
-- \`windows.startup.explorer({ delay?: boolean, waitForIdle?: boolean })\`: false
-  removes Explorer's startup delay / idle wait for Run entries and shortcuts. Executables may be application names on PATH or
+  only when a Startup-folder shortcut is specifically wanted. Executables may be application names on PATH or
   absolute/environment/known-folder paths. Arguments are literal strings or
   known-folder paths; the default working directory is the user profile.
   A windows.file.* handle may be used as executable, argument or working
@@ -487,8 +513,9 @@ package/module/image/repository pins (all when omitted, nixos-wsl for images,
 wsl-setup for setup commits); --dry reports without writing.
 Keep the lock in version control. Installation still requires network access
 when the locked package/module is not installed.
-Typed \`windows.setting(...)\` implicitly locks Microsoft.Windows.Settings through
-the same host-policy/source-aware module mechanism, with prereleases allowed.
+Elevated keys in \`windows.settings(...)\` backed by \`Microsoft.Windows.Settings\`
+implicitly lock that module through the same host-policy/source-aware module
+mechanism, with prereleases allowed.
 \`windows.powershell.module(name, { prerelease: true })\` opts other modules in;
 stable-only declarations reject prerelease pins. Exact numeric version and
 prerelease label are checked. Do not put versions in handwritten settings config.

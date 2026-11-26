@@ -68,9 +68,9 @@ instead and `force: true` replaces it without a backup.
 ## Explorer's pacing
 
 ```ts
-windows.startup.explorer({ delay: false, waitForIdle: false });
+windows.settings.explorer({ startupDelay: false, waitForIdle: false });
 ```
 
 Explorer waits before starting Run entries and Startup shortcuts, and waits for
-the desktop to go idle. `delay: false` and `waitForIdle: false` turn those off;
-`true` restores the Windows default.
+the desktop to go idle. `startupDelay: false` and `waitForIdle: false` turn
+those off; `true` restores the Windows default.

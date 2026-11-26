@@ -49,7 +49,7 @@ const work = profile("work", [workRepositories(), windowsShell()]);
 ```
 
 - `default` is used by every module without a `repository`, and by the module
-  `windows.setting()` needs.
+  elevated `windows.settings()` keys need (`Microsoft.Windows.Settings`).
 - `allowed`, when set, fails any module that names another repository, before
   anything is looked up. There's no fallback.
 - Hosts without such a feature keep using PSGallery. Two different policies in

@@ -63,29 +63,41 @@ windows.wallpaper(spec: WinWallpaper & { dependsOn?: ResourceHandle | ResourceHa
 
 Returns a handle, for another resource's `dependsOn`.
 
-## windows.personalization()
+## windows.settings()
 
-Color mode, accent color, and Explorer and taskbar options. Only the values you declare change.
+Unified Windows OS settings: call `windows.settings({ ... })` for several
+sections at once, or call a section helper directly (`windows.settings.theme()`,
+`windows.settings.explorer()`, `windows.settings.developer()`, etc.).
 
 ```ts
-windows.personalization(options: WinPersonalization, opts?: WinSettingOpts): ResourceHandle
+windows.settings(settings: WinSettings, opts?: WinSettingOpts): ResourceHandle
 ```
 
-**`options`**
+**`settings`**
 
 | Option | Type | Description |
 | --- | --- | --- |
-| `colorMode?` | `"Light" \| "Dark" \| { apps?: "Light" \| "Dark"; system?: "Light" \| "Dark"; }` | Light/dark mode. One value sets apps and system alike; the object form sets them separately. Same registry values as windows.setting AppColorMode/SystemColorMode; declare each in one place only. |
-| `accentColor?` | `string` | Accent color as "#RRGGBB"; turns off automatic accent coloring. |
-| `explorer?` | `{ showExtensions?: boolean; showHiddenFiles?: boolean; openTo?: "ThisPC" \| "Home"; }` | File Explorer options. |
-| `taskbar?` | `{ autoHide?: boolean; search?: "Hidden" \| "Icon" \| "IconAndLabel" \| "Box"; taskView?: boolean; widgets?: boolean; }` | Taskbar options. |
+| `theme?` | `WinThemeSettings` | Theme, color mode, accent color, and transparency. |
+| `explorer?` | `WinExplorerSettings` | File Explorer options and sign-in startup delay. |
+| `taskbar?` | `WinTaskbarSettings` | Taskbar layout, visibility, search, and multi-monitor options. |
+| `start?` | `WinStartSettings` | Start menu folders and lists. |
+| `developer?` | `WinDeveloperSettings` | Developer Mode, Sudo for Windows, and Win32 long paths. |
+| `clipboard?` | `WinClipboardSettings` | Clipboard History (`Win+V`). |
+| `time?` | `WinTimeSettings` | Windows time zone and automatic time zone detection. |
+| `keyboard?` | `WinKeyboardSettings` | Keyboard repeat delay and repeat speed. |
+| `mouse?` | `WinMouseSettings` | Mouse pointer speed, pointer precision, and button swap. |
+| `notifications?` | `WinNotificationSettings` | USB and weak-charger system notifications. |
 
-**`colorMode`**
+**`theme`**
 
 | Option | Type | Description |
 | --- | --- | --- |
-| `apps?` | `"Light" \| "Dark"` | Apps' color mode. |
-| `system?` | `"Light" \| "Dark"` | The taskbar's and Start's color mode. |
+| `colorMode?` | `WinColorMode \| { apps?: WinColorMode; system?: WinColorMode; }` | Light or dark mode. One value sets apps and system alike; the object form sets them separately. Applied per-user without elevation. |
+| `accentColor?` | `string` | Accent color as `"#RRGGBB"`; turns off automatic accent coloring. Applied per-user. |
+| `autoColorization?` | `boolean` | Pick the accent color from the wallpaper automatically. Applied elevated. |
+| `transparency?` | `boolean` | Enable window transparency effects. Applied elevated. |
+| `accentOnStartAndTaskbar?` | `boolean` | Show the accent color on Start and the taskbar. Applied elevated. |
+| `accentOnTitleBars?` | `boolean` | Show the accent color on title bars and window borders. Applied elevated. |
 
 **`explorer`**
 
@@ -93,21 +105,275 @@ windows.personalization(options: WinPersonalization, opts?: WinSettingOpts): Res
 | --- | --- | --- |
 | `showExtensions?` | `boolean` | Show file name extensions. |
 | `showHiddenFiles?` | `boolean` | Show hidden files (protected operating-system files stay hidden). |
-| `openTo?` | `"ThisPC" \| "Home"` | The folder a new Explorer window opens. |
+| `openTo?` | `WinExplorerOpenTo` | The folder a new File Explorer window opens to. |
+| `showFullPathInTitleBar?` | `boolean` | Show the full folder path in File Explorer's title bar. |
+| `classicContextMenu?` | `boolean` | Use the classic Windows 10 right-click context menu on Windows 11. |
+| `compactMode?` | `boolean` | Use compact spacing in File Explorer lists. |
+| `startupDelay?` | `boolean` | `false` removes Explorer's sign-in delay before starting Run entries and Startup shortcuts. |
+| `waitForIdle?` | `boolean` | `false` stops Explorer waiting for an idle desktop at sign-in before starting startup entries. |
 
 **`taskbar`**
 
 | Option | Type | Description |
 | --- | --- | --- |
-| `autoHide?` | `boolean` | Hide the taskbar until the pointer reaches it. |
-| `search?` | `"Hidden" \| "Icon" \| "IconAndLabel" \| "Box"` | How search shows on the taskbar. |
-| `taskView?` | `boolean` | Show the Task View button. |
-| `widgets?` | `boolean` | Show the Widgets button. |
+| `alignment?` | `WinTaskbarAlignment` | Taskbar icons on the left or centered. Applied elevated. |
+| `autoHide?` | `boolean` | Hide the taskbar until the pointer reaches it. Applied live per-user. |
+| `search?` | `WinTaskbarSearchMode` | How search appears on the taskbar. Applied per-user. |
+| `taskView?` | `boolean` | Show the Task View button. Applied per-user. |
+| `widgets?` | `boolean` | Show the Widgets button. Applied per-user. |
+| `endTask?` | `boolean` | Show "End task" in the taskbar right-click menu. Applied per-user. |
+| `badges?` | `boolean` | Show unread badges on taskbar icons. Applied elevated. |
+| `grouping?` | `WinTaskbarGroupingMode` | When taskbar buttons of one app combine. Applied elevated. |
+| `multiMonitor?` | `boolean` | Show the taskbar on every display. Applied elevated. |
+| `multiMonitorMode?` | `WinTaskbarMultiMonMode` | Which taskbar shows a window's button across multiple monitors. Applied elevated. |
+
+**`start`**
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `folders?` | `WinStartFolder[]` | Folders shown next to Start's power button. |
+| `showRecent?` | `boolean` | Show recently opened items in Start. |
+| `showRecommended?` | `boolean` | Show recommendations in Start. |
+
+**`developer`**
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `mode?` | `boolean` | Developer Mode, which allows symlinks without elevation (`windows.file.symlink()` auto-depends on `mode: true`). |
+| `sudo?` | `WinSudoMode` | Sudo for Windows mode (`"disabled"`, `"newWindow"`, `"disableInput"`, or `"inline"`). |
+| `longPaths?` | `boolean` | Enable Win32 long paths (paths over 260 characters). |
+
+**`clipboard`**
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `history?` | `boolean` | Enable Clipboard History (`Win+V`). |
+
+**`time`**
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `zone?` | `string` | Windows time zone ID (for example `"Pacific Standard Time"` or `"W. Europe Standard Time"`). |
+| `automaticZone?` | `boolean` | Set the time zone automatically from location. |
+
+**`keyboard`**
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `repeatDelay?` | `0 \| 1 \| 2 \| 3` | Delay before a held key starts repeating: `0` (shortest) to `3` (longest). |
+| `repeatSpeed?` | `number` | Repeat rate for a held key: `0` (slowest) to `31` (fastest). |
+
+**`mouse`**
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `speed?` | `number` | Pointer speed from `1` (slowest) to `20` (fastest); Windows default is `10`. |
+| `enhancePointerPrecision?` | `boolean` | Enable "Enhance pointer precision" (mouse acceleration). |
+| `swapButtons?` | `boolean` | Swap the primary and secondary mouse buttons. |
+
+**`notifications`**
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `usbErrors?` | `boolean` | Notify about USB connection problems. |
+| `weakCharger?` | `boolean` | Notify when a charger is too weak. |
 
 **`opts`**
 
 | Option | Type | Description |
 | --- | --- | --- |
+| `dependsOn?` | `ResourceHandle \| ResourceHandle[]` | Resources to apply first. |
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.settings.theme()
+
+Theme, color mode, accent color, and transparency settings.
+
+```ts
+windows.settings.theme(options: WinThemeSettings, opts?: WinSettingOpts): ResourceHandle
+```
+
+**`options`**: the same options as [windows.settings()](#windowssettings).
+
+**`opts`**: the same options as [windows.settings()](#windowssettings).
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.settings.explorer()
+
+File Explorer options and Explorer's sign-in startup pacing. All per-user, no elevation.
+
+```ts
+windows.settings.explorer(options: WinExplorerSettings, opts?: WinSettingOpts): ResourceHandle
+```
+
+**`options`**: the same options as [windows.settings()](#windowssettings).
+
+**`opts`**: the same options as [windows.settings()](#windowssettings).
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.settings.taskbar()
+
+Taskbar alignment, auto-hide, search, widgets, End Task, and multi-monitor options.
+
+```ts
+windows.settings.taskbar(options: WinTaskbarSettings, opts?: WinSettingOpts): ResourceHandle
+```
+
+**`options`**: the same options as [windows.settings()](#windowssettings).
+
+**`opts`**: the same options as [windows.settings()](#windowssettings).
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.settings.start()
+
+Start menu folders, recent items, and recommendations. Applied elevated.
+
+```ts
+windows.settings.start(options: WinStartSettings, opts?: WinSettingOpts): ResourceHandle
+```
+
+**`options`**: the same options as [windows.settings()](#windowssettings).
+
+**`opts`**: the same options as [windows.settings()](#windowssettings).
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.settings.developer()
+
+Developer Mode (auto-ordered before symlinks), Sudo for Windows, and Win32 long paths. Applied elevated.
+
+```ts
+windows.settings.developer(options: WinDeveloperSettings, opts?: WinSettingOpts): ResourceHandle
+```
+
+**`options`**: the same options as [windows.settings()](#windowssettings).
+
+**`opts`**: the same options as [windows.settings()](#windowssettings).
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.settings.clipboard()
+
+Per-user Clipboard History (`Win+V`). No elevation.
+
+```ts
+windows.settings.clipboard(options: WinClipboardSettings, opts?: WinSettingOpts): ResourceHandle
+```
+
+**`options`**: the same options as [windows.settings()](#windowssettings).
+
+**`opts`**: the same options as [windows.settings()](#windowssettings).
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.settings.time()
+
+Windows time zone and automatic time zone detection. Applied elevated.
+
+```ts
+windows.settings.time(options: WinTimeSettings, opts?: WinSettingOpts): ResourceHandle
+```
+
+**`options`**: the same options as [windows.settings()](#windowssettings).
+
+**`opts`**: the same options as [windows.settings()](#windowssettings).
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.settings.keyboard()
+
+Per-user keyboard repeat delay and repeat speed, applied live via `SystemParametersInfo`.
+
+```ts
+windows.settings.keyboard(options: WinKeyboardSettings, opts?: WinSettingOpts): ResourceHandle
+```
+
+**`options`**: the same options as [windows.settings()](#windowssettings).
+
+**`opts`**: the same options as [windows.settings()](#windowssettings).
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.settings.mouse()
+
+Per-user mouse pointer speed, pointer precision, and button swap, applied live via `SystemParametersInfo`.
+
+```ts
+windows.settings.mouse(options: WinMouseSettings, opts?: WinSettingOpts): ResourceHandle
+```
+
+**`options`**: the same options as [windows.settings()](#windowssettings).
+
+**`opts`**: the same options as [windows.settings()](#windowssettings).
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.settings.notifications()
+
+USB error and weak-charger system notifications. Applied elevated.
+
+```ts
+windows.settings.notifications(options: WinNotificationSettings, opts?: WinSettingOpts): ResourceHandle
+```
+
+**`options`**: the same options as [windows.settings()](#windowssettings).
+
+**`opts`**: the same options as [windows.settings()](#windowssettings).
+
+Returns a handle, for another resource's `dependsOn`.
+
+## windows.registry
+
+Manage Windows registry keys and values declaratively through the native
+`Microsoft.Windows/Registry` DSC resource. Machine hives elevate automatically.
+
+```ts
+windows.registry.set("HKCU\\Software\\MyApp", "Theme", "dark");
+windows.registry.set("HKLM\\SOFTWARE\\MyApp", "Enabled", 1);
+windows.registry.remove("HKCU\\Software\\MyApp", "OldFlag");
+```
+
+### windows.registry.set()
+
+Set a Windows registry value through the native `Microsoft.Windows/Registry`
+DSC resource. Pass `""` as `valueName` to set the key's `(Default)` value.
+Machine hives (`HKLM`, `HKCR`, `HKU`, `HKCC`) run in switch's elevated step automatically.
+
+```ts
+windows.registry.set(keyPath: string, valueName: string, value: WinRegistryValue, opts?: WinRegistrySetOpts): ResourceHandle
+```
+
+**`opts`**
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `type?` | `WinRegistryValueType` | Registry value kind. Inferred when omitted: strings become `"string"`, numbers become `"dword"`, string arrays become `"multiString"`, and number arrays become `"binary"`. Specify `"expandString"` or `"qword"` explicitly. |
+| `elevated?` | `boolean` | Run in switch's elevated step. Defaults to true for machine hives (`HKLM`, `HKCR`, `HKU`, `HKCC`) and false for `HKCU`. |
+| `dependsOn?` | `ResourceHandle \| ResourceHandle[]` | Resources to apply first. |
+
+Returns a handle, for another resource's `dependsOn`.
+
+### windows.registry.remove()
+
+Ensure a Windows registry key does not exist, through `Microsoft.Windows/Registry`.
+Machine hives (`HKLM`, `HKCR`, `HKU`, `HKCC`) run in switch's elevated step automatically.
+Ensure a Windows registry value (pass `""` for the `(Default)` value) does
+not exist, through `Microsoft.Windows/Registry`.
+
+```ts
+windows.registry.remove(keyPath: string, opts?: WinRegistryRemoveOpts): ResourceHandle
+windows.registry.remove(keyPath: string, valueName: string, opts?: WinRegistryRemoveOpts): ResourceHandle
+```
+
+**`opts`**
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `elevated?` | `boolean` | Run in switch's elevated step. Defaults to true for machine hives (`HKLM`, `HKCR`, `HKU`, `HKCC`) and false for `HKCU`. |
 | `dependsOn?` | `ResourceHandle \| ResourceHandle[]` | Resources to apply first. |
 
 Returns a handle, for another resource's `dependsOn`.
@@ -237,31 +503,10 @@ windows.startup.shortcut(name: string, spec: WinStartupShortcutSpec): ResourceHa
 
 Returns a handle, for another resource's `dependsOn`.
 
-### windows.startup.explorer()
-
-Explorer's startup pacing for Run entries and Startup-folder shortcuts:
-`delay: false` removes its initial delay, `waitForIdle: false` stops it
-waiting for the desktop to go idle. `true` restores the Windows default.
-
-```ts
-windows.startup.explorer(options: WinStartupExplorerOptions, opts?: WinSettingOpts): ResourceHandle
-```
-
-**`options`**
-
-| Option | Type | Description |
-| --- | --- | --- |
-| `delay?` | `boolean` | false: no delay before Explorer starts Run entries and Startup shortcuts. |
-| `waitForIdle?` | `boolean` | false: do not wait for the desktop to go idle first. |
-
-**`opts`**: the same options as [windows.personalization()](#windowspersonalization).
-
-Returns a handle, for another resource's `dependsOn`.
-
 ## windows.knownFolder
 
 ```ts
-windows.knownFolder: { documents: (path?: string) => WinKnownFolder; desktop: (path?: string) => WinKnownFolder; localAppData: (path?: string) => WinKnownFolder; appData: (path?: string) => WinKnownFolder; userProfile: (path?: string) => WinKnownFolder; programFiles: (path?: string) => WinKnownFolder; programFilesX86: (path?: string) => WinKnownFolder; }
+windows.knownFolder: { documents: (path?: string) => WinKnownFolder; userProfile: (path?: string) => WinKnownFolder; desktop: (path?: string) => WinKnownFolder; localAppData: (path?: string) => WinKnownFolder; appData: (path?: string) => WinKnownFolder; programFiles: (path?: string) => WinKnownFolder; programFilesX86: (path?: string) => WinKnownFolder; }
 ```
 
 Resolve a user folder on the target machine during activation.
@@ -281,7 +526,7 @@ windows.powershell.repositories(policy: WinPowerShellRepositoryPolicy): Fragment
 | Option | Type | Description |
 | --- | --- | --- |
 | `repositories` | `Record<string, { uri: string; }>` | Named HTTPS feeds to register for the current Windows user. No credentials in URLs. |
-| `default` | `string` | The repository for modules that don't name one (and for the module windows.setting needs). |
+| `default` | `string` | The repository for modules that don't name one (and for the module windows.settings needs). |
 | `allowed?` | `string[]` | When specified, reject other repositories instead of falling back. |
 
 Returns a fragment: declared when called through a feature's or host's namespace, otherwise return it.
@@ -452,53 +697,6 @@ windows.dsc(arg: WinDscSpec): ResourceHandle
 | `name?` | `string` | A stable name for the resource (in the plan and the generated configuration). |
 | `properties?` | `WinDscProperties` | The resource's properties, passed to DSC as they are. |
 | `dependsOn?` | `ResourceHandle \| ResourceHandle[]` | Resources to apply first. |
-
-Returns a handle, for another resource's `dependsOn`.
-
-## windows.setting()
-
-Manage Windows OS settings through the native
-`Microsoft.Windows.Settings/WindowsSettings` DSC resource. The emitter
-automatically ensures the required `Microsoft.Windows.Settings` module is
-installed and wires settings resources to depend on it.
-
-```ts
-windows.setting({ DeveloperMode: true });
-windows.setting({ SystemColorMode: "Dark", TaskbarAlignment: "Left" });
-```
-
-```ts
-windows.setting(settings: WinSettings, opts?: WinSettingOpts): ResourceHandle
-```
-
-**`settings`**
-
-| Option | Type | Description |
-| --- | --- | --- |
-| `TaskbarAlignment?` | `WinTaskbarAlignment` | Taskbar icons on the left or centered. |
-| `AppColorMode?` | `WinColorMode` | Apps' light or dark mode. |
-| `SystemColorMode?` | `WinColorMode` | Windows' own light or dark mode (taskbar, Start). |
-| `DeveloperMode?` | `boolean` | Developer Mode, which allows symlinks without elevation (Winix orders it before every symlink). |
-| `SetTimeZoneAutomatically?` | `boolean` | Set the time zone from the location. |
-| `TimeZone?` | `string` | Windows time zone ID. Winix validates only that this is non-empty; the target validates the ID. |
-| `EnableTransparency?` | `boolean` | Transparency effects. |
-| `ShowAccentColorOnStartAndTaskbar?` | `boolean` | Accent color on Start and the taskbar. |
-| `ShowAccentColorOnTitleBarsAndWindowBorders?` | `boolean` | Accent color on title bars and window borders. |
-| `AutoColorization?` | `boolean` | Pick the accent color from the wallpaper. |
-| `StartFolders?` | `WinStartFolder[]` | Folders shown next to Start's power button. |
-| `ShowRecentList?` | `boolean` | Recently opened items in Start. |
-| `ShowRecommendedList?` | `boolean` | Recommendations in Start. |
-| `TaskbarBadges?` | `boolean` | Badges (unread counts) on taskbar apps. |
-| `DesktopTaskbarBadges?` | `boolean` | Windows' DesktopTaskbarBadges setting: like TaskbarBadges. |
-| `TaskbarGroupingMode?` | `WinTaskbarGroupingMode` | When taskbar buttons of one app combine. |
-| `TaskbarMultiMon?` | `boolean` | Show the taskbar on every display. |
-| `DesktopTaskbarMultiMon?` | `boolean` | Windows' DesktopTaskbarMultiMon setting: like TaskbarMultiMon. |
-| `TaskbarMultiMonMode?` | `WinTaskbarMultiMonMode` | Which taskbar shows a window's button with several displays. |
-| `DesktopTaskbarMultiMonMode?` | `WinTaskbarMultiMonMode` | Windows' DesktopTaskbarMultiMonMode setting: like TaskbarMultiMonMode. |
-| `NotifyOnUsbErrors?` | `boolean` | Notify about USB connection problems. |
-| `NotifyOnWeakCharger?` | `boolean` | Notify when a charger is too weak. |
-
-**`opts`**: the same options as [windows.personalization()](#windowspersonalization).
 
 Returns a handle, for another resource's `dependsOn`.
 

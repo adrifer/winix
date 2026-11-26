@@ -207,7 +207,7 @@ export interface WindowsLockGap {
 /**
  * Every pin `apply` would have to resolve online: floating packages, PowerShell
  * modules (including the implicit Microsoft.Windows.Settings used by
- * `windows.setting`), NixOS-WSL images, WSL setup commits and remote fonts.
+ * `windows.settings`), NixOS-WSL images, WSL setup commits and remote fonts.
  */
 export function windowsLockPinGaps(lock: WindowsLock | null, evaluatedWindowsHosts: EvaluatedHost[]): WindowsLockGap[] {
   const pins = lock ?? emptyWindowsLock();
@@ -223,7 +223,7 @@ export function windowsLockPinGaps(lock: WindowsLock | null, evaluatedWindowsHos
           resource.winix.module.name.toLowerCase() === "microsoft.windows.settings");
       gaps.push({
         host: host.name, kind: "module", selector: module.name,
-        label: `PowerShell module ${module.name}${implicit ? " (implicit, used by windows.setting)" : ""}`,
+        label: `PowerShell module ${module.name}${implicit ? " (implicit, used by windows.settings)" : ""}`,
       });
     }
     if (hasWindowsWslDistros([host])) {

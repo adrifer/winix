@@ -30,11 +30,11 @@ Every signature and option: [API: windows](../../api/windows.md).
 | `windows.file.text()`, `.symlink()`, `.copy()`, `.remove()` | Files and dotfile links | [Files](files.md) |
 | `windows.powershell.profile()`, `windows.terminal.settings()` | The PowerShell profile and Windows Terminal settings | [Files](files.md#powershell-profile-and-terminal-settings) |
 | `windows.env.set()`, `.remove()`, `windows.path.add()`, `.remove()` | Environment variables and PATH | [Environment and settings](environment-and-settings.md) |
-| `windows.setting()` | Windows settings (Developer Mode, color mode, taskbar…) | [Environment and settings](environment-and-settings.md#windows-settings) |
+| `windows.settings()`, `windows.settings.*()` | Windows OS settings (theme, Explorer, taskbar, Start, developer, clipboard, time, keyboard, mouse, notifications) | [Environment and settings](environment-and-settings.md#windows-settings) |
+| `windows.registry.set()`, `.remove()` | Declarative Windows registry keys and values | [Environment and settings](environment-and-settings.md#registry) |
 | `windows.optionalFeature()` | Optional Windows features | [Environment and settings](environment-and-settings.md#optional-features) |
-| `windows.personalization()`, `windows.wallpaper()` | Accent color, Explorer and taskbar options, wallpaper | [Appearance and fonts](appearance-and-fonts.md) |
-| `windows.fonts()` | Fonts, including Nerd Fonts | [Appearance and fonts](appearance-and-fonts.md#fonts) |
-| `windows.startup.app()`, `.shortcut()`, `.explorer()` | Programs started at sign-in | [Startup](startup.md) |
+| `windows.wallpaper()`, `windows.fonts()` | Desktop wallpaper and fonts, including Nerd Fonts | [Appearance and fonts](appearance-and-fonts.md) |
+| `windows.startup.app()`, `.shortcut()` | Programs started at sign-in | [Startup](startup.md) |
 | `windows.powershell.module()`, `.repositories()` | PowerShell modules and the feeds they come from | [Feeds](feeds.md) |
 | `windows.npm.registries()` | npm registries | [Feeds](feeds.md#npm-registries) |
 | `windows.wsl()`, `windows.wsl.distro()` | WSL and NixOS-WSL distros | [WSL distros](../wsl.md) |
@@ -53,7 +53,7 @@ windows.powershell.profile("./dotfiles/powershell/profile.ps1", { dependsOn: ico
 
 Without `dependsOn`, don't rely on any order. Some dependencies are
 automatic: a WSL distro after WSL itself, PowerShell modules after a declared
-`Microsoft.PowerShell` package, symlinks after `windows.setting({ DeveloperMode: true })`.
+`Microsoft.PowerShell` package, symlinks after `windows.settings.developer({ mode: true })`.
 A file handle used as a path (in a startup app's arguments, for example) adds
 the dependency too. A handle from another host is an error.
 

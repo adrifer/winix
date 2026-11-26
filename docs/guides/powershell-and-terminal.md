@@ -98,7 +98,7 @@ The profile imports `Terminal-Icons` and loads the aliases file, and the
 Terminal settings name the Nerd Font. With the handles in `dependsOn`, the first
 switch on a new machine installs those before linking the files that use them,
 so the first shell you open works. Creating symlinks needs Developer Mode
-(`windows.setting({ DeveloperMode: true })`, which Winix then orders before
+(`windows.settings.developer({ mode: true })`, which Winix then orders before
 every symlink) or an elevated shell; `mode: "copy"` needs neither.
 
 ## On an existing machine

@@ -4,16 +4,16 @@ export default workspace({
   inputs: {},
   hosts: [
     host("windows-shell", platforms.windows(), ({ windows }) => {
-      // Settings also uses the exact module pin in winix-windows.lock.
-      windows.setting({ DeveloperMode: true });
+      // Elevated settings (Developer Mode) use the exact module pin in winix-windows.lock.
+      windows.settings({
+        developer: { mode: true },
+        theme: { accentColor: "#336699" },
+        explorer: { showExtensions: true, showHiddenFiles: false, openTo: "thisPC" },
+        taskbar: { search: "hidden", taskView: true, widgets: false },
+      });
       windows.npm.registries({
         registries: { npmjs: { uri: "https://registry.npmjs.org/" } },
         default: "npmjs",
-      });
-      windows.personalization({
-        accentColor: "#336699",
-        explorer: { showExtensions: true, showHiddenFiles: false, openTo: "ThisPC" },
-        taskbar: { search: "Hidden", taskView: true, widgets: false },
       });
       // Optional declarations; image/font paths resolve relative to this config:
       // windows.wallpaper({ source: "../../wallpapers/desktop.jpg", style: "Fill" });

@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { evaluate, generateNix, host, platforms, workspace } from "../src/index.ts";
 import { generateWindows } from "../src/backends/windows/index.ts";
 import { emptyWindowsLock, reconcileInlinePins, resolveMissingWindowsLockEntries, windowsLockGaps } from "../src/backends/windows/lockfile.ts";
-import { personalizationValues } from "../src/helpers/windows-personalization.ts";
+import { normalizeWinSettings } from "../src/helpers/windows-settings.ts";
 import { reconcileWindows, resourceKey, type ManagedResource, type ResourceSnapshot } from "../src/cli/windows-state.ts";
 import {
   isRuntimePackage, packageDeclaration, packageSearch, parseWingetExport, windowsImport,
@@ -194,18 +194,18 @@ describe("default backup of existing targets", () => {
   });
 });
 
-describe("personalization colorMode", () => {
+describe("settings theme colorMode", () => {
   const personalize = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
   it("sets apps and system together or separately", () => {
-    expect(personalizationValues({ colorMode: "Dark" })).toEqual([
+    expect(normalizeWinSettings({ theme: { colorMode: "dark" } }).personalizationDwords).toEqual([
       { path: personalize, name: "AppsUseLightTheme", value: 0 },
       { path: personalize, name: "SystemUsesLightTheme", value: 0 },
     ]);
-    expect(personalizationValues({ colorMode: { system: "Light" } })).toEqual([
+    expect(normalizeWinSettings({ theme: { colorMode: { system: "light" } } }).personalizationDwords).toEqual([
       { path: personalize, name: "SystemUsesLightTheme", value: 1 },
     ]);
-    expect(() => personalizationValues({ colorMode: "Blue" as never })).toThrow("colorMode must be");
-    expect(() => personalizationValues({ colorMode: {} })).toThrow("colorMode must be");
+    expect(() => normalizeWinSettings({ theme: { colorMode: "blue" as never } })).toThrow("colorMode must be");
+    expect(() => normalizeWinSettings({ theme: { colorMode: {} } })).toThrow("colorMode must be");
   });
 });
 

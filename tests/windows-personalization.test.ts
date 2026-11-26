@@ -6,7 +6,7 @@ import { windowsText } from "./helpers/windows-text.ts";
 import { describe, expect, it } from "vitest";
 import { evaluate, feature, host, platforms, windows, workspace } from "../src/index.ts";
 import { generateWindows } from "../src/backends/windows/index.ts";
-import { personalizationValues } from "../src/helpers/windows-personalization.ts";
+import { normalizeWinSettings } from "../src/helpers/windows-settings.ts";
 import { wallpaperProperties } from "../src/backends/windows/personalization.ts";
 import { fontInstallPrelude } from "../src/backends/windows/fonts-runtime.ts";
 import { fontsProperties } from "../src/backends/windows/fonts.ts";
@@ -27,25 +27,44 @@ function powershell(script: string): string {
   } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
-describe("Windows personalization authoring", () => {
+describe("Windows personalization, wallpaper and fonts authoring", () => {
   it("maps only declared preferences and preserves accent DWORD byte order", () => {
-    const values = personalizationValues({
-      accentColor: "#123456",
-      explorer: { showExtensions: true, showHiddenFiles: false, openTo: "ThisPC" },
-      taskbar: { search: "IconAndLabel", taskView: false, widgets: true },
+    const normalized = normalizeWinSettings({
+      theme: { accentColor: "#123456", colorMode: "dark" },
+      explorer: { showExtensions: true, showHiddenFiles: false, openTo: "thisPC", showFullPathInTitleBar: true, classicContextMenu: true, compactMode: true },
+      taskbar: { search: "iconAndLabel", taskView: false, widgets: true, endTask: true },
     });
+    const values = normalized.personalizationDwords;
+    expect(values.find((value) => value.name === "AppsUseLightTheme")?.value).toBe(0);
+    expect(values.find((value) => value.name === "SystemUsesLightTheme")?.value).toBe(0);
     expect(values.find((value) => value.name === "AccentColor")?.value).toBe(0xff563412);
     expect(values.find((value) => value.name === "ColorizationColor")?.value).toBe(0xff123456);
     expect(values.find((value) => value.name === "HideFileExt")?.value).toBe(0);
     expect(values.find((value) => value.name === "Hidden")?.value).toBe(2);
+    expect(values.find((value) => value.name === "FullPath")?.value).toBe(1);
+    expect(values.find((value) => value.name === "UseCompactMode")?.value).toBe(1);
     expect(values.find((value) => value.name === "SearchboxTaskbarMode")?.value).toBe(3);
-    expect(() => windows.personalization({ accentColor: "red" })).toThrow("#RRGGBB");
-    expect(() => windows.personalization({})).toThrow("at least one");
+    expect(values.find((value) => value.name === "TaskbarEndTask")?.value).toBe(1);
+    expect(normalized.classicContextMenu).toBe(true);
+    expect(() => windows.settings.theme({ accentColor: "red" })).toThrow("#RRGGBB");
+    expect(() => windows.settings.theme({ accentColor: "#123456", autoColorization: true })).toThrow("cannot set both");
+    expect(() => windows.settings({})).toThrow("at least one");
+  });
+
+  it("supports standalone classicContextMenu without DWord values", () => {
+    const enableProps = windows.settings.explorer({ classicContextMenu: true }).windows!.dsc![0].properties!;
+    expect(String(enableProps.testScript)).toContain("86ca1aa0-34aa-4e8b-a509-50c905bae2a2");
+    expect(String(enableProps.setScript)).toContain("CreateSubKey");
+    const disableProps = windows.settings.explorer({ classicContextMenu: false }).windows!.dsc![0].properties!;
+    expect(String(disableProps.setScript)).toContain("DeleteSubKeyTree");
   });
 
   it("collects injected effects and resolves native Windows wallpaper paths and dependencies", () => {
     const declarations = feature("desktop", ({ windows }) => {
-      const prefs = windows.personalization({ explorer: { showExtensions: true }, taskbar: { autoHide: true } });
+      const prefs = windows.settings({
+        explorer: { showExtensions: true },
+        taskbar: { autoHide: true },
+      });
       windows.wallpaper({ source: "..\\images\\desktop.jpg", style: "Fit", dependsOn: prefs });
       windows.fonts({ sources: ["..\\fonts\\font.ttf"], dependsOn: prefs });
     });
@@ -76,7 +95,12 @@ describe.skipIf(!pwsh)("Generated PowerShell (no desktop/font activation)", () =
   it("parses all get/test/set scripts without executing native changes", () => {
     const resources = [
       wallpaperProperties({ source: "D:\\wallpaper.jpg" }),
-      windows.personalization({ accentColor: "#123456", taskbar: { autoHide: true } }).windows!.dsc![0].properties!,
+      windows.settings({
+        theme: { accentColor: "#123456" },
+        explorer: { classicContextMenu: true, showFullPathInTitleBar: true, compactMode: true },
+        taskbar: { autoHide: true, endTask: true },
+      }).windows!.dsc![0].properties!,
+      windows.settings.explorer({ classicContextMenu: false }).windows!.dsc![0].properties!,
       fontsProperties(["D:\\font.ttf"], emptyWindowsLock()),
     ];
     for (const properties of resources) for (const script of Object.values(properties)) {

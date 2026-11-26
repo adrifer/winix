@@ -1,38 +1,15 @@
 ---
 title: Appearance and fonts
-description: Color mode, accent color, Explorer and taskbar options, wallpaper, and fonts including Nerd Fonts.
+description: Desktop wallpaper, fonts including Nerd Fonts, and theme/Explorer/taskbar preferences.
 sidebar:
   order: 5
 ---
 
 # Appearance and fonts
 
-All of these apply to your user and need no administrator rights.
-
-## Personalization
-
-```ts
-windows.personalization({
-  colorMode: "Dark",
-  accentColor: "#336699",
-  explorer: { showExtensions: true, showHiddenFiles: false, openTo: "ThisPC" },
-  taskbar: { autoHide: false, search: "Hidden", taskView: true, widgets: false },
-});
-```
-
-| Option | Values |
-|---|---|
-| `colorMode` | `"Light"`, `"Dark"`, or `{ apps, system }` to set them separately |
-| `accentColor` | `"#RRGGBB"`; turns off automatic accent color |
-| `explorer.showExtensions`, `explorer.showHiddenFiles` | `true` / `false` (protected system files stay hidden) |
-| `explorer.openTo` | `"ThisPC"` or `"Home"` |
-| `taskbar.autoHide`, `taskbar.taskView`, `taskbar.widgets` | `true` / `false` |
-| `taskbar.search` | `"Hidden"`, `"Icon"`, `"IconAndLabel"`, `"Box"` |
-
-Only the values you declare change. Some take effect after signing out, and
-some depend on the Windows version and policy; Winix never restarts Explorer.
-`colorMode` writes the same values as `windows.setting({ AppColorMode, SystemColorMode })`:
-declare them in one place.
+Wallpaper and fonts apply to your user and need no administrator rights. For
+theme, color mode, accent color, File Explorer, and taskbar preferences, see
+[`windows.settings()`](environment-and-settings.md#windows-settings).
 
 ## Wallpaper
 

@@ -342,6 +342,18 @@ export function describeWindowsDscResource(resource: WinDscResource): {
       category: "environment", label: `PATH ${metadata.action === "add" ? "+" : "-"} ${metadata.value} (${metadata.scope})`,
     };
     case "setting": return { category: "settings", label: `Windows settings ${Object.keys(resource.properties ?? {}).join(", ")}`.trim() };
+    case "system": return { category: "settings", label: metadata.label };
+    case "clipboard": return { category: "settings", label: metadata.label };
+    case "input": return { category: "settings", label: metadata.label };
+    case "registry": {
+      const target = metadata.valueName === undefined
+        ? metadata.keyPath
+        : `${metadata.keyPath}\\${metadata.valueName || "(Default)"}`;
+      return {
+        category: "settings",
+        label: metadata.action === "set" ? `Registry set ${target}` : `Registry remove ${target}`,
+      };
+    }
     case "wallpaper": return { category: "settings", label: "Wallpaper" };
     case "fonts": return { category: "fonts", label: `Fonts (${metadata.sources.length} source(s))` };
     case "optional-features": return {

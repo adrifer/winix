@@ -39,52 +39,206 @@ export interface WinWallpaper {
   style?: "Fill" | "Fit" | "Stretch" | "Tile" | "Center" | "Span";
 }
 
-export interface WinPersonalization {
+/** Light or dark color mode. */
+export type WinColorMode = "light" | "dark";
+
+/** Folder that a new File Explorer window opens to. */
+export type WinExplorerOpenTo = "thisPC" | "home";
+
+/** Taskbar icon alignment. */
+export type WinTaskbarAlignment = "left" | "center";
+
+/** How search appears on the taskbar. */
+export type WinTaskbarSearchMode = "hidden" | "icon" | "iconAndLabel" | "box";
+
+/** When taskbar buttons for the same application combine. */
+export type WinTaskbarGroupingMode = "always" | "whenFull" | "never";
+
+/** Which taskbar shows a window's button across multiple monitors. */
+export type WinTaskbarMultiMonMode = "duplicate" | "primaryAndWindow" | "windowOnly";
+
+/** Folder pinned next to the Start menu power button. */
+export type WinStartFolder =
+  | "documents"
+  | "downloads"
+  | "music"
+  | "pictures"
+  | "videos"
+  | "network"
+  | "userProfile"
+  | "explorer"
+  | "settings";
+
+/** Sudo for Windows mode (`HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Sudo\Enabled`). */
+export type WinSudoMode = "disabled" | "newWindow" | "disableInput" | "inline";
+
+/** Theme and color settings (`windows.settings.theme()`). */
+export interface WinThemeSettings {
   /**
-   * Light/dark mode. One value sets apps and system alike; the object form
-   * sets them separately. Same registry values as windows.setting
-   * AppColorMode/SystemColorMode; declare each in one place only.
+   * Light or dark mode. One value sets apps and system alike; the object form
+   * sets them separately. Applied per-user without elevation.
    */
-  colorMode?: "Light" | "Dark" | {
+  colorMode?: WinColorMode | {
     /** Apps' color mode. */
-    apps?: "Light" | "Dark";
-    /** The taskbar's and Start's color mode. */
-    system?: "Light" | "Dark";
+    apps?: WinColorMode;
+    /** Taskbar and Start menu color mode. */
+    system?: WinColorMode;
   };
-  /** Accent color as "#RRGGBB"; turns off automatic accent coloring. */
+  /** Accent color as `"#RRGGBB"`; turns off automatic accent coloring. Applied per-user. */
   accentColor?: string;
-  /** File Explorer options. */
-  explorer?: {
-    /** Show file name extensions. */
-    showExtensions?: boolean;
-    /** Show hidden files (protected operating-system files stay hidden). */
-    showHiddenFiles?: boolean;
-    /** The folder a new Explorer window opens. */
-    openTo?: "ThisPC" | "Home";
-  };
-  /** Taskbar options. */
-  taskbar?: {
-    /** Hide the taskbar until the pointer reaches it. */
-    autoHide?: boolean;
-    /** How search shows on the taskbar. */
-    search?: "Hidden" | "Icon" | "IconAndLabel" | "Box";
-    /** Show the Task View button. */
-    taskView?: boolean;
-    /** Show the Widgets button. */
-    widgets?: boolean;
-  };
+  /** Pick the accent color from the wallpaper automatically. Applied elevated. */
+  autoColorization?: boolean;
+  /** Enable window transparency effects. Applied elevated. */
+  transparency?: boolean;
+  /** Show the accent color on Start and the taskbar. Applied elevated. */
+  accentOnStartAndTaskbar?: boolean;
+  /** Show the accent color on title bars and window borders. Applied elevated. */
+  accentOnTitleBars?: boolean;
 }
+
+/** File Explorer settings (`windows.settings.explorer()`). All per-user, no elevation. */
+export interface WinExplorerSettings {
+  /** Show file name extensions. */
+  showExtensions?: boolean;
+  /** Show hidden files (protected operating-system files stay hidden). */
+  showHiddenFiles?: boolean;
+  /** The folder a new File Explorer window opens to. */
+  openTo?: WinExplorerOpenTo;
+  /** Show the full folder path in File Explorer's title bar. */
+  showFullPathInTitleBar?: boolean;
+  /** Use the classic Windows 10 right-click context menu on Windows 11. */
+  classicContextMenu?: boolean;
+  /** Use compact spacing in File Explorer lists. */
+  compactMode?: boolean;
+  /** `false` removes Explorer's sign-in delay before starting Run entries and Startup shortcuts. */
+  startupDelay?: boolean;
+  /** `false` stops Explorer waiting for an idle desktop at sign-in before starting startup entries. */
+  waitForIdle?: boolean;
+}
+
+/** Taskbar settings (`windows.settings.taskbar()`). */
+export interface WinTaskbarSettings {
+  /** Taskbar icons on the left or centered. Applied elevated. */
+  alignment?: WinTaskbarAlignment;
+  /** Hide the taskbar until the pointer reaches it. Applied live per-user. */
+  autoHide?: boolean;
+  /** How search appears on the taskbar. Applied per-user. */
+  search?: WinTaskbarSearchMode;
+  /** Show the Task View button. Applied per-user. */
+  taskView?: boolean;
+  /** Show the Widgets button. Applied per-user. */
+  widgets?: boolean;
+  /** Show "End task" in the taskbar right-click menu. Applied per-user. */
+  endTask?: boolean;
+  /** Show unread badges on taskbar icons. Applied elevated. */
+  badges?: boolean;
+  /** When taskbar buttons of one app combine. Applied elevated. */
+  grouping?: WinTaskbarGroupingMode;
+  /** Show the taskbar on every display. Applied elevated. */
+  multiMonitor?: boolean;
+  /** Which taskbar shows a window's button across multiple monitors. Applied elevated. */
+  multiMonitorMode?: WinTaskbarMultiMonMode;
+}
+
+/** Start menu settings (`windows.settings.start()`). Applied elevated. */
+export interface WinStartSettings {
+  /** Folders shown next to Start's power button. */
+  folders?: WinStartFolder[];
+  /** Show recently opened items in Start. */
+  showRecent?: boolean;
+  /** Show recommendations in Start. */
+  showRecommended?: boolean;
+}
+
+/** Developer and machine-wide OS toggles (`windows.settings.developer()`). Applied elevated. */
+export interface WinDeveloperSettings {
+  /** Developer Mode, which allows symlinks without elevation (`windows.file.symlink()` auto-depends on `mode: true`). */
+  mode?: boolean;
+  /** Sudo for Windows mode (`"disabled"`, `"newWindow"`, `"disableInput"`, or `"inline"`). */
+  sudo?: WinSudoMode;
+  /** Enable Win32 long paths (paths over 260 characters). */
+  longPaths?: boolean;
+}
+
+/** Per-user Windows clipboard settings (`windows.settings.clipboard()`). No elevation. */
+export interface WinClipboardSettings {
+  /** Enable Clipboard History (`Win+V`). */
+  history?: boolean;
+}
+
+/** Time zone settings (`windows.settings.time()`). Applied elevated. */
+export interface WinTimeSettings {
+  /** Windows time zone ID (for example `"Pacific Standard Time"` or `"W. Europe Standard Time"`). */
+  zone?: string;
+  /** Set the time zone automatically from location. */
+  automaticZone?: boolean;
+}
+
+/** Per-user keyboard repeat settings (`windows.settings.keyboard()`). Applied live without sign-out or elevation. */
+export interface WinKeyboardSettings {
+  /** Delay before a held key starts repeating: `0` (shortest) to `3` (longest). */
+  repeatDelay?: 0 | 1 | 2 | 3;
+  /** Repeat rate for a held key: `0` (slowest) to `31` (fastest). */
+  repeatSpeed?: number;
+}
+
+/** Per-user mouse pointer and button settings (`windows.settings.mouse()`). Applied live without sign-out or elevation. */
+export interface WinMouseSettings {
+  /** Pointer speed from `1` (slowest) to `20` (fastest); Windows default is `10`. */
+  speed?: number;
+  /** Enable "Enhance pointer precision" (mouse acceleration). */
+  enhancePointerPrecision?: boolean;
+  /** Swap the primary and secondary mouse buttons. */
+  swapButtons?: boolean;
+}
+
+/** Windows system notification settings (`windows.settings.notifications()`). Applied elevated. */
+export interface WinNotificationSettings {
+  /** Notify about USB connection problems. */
+  usbErrors?: boolean;
+  /** Notify when a charger is too weak. */
+  weakCharger?: boolean;
+}
+
+/** Unified Windows OS settings accepted by `windows.settings()`. */
+export interface WinSettings {
+  /** Theme, color mode, accent color, and transparency. */
+  theme?: WinThemeSettings;
+  /** File Explorer options and sign-in startup delay. */
+  explorer?: WinExplorerSettings;
+  /** Taskbar layout, visibility, search, and multi-monitor options. */
+  taskbar?: WinTaskbarSettings;
+  /** Start menu folders and lists. */
+  start?: WinStartSettings;
+  /** Developer Mode, Sudo for Windows, and Win32 long paths. */
+  developer?: WinDeveloperSettings;
+  /** Clipboard History (`Win+V`). */
+  clipboard?: WinClipboardSettings;
+  /** Windows time zone and automatic time zone detection. */
+  time?: WinTimeSettings;
+  /** Keyboard repeat delay and repeat speed. */
+  keyboard?: WinKeyboardSettings;
+  /** Mouse pointer speed, pointer precision, and button swap. */
+  mouse?: WinMouseSettings;
+  /** USB and weak-charger system notifications. */
+  notifications?: WinNotificationSettings;
+}
+
+/** Registry value kind for `windows.registry.set()`. */
+export type WinRegistryValueType =
+  | "string"
+  | "expandString"
+  | "dword"
+  | "qword"
+  | "multiString"
+  | "binary";
+
+/** Value accepted by `windows.registry.set()`. */
+export type WinRegistryValue = string | number | string[] | number[];
 
 export type WinStartupWindowStyle = "normal" | "minimized" | "maximized";
 /** Startup apps can also run console programs without any window. */
 export type WinStartupAppWindowStyle = WinStartupWindowStyle | "hidden";
-
-export interface WinStartupExplorerOptions {
-  /** false: no delay before Explorer starts Run entries and Startup shortcuts. */
-  delay?: boolean;
-  /** false: do not wait for the desktop to go idle first. */
-  waitForIdle?: boolean;
-}
 
 export interface WinStartupCommand {
   /** Absolute/environment-variable path, known-folder path, or application name on PATH. */
@@ -107,7 +261,7 @@ export interface WinPowerShellModule {
 export interface WinPowerShellRepositoryPolicy {
   /** Named HTTPS feeds to register for the current Windows user. No credentials in URLs. */
   repositories: Record<string, { uri: string }>;
-  /** The repository for modules that don't name one (and for the module windows.setting needs). */
+  /** The repository for modules that don't name one (and for the module windows.settings needs). */
   default: string;
   /** When specified, reject other repositories instead of falling back. */
   allowed?: string[];
@@ -346,6 +500,24 @@ export type WinDscMetadata =
       kind: "setting";
     }
   | {
+      kind: "system";
+      label: string;
+    }
+  | {
+      kind: "clipboard";
+      label: string;
+    }
+  | {
+      kind: "input";
+      label: string;
+    }
+  | {
+      kind: "registry";
+      action: "set" | "remove";
+      keyPath: string;
+      valueName?: string;
+    }
+  | {
       kind: "powershell-module";
       module: WinPowerShellModule;
     }
@@ -361,72 +533,6 @@ export type WinDscMetadata =
       recursive: boolean;
       wslConfig?: boolean;
     };
-
-export type WinColorMode = "Light" | "Dark";
-export type WinTaskbarAlignment = "Left" | "Center";
-export type WinTaskbarGroupingMode = "Always" | "WhenFull" | "Never";
-export type WinTaskbarMultiMonMode = "Duplicate" | "PrimaryAndWindow" | "WindowOnly";
-export type WinStartFolder =
-  | "Documents"
-  | "Downloads"
-  | "Music"
-  | "Pictures"
-  | "Videos"
-  | "Network"
-  | "UserProfile"
-  | "Explorer"
-  | "Settings";
-
-/**
- * Typed Windows OS settings exposed by
- * `Microsoft.Windows.Settings/WindowsSettings`.
- */
-export interface WinSettings {
-  /** Taskbar icons on the left or centered. */
-  TaskbarAlignment?: WinTaskbarAlignment;
-  /** Apps' light or dark mode. */
-  AppColorMode?: WinColorMode;
-  /** Windows' own light or dark mode (taskbar, Start). */
-  SystemColorMode?: WinColorMode;
-  /** Developer Mode, which allows symlinks without elevation (Winix orders it before every symlink). */
-  DeveloperMode?: boolean;
-  /** Set the time zone from the location. */
-  SetTimeZoneAutomatically?: boolean;
-  /** Windows time zone ID. Winix validates only that this is non-empty; the target validates the ID. */
-  TimeZone?: string;
-  /** Transparency effects. */
-  EnableTransparency?: boolean;
-  /** Accent color on Start and the taskbar. */
-  ShowAccentColorOnStartAndTaskbar?: boolean;
-  /** Accent color on title bars and window borders. */
-  ShowAccentColorOnTitleBarsAndWindowBorders?: boolean;
-  /** Pick the accent color from the wallpaper. */
-  AutoColorization?: boolean;
-  /** Folders shown next to Start's power button. */
-  StartFolders?: WinStartFolder[];
-  /** Recently opened items in Start. */
-  ShowRecentList?: boolean;
-  /** Recommendations in Start. */
-  ShowRecommendedList?: boolean;
-  /** Badges (unread counts) on taskbar apps. */
-  TaskbarBadges?: boolean;
-  /** Windows' DesktopTaskbarBadges setting: like TaskbarBadges. */
-  DesktopTaskbarBadges?: boolean;
-  /** When taskbar buttons of one app combine. */
-  TaskbarGroupingMode?: WinTaskbarGroupingMode;
-  /** Show the taskbar on every display. */
-  TaskbarMultiMon?: boolean;
-  /** Windows' DesktopTaskbarMultiMon setting: like TaskbarMultiMon. */
-  DesktopTaskbarMultiMon?: boolean;
-  /** Which taskbar shows a window's button with several displays. */
-  TaskbarMultiMonMode?: WinTaskbarMultiMonMode;
-  /** Windows' DesktopTaskbarMultiMonMode setting: like TaskbarMultiMonMode. */
-  DesktopTaskbarMultiMonMode?: WinTaskbarMultiMonMode;
-  /** Notify about USB connection problems. */
-  NotifyOnUsbErrors?: boolean;
-  /** Notify when a charger is too weak. */
-  NotifyOnWeakCharger?: boolean;
-}
 
 /** JSON-like value accepted in generic DSC `properties`. */
 export type WinDscPropertyValue =

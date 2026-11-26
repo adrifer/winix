@@ -56,8 +56,8 @@ What's next and what we're considering. Shipped work is in
 - **Machine-readable output:** `--json` for `check` and `inspect`.
 - **Drift detection on Windows:** read current state with DSC `get` and report
   differences from `winix check`.
-- **More Windows helpers:** registry values, services, firewall rules, OpenSSH
-  server settings, and a minimum OS version guard (`windows.requireOsVersion`).
+- **More Windows helpers:** services, firewall rules, OpenSSH server settings,
+  and a minimum OS version guard (`windows.requireOsVersion`).
 - **Resume after a restart:** let the Windows bootstrap continue by itself after
   the restart WSL needs (a one-time RunOnce entry), instead of asking the user
   to rerun it.

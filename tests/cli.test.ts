@@ -872,7 +872,7 @@ describe("PowerShell module CLI locking", () => {
     try {
       await writeConfig(dir, `
         host("work", platforms.windows(), ({ windows }) => {
-          windows.setting({ DeveloperMode: true });
+          windows.settings.developer({ mode: true });
           windows.powershell.module("Terminal-Icons");
           windows.powershell.repositories({
             repositories: { approved: { uri: ${JSON.stringify(uri)} } },

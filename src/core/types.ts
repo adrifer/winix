@@ -62,7 +62,7 @@ export type ResourceRef =
  * emitter reads `__winixHandle` to resolve dependency references to names.
  */
 export interface ResourceHandle extends Fragment {
-  __winixHandle: ResourceRef;
+  __winixHandle: ResourceRef | ResourceRef[];
 }
 
 export type ImportRef = string | RawModuleRef;

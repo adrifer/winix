@@ -65,7 +65,7 @@ export default workspace({
         default: "approved",
         allowed: ["approved"],
       });
-      windows.setting({ DeveloperMode: true });
+      windows.settings.developer({ mode: true });
     }),
   ],
 });

@@ -14,13 +14,23 @@ const fonts: ResourceHandle = windows.fonts({
   dependsOn: icons,
 });
 windows.wallpaper({ source: windows.knownFolder.documents("wallpaper.jpg"), style: "Fill", dependsOn: fonts });
-windows.personalization({ accentColor: "#123456", explorer: { openTo: "Home" }, taskbar: { autoHide: true, search: "Icon" } });
+windows.settings({
+  theme: { colorMode: "dark", accentColor: "#123456" },
+  explorer: { openTo: "home", compactMode: true, startupDelay: false },
+  taskbar: { autoHide: true, search: "icon", alignment: "left" },
+  developer: { mode: true, sudo: "inline", longPaths: true },
+  clipboard: { history: true },
+  keyboard: { repeatDelay: 0, repeatSpeed: 31 },
+  mouse: { speed: 12, enhancePointerPrecision: false },
+});
+windows.settings.theme({ colorMode: { apps: "dark", system: "light" } });
+windows.settings.explorer({ showExtensions: true, waitForIdle: false });
 // @ts-expect-error Only implemented font providers are accepted.
 windows.fonts({ sources: [{ provider: "google-fonts", family: "Roboto" }] });
 // @ts-expect-error Wallpaper styles are named values.
 windows.wallpaper({ source: "wallpaper.jpg", style: "Fullscreen" });
 // @ts-expect-error Taskbar search is a named mode.
-windows.personalization({ taskbar: { search: true } });
+windows.settings.taskbar({ search: true });
 const wslFeatures: ResourceHandle = windows.wsl({
   config: { wsl2: { memory: "16GB", processors: 8, networkingMode: "mirrored" } }, backup: true,
 });
@@ -64,7 +74,7 @@ const startup: ResourceHandle = windows.startup.app("terminal", {
   dependsOn: icons,
 });
 windows.startup.shortcut("legacy", { executable: "app.exe", windowStyle: "minimized", backup: false, dependsOn: startup });
-windows.startup.explorer({ delay: false, waitForIdle: false });
+windows.settings.explorer({ startupDelay: false, waitForIdle: false });
 // @ts-expect-error Startup apps require an executable.
 windows.startup.app("missing", { dependsOn: startup });
 // @ts-expect-error Startup window styles use named values, not arbitrary numbers.

@@ -20,24 +20,41 @@ import type {
   WinPackageSource,
   WinRawCommand,
   WinSettings,
+  WinThemeSettings,
+  WinExplorerSettings,
+  WinTaskbarSettings,
+  WinStartSettings,
+  WinDeveloperSettings,
+  WinClipboardSettings,
+  WinTimeSettings,
+  WinKeyboardSettings,
+  WinMouseSettings,
+  WinNotificationSettings,
   WinFilePath,
   WinKnownFolder,
   WinKnownFolderName,
   WinStartupCommand,
   WinStartupWindowStyle,
   WinStartupAppWindowStyle,
-  WinStartupExplorerOptions,
   WinWslConfig,
   WinWslDistro,
   WinWslSetup,
   WinPowerShellRepositoryPolicy,
   WinFontSource,
   WinWallpaper,
-  WinPersonalization,
+  WinRegistryValue,
+  WinRegistryValueType,
 } from "../types/index.ts";
 import { validatePowerShellRepositoryPolicy } from "./windows-repositories.ts";
-import { validateFontSources, validateWallpaper, personalizationValues } from "./windows-personalization.ts";
+import { validateFontSources, validateWallpaper } from "./windows-personalization.ts";
 import { personalizationProperties } from "../backends/windows/personalization.ts";
+import {
+  encodeRegistryValueData,
+  normalizeWinSettings,
+  registryResourceProperties,
+  validateRegistryKeyPath,
+} from "./windows-settings.ts";
+import { dwordRegistryProperties, inputProperties } from "../backends/windows/system.ts";
 import { npmRegistryEntries } from "./windows-npm.ts";
 import type { WinNpmRegistryPolicy } from "../types/windows.ts";
 
@@ -108,10 +125,85 @@ export interface WinDscSpec {
   dependsOn?: ResourceHandle | ResourceHandle[];
 }
 
-/** Options for `windows.setting(...)`. */
+/** Options for `windows.settings(...)` and `windows.settings.<section>(...)`. */
 export interface WinSettingOpts {
   /** Resources to apply first. */
   dependsOn?: ResourceHandle | ResourceHandle[];
+}
+
+/**
+ * Unified Windows OS settings: call `windows.settings({ ... })` to declare
+ * several areas together, or call a section directly (`windows.settings.theme()`,
+ * `windows.settings.explorer()`, `windows.settings.developer()`, etc.).
+ */
+export interface WinSettingsNamespace {
+  /**
+   * Declare Windows OS settings across one or more sections. Per-user settings
+   * apply without administrator rights; machine-wide settings join switch's
+   * single elevated step automatically.
+   */
+  (settings: WinSettings, opts?: WinSettingOpts): ResourceHandle;
+  /** Theme, color mode, accent color, and transparency settings. */
+  theme(options: WinThemeSettings, opts?: WinSettingOpts): ResourceHandle;
+  /** File Explorer options and Explorer's sign-in startup pacing. All per-user, no elevation. */
+  explorer(options: WinExplorerSettings, opts?: WinSettingOpts): ResourceHandle;
+  /** Taskbar alignment, auto-hide, search, widgets, End Task, and multi-monitor options. */
+  taskbar(options: WinTaskbarSettings, opts?: WinSettingOpts): ResourceHandle;
+  /** Start menu folders, recent items, and recommendations. Applied elevated. */
+  start(options: WinStartSettings, opts?: WinSettingOpts): ResourceHandle;
+  /** Developer Mode (auto-ordered before symlinks), Sudo for Windows, and Win32 long paths. Applied elevated. */
+  developer(options: WinDeveloperSettings, opts?: WinSettingOpts): ResourceHandle;
+  /** Per-user Clipboard History (`Win+V`). No elevation. */
+  clipboard(options: WinClipboardSettings, opts?: WinSettingOpts): ResourceHandle;
+  /** Windows time zone and automatic time zone detection. Applied elevated. */
+  time(options: WinTimeSettings, opts?: WinSettingOpts): ResourceHandle;
+  /** Per-user keyboard repeat delay and repeat speed, applied live via `SystemParametersInfo`. */
+  keyboard(options: WinKeyboardSettings, opts?: WinSettingOpts): ResourceHandle;
+  /** Per-user mouse pointer speed, pointer precision, and button swap, applied live via `SystemParametersInfo`. */
+  mouse(options: WinMouseSettings, opts?: WinSettingOpts): ResourceHandle;
+  /** USB error and weak-charger system notifications. Applied elevated. */
+  notifications(options: WinNotificationSettings, opts?: WinSettingOpts): ResourceHandle;
+}
+
+/** Options for `windows.registry.set()`. */
+export interface WinRegistrySetOpts {
+  /**
+   * Registry value kind. Inferred when omitted: strings become `"string"`,
+   * numbers become `"dword"`, string arrays become `"multiString"`, and number
+   * arrays become `"binary"`. Specify `"expandString"` or `"qword"` explicitly.
+   */
+  type?: WinRegistryValueType;
+  /** Run in switch's elevated step. Defaults to true for machine hives (`HKLM`, `HKCR`, `HKU`, `HKCC`) and false for `HKCU`. */
+  elevated?: boolean;
+  /** Resources to apply first. */
+  dependsOn?: ResourceHandle | ResourceHandle[];
+}
+
+/** Options for `windows.registry.remove()`. */
+export interface WinRegistryRemoveOpts {
+  /** Run in switch's elevated step. Defaults to true for machine hives (`HKLM`, `HKCR`, `HKU`, `HKCC`) and false for `HKCU`. */
+  elevated?: boolean;
+  /** Resources to apply first. */
+  dependsOn?: ResourceHandle | ResourceHandle[];
+}
+
+export interface WinRegistryNamespace {
+  /**
+   * Set a Windows registry value through the native `Microsoft.Windows/Registry`
+   * DSC resource. Pass `""` as `valueName` to set the key's `(Default)` value.
+   * Machine hives (`HKLM`, `HKCR`, `HKU`, `HKCC`) run in switch's elevated step automatically.
+   */
+  set(keyPath: string, valueName: string, value: WinRegistryValue, opts?: WinRegistrySetOpts): ResourceHandle;
+  /**
+   * Ensure a Windows registry key does not exist, through `Microsoft.Windows/Registry`.
+   * Machine hives (`HKLM`, `HKCR`, `HKU`, `HKCC`) run in switch's elevated step automatically.
+   */
+  remove(keyPath: string, opts?: WinRegistryRemoveOpts): ResourceHandle;
+  /**
+   * Ensure a Windows registry value (pass `""` for the `(Default)` value) does
+   * not exist, through `Microsoft.Windows/Registry`.
+   */
+  remove(keyPath: string, valueName: string, opts?: WinRegistryRemoveOpts): ResourceHandle;
 }
 
 export interface WinPowerShellModuleOpts {
@@ -164,12 +256,6 @@ export interface WinStartupNamespace {
   app(name: string, spec: WinStartupAppSpec): ResourceHandle;
   /** A shortcut in the current user's Startup folder, which Explorer opens last at sign-in. */
   shortcut(name: string, spec: WinStartupShortcutSpec): ResourceHandle;
-  /**
-   * Explorer's startup pacing for Run entries and Startup-folder shortcuts:
-   * `delay: false` removes its initial delay, `waitForIdle: false` stops it
-   * waiting for the desktop to go idle. `true` restores the Windows default.
-   */
-  explorer(options: WinStartupExplorerOptions, opts?: WinSettingOpts): ResourceHandle;
 }
 
 export interface WinOptionalFeatureOpts {
@@ -313,6 +399,11 @@ export interface WinTerminalSettingsOpts extends WinLinkedFileOpts {
  * resource handle (e.g. a plain fragment or a handle from a non-resource
  * helper), since only resources can be ordered.
  */
+function handleRefs(handle: ResourceHandle): ResourceRef[] {
+  const ref = handle.__winixHandle;
+  return Array.isArray(ref) ? ref : [ref];
+}
+
 function resolveDependsOn(
   dependsOn: ResourceHandle | ResourceHandle[] | undefined
 ): ResourceRef[] | undefined {
@@ -329,7 +420,8 @@ function resolveDependsOn(
         "resource identity."
       );
     }
-    refs.push(ref);
+    if (Array.isArray(ref)) refs.push(...ref);
+    else refs.push(ref);
   }
   return refs;
 }
@@ -495,133 +587,126 @@ function normalizeDsc(arg: WinDscSpec): WinDscResource {
   return withDscToken(resource);
 }
 
-const BOOLEAN_WINDOWS_SETTINGS = new Set([
-  "DeveloperMode",
-  "SetTimeZoneAutomatically",
-  "EnableTransparency",
-  "ShowAccentColorOnStartAndTaskbar",
-  "ShowAccentColorOnTitleBarsAndWindowBorders",
-  "AutoColorization",
-  "ShowRecentList",
-  "ShowRecommendedList",
-  "TaskbarBadges",
-  "DesktopTaskbarBadges",
-  "TaskbarMultiMon",
-  "DesktopTaskbarMultiMon",
-  "NotifyOnUsbErrors",
-  "NotifyOnWeakCharger",
-]);
-const COLOR_MODE_VALUES = ["Light", "Dark"] as const;
-const TASKBAR_ALIGNMENT_VALUES = ["Left", "Center"] as const;
-const TASKBAR_GROUPING_VALUES = ["Always", "WhenFull", "Never"] as const;
-const TASKBAR_MULTI_MON_MODE_VALUES = ["Duplicate", "PrimaryAndWindow", "WindowOnly"] as const;
-const START_FOLDER_VALUES = [
-  "Documents",
-  "Downloads",
-  "Music",
-  "Pictures",
-  "Videos",
-  "Network",
-  "UserProfile",
-  "Explorer",
-  "Settings",
-] as const;
-const WINDOWS_SETTING_VALIDATORS: Record<string, (value: unknown, key: string) => WinDscProperties[string]> = {
-  TaskbarAlignment: enumSettingValidator(TASKBAR_ALIGNMENT_VALUES),
-  AppColorMode: enumSettingValidator(COLOR_MODE_VALUES),
-  SystemColorMode: enumSettingValidator(COLOR_MODE_VALUES),
-  TimeZone: stringSettingValidator,
-  StartFolders: startFoldersSettingValidator,
-  TaskbarGroupingMode: enumSettingValidator(TASKBAR_GROUPING_VALUES),
-  TaskbarMultiMonMode: enumSettingValidator(TASKBAR_MULTI_MON_MODE_VALUES),
-  DesktopTaskbarMultiMonMode: enumSettingValidator(TASKBAR_MULTI_MON_MODE_VALUES),
-};
-for (const key of BOOLEAN_WINDOWS_SETTINGS) {
-  WINDOWS_SETTING_VALIDATORS[key] = booleanSettingValidator;
-}
-
-function supportedWindowsSettings(): string[] {
-  return Object.keys(WINDOWS_SETTING_VALIDATORS).sort();
-}
-
-function booleanSettingValidator(value: unknown, key: string): boolean {
-  if (typeof value !== "boolean") {
-    throw new Error(`windows.setting({ ${key} }) must be a boolean`);
-  }
-  return value;
-}
-
-function stringSettingValidator(value: unknown, key: string): string {
-  if (typeof value !== "string" || value.length === 0) {
-    throw new Error(`windows.setting({ ${key} }) must be a non-empty string`);
-  }
-  return value;
-}
-
-function enumSettingValidator<T extends readonly string[]>(
-  allowed: T
-): (value: unknown, key: string) => T[number] {
-  return (value, key) => {
-    if (typeof value !== "string" || !allowed.includes(value)) {
-      throw new Error(
-        `windows.setting({ ${key} }) must be one of: ${allowed.join(", ")}`
-      );
-    }
-    return value as T[number];
-  };
-}
-
-function startFoldersSettingValidator(value: unknown, key: string): string[] {
-  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
-    throw new Error(
-      `windows.setting({ ${key} }) must be an array of: ${START_FOLDER_VALUES.join(", ")}`
-    );
-  }
-  const invalid = value.find((entry) => !START_FOLDER_VALUES.includes(entry));
-  if (invalid) {
-    throw new Error(
-      `windows.setting({ ${key} }) contains unsupported folder "${invalid}". ` +
-        `Supported folders: ${START_FOLDER_VALUES.join(", ")}.`
-    );
-  }
-  return value;
-}
-
-function normalizeSetting(
-  settings: WinSettings,
-  opts: WinSettingOpts | undefined
+function buildExplorerStartupResource(
+  declared: [string, boolean][],
+  deps: ResourceRef[] | undefined,
 ): WinDscResource {
-  if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
-    throw new Error("windows.setting(settings) requires a settings object");
-  }
+  const prelude = [
+    "$ErrorActionPreference = 'Stop'",
+    "$key = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize'",
+    // name -> $true: Windows default (no value); $false: 0 (off).
+    `$desired = [ordered]@{ ${declared.map(([name, value]) => `${psSingleQuoted(name)} = ${psBoolean(value)}`).join("; ")} }`,
+    "function Test-WinixExplorerStartup {",
+    "  $current = Get-ItemProperty -LiteralPath $key -ErrorAction SilentlyContinue",
+    "  foreach ($name in $desired.Keys) {",
+    "    $value = if ($null -ne $current) { $current.PSObject.Properties[$name] } else { $null }",
+    "    if ($desired[$name]) { if ($null -ne $value) { return $false } }",
+    "    elseif ($null -eq $value -or $value.Value -ne 0) { return $false }",
+    "  }",
+    "  return $true",
+    "}",
+  ];
+  const label = declared.map(([name, value]) =>
+    `${name === "StartupDelayInMSec" ? "startup delay" : "wait for idle"} ${value ? "default" : "off"}`).join(", ");
+  const resource: WinDscResource = withDscToken({
+    resourceType: POWERSHELL_SCRIPT_RESOURCE,
+    name: `Explorer startup ${label}`,
+    properties: {
+      getScript: [...prelude, "@{ InDesiredState = (Test-WinixExplorerStartup) }"].join("\n"),
+      testScript: [...prelude, "Test-WinixExplorerStartup"].join("\n"),
+      setScript: [
+        ...prelude,
+        "if (Test-WinixExplorerStartup) { return }",
+        "New-Item -Path $key -Force | Out-Null",
+        "foreach ($name in $desired.Keys) {",
+        "  if ($desired[$name]) { Remove-ItemProperty -LiteralPath $key -Name $name -ErrorAction SilentlyContinue }",
+        "  else { New-ItemProperty -LiteralPath $key -Name $name -PropertyType DWord -Value 0 -Force | Out-Null }",
+        "}",
+        "if (-not (Test-WinixExplorerStartup)) { throw 'Explorer startup settings verification failed' }",
+      ].join("\n"),
+    },
+    ...(deps ? { dependsOn: deps } : {}),
+  });
+  return withDscMetadata(resource, { kind: "startup-explorer", label: `Explorer startup: ${label}` });
+}
+
+function buildSettingsResources(
+  settings: WinSettings,
+  opts: WinSettingOpts | undefined,
+  helper: string,
+): WinDscResource[] {
   if (opts !== undefined && (opts === null || typeof opts !== "object" || Array.isArray(opts))) {
-    throw new Error("windows.setting options must be an object when provided");
+    throw new Error(`${helper} options must be an object when provided`);
   }
-
-  const properties: WinDscProperties = {};
-  for (const [key, value] of Object.entries(settings)) {
-    const validator = WINDOWS_SETTING_VALIDATORS[key];
-    if (!validator) {
-      throw new Error(
-        `windows.setting(...) does not support setting "${key}". ` +
-        `Supported settings: ${supportedWindowsSettings().join(", ")}.`
-      );
-    }
-    properties[key] = validator(value, key);
-  }
-
-  if (Object.keys(properties).length === 0) {
-    throw new Error("windows.setting(settings) requires at least one supported setting");
-  }
-
-  const resource: WinDscResource = {
-    resourceType: WINDOWS_SETTINGS_RESOURCE,
-    name: "Windows Settings",
-    properties,
-  };
+  const normalized = normalizeWinSettings(settings, helper);
   const deps = resolveDependsOn(opts?.dependsOn);
-  if (deps) resource.dependsOn = deps;
-  return withDscMetadata(withDscToken(resource), { kind: "setting" });
+  const resources: WinDscResource[] = [];
+
+  if (Object.keys(normalized.msSettings).length > 0) {
+    resources.push(withDscMetadata(withDscToken({
+      resourceType: WINDOWS_SETTINGS_RESOURCE,
+      name: "Windows Settings",
+      properties: normalized.msSettings,
+      ...(deps ? { dependsOn: deps } : {}),
+    }), { kind: "setting" }));
+  }
+
+  if (normalized.hklmDwords.length > 0) {
+    const label = `Windows developer: ${normalized.hklmParts.join(", ")}`;
+    resources.push(withDscMetadata(withDscToken({
+      resourceType: POWERSHELL_SCRIPT_RESOURCE,
+      name: label,
+      elevated: true,
+      properties: dwordRegistryProperties("LocalMachine", normalized.hklmDwords, "Windows developer settings verification failed"),
+      ...(deps ? { dependsOn: deps } : {}),
+    }), { kind: "system", label }));
+  }
+
+  if (
+    normalized.personalizationDwords.length > 0 ||
+    normalized.autoHide !== undefined ||
+    normalized.classicContextMenu !== undefined
+  ) {
+    resources.push(withDscToken({
+      resourceType: POWERSHELL_SCRIPT_RESOURCE,
+      name: "Windows personalization",
+      properties: personalizationProperties(normalized.personalizationDwords, {
+        autoHide: normalized.autoHide,
+        classicContextMenu: normalized.classicContextMenu,
+      }),
+      ...(deps ? { dependsOn: deps } : {}),
+    }));
+  }
+
+  if (normalized.explorerStartup.length > 0) {
+    resources.push(buildExplorerStartupResource(normalized.explorerStartup, deps));
+  }
+
+  if (normalized.clipboardDwords.length > 0) {
+    const label = `Windows clipboard: ${normalized.clipboardParts.join(", ")}`;
+    resources.push(withDscMetadata(withDscToken({
+      resourceType: POWERSHELL_SCRIPT_RESOURCE,
+      name: label,
+      properties: dwordRegistryProperties("CurrentUser", normalized.clipboardDwords, "Windows clipboard settings verification failed"),
+      ...(deps ? { dependsOn: deps } : {}),
+    }), { kind: "clipboard", label }));
+  }
+
+  if (normalized.inputActions.length > 0) {
+    const label = `Windows input: ${normalized.inputParts.join(", ")}`;
+    resources.push(withDscMetadata(withDscToken({
+      resourceType: POWERSHELL_SCRIPT_RESOURCE,
+      name: label,
+      properties: inputProperties({
+        checks: normalized.inputChecks,
+        actions: normalized.inputActions,
+        label,
+      }),
+      ...(deps ? { dependsOn: deps } : {}),
+    }), { kind: "input", label }));
+  }
+
+  return resources;
 }
 
 function normalizeEnvOpts(opts: WinEnvOpts | undefined, helper: string): WinEnvOpts | undefined {
@@ -1574,57 +1659,6 @@ function normalizeStartupApp(name: string, input: WinStartupAppSpec): WinDscReso
   }, common.spec), { kind: "startup-app", name });
 }
 
-/**
- * Explorer's own startup pacing (HKCU ...\Explorer\Serialize): a delay before
- * it starts Run entries and Startup-folder shortcuts, and waiting for the
- * desktop to go idle. `false` turns each off; `true` restores the Windows
- * default (removes the value).
- */
-function normalizeStartupExplorer(options: WinStartupExplorerOptions, opts: WinSettingOpts | undefined): WinDscResource {
-  const helper = "windows.startup.explorer";
-  if (!options || typeof options !== "object" || Array.isArray(options)) throw new Error(`${helper} requires an options object`);
-  const values: [string, boolean | undefined][] = [
-    ["StartupDelayInMSec", options.delay], ["WaitForIdleState", options.waitForIdle],
-  ];
-  for (const [, value] of values) {
-    if (value !== undefined && typeof value !== "boolean") throw new Error(`${helper} delay and waitForIdle must be booleans`);
-  }
-  const declared = values.filter(([, value]) => value !== undefined) as [string, boolean][];
-  if (declared.length === 0) throw new Error(`${helper} needs delay and/or waitForIdle`);
-  const prelude = [
-    "$ErrorActionPreference = 'Stop'",
-    "$key = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize'",
-    // name -> $true: Windows default (no value); $false: 0 (off).
-    `$desired = [ordered]@{ ${declared.map(([name, value]) => `${psSingleQuoted(name)} = ${psBoolean(value)}`).join("; ")} }`,
-    "function Test-WinixExplorerStartup {",
-    "  $current = Get-ItemProperty -LiteralPath $key -ErrorAction SilentlyContinue",
-    "  foreach ($name in $desired.Keys) {",
-    "    $value = if ($null -ne $current) { $current.PSObject.Properties[$name] } else { $null }",
-    "    if ($desired[$name]) { if ($null -ne $value) { return $false } }",
-    "    elseif ($null -eq $value -or $value.Value -ne 0) { return $false }",
-    "  }",
-    "  return $true",
-    "}",
-  ];
-  const label = declared.map(([name, value]) =>
-    `${name === "StartupDelayInMSec" ? "startup delay" : "wait for idle"} ${value ? "default" : "off"}`).join(", ");
-  const resource = scriptDsc(`Explorer startup ${label}`, {
-    getScript: [...prelude, "@{ InDesiredState = (Test-WinixExplorerStartup) }"].join("\n"),
-    testScript: [...prelude, "Test-WinixExplorerStartup"].join("\n"),
-    setScript: [
-      ...prelude,
-      "if (Test-WinixExplorerStartup) { return }",
-      "New-Item -Path $key -Force | Out-Null",
-      "foreach ($name in $desired.Keys) {",
-      "  if ($desired[$name]) { Remove-ItemProperty -LiteralPath $key -Name $name -ErrorAction SilentlyContinue }",
-      "  else { New-ItemProperty -LiteralPath $key -Name $name -PropertyType DWord -Value 0 -Force | Out-Null }",
-      "}",
-      "if (-not (Test-WinixExplorerStartup)) { throw 'Explorer startup settings verification failed' }",
-    ].join("\n"),
-  }, { dependsOn: opts?.dependsOn });
-  return withDscMetadata(resource, { kind: "startup-explorer", label: `Explorer startup: ${label}` });
-}
-
 export interface WinEnvNamespace {
   /** Set an environment variable for the user (default) or the machine. New terminals see it; running programs keep their old environment. */
   set(name: string, value: string, opts?: WinEnvOpts): ResourceHandle;
@@ -1679,8 +1713,23 @@ export interface WindowsHelper {
     /** Resources to apply first. */
     dependsOn?: ResourceHandle | ResourceHandle[];
   }): ResourceHandle;
-  /** Color mode, accent color, and Explorer and taskbar options. Only the values you declare change. */
-  personalization(options: WinPersonalization, opts?: WinSettingOpts): ResourceHandle;
+  /**
+   * Unified Windows OS settings: call `windows.settings({ ... })` for several
+   * sections at once, or call a section helper directly (`windows.settings.theme()`,
+   * `windows.settings.explorer()`, `windows.settings.developer()`, etc.).
+   */
+  settings: WinSettingsNamespace;
+  /**
+   * Manage Windows registry keys and values declaratively through the native
+   * `Microsoft.Windows/Registry` DSC resource. Machine hives elevate automatically.
+   *
+   * ```ts
+   * windows.registry.set("HKCU\\Software\\MyApp", "Theme", "dark");
+   * windows.registry.set("HKLM\\SOFTWARE\\MyApp", "Enabled", 1);
+   * windows.registry.remove("HKCU\\Software\\MyApp", "OldFlag");
+   * ```
+   */
+  registry: WinRegistryNamespace;
   /** Enable (or with `enabled: false`, disable) a Windows optional feature. Needs administrator rights; a requested restart is left to you. */
   optionalFeature(name: string, opts?: WinOptionalFeatureOpts): ResourceHandle;
   /** WSL itself (`windows.wsl()`) and its distros (`windows.wsl.distro()`). */
@@ -1759,19 +1808,6 @@ export interface WindowsHelper {
   dsc(arg: WinDscSpec): ResourceHandle;
 
   /**
-   * Manage Windows OS settings through the native
-   * `Microsoft.Windows.Settings/WindowsSettings` DSC resource. The emitter
-   * automatically ensures the required `Microsoft.Windows.Settings` module is
-   * installed and wires settings resources to depend on it.
-   *
-   * ```ts
-   * windows.setting({ DeveloperMode: true });
-   * windows.setting({ SystemColorMode: "Dark", TaskbarAlignment: "Left" });
-   * ```
-   */
-  setting(settings: WinSettings, opts?: WinSettingOpts): ResourceHandle;
-
-  /**
    * Manage a user/machine environment variable declaratively via the native
    * `Microsoft.Windows/Registry` DSC resource.
    *
@@ -1820,7 +1856,7 @@ function fileHandleTarget(value: unknown): WinFilePath | undefined {
   return resource?.winix?.kind === "file" && resource.winix.action !== "remove" ? resource.winix.target : undefined;
 }
 
-function asHandle(fragment: Fragment, ref: ResourceRef): ResourceHandle {
+function asHandle(fragment: Fragment, ref: ResourceRef | ResourceRef[]): ResourceHandle {
   Object.defineProperty(fragment, "__winixHandle", {
     value: ref,
     enumerable: false,
@@ -1845,6 +1881,13 @@ function dscHandle(resource: WinDscResource): ResourceHandle {
   return asHandle(fragment, { kind: "dsc", token: resource.token! });
 }
 
+function dscHandles(resources: WinDscResource[]): ResourceHandle {
+  if (resources.length === 1) return dscHandle(resources[0]);
+  const fragment: Fragment = { windows: { dsc: resources } };
+  const refs: ResourceRef[] = resources.map((resource) => ({ kind: "dsc", token: resource.token! }));
+  return asHandle(fragment, refs);
+}
+
 export const windows: WindowsHelper = {
   optionalFeature: (name, opts = {}) => optionalFeatures([name], opts),
   wsl: Object.assign(
@@ -1866,7 +1909,7 @@ export const windows: WindowsHelper = {
       });
       if (resource.winix?.kind === "file") resource.winix.wslConfig = true;
       resource.name = "WSL configuration";
-      resource.dependsOn = [enabled.__winixHandle, ...(resource.dependsOn ?? [])];
+      resource.dependsOn = [...handleRefs(enabled), ...(resource.dependsOn ?? [])];
       const configured = dscHandle(resource);
       configured.windows!.packages = enabled.windows!.packages;
       configured.windows!.dsc!.unshift(...enabled.windows!.dsc!);
@@ -1904,7 +1947,6 @@ export const windows: WindowsHelper = {
   startup: {
     app: (name, spec) => dscHandle(normalizeStartupApp(name, spec)),
     shortcut: (name, spec) => dscHandle(normalizeStartupShortcut(name, spec)),
-    explorer: (options, opts) => dscHandle(normalizeStartupExplorer(options, opts)),
   },
   knownFolder: {
     documents: (path) => knownFolder("documents", path),
@@ -1993,8 +2035,6 @@ export const windows: WindowsHelper = {
     const fragment: Fragment = { windows: { dsc: [resource] } };
     return asHandle(fragment, { kind: "dsc", token: resource.token! });
   },
-  setting: (settings: WinSettings, opts?: WinSettingOpts): ResourceHandle =>
-    dscHandle(normalizeSetting(settings, opts)),
   fonts: (spec) => {
     validateFontSources(spec?.sources);
     return dscHandle(withDscMetadata(withDscToken({
@@ -2009,11 +2049,101 @@ export const windows: WindowsHelper = {
       dependsOn: resolveDependsOn(spec.dependsOn),
     }), { kind: "wallpaper", wallpaper: { source: spec.source, style: spec.style } }));
   },
-  personalization: (options, opts) => dscHandle(withDscToken({
-    resourceType: POWERSHELL_SCRIPT_RESOURCE, name: "Windows personalization",
-    properties: personalizationProperties(personalizationValues(options), options.taskbar?.autoHide),
-    dependsOn: resolveDependsOn(opts?.dependsOn),
-  })),
+  settings: Object.assign(
+    (settings: WinSettings, opts?: WinSettingOpts): ResourceHandle =>
+      dscHandles(buildSettingsResources(settings, opts, "windows.settings")),
+    {
+      theme: (options: WinThemeSettings, opts?: WinSettingOpts): ResourceHandle =>
+        dscHandles(buildSettingsResources({ theme: options }, opts, "windows.settings.theme")),
+      explorer: (options: WinExplorerSettings, opts?: WinSettingOpts): ResourceHandle =>
+        dscHandles(buildSettingsResources({ explorer: options }, opts, "windows.settings.explorer")),
+      taskbar: (options: WinTaskbarSettings, opts?: WinSettingOpts): ResourceHandle =>
+        dscHandles(buildSettingsResources({ taskbar: options }, opts, "windows.settings.taskbar")),
+      start: (options: WinStartSettings, opts?: WinSettingOpts): ResourceHandle =>
+        dscHandles(buildSettingsResources({ start: options }, opts, "windows.settings.start")),
+      developer: (options: WinDeveloperSettings, opts?: WinSettingOpts): ResourceHandle =>
+        dscHandles(buildSettingsResources({ developer: options }, opts, "windows.settings.developer")),
+      clipboard: (options: WinClipboardSettings, opts?: WinSettingOpts): ResourceHandle =>
+        dscHandles(buildSettingsResources({ clipboard: options }, opts, "windows.settings.clipboard")),
+      time: (options: WinTimeSettings, opts?: WinSettingOpts): ResourceHandle =>
+        dscHandles(buildSettingsResources({ time: options }, opts, "windows.settings.time")),
+      keyboard: (options: WinKeyboardSettings, opts?: WinSettingOpts): ResourceHandle =>
+        dscHandles(buildSettingsResources({ keyboard: options }, opts, "windows.settings.keyboard")),
+      mouse: (options: WinMouseSettings, opts?: WinSettingOpts): ResourceHandle =>
+        dscHandles(buildSettingsResources({ mouse: options }, opts, "windows.settings.mouse")),
+      notifications: (options: WinNotificationSettings, opts?: WinSettingOpts): ResourceHandle =>
+        dscHandles(buildSettingsResources({ notifications: options }, opts, "windows.settings.notifications")),
+    },
+  ),
+  registry: {
+    set: (keyPath, valueName, value, opts = {}) => {
+      if (!opts || typeof opts !== "object" || Array.isArray(opts)) {
+        throw new Error("windows.registry.set options must be an object");
+      }
+      if (opts.elevated !== undefined && typeof opts.elevated !== "boolean") {
+        throw new Error("windows.registry.set elevated must be a boolean");
+      }
+      const { keyPath: normalizedKey, machineHive } = validateRegistryKeyPath(keyPath, "windows.registry.set");
+      if (typeof valueName !== "string" || /[\0\r\n]/.test(valueName)) {
+        throw new Error("windows.registry.set valueName must be a string (use \"\" for the default value)");
+      }
+      const valueData = encodeRegistryValueData(value, opts.type);
+      const resource: WinDscResource = withDscMetadata(withDscToken({
+        resourceType: REGISTRY_RESOURCE,
+        name: `Registry set ${normalizedKey}\\${valueName || "(Default)"}`,
+        ...(opts.elevated ?? machineHive ? { elevated: true } : {}),
+        properties: registryResourceProperties({
+          keyPath: normalizedKey,
+          valueName,
+          exists: true,
+          valueData,
+        }),
+        dependsOn: resolveDependsOn(opts.dependsOn),
+      }), { kind: "registry", action: "set", keyPath: normalizedKey, valueName });
+      return dscHandle(resource);
+    },
+    remove: ((
+      keyPath: string,
+      valueNameOrOpts?: string | WinRegistryRemoveOpts,
+      maybeOpts?: WinRegistryRemoveOpts,
+    ): ResourceHandle => {
+      let valueName: string | undefined;
+      let opts: WinRegistryRemoveOpts = {};
+      if (typeof valueNameOrOpts === "string") {
+        valueName = valueNameOrOpts;
+        if (maybeOpts !== undefined) opts = maybeOpts;
+      } else if (valueNameOrOpts !== undefined) {
+        if (maybeOpts !== undefined) {
+          throw new Error("windows.registry.remove takes (keyPath, opts?) or (keyPath, valueName, opts?)");
+        }
+        opts = valueNameOrOpts;
+      }
+      if (!opts || typeof opts !== "object" || Array.isArray(opts)) {
+        throw new Error("windows.registry.remove options must be an object");
+      }
+      if (opts.elevated !== undefined && typeof opts.elevated !== "boolean") {
+        throw new Error("windows.registry.remove elevated must be a boolean");
+      }
+      const { keyPath: normalizedKey, machineHive } = validateRegistryKeyPath(keyPath, "windows.registry.remove");
+      if (valueName !== undefined && /[\0\r\n]/.test(valueName)) {
+        throw new Error("windows.registry.remove valueName cannot contain null or newline characters");
+      }
+      const resource: WinDscResource = withDscMetadata(withDscToken({
+        resourceType: REGISTRY_RESOURCE,
+        name: valueName === undefined
+          ? `Registry remove ${normalizedKey}`
+          : `Registry remove ${normalizedKey}\\${valueName || "(Default)"}`,
+        ...(opts.elevated ?? machineHive ? { elevated: true } : {}),
+        properties: registryResourceProperties({
+          keyPath: normalizedKey,
+          valueName,
+          exists: false,
+        }),
+        dependsOn: resolveDependsOn(opts.dependsOn),
+      }), { kind: "registry", action: "remove", keyPath: normalizedKey, valueName });
+      return dscHandle(resource);
+    }) as WinRegistryNamespace["remove"],
+  },
   env: {
     set: (name: string, value: string, opts?: WinEnvOpts): ResourceHandle =>
       dscHandle(normalizeEnv(name, "Present", value, opts)),

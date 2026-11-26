@@ -565,76 +565,69 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
     ]);
   });
 
-  it("windows.setting() normalizes supported Windows settings", () => {
-    const frag = windows.setting({
-      AppColorMode: "Dark",
-      AutoColorization: true,
-      DesktopTaskbarBadges: true,
-      DesktopTaskbarMultiMon: true,
-      DesktopTaskbarMultiMonMode: "WindowOnly",
-      DeveloperMode: true,
-      EnableTransparency: false,
-      NotifyOnUsbErrors: true,
-      NotifyOnWeakCharger: false,
-      SetTimeZoneAutomatically: false,
-      ShowAccentColorOnStartAndTaskbar: true,
-      ShowAccentColorOnTitleBarsAndWindowBorders: true,
-      ShowRecentList: false,
-      ShowRecommendedList: true,
-      StartFolders: ["Documents", "Settings"],
-      SystemColorMode: "Dark",
-      TaskbarAlignment: "Left",
-      TaskbarBadges: false,
-      TaskbarGroupingMode: "Never",
-      TaskbarMultiMon: true,
-      TaskbarMultiMonMode: "PrimaryAndWindow",
-      TimeZone: "Pacific Standard Time",
+  it("windows.settings() normalizes supported elevated Windows settings", () => {
+    const frag = windows.settings({
+      theme: {
+        autoColorization: true,
+        transparency: false,
+        accentOnStartAndTaskbar: true,
+        accentOnTitleBars: true,
+      },
+      developer: { mode: true },
+      notifications: { usbErrors: true, weakCharger: false },
+      time: { zone: "Pacific Standard Time", automaticZone: false },
+      start: { folders: ["documents", "settings"], showRecent: false, showRecommended: true },
+      taskbar: {
+        alignment: "left",
+        badges: false,
+        grouping: "never",
+        multiMonitor: true,
+        multiMonitorMode: "primaryAndWindow",
+      },
     });
     expect(frag.windows?.dsc).toEqual([
       {
         resourceType: "Microsoft.Windows.Settings/WindowsSettings",
         name: "Windows Settings",
         properties: {
-          AppColorMode: "Dark",
           AutoColorization: true,
-          DesktopTaskbarBadges: true,
-          DesktopTaskbarMultiMon: true,
-          DesktopTaskbarMultiMonMode: "WindowOnly",
-          DeveloperMode: true,
           EnableTransparency: false,
-          NotifyOnUsbErrors: true,
-          NotifyOnWeakCharger: false,
-          SetTimeZoneAutomatically: false,
           ShowAccentColorOnStartAndTaskbar: true,
           ShowAccentColorOnTitleBarsAndWindowBorders: true,
-          ShowRecentList: false,
-          ShowRecommendedList: true,
-          StartFolders: ["Documents", "Settings"],
-          SystemColorMode: "Dark",
           TaskbarAlignment: "Left",
           TaskbarBadges: false,
           TaskbarGroupingMode: "Never",
           TaskbarMultiMon: true,
           TaskbarMultiMonMode: "PrimaryAndWindow",
+          StartFolders: ["Documents", "Settings"],
+          ShowRecentList: false,
+          ShowRecommendedList: true,
+          DeveloperMode: true,
           TimeZone: "Pacific Standard Time",
+          SetTimeZoneAutomatically: false,
+          NotifyOnUsbErrors: true,
+          NotifyOnWeakCharger: false,
         },
       },
     ]);
   });
 
-  it("windows.setting() rejects unknown settings", () => {
-    expect(() => windows.setting({ LongPathsEnabled: true } as any)).toThrow(
-      /does not support setting "LongPathsEnabled"/
+  it("windows.settings() rejects unknown sections and unknown keys", () => {
+    expect(() => windows.settings({ unknown: true } as any)).toThrow(
+      /does not support section "unknown"/i
+    );
+    expect(() => windows.settings.developer({ badKey: true } as any)).toThrow(
+      /unknown windows\.settings\.developer option "badKey"/i
     );
   });
 
-  it("windows.setting() validates setting value shapes", () => {
-    expect(() => windows.setting({ DeveloperMode: "yes" } as any)).toThrow(/boolean/);
-    expect(() => windows.setting({ TaskbarGroupingMode: "Sometimes" } as any)).toThrow(
-      /Always, WhenFull, Never/
+  it("windows.settings() validates setting value shapes", () => {
+    expect(() => windows.settings.developer({ mode: "yes" } as any)).toThrow(/boolean/);
+    expect(() => windows.settings.taskbar({ grouping: "sometimes" } as any)).toThrow(
+      /always, whenFull, never/
     );
-    expect(() => windows.setting({ StartFolders: ["Documents", "Invalid"] } as any)).toThrow(
-      /unsupported folder "Invalid"/
+    expect(() => windows.settings.start({ folders: ["documents", "invalid"] } as any)).toThrow(
+      /unsupported folder "invalid"/
     );
   });
 
@@ -873,7 +866,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
       inputs,
       hosts: [
         host("desktop", platforms.windows(), [
-          windows.setting({ DeveloperMode: true }),
+          windows.settings.developer({ mode: true }),
         ]),
       ],
     });
@@ -892,13 +885,36 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(out.hosts.desktop).toMatchSnapshot();
   });
 
-  it("emits every supported WindowsSettings property", () => {
-    const settings = {
-      AppColorMode: "Dark",
+  it("emits every supported Microsoft.Windows.Settings property", () => {
+    const ws = workspace({
+      inputs,
+      hosts: [host("desktop", platforms.windows(), [windows.settings({
+        theme: {
+          autoColorization: true,
+          transparency: false,
+          accentOnStartAndTaskbar: true,
+          accentOnTitleBars: true,
+        },
+        taskbar: {
+          alignment: "center",
+          badges: false,
+          grouping: "whenFull",
+          multiMonitor: true,
+          multiMonitorMode: "duplicate",
+        },
+        start: {
+          folders: ["documents", "downloads", "settings"],
+          showRecent: false,
+          showRecommended: true,
+        },
+        developer: { mode: true },
+        time: { zone: "Pacific Standard Time", automaticZone: false },
+        notifications: { usbErrors: true, weakCharger: false },
+      })])],
+    });
+    const out = generateWindows(evaluate(ws), windowsLock({}));
+    expect(named(out, "Windows Settings").properties).toEqual({
       AutoColorization: true,
-      DesktopTaskbarBadges: true,
-      DesktopTaskbarMultiMon: true,
-      DesktopTaskbarMultiMonMode: "WindowOnly",
       DeveloperMode: true,
       EnableTransparency: false,
       NotifyOnUsbErrors: true,
@@ -909,20 +925,13 @@ describe("generateWindows() emitter: dsc / env / path", () => {
       ShowRecentList: false,
       ShowRecommendedList: true,
       StartFolders: ["Documents", "Downloads", "Settings"],
-      SystemColorMode: "Light",
       TaskbarAlignment: "Center",
       TaskbarBadges: false,
       TaskbarGroupingMode: "WhenFull",
       TaskbarMultiMon: true,
       TaskbarMultiMonMode: "Duplicate",
       TimeZone: "Pacific Standard Time",
-    } as const;
-    const ws = workspace({
-      inputs,
-      hosts: [host("desktop", platforms.windows(), [windows.setting(settings)])],
     });
-    const out = generateWindows(evaluate(ws), windowsLock({}));
-    expect(named(out, "Windows Settings").properties).toEqual(settings);
   });
 
   it("emits the WindowsSettings ensure-module step only once", () => {
@@ -930,8 +939,8 @@ describe("generateWindows() emitter: dsc / env / path", () => {
       inputs,
       hosts: [
         host("desktop", platforms.windows(), [
-          windows.setting({ DeveloperMode: true }),
-          windows.setting({ SystemColorMode: "Dark", AppColorMode: "Dark" }),
+          windows.settings.developer({ mode: true }),
+          windows.settings.taskbar({ alignment: "left" }),
         ]),
       ],
     });
@@ -947,7 +956,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
       inputs,
       hosts: [
         host("desktop", platforms.windows(), ({ windows }) => {
-          const devMode = windows.setting({ DeveloperMode: true });
+          const devMode = windows.settings.developer({ mode: true });
           windows.package({ id: "Git.Git", dependsOn: devMode });
           windows.raw({ name: "after-settings", executable: "pwsh", dependsOn: devMode });
         }),
@@ -961,7 +970,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
   });
 
   it.each([false, true])("orders symlinks after declared Developer Mode without duplicating explicit dependencies (%s)", (explicit) => {
-    const developerMode = windows.setting({ DeveloperMode: true });
+    const developerMode = windows.settings.developer({ mode: true });
     const links = feature("links", ({ windows }) => {
       const config = windows.file.text("%USERPROFILE%\\source", "config");
       windows.file.symlink("%USERPROFILE%\\link", "%USERPROFILE%\\source", {
@@ -994,7 +1003,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
       inputs,
       hosts: [host("desktop", platforms.windows(), [
         windows.file.symlink("%USERPROFILE%\\link", "%USERPROFILE%\\source"),
-        ...(developerMode === undefined ? [] : [windows.setting({ DeveloperMode: developerMode })]),
+        ...(developerMode === undefined ? [] : [windows.settings.developer({ mode: developerMode })]),
       ])],
     }));
     const out = generateWindows(evaluated, windowsLock({}));
@@ -1012,7 +1021,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     const evaluated = evaluate(workspace({
       inputs,
       hosts: [
-        host("enabled", platforms.windows(), [links(), windows.setting({ DeveloperMode: true })]),
+        host("enabled", platforms.windows(), [links(), windows.settings.developer({ mode: true })]),
         host("external", platforms.windows(), [links()]),
       ],
     }));

@@ -110,7 +110,7 @@ its place. If a `.bak` already exists, the switch stops rather than overwrite
 it. Links are live: editing the file in the repository changes it on the
 machine, with no switch.
 
-Symlinks need Developer Mode (`windows.setting({ DeveloperMode: true })`, which
+Symlinks need Developer Mode (`windows.settings.developer({ mode: true })`, which
 Winix orders before every link) or an elevated shell. More in
 [PowerShell profile and Windows Terminal](powershell-and-terminal.md).
 
@@ -120,8 +120,8 @@ Work through what you'd otherwise set up by hand on a new PC:
 
 | You want | Declare |
 |---|---|
-| Dark mode, accent colour, taskbar and Explorer options | `windows.personalization({ ... })` |
-| Developer Mode, time zone, Start menu folders | `windows.setting({ ... })` |
+| Dark mode, accent color, Explorer, taskbar, Start, Developer Mode, Sudo, clipboard, time zone, keyboard/mouse | `windows.settings({ ... })` or `windows.settings.<section>({ ... })` |
+| Arbitrary registry keys or values | `windows.registry.set()`, `windows.registry.remove()` |
 | Environment variables and PATH | `windows.env.set()`, `windows.path.add()` |
 | Fonts | `windows.fonts({ sources: [...] })` |
 | Apps that start at sign-in | `windows.startup.app()` |
