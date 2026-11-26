@@ -866,13 +866,13 @@ describe("Font CLI locking", () => {
 });
 
 describe("PowerShell module CLI locking", () => {
-  it("pins implicit Settings from the approved feed, reuses it offline and updates it explicitly", async () => {
+  it("pins prerelease modules from the approved feed, reuses them offline and updates them explicitly", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix-settings-cli-"));
     const uri = "https://packages.example.com/powershell/v3/index.json";
     try {
       await writeConfig(dir, `
         host("work", platforms.windows(), ({ windows }) => {
-          windows.settings.developer({ mode: true });
+          windows.powershell.module("PSReadLine", { prerelease: true });
           windows.powershell.module("Terminal-Icons");
           windows.powershell.repositories({
             repositories: { approved: { uri: ${JSON.stringify(uri)} } },
@@ -880,31 +880,31 @@ describe("PowerShell module CLI locking", () => {
           });
         })
       `);
-      const resolve = vi.fn((name: string) => name === "Microsoft.Windows.Settings" ? "0.1.0-alpha.6" : "0.11.0");
+      const resolve = vi.fn((name: string) => name === "PSReadLine" ? "2.4.0-beta1" : "0.11.0");
       await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsModuleVersion: resolve });
-      expect(resolve).toHaveBeenCalledWith("Microsoft.Windows.Settings", "approved", uri, true);
+      expect(resolve).toHaveBeenCalledWith("PSReadLine", "approved", uri, true);
       const before = readWindowsLock(dir)!;
       const offline = () => { throw new Error("offline"); };
       await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsModuleVersion: offline });
       expect(readWindowsLock(dir)).toEqual(before);
-      const resolveUpdate = vi.fn(() => "0.1.0-alpha.7");
+      const resolveUpdate = vi.fn(() => "2.4.0-beta2");
       await update(dir, {
-        inputs: ["Microsoft.Windows.Settings"], windows: true, dry: true,
+        inputs: ["PSReadLine"], windows: true, dry: true,
         resolveWindowsModuleVersion: resolveUpdate,
       });
-      expect(resolveUpdate).toHaveBeenCalledExactlyOnceWith("Microsoft.Windows.Settings", "approved", uri, true);
+      expect(resolveUpdate).toHaveBeenCalledExactlyOnceWith("PSReadLine", "approved", uri, true);
       expect(readWindowsLock(dir)).toEqual(before);
       await update(dir, {
-        inputs: ["Microsoft.Windows.Settings"], windows: true, dry: false,
+        inputs: ["PSReadLine"], windows: true, dry: false,
         resolveWindowsModuleVersion: resolveUpdate,
       });
       for (const [key, pin] of Object.entries(before.modules!)) {
         expect(readWindowsLock(dir)!.modules![key].version).toBe(
-          key.startsWith("microsoft.windows.settings") ? "0.1.0-alpha.7" : pin.version);
+          key.startsWith("psreadline") ? "2.4.0-beta2" : pin.version);
       }
       await applyWorkspace(dir, { dry: false, diff: false, resolveWindowsModuleVersion: offline });
       const output = await windowsScripts(join(dir, ".winix", "out"), "work");
-      expect(output).toContain("$version = '0.1.0-alpha.7'");
+      expect(output).toContain("$version = '2.4.0-beta2'");
       expect(output).toContain("-Repository 'approved'");
       expect(output).not.toContain("PSGallery");
     } finally { await rm(dir, { recursive: true, force: true }); }

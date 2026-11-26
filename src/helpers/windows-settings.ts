@@ -53,13 +53,21 @@ export interface NormalizedInput {
   label: string;
 }
 
+export interface NormalizedTime {
+  zone?: string;
+  automaticZone?: boolean;
+}
+
 export interface NormalizedWindowsSettings {
-  msSettings: WinDscProperties;
   hklmDwords: RegistryDWordEntry[];
   hklmParts: string[];
+  enablesDeveloperMode: boolean;
+  time?: NormalizedTime;
+  timeParts: string[];
   personalizationDwords: PersonalizationRegistryValue[];
   autoHide?: boolean;
   classicContextMenu?: boolean;
+  startFolders?: string[];
   explorerStartup: [string, boolean][];
   clipboardDwords: RegistryDWordEntry[];
   clipboardParts: string[];
@@ -75,9 +83,9 @@ const SUDO_MODES: Record<WinSudoMode, number> = {
   inline: 3,
 };
 
-const TASKBAR_ALIGNMENTS: Record<WinTaskbarAlignment, string> = {
-  left: "Left",
-  center: "Center",
+const TASKBAR_ALIGNMENTS: Record<WinTaskbarAlignment, number> = {
+  left: 0,
+  center: 1,
 };
 
 const TASKBAR_SEARCH_MODES: Record<WinTaskbarSearchMode, number> = {
@@ -87,28 +95,28 @@ const TASKBAR_SEARCH_MODES: Record<WinTaskbarSearchMode, number> = {
   iconAndLabel: 3,
 };
 
-const TASKBAR_GROUPING_MODES: Record<WinTaskbarGroupingMode, string> = {
-  always: "Always",
-  whenFull: "WhenFull",
-  never: "Never",
+const TASKBAR_GROUPING_MODES: Record<WinTaskbarGroupingMode, number> = {
+  always: 0,
+  whenFull: 1,
+  never: 2,
 };
 
-const TASKBAR_MULTIMON_MODES: Record<WinTaskbarMultiMonMode, string> = {
-  duplicate: "Duplicate",
-  primaryAndWindow: "PrimaryAndWindow",
-  windowOnly: "WindowOnly",
+const TASKBAR_MULTIMON_MODES: Record<WinTaskbarMultiMonMode, number> = {
+  duplicate: 0,
+  primaryAndWindow: 1,
+  windowOnly: 2,
 };
 
-const START_FOLDERS: Record<WinStartFolder, string> = {
-  documents: "Documents",
-  downloads: "Downloads",
-  music: "Music",
-  pictures: "Pictures",
-  videos: "Videos",
-  network: "Network",
-  userProfile: "UserProfile",
-  explorer: "Explorer",
-  settings: "Settings",
+const START_FOLDER_GUIDS: Record<WinStartFolder, string> = {
+  documents: "{2D34D5CE-FA5A-4543-82F2-22E6EAF7773C}",
+  downloads: "{E367B32F-89DE-4355-BFCE-61F37B18A937}",
+  music: "{B00B0620-7F51-4C32-AA1E-34CC547F7315}",
+  pictures: "{383F07A0-E80A-4C80-B05A-86DB845DBC4D}",
+  videos: "{42B3A5C5-7D86-42F4-80A4-93FACA7A88B5}",
+  network: "{FE758144-080D-42AE-8BDA-34ED97B66394}",
+  userProfile: "{74BDB04A-F94A-4F68-8BD6-4398071DA8BC}",
+  explorer: "{148A24BC-D60C-4289-A080-6ED9BBA24882}",
+  settings: "{52730886-51AA-4243-9F7B-2776584659D4}",
 };
 
 const SETTINGS_SECTIONS = new Set([
@@ -183,19 +191,35 @@ function collectTheme(theme: WinThemeSettings, out: NormalizedWindowsSettings): 
         break;
       }
       case "autoColorization":
-        out.msSettings.AutoColorization = expectBoolean(value, "windows.settings.theme autoColorization");
+        out.personalizationDwords.push({
+          path: "Control Panel\\Desktop",
+          name: "AutoColorization",
+          value: expectBoolean(value, "windows.settings.theme autoColorization") ? 1 : 0,
+        });
         count++;
         break;
       case "transparency":
-        out.msSettings.EnableTransparency = expectBoolean(value, "windows.settings.theme transparency");
+        out.personalizationDwords.push({
+          path: "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+          name: "EnableTransparency",
+          value: expectBoolean(value, "windows.settings.theme transparency") ? 1 : 0,
+        });
         count++;
         break;
       case "accentOnStartAndTaskbar":
-        out.msSettings.ShowAccentColorOnStartAndTaskbar = expectBoolean(value, "windows.settings.theme accentOnStartAndTaskbar");
+        out.personalizationDwords.push({
+          path: "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+          name: "ColorPrevalence",
+          value: expectBoolean(value, "windows.settings.theme accentOnStartAndTaskbar") ? 1 : 0,
+        });
         count++;
         break;
       case "accentOnTitleBars":
-        out.msSettings.ShowAccentColorOnTitleBarsAndWindowBorders = expectBoolean(value, "windows.settings.theme accentOnTitleBars");
+        out.personalizationDwords.push({
+          path: "Software\\Microsoft\\Windows\\DWM",
+          name: "ColorPrevalence",
+          value: expectBoolean(value, "windows.settings.theme accentOnTitleBars") ? 1 : 0,
+        });
         count++;
         break;
       default:
@@ -284,7 +308,11 @@ function collectTaskbar(taskbar: WinTaskbarSettings, out: NormalizedWindowsSetti
         if (typeof value !== "string" || !Object.hasOwn(TASKBAR_ALIGNMENTS, value)) {
           throw new Error(`windows.settings.taskbar alignment must be one of: ${Object.keys(TASKBAR_ALIGNMENTS).join(", ")}`);
         }
-        out.msSettings.TaskbarAlignment = TASKBAR_ALIGNMENTS[value as WinTaskbarAlignment];
+        out.personalizationDwords.push({
+          path: advanced,
+          name: "TaskbarAl",
+          value: TASKBAR_ALIGNMENTS[value as WinTaskbarAlignment],
+        });
         count++;
         break;
       case "autoHide":
@@ -327,25 +355,41 @@ function collectTaskbar(taskbar: WinTaskbarSettings, out: NormalizedWindowsSetti
         count++;
         break;
       case "badges":
-        out.msSettings.TaskbarBadges = expectBoolean(value, "windows.settings.taskbar badges");
+        out.personalizationDwords.push({
+          path: advanced,
+          name: "TaskbarBadges",
+          value: expectBoolean(value, "windows.settings.taskbar badges") ? 1 : 0,
+        });
         count++;
         break;
       case "grouping":
         if (typeof value !== "string" || !Object.hasOwn(TASKBAR_GROUPING_MODES, value)) {
           throw new Error(`windows.settings.taskbar grouping must be one of: ${Object.keys(TASKBAR_GROUPING_MODES).join(", ")}`);
         }
-        out.msSettings.TaskbarGroupingMode = TASKBAR_GROUPING_MODES[value as WinTaskbarGroupingMode];
+        out.personalizationDwords.push({
+          path: advanced,
+          name: "TaskbarGlomLevel",
+          value: TASKBAR_GROUPING_MODES[value as WinTaskbarGroupingMode],
+        });
         count++;
         break;
       case "multiMonitor":
-        out.msSettings.TaskbarMultiMon = expectBoolean(value, "windows.settings.taskbar multiMonitor");
+        out.personalizationDwords.push({
+          path: advanced,
+          name: "MMTaskbarEnabled",
+          value: expectBoolean(value, "windows.settings.taskbar multiMonitor") ? 1 : 0,
+        });
         count++;
         break;
       case "multiMonitorMode":
         if (typeof value !== "string" || !Object.hasOwn(TASKBAR_MULTIMON_MODES, value)) {
           throw new Error(`windows.settings.taskbar multiMonitorMode must be one of: ${Object.keys(TASKBAR_MULTIMON_MODES).join(", ")}`);
         }
-        out.msSettings.TaskbarMultiMonMode = TASKBAR_MULTIMON_MODES[value as WinTaskbarMultiMonMode];
+        out.personalizationDwords.push({
+          path: advanced,
+          name: "MMTaskbarMode",
+          value: TASKBAR_MULTIMON_MODES[value as WinTaskbarMultiMonMode],
+        });
         count++;
         break;
       default:
@@ -363,27 +407,36 @@ function collectStart(start: WinStartSettings, out: NormalizedWindowsSettings): 
     switch (key) {
       case "folders": {
         if (!Array.isArray(value)) {
-          throw new Error(`windows.settings.start folders must be an array of: ${Object.keys(START_FOLDERS).join(", ")}`);
+          throw new Error(`windows.settings.start folders must be an array of: ${Object.keys(START_FOLDER_GUIDS).join(", ")}`);
         }
         const mapped: string[] = [];
         for (const item of value) {
-          if (typeof item !== "string" || !Object.hasOwn(START_FOLDERS, item)) {
+          if (typeof item !== "string" || !Object.hasOwn(START_FOLDER_GUIDS, item)) {
             throw new Error(
-              `windows.settings.start folders contains unsupported folder "${String(item)}". Supported folders: ${Object.keys(START_FOLDERS).join(", ")}`
+              `windows.settings.start folders contains unsupported folder "${String(item)}". Supported folders: ${Object.keys(START_FOLDER_GUIDS).join(", ")}`
             );
           }
-          mapped.push(START_FOLDERS[item as WinStartFolder]);
+          const guid = START_FOLDER_GUIDS[item as WinStartFolder];
+          if (!mapped.includes(guid)) mapped.push(guid);
         }
-        out.msSettings.StartFolders = mapped;
+        out.startFolders = mapped;
         count++;
         break;
       }
       case "showRecent":
-        out.msSettings.ShowRecentList = expectBoolean(value, "windows.settings.start showRecent");
+        out.personalizationDwords.push({
+          path: "Software\\Microsoft\\Windows\\CurrentVersion\\Start",
+          name: "ShowRecentList",
+          value: expectBoolean(value, "windows.settings.start showRecent") ? 1 : 0,
+        });
         count++;
         break;
       case "showRecommended":
-        out.msSettings.ShowRecommendedList = expectBoolean(value, "windows.settings.start showRecommended");
+        out.personalizationDwords.push({
+          path: "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          name: "Start_TrackDocs",
+          value: expectBoolean(value, "windows.settings.start showRecommended") ? 1 : 0,
+        });
         count++;
         break;
       default:
@@ -399,10 +452,18 @@ function collectDeveloper(developer: WinDeveloperSettings, out: NormalizedWindow
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined) continue;
     switch (key) {
-      case "mode":
-        out.msSettings.DeveloperMode = expectBoolean(value, "windows.settings.developer mode");
+      case "mode": {
+        const enabled = expectBoolean(value, "windows.settings.developer mode");
+        out.hklmDwords.push({
+          path: "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock",
+          name: "AllowDevelopmentWithoutDevLicense",
+          value: enabled ? 1 : 0,
+        });
+        out.hklmParts.push(`developer mode ${enabled ? "on" : "off"}`);
+        if (enabled) out.enablesDeveloperMode = true;
         count++;
         break;
+      }
       case "sudo":
         if (typeof value !== "string" || !Object.hasOwn(SUDO_MODES, value)) {
           throw new Error(`windows.settings.developer sudo must be one of: ${Object.keys(SUDO_MODES).join(", ")}`);
@@ -464,13 +525,17 @@ function collectTime(time: WinTimeSettings, out: NormalizedWindowsSettings): num
         if (typeof value !== "string" || !value.trim()) {
           throw new Error("windows.settings.time zone must be a non-empty Windows time zone ID");
         }
-        out.msSettings.TimeZone = value;
+        out.time = { ...out.time, zone: value };
+        out.timeParts.push(`zone ${value}`);
         count++;
         break;
-      case "automaticZone":
-        out.msSettings.SetTimeZoneAutomatically = expectBoolean(value, "windows.settings.time automaticZone");
+      case "automaticZone": {
+        const enabled = expectBoolean(value, "windows.settings.time automaticZone");
+        out.time = { ...out.time, automaticZone: enabled };
+        out.timeParts.push(`automatic zone ${enabled ? "on" : "off"}`);
         count++;
         break;
+      }
       default:
         throw new Error(`Unknown windows.settings.time option "${key}"`);
     }
@@ -553,16 +618,25 @@ function collectMouse(mouse: WinMouseSettings, out: NormalizedWindowsSettings): 
 
 function collectNotifications(notifications: WinNotificationSettings, out: NormalizedWindowsSettings): number {
   const obj = expectObject(notifications, "windows.settings.notifications");
+  const usb = "Software\\Microsoft\\Shell\\USB";
   let count = 0;
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined) continue;
     switch (key) {
       case "usbErrors":
-        out.msSettings.NotifyOnUsbErrors = expectBoolean(value, "windows.settings.notifications usbErrors");
+        out.personalizationDwords.push({
+          path: usb,
+          name: "NotifyOnUsbErrors",
+          value: expectBoolean(value, "windows.settings.notifications usbErrors") ? 1 : 0,
+        });
         count++;
         break;
       case "weakCharger":
-        out.msSettings.NotifyOnWeakCharger = expectBoolean(value, "windows.settings.notifications weakCharger");
+        out.personalizationDwords.push({
+          path: usb,
+          name: "NotifyOnWeakCharger",
+          value: expectBoolean(value, "windows.settings.notifications weakCharger") ? 1 : 0,
+        });
         count++;
         break;
       default:
@@ -582,9 +656,10 @@ export function normalizeWinSettings(settings: WinSettings, helper = "windows.se
     }
   }
   const out: NormalizedWindowsSettings = {
-    msSettings: {},
     hklmDwords: [],
     hklmParts: [],
+    enablesDeveloperMode: false,
+    timeParts: [],
     personalizationDwords: [],
     explorerStartup: [],
     clipboardDwords: [],

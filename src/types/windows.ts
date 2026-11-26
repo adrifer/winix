@@ -497,10 +497,12 @@ export type WinDscMetadata =
       scope: "user" | "machine";
     }
   | {
-      kind: "setting";
+      kind: "system";
+      label: string;
+      enablesDeveloperMode?: boolean;
     }
   | {
-      kind: "system";
+      kind: "time";
       label: string;
     }
   | {

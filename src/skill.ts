@@ -312,10 +312,8 @@ through \`dependsOn\`.
   \`windows.settings.keyboard()\`, \`windows.settings.mouse()\`,
   \`windows.settings.notifications()\`). All keys and enum values
   are camelCase. Only declared settings change; per-user keys apply without
-  elevation, while machine-wide keys join switch's single elevated step.
-  \`Microsoft.Windows.Settings\` is only installed and locked when a key backed by
-  it is declared (e.g., \`developer.mode\`, \`taskbar.alignment\`, \`start.*\`,
-  \`time.*\`, \`notifications.*\`, or \`theme\` transparency/accent toggles):
+  elevation, while machine-wide keys (\`developer.*\` and \`time.*\`) join switch's
+  single elevated step (and still check without admin during \`winix plan\`):
   - \`theme\`: \`colorMode\` ("light" | "dark" | { apps?, system? }), \`accentColor\`
     ("#RRGGBB", cannot combine with \`autoColorization: true\`), \`autoColorization\`,
     \`transparency\`, \`accentOnStartAndTaskbar\`, \`accentOnTitleBars\`.
@@ -513,14 +511,10 @@ package/module/image/repository pins (all when omitted, nixos-wsl for images,
 wsl-setup for setup commits); --dry reports without writing.
 Keep the lock in version control. Installation still requires network access
 when the locked package/module is not installed.
-Elevated keys in \`windows.settings(...)\` backed by \`Microsoft.Windows.Settings\`
-implicitly lock that module through the same host-policy/source-aware module
-mechanism, with prereleases allowed.
-\`windows.powershell.module(name, { prerelease: true })\` opts other modules in;
-stable-only declarations reject prerelease pins. Exact numeric version and
-prerelease label are checked. Do not put versions in handwritten settings config.
-Side-by-side DSC adapted-module selection/native Settings activation is unverified;
-installing the pin alone does not guarantee which installed module DSC selects.
+\`windows.powershell.module(name, { prerelease: true })\` opts a module in to
+prerelease pins; stable-only declarations reject prerelease pins. Exact numeric
+version and prerelease label are checked. Do not put versions in handwritten
+settings config.
 
 Native Windows \`winix switch\` keeps a separate per-user/machine applied-state
 inventory in LocalAppData/Winix, shared across recorded workspace/host activations.

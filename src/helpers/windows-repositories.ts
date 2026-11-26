@@ -7,10 +7,6 @@ export interface ResolvedPowerShellModule extends WinPowerShellModule {
 
 export const powerShellModuleVersion = /^\d+\.\d+\.\d+(?:\.\d+)?(?:-[a-z0-9]+(?:[.-][a-z0-9]+)*)?$/i;
 
-export function windowsSettingsModule(win: WindowsOptions): ResolvedPowerShellModule {
-  return resolvePowerShellModule(win, { name: "Microsoft.Windows.Settings", prerelease: true });
-}
-
 export const powerShellRepositoryName = /^[a-z0-9][a-z0-9._-]*$/i;
 
 export function powerShellRepositoryUri(value: string): string {
@@ -80,6 +76,5 @@ export function validateWindowsPowerShellPolicy(win: WindowsOptions): void {
   if (win.powershell?.repositories) validatePowerShellRepositoryPolicy(win.powershell.repositories);
   for (const resource of win.dsc ?? []) {
     if (resource.winix?.kind === "powershell-module") resolvePowerShellModule(win, resource.winix.module);
-    if (resource.winix?.kind === "setting") resolvePowerShellModule(win, { name: "Microsoft.Windows.Settings" });
   }
 }

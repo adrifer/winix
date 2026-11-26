@@ -284,7 +284,7 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
     function workAndPersonal() {
       const shell = feature("shell", ({ windows }) => {
         windows.powershell.module("Terminal-Icons");
-        windows.settings.developer({ mode: true });
+        windows.powershell.module("PSReadLine", { prerelease: true });
       });
       const workRepositories = feature("work-repositories", ({ windows }) => {
         windows.powershell.repositories(policy);
@@ -306,7 +306,7 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
       const resolve = vi.fn(() => "0.11.0");
       const { lock } = await resolveWindowsModuleLockEntries(emptyWindowsLock(), modules.values(), resolve);
       expect(resolve).toHaveBeenCalledWith("Terminal-Icons", "approved", uri, false);
-      expect(resolve).toHaveBeenCalledWith("Microsoft.Windows.Settings", "approved", uri, true);
+      expect(resolve).toHaveBeenCalledWith("PSReadLine", "approved", uri, true);
       const output = generateWindows(evaluated, lock);
       expect(windowsText(output, "personal")).toContain("-Repository 'PSGallery'");
       expect(windowsText(output, "personal")).not.toContain(uri);
@@ -314,7 +314,7 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
       expect(work).not.toContain("PSGallery");
       expect(work).toContain(uri);
       expect(work).toContain("-Repository 'approved'");
-      expect(work).toContain("$name = 'Microsoft.Windows.Settings'");
+      expect(work).toContain("$name = 'PSReadLine'");
       expect(work).toContain("-Name $name -Version $version -Repository 'approved'");
       expect(work.match(/dependsOn: \["Register PowerShell repository approved"\]/g)).toHaveLength(2);
       expect(work).not.toContain("Unregister-PSResourceRepository");
@@ -400,39 +400,39 @@ if ($script:installs -ne 1) { throw 'Stable installation was repeated' }
   `)).toContain("REPOSITORY_OK");
     });
 
-    it.skipIf(!hasPowerShell7)("installs only the exact Settings prerelease from the approved feed and reuses it", async () => {
+    it.skipIf(!hasPowerShell7)("installs only the exact prerelease module from the approved feed and reuses it", async () => {
       const evaluated = workAndPersonal();
       const { lock } = await resolveWindowsModuleLockEntries(
         emptyWindowsLock(), collectWindowsModules(evaluated).values(),
-        (name) => name === "Microsoft.Windows.Settings" ? "0.1.0-alpha.6" : "0.11.0"
+        (name) => name === "PSReadLine" ? "2.4.0-beta1" : "0.11.0"
       );
       const script = generateWindows(evaluated, lock).resources.work
-        .find((resource) => resource.name === "Ensure Microsoft Windows Settings module")!.setScript!;
+        .find((resource) => resource.label === "PowerShell module PSReadLine")!.setScript!;
       expect(runPowerShell7(`
-$script:installed = 'alpha.5'
+$script:installed = 'beta0'
 $script:installs = 0
 function Get-Module {
   param([switch]$ListAvailable, [string]$Name)
   if ($script:installed) {
-    [pscustomobject]@{ Name = $Name; Version = [version]'0.1.0'; PrivateData = @{PSData=@{Prerelease=$script:installed}} }
+    [pscustomobject]@{ Name = $Name; Version = [version]'2.4.0'; PrivateData = @{PSData=@{Prerelease=$script:installed}} }
   }
 }
 function Install-PSResource {
   [CmdletBinding()]
   param([string]$Name, [string]$Version, [string]$Repository, [string]$Scope,
     [switch]$Prerelease, [switch]$TrustRepository, [switch]$AcceptLicense, [switch]$Reinstall)
-  if ($Name -ne 'Microsoft.Windows.Settings' -or $Repository -ne 'approved' -or $Scope -ne 'CurrentUser' -or
-      $Version -ne '0.1.0-alpha.6' -or -not $Prerelease) {
+  if ($Name -ne 'PSReadLine' -or $Repository -ne 'approved' -or $Scope -ne 'CurrentUser' -or
+      $Version -ne '2.4.0-beta1' -or -not $Prerelease) {
     throw 'Wrong module source or scope'
   }
-  $script:installed = 'alpha.6'
+  $script:installed = 'beta1'
   $script:installs++
 }
 & { ${script} }
 & { ${script} }
-if ($script:installs -ne 1) { throw 'Settings installation was not idempotent' }
-'SETTINGS_REPOSITORY_OK'
-`)).toContain("SETTINGS_REPOSITORY_OK");
+if ($script:installs -ne 1) { throw 'Prerelease installation was not idempotent' }
+'PRERELEASE_REPOSITORY_OK'
+`)).toContain("PRERELEASE_REPOSITORY_OK");
     });
 
     const flat = "https://packages.example.com/powershell/v3/flat/";

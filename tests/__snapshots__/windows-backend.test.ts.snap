@@ -111,43 +111,6 @@ exports[`generateWindows() emitter > emits a stable resources.json for a windows
 }
 `;
 
-exports[`generateWindows() emitter: dsc / env / path > emits WindowsSettings with an auto ensure-module dependency, applied elevated 1`] = `
-{
-  "resources.json": "{
-  "host": "desktop",
-  "resources": [
-    {
-      "name": "Ensure Microsoft Windows Settings module",
-      "type": "Microsoft.DSC.Transitional/PowerShellScript",
-      "elevated": false,
-      "reboot": false,
-      "dependsOn": [],
-      "shell": "pwsh",
-      "testScript": "$ErrorActionPreference = 'Stop'\\nif ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }\\n$name = 'Microsoft.Windows.Settings'\\n$version = '0.1.0-alpha.6'\\n$baseVersion = '0.1.0'\\n$prerelease = 'alpha.6'\\n@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0",
-      "setScript": "$ErrorActionPreference = 'Stop'\\nif ($PSVersionTable.PSVersion.Major -lt 7) { throw 'PowerShell 7 is required' }\\n$name = 'Microsoft.Windows.Settings'\\n$version = '0.1.0-alpha.6'\\n$baseVersion = '0.1.0'\\n$prerelease = 'alpha.6'\\nif (@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0) { return }\\nInstall-PSResource -Name $name -Version $version -Repository 'PSGallery' -Prerelease -Scope CurrentUser -TrustRepository -AcceptLicense -Reinstall -ErrorAction Stop | Out-Null\\nif (-not (@(Get-Module -ListAvailable -Name $name | Where-Object { $_.Version -eq [version]$baseVersion -and [string]$_.PrivateData.PSData.Prerelease -ceq $prerelease }).Count -gt 0)) { throw \\"Module $name $version was not installed\\" }",
-      "category": "powershell",
-      "label": "Ensure Microsoft Windows Settings module"
-    },
-    {
-      "name": "Windows Settings",
-      "type": "Microsoft.Windows.Settings/WindowsSettings",
-      "elevated": true,
-      "reboot": false,
-      "dependsOn": [
-        "Ensure Microsoft Windows Settings module"
-      ],
-      "properties": {
-        "DeveloperMode": true
-      },
-      "category": "settings",
-      "label": "Windows settings DeveloperMode"
-    }
-  ]
-}
-",
-}
-`;
-
 exports[`generateWindows() emitter: dsc / env / path > emits env as Registry and path as PowerShellScript resources 1`] = `
 {
   "resources.json": "{

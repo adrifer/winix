@@ -110,6 +110,7 @@ describe("Unified windows.settings, windows.settings.* and windows.registry help
     const combined = feature("combined", ({ windows }) => {
       const base = windows.settings({
         developer: { mode: true, sudo: "inline", longPaths: true },
+        time: { zone: "Romance Standard Time", automaticZone: false },
         theme: { colorMode: "dark", transparency: true },
         explorer: { showExtensions: true, startupDelay: false },
         clipboard: { history: true },
@@ -117,30 +118,25 @@ describe("Unified windows.settings, windows.settings.* and windows.registry help
       });
       windows.registry.set("HKCU\\Software\\WinixExample", "Ready", 1, { dependsOn: base });
       windows.settings.start({ folders: ["documents", "settings"], showRecent: false });
-      windows.settings.time({ zone: "Romance Standard Time", automaticZone: false });
       windows.settings.notifications({ usbErrors: true, weakCharger: false });
     });
     const hosts = evaluate(workspace({ inputs: {}, hosts: [host("desktop", platforms.windows(), [combined()])] }));
-    const lock = {
-      ...emptyWindowsLock(),
-      modules: {
-        "microsoft.windows.settings": {
-          repository: "PSGallery",
-          version: "0.1.0-alpha.6",
-          resolvedAt: "2026-06-24T18:37:00.000Z",
-        },
-      },
-    };
-    const out = generateWindows(hosts, lock, "D:\\config");
+    const out = generateWindows(hosts, emptyWindowsLock(), "D:\\config");
     const reg = out.resources.desktop.find((r) => r.type === "Microsoft.Windows/Registry")!;
-    // All 6 buckets produced by `base` become dependencies of `Ready`.
+    // All 6 native buckets produced by `base` become dependencies of `Ready`.
     expect(reg.dependsOn).toHaveLength(6);
-    expect(reg.dependsOn).toContain("Windows Settings");
-    expect(reg.dependsOn).toContain("Windows developer sudo inline long paths on");
+    expect(reg.dependsOn).toContain("Windows developer developer mode on sudo inline long paths on");
+    expect(reg.dependsOn).toContain("Windows time zone Romance Standard Time automatic zone off");
     expect(reg.dependsOn).toContain("Windows personalization");
     expect(reg.dependsOn).toContain("Explorer startup startup delay off");
     expect(reg.dependsOn).toContain("Windows clipboard history on");
     expect(reg.dependsOn).toContain("Windows input keyboard delay 0");
+    // Only developer and time buckets require elevation; start and notifications stay per-user.
+    const elevated = out.resources.desktop.filter((r) => r.elevated).map((r) => r.name);
+    expect(elevated).toEqual([
+      "Windows developer developer mode on sudo inline long paths on",
+      "Windows time zone Romance Standard Time automatic zone off",
+    ]);
   });
 
   it("emits Microsoft.Windows/Registry resources with automatic elevation and typed valueData", () => {

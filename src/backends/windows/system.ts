@@ -1,6 +1,48 @@
 import type { WinDscProperties } from "../../types/windows.ts";
-import type { InputSpiAction, NormalizedInput, RegistryDWordEntry } from "../../helpers/windows-settings.ts";
+import type { InputSpiAction, NormalizedInput, NormalizedTime, RegistryDWordEntry } from "../../helpers/windows-settings.ts";
 import { powerShellLiteral as quote } from "../../helpers/utils.ts";
+
+const TZ_AUTO_UPDATE_KEY = "SYSTEM\\CurrentControlSet\\Services\\tzautoupdate";
+
+export function timeProperties(time: NormalizedTime): WinDscProperties {
+  const autoStart = time.automaticZone === undefined ? undefined : (time.automaticZone ? 3 : 4);
+  const autoTest = autoStart === undefined ? "" : `
+  $tzKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(${quote(TZ_AUTO_UPDATE_KEY)})
+  if ($null -eq $tzKey) { return $false }
+  try {
+    if ($tzKey.GetValueNames() -notcontains 'Start' -or
+        $tzKey.GetValueKind('Start') -ne [Microsoft.Win32.RegistryValueKind]::DWord -or
+        ([long]$tzKey.GetValue('Start') -band 0xffffffffL) -ne ${autoStart}) { return $false }
+  } finally { $tzKey.Dispose() }`;
+  const zoneTest = time.zone === undefined ? "" : `
+  if ((Get-TimeZone).Id -cne ${quote(time.zone)}) { return $false }`;
+  const autoSet = autoStart === undefined ? "" : `
+$tzKey = [Microsoft.Win32.Registry]::LocalMachine.CreateSubKey(${quote(TZ_AUTO_UPDATE_KEY)})
+try {
+  $tzKey.SetValue('Start', ${autoStart}, [Microsoft.Win32.RegistryValueKind]::DWord)
+} finally { $tzKey.Dispose() }`;
+  const zoneSet = time.zone === undefined ? "" : `
+$desiredZone = ${quote(time.zone)}
+if ((Get-TimeZone).Id -cne $desiredZone) {
+  $available = @(Get-TimeZone -ListAvailable | ForEach-Object { $_.Id })
+  if ($available -cnotcontains $desiredZone) {
+    throw "Invalid Windows time zone ID: $desiredZone"
+  }
+  Set-TimeZone -Id $desiredZone
+}`;
+  const prelude = `
+$ErrorActionPreference = 'Stop'
+function Test-WinixTime {${autoTest}${zoneTest}
+  return $true
+}`;
+  return {
+    getScript: `${prelude}\n@{ InDesiredState = (Test-WinixTime) }`,
+    testScript: `${prelude}\nTest-WinixTime`,
+    setScript: `${prelude}
+if (Test-WinixTime) { return }${autoSet}${zoneSet}
+if (-not (Test-WinixTime)) { throw 'Windows time settings verification failed' }`,
+  };
+}
 
 export function dwordRegistryProperties(
   hive: "LocalMachine" | "CurrentUser",

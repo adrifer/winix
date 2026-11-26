@@ -3,6 +3,22 @@
 Notable changes per release. Every release, with its downloadable assets, is on
 [GitHub Releases](https://github.com/adrifer/winix/releases).
 
+## Unreleased
+
+- **Native Windows settings backend:** All `windows.settings()` sections
+  (`theme`, `explorer`, `taskbar`, `start`, `developer`, `clipboard`, `time`,
+  `keyboard`, `mouse`, and `notifications`) now check and apply natively through
+  Windows registry and system APIs (`Get-TimeZone`/`Set-TimeZone`, `SystemParametersInfo`,
+  `SHAppBarMessage`) instead of the incomplete `Microsoft.Windows.Settings 0.1.1-alpha`
+  DSC module.
+  - Fixes `winix plan` and `winix switch` errors on `time.*`, `taskbar.multiMonitor*`,
+    `taskbar.alignment: "center"`, `taskbar.badges`, `taskbar.grouping`, `start.*`,
+    `theme.transparency`/`autoColorization`/`accentOn*`, and `notifications.*`.
+  - Per-user sections (`theme`, `explorer`, `taskbar`, `start`, `clipboard`,
+    `keyboard`, `mouse`, `notifications`) no longer require elevation, and
+    machine-wide sections (`developer`, `time`) check without UAC during `winix plan`.
+  - Removes the implicit `Microsoft.Windows.Settings` PowerShell module lock dependency.
+
 ## 0.4.0
 
 - **Unified `windows.settings()` API (breaking change):**

@@ -6,12 +6,13 @@ import { windowsSourcePath } from "./paths.ts";
 
 const CLASSIC_CONTEXT_MENU_KEY = "Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
 const CLASSIC_CONTEXT_MENU_SUBKEY = `${CLASSIC_CONTEXT_MENU_KEY}\\InprocServer32`;
+const START_MENU_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Start";
 
 export function personalizationProperties(
   values: PersonalizationRegistryValue[],
-  extras: { autoHide?: boolean; classicContextMenu?: boolean } = {},
+  extras: { autoHide?: boolean; classicContextMenu?: boolean; startFolders?: string[] } = {},
 ): WinDscProperties {
-  const { autoHide, classicContextMenu } = extras;
+  const { autoHide, classicContextMenu, startFolders } = extras;
   const appBar = autoHide === undefined ? "" : `
 if (-not ('WinixAppBarNative' -as [type])) {
   Add-Type @'
@@ -42,12 +43,43 @@ $appBar.size = [Runtime.InteropServices.Marshal]::SizeOf($appBar)
 $ctxKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey(${quote(CLASSIC_CONTEXT_MENU_SUBKEY)})
 try { $ctxKey.SetValue('', '', [Microsoft.Win32.RegistryValueKind]::String) } finally { $ctxKey.Dispose() }` : `
 [Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree(${quote(CLASSIC_CONTEXT_MENU_KEY)}, $false)`;
+  const desiredStartGuids = startFolders === undefined ? undefined : startFolders.map((g) => g.toUpperCase()).sort();
+  const startFoldersTest = desiredStartGuids === undefined ? "" : `
+  $startKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey(${quote(START_MENU_KEY)})
+  $currentGuids = @()
+  if ($null -ne $startKey) {
+    try {
+      if ($startKey.GetValueNames() -contains 'VisiblePlaces') {
+        if ($startKey.GetValueKind('VisiblePlaces') -ne [Microsoft.Win32.RegistryValueKind]::Binary) { return $false }
+        $raw = [byte[]]$startKey.GetValue('VisiblePlaces')
+        if (($raw.Length % 16) -ne 0) { return $false }
+        for ($i = 0; $i -lt $raw.Length; $i += 16) {
+          $chunk = New-Object byte[] 16
+          [Array]::Copy($raw, $i, $chunk, 0, 16)
+          $currentGuids += ([Guid]::new($chunk)).ToString('B').ToUpperInvariant()
+        }
+      }
+    } finally { $startKey.Dispose() }
+  }
+  $desiredGuids = @(${desiredStartGuids.map(quote).join(", ")})
+  $currentSorted = @($currentGuids | Sort-Object)
+  if ($currentSorted.Count -ne $desiredGuids.Count) { return $false }
+  for ($i = 0; $i -lt $desiredGuids.Count; $i++) {
+    if ($currentSorted[$i] -cne $desiredGuids[$i]) { return $false }
+  }`;
+  const startFoldersSet = startFolders === undefined ? "" : `
+$startBytes = New-Object System.Collections.Generic.List[byte]
+foreach ($g in @(${startFolders.map(quote).join(", ")})) {
+  $startBytes.AddRange([Guid]::new($g).ToByteArray())
+}
+$startKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey(${quote(START_MENU_KEY)})
+try { $startKey.SetValue('VisiblePlaces', [byte[]]$startBytes.ToArray(), [Microsoft.Win32.RegistryValueKind]::Binary) } finally { $startKey.Dispose() }`;
   const prelude = `
 $ErrorActionPreference = 'Stop'
-$values = ConvertFrom-Json ${quote(JSON.stringify(values))}
+$values = @(ConvertFrom-Json ${quote(JSON.stringify(values))})
 ${appBar}
 function Test-WinixPersonalization {
-  ${autoHide === undefined ? "" : `if ((([WinixAppBarNative]::SHAppBarMessage(4, [ref]$appBar).ToUInt64() -band 1) -ne 0) -ne $${autoHide}) { return $false }`}${classicMenuTest}
+  ${autoHide === undefined ? "" : `if ((([WinixAppBarNative]::SHAppBarMessage(4, [ref]$appBar).ToUInt64() -band 1) -ne 0) -ne $${autoHide}) { return $false }`}${classicMenuTest}${startFoldersTest}
   foreach ($item in $values) {
     $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($item.path)
     if ($null -eq $key) { return $false }
@@ -68,7 +100,7 @@ ${autoHide === undefined ? "" : `
 $state = [WinixAppBarNative]::SHAppBarMessage(4, [ref]$appBar).ToUInt64()
 $appBar.param = [IntPtr](($state -band 2) -bor ${autoHide ? 1 : 0})
 [WinixAppBarNative]::SHAppBarMessage(10, [ref]$appBar) | Out-Null
-`}${classicMenuSet}
+`}${classicMenuSet}${startFoldersSet}
 foreach ($item in $values) {
   $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($item.path)
   try {

@@ -643,23 +643,23 @@ describe("switch progress", () => {
 });
 
 describe("lock pin gaps", () => {
-  it("reports every pin apply would resolve online, naming the implicit settings module", () => {
+  it("reports every pin apply would resolve online, including packages and PowerShell modules", () => {
     const evaluated = evaluate(workspace({
       inputs: {},
       hosts: [host("desktop", platforms.windows(), [
         windows.package("Git.Git"), windows.package("Valve.Steam", { version: "any" }),
-        windows.settings.developer({ mode: true }),
+        windows.powershell.module("Terminal-Icons"),
       ])],
     }));
     const gaps = windowsLockPinGaps(null, evaluated);
     expect(gaps.map((gap) => [gap.kind, gap.label, gap.selector])).toEqual([
       ["package", "package Git.Git", "Git.Git"],
-      ["module", "PowerShell module Microsoft.Windows.Settings (implicit, used by windows.settings)", "Microsoft.Windows.Settings"],
+      ["module", "PowerShell module Terminal-Icons", "Terminal-Icons"],
     ]);
     expect(lockGapWarnings(gaps)).toEqual([
-      "Warning: winix-windows.lock is missing 2 pin(s): package Git.Git, PowerShell module Microsoft.Windows.Settings (implicit, used by windows.settings).",
+      "Warning: winix-windows.lock is missing 2 pin(s): package Git.Git, PowerShell module Terminal-Icons.",
       "  Until the lock contains them, every apply and switch resolves them online (\"Would pin…\" in dry runs), and --offline/--locked fail.",
-      "  Pin them now with winix update --windows Git.Git Microsoft.Windows.Settings, then commit winix-windows.lock.",
+      "  Pin them now with winix update --windows Git.Git Terminal-Icons, then commit winix-windows.lock.",
       "  A mistyped package id fails at that point; find ids with winix windows search <query>.",
     ]);
     expect(lockGapWarnings([])).toEqual([]);

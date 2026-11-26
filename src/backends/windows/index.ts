@@ -30,7 +30,6 @@ import {
   reconcileInlinePins,
   windowsModulePin,
   type WindowsLock,
-  type WindowsLockModule,
 } from "./lockfile.ts";
 import { isWindowsHost } from "./host.ts";
 import {
@@ -38,8 +37,7 @@ import {
 } from "../../helpers/windows.ts";
 import { powerShellModuleProperties, powerShellRepositoryScripts } from "./powershell.ts";
 import {
-  powerShellRepositoryUri, resolvePowerShellModule, validateWindowsPowerShellPolicy, windowsSettingsModule,
-  type ResolvedPowerShellModule,
+  powerShellRepositoryUri, resolvePowerShellModule, validateWindowsPowerShellPolicy,
 } from "../../helpers/windows-repositories.ts";
 import { powerShellLiteral as psSingleQuoted } from "../../helpers/utils.ts";
 import { windowsSourcePath } from "./paths.ts";
@@ -105,7 +103,6 @@ export const WINGET_PACKAGE_TYPE = "winget/package";
 export const RAW_COMMAND_TYPE = "command";
 const POWERSHELL_SCRIPT_TYPE = "Microsoft.DSC.Transitional/PowerShellScript";
 const WINDOWS_POWERSHELL_SCRIPT_TYPE = "Microsoft.DSC.Transitional/WindowsPowerShellScript";
-const WINDOWS_SETTINGS_MODULE_COMMAND_NAME = "Ensure Microsoft Windows Settings module";
 
 /** Options for `generateWindows()`. */
 export interface GenerateWindowsOptions {
@@ -172,7 +169,7 @@ function generateResources(
     .filter((entry) => entry.name.toLowerCase() === repository.toLowerCase())
     .map((entry) => ({ kind: "dsc", token: entry.resource.token! }));
   const developerModeRefs: ResourceRef[] = (win.dsc ?? [])
-    .filter((resource) => resource.winix?.kind === "setting" && resource.properties?.DeveloperMode === true)
+    .filter((resource) => resource.winix?.kind === "system" && resource.winix.enablesDeveloperMode === true)
     .map((resource) => ({ kind: "dsc", token: resource.token! }));
   const npmResource: WinDscResource[] = win.npm?.registries ? [{
     resourceType: "Microsoft.DSC.Transitional/PowerShellScript",
@@ -237,14 +234,11 @@ function generateResources(
     }
     return resource;
   });
-  const settingsModule = windowsSettingsModule(win);
-  const prepared = prepareWindowsDscResources(win.commands ?? [], resources, settingsModule, lock,
-    [...repositoryDependencies(settingsModule.repository),
-      ...packages.filter((pkg) => pkg.id.toLowerCase() === "microsoft.powershell")
-        .map((pkg): ResourceRef => ({ kind: "package", id: pkg.id }))]);
-  const commands = prepared.commands;
+  const commands = [...(win.commands ?? [])];
   const dscResources = [
-    ...registrations.map((entry) => entry.resource), ...(fileModule ? [fileModule] : []), ...prepared.dscResources,
+    ...registrations.map((entry) => entry.resource),
+    ...(fileModule ? [fileModule] : []),
+    ...resolveManagedEnvironmentReferences(resources),
   ];
 
   // Two-pass: first assign every resource a unique name and build the
@@ -313,8 +307,7 @@ function summarizeDscResource(resource: WinDscResource, plan: ResourcePlan, nami
 function needsElevation(resource: WinDscResource): boolean {
   const metadata = resource.winix;
   return resource.elevated === true ||
-    ((metadata?.kind === "env" || metadata?.kind === "path") && metadata.scope === "machine") ||
-    metadata?.kind === "setting";
+    ((metadata?.kind === "env" || metadata?.kind === "path") && metadata.scope === "machine");
 }
 
 /** Category and human label of a declared DSC resource (shared by plans and inspect). */
@@ -341,8 +334,8 @@ export function describeWindowsDscResource(resource: WinDscResource): {
     case "path": return {
       category: "environment", label: `PATH ${metadata.action === "add" ? "+" : "-"} ${metadata.value} (${metadata.scope})`,
     };
-    case "setting": return { category: "settings", label: `Windows settings ${Object.keys(resource.properties ?? {}).join(", ")}`.trim() };
     case "system": return { category: "settings", label: metadata.label };
+    case "time": return { category: "settings", label: metadata.label };
     case "clipboard": return { category: "settings", label: metadata.label };
     case "input": return { category: "settings", label: metadata.label };
     case "registry": {
@@ -370,7 +363,7 @@ export function describeWindowsDscResource(resource: WinDscResource): {
   if (resource.name === WINIX_FILE_MODULE_RESOURCE_NAME) {
     return { category: "winix", label: "Winix PowerShell helpers (used by file resources)" };
   }
-  if (resource.name === WINDOWS_SETTINGS_MODULE_COMMAND_NAME || resource.name?.startsWith("Register PowerShell repository")) {
+  if (resource.name?.startsWith("Register PowerShell repository")) {
     return { category: "powershell", label: resource.name };
   }
   if (resource.name === "Windows personalization") return { category: "settings", label: resource.name };
@@ -420,54 +413,6 @@ export function validateWindowsWslResources(win: WindowsOptions): void {
   if (distros && !Object.values(win.packages ?? {}).some((pkg) => pkg.id.toLowerCase() === "microsoft.wsl")) {
     throw new Error('WSL distro declarations require windows.package("Microsoft.WSL")');
   }
-}
-
-function prepareWindowsDscResources(
-  commands: readonly WinRawCommand[],
-  resources: readonly WinDscResource[],
-  settingsModule: ResolvedPowerShellModule,
-  lock: WindowsLock,
-  repositoryDependencies: ResourceRef[]
-): { commands: WinRawCommand[]; dscResources: WinDscResource[] } {
-  const envResolvedResources = resolveManagedEnvironmentReferences(resources);
-  if (!envResolvedResources.some((resource) => resource.winix?.kind === "setting")) {
-    return { commands: [...commands], dscResources: envResolvedResources };
-  }
-
-  const pin = windowsModulePin(lock, settingsModule);
-  if (!pin) throw new Error('PowerShell module "Microsoft.Windows.Settings" has no matching pin in winix-windows.lock. Run winix update --windows.');
-  const ensureModule = createWindowsSettingsEnsureCommand(settingsModule, pin, repositoryDependencies);
-  const ensureRef: ResourceRef = { kind: "dsc", token: ensureModule.token! };
-  return {
-    commands: [...commands],
-    dscResources: [
-      ensureModule,
-      ...envResolvedResources.map((resource) => {
-        if (resource.winix?.kind !== "setting") return resource;
-        return cloneDscResource(resource, resource.properties, [
-          ensureRef,
-          ...(resource.dependsOn ?? []),
-        ]);
-      }),
-    ],
-  };
-}
-
-function createWindowsSettingsEnsureCommand(
-  module: ResolvedPowerShellModule, pin: WindowsLockModule, dependsOn: ResourceRef[]
-): WinDscResource {
-  const resource: WinDscResource = {
-    name: WINDOWS_SETTINGS_MODULE_COMMAND_NAME,
-    resourceType: "Microsoft.DSC.Transitional/PowerShellScript",
-    dependsOn,
-    properties: powerShellModuleProperties(module, pin),
-  };
-  Object.defineProperty(resource, "token", {
-    value: Symbol("winix.windows-settings-module"),
-    enumerable: false,
-    configurable: true,
-  });
-  return resource;
 }
 
 interface ManagedEnvEntry {

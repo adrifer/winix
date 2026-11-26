@@ -53,21 +53,22 @@ windows.settings.keyboard({ repeatDelay: 0, repeatSpeed: 31 });
 `start`, `developer`, `clipboard`, `time`, `keyboard`, `mouse`, `notifications`)
 accept the exact same options. Only the values you declare change.
 
-Per-user settings apply without administrator rights; machine-wide settings
-automatically join `winix switch`'s single elevated step. Winix only installs
-and locks the `Microsoft.Windows.Settings` PowerShell module when a host
-declares a key backed by it.
+Per-user settings apply without administrator rights; machine-wide sections
+(`developer` and `time`) check without elevation during `winix plan` and
+automatically join `winix switch`'s single elevated step when a change is needed.
 
 ### `theme` — `windows.settings.theme()`
 
-| Option | Values | Elevated |
-|---|---|---|
-| `colorMode` | `"light"`, `"dark"`, or `{ apps?, system? }` | No |
-| `accentColor` | `"#RRGGBB"` (cannot be combined with `autoColorization: true`) | No |
-| `autoColorization` | `true` / `false` (pick accent color from wallpaper) | Yes |
-| `transparency` | `true` / `false` | Yes |
-| `accentOnStartAndTaskbar` | `true` / `false` | Yes |
-| `accentOnTitleBars` | `true` / `false` | Yes |
+All theme options are per-user (no elevation).
+
+| Option | Values |
+|---|---|
+| `colorMode` | `"light"`, `"dark"`, or `{ apps?, system? }` |
+| `accentColor` | `"#RRGGBB"` (cannot be combined with `autoColorization: true`) |
+| `autoColorization` | `true` / `false` (pick accent color from wallpaper) |
+| `transparency` | `true` / `false` |
+| `accentOnStartAndTaskbar` | `true` / `false` |
+| `accentOnTitleBars` | `true` / `false` |
 
 ### `explorer` — `windows.settings.explorer()`
 
@@ -87,20 +88,24 @@ some changes take effect after signing out.
 
 ### `taskbar` — `windows.settings.taskbar()`
 
-| Option | Values | Elevated |
-|---|---|---|
-| `alignment` | `"left"`, `"center"` | Yes |
-| `autoHide` | `true` / `false` (applied live) | No |
-| `search` | `"hidden"`, `"icon"`, `"iconAndLabel"`, `"box"` | No |
-| `taskView` | `true` / `false` | No |
-| `widgets` | `true` / `false` | No |
-| `endTask` | `true` / `false` (show "End task" on taskbar right-click) | No |
-| `badges` | `true` / `false` | Yes |
-| `grouping` | `"always"`, `"whenFull"`, `"never"` | Yes |
-| `multiMonitor` | `true` / `false` | Yes |
-| `multiMonitorMode` | `"duplicate"`, `"primaryAndWindow"`, `"windowOnly"` | Yes |
+All taskbar options are per-user (no elevation).
 
-### `start` — `windows.settings.start()` (elevated)
+| Option | Values |
+|---|---|
+| `alignment` | `"left"`, `"center"` |
+| `autoHide` | `true` / `false` (applied live) |
+| `search` | `"hidden"`, `"icon"`, `"iconAndLabel"`, `"box"` |
+| `taskView` | `true` / `false` |
+| `widgets` | `true` / `false` |
+| `endTask` | `true` / `false` (show "End task" on taskbar right-click) |
+| `badges` | `true` / `false` |
+| `grouping` | `"always"`, `"whenFull"`, `"never"` |
+| `multiMonitor` | `true` / `false` |
+| `multiMonitorMode` | `"duplicate"`, `"primaryAndWindow"`, `"windowOnly"` |
+
+### `start` — `windows.settings.start()`
+
+All Start menu options are per-user (no elevation).
 
 | Option | Values |
 |---|---|
@@ -148,7 +153,9 @@ Applied live per-user via `SystemParametersInfo` (no sign-out or elevation).
 | `enhancePointerPrecision` | `true` / `false` (mouse acceleration) |
 | `swapButtons` | `true` / `false` (swap primary and secondary mouse buttons) |
 
-### `notifications` — `windows.settings.notifications()` (elevated)
+### `notifications` — `windows.settings.notifications()`
+
+All notification options are per-user (no elevation).
 
 | Option | Values |
 |---|---|

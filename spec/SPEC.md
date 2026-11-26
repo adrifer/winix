@@ -769,9 +769,7 @@ stable version pins are resolved on first apply and recorded in the optional
 `modules` section of `winix-windows.lock`, alongside unchanged `packages`.
 `prerelease: true` allows prerelease pins; installation checks both numeric version
 and prerelease label. Any stable-only declaration for a shared module/source
-prevents prerelease selection. Typed settings implicitly declare
-`Microsoft.Windows.Settings` with prereleases allowed through this same mechanism,
-including repository enforcement and missing-pin/explicit update resolution.
+prevents prerelease selection.
 Existing arbitrary versions never substitute for the pin. Other module versions
 are not removed; session imports and DSC adapted-resource selection with
 side-by-side versions are not guaranteed by installation locking.
@@ -1070,9 +1068,9 @@ Windows desktop appearance and OS settings use typed DSC resources:
 with the desktop API; `windows.settings({ ... })` (and its 1-to-1 section
 helpers `windows.settings.theme()`, `.explorer()`, `.taskbar()`, `.start()`,
 `.developer()`, `.clipboard()`, `.time()`, `.keyboard()`, `.mouse()`,
-`.notifications()`) manages only declared values with automatic per-key
-elevation (`Microsoft.Windows.Settings` is installed and locked only when a
-key backed by it is declared). `windows.registry.set()` and
+`.notifications()`) manages only declared values natively through Windows
+registry and system APIs, with automatic elevation for machine-wide sections
+(`developer` and `time`). `windows.registry.set()` and
 `windows.registry.remove()` manage arbitrary registry keys and values through
 `Microsoft.Windows/Registry`, elevating machine hives automatically.
 No automatic Explorer restart, per-monitor images, lock-screen policy or app

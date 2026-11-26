@@ -565,7 +565,7 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
     ]);
   });
 
-  it("windows.settings() normalizes supported elevated Windows settings", () => {
+  it("windows.settings() normalizes all supported Windows settings into native resources", () => {
     const frag = windows.settings({
       theme: {
         autoColorization: true,
@@ -585,31 +585,46 @@ describe("windows.dsc() / env.* / path.* helpers", () => {
         multiMonitorMode: "primaryAndWindow",
       },
     });
-    expect(frag.windows?.dsc).toEqual([
-      {
-        resourceType: "Microsoft.Windows.Settings/WindowsSettings",
-        name: "Windows Settings",
-        properties: {
-          AutoColorization: true,
-          EnableTransparency: false,
-          ShowAccentColorOnStartAndTaskbar: true,
-          ShowAccentColorOnTitleBarsAndWindowBorders: true,
-          TaskbarAlignment: "Left",
-          TaskbarBadges: false,
-          TaskbarGroupingMode: "Never",
-          TaskbarMultiMon: true,
-          TaskbarMultiMonMode: "PrimaryAndWindow",
-          StartFolders: ["Documents", "Settings"],
-          ShowRecentList: false,
-          ShowRecommendedList: true,
-          DeveloperMode: true,
-          TimeZone: "Pacific Standard Time",
-          SetTimeZoneAutomatically: false,
-          NotifyOnUsbErrors: true,
-          NotifyOnWeakCharger: false,
-        },
-      },
-    ]);
+    expect(frag.windows?.dsc).toHaveLength(3);
+    const [dev, time, pers] = frag.windows!.dsc!;
+    expect(dev).toMatchObject({
+      resourceType: "Microsoft.DSC.Transitional/PowerShellScript",
+      name: "Windows developer: developer mode on",
+      elevated: true,
+    });
+    expect(String(dev.properties?.setScript)).toContain("AllowDevelopmentWithoutDevLicense");
+    expect(time).toMatchObject({
+      resourceType: "Microsoft.DSC.Transitional/PowerShellScript",
+      name: "Windows time: zone Pacific Standard Time, automatic zone off",
+      elevated: true,
+    });
+    expect(String(time.properties?.setScript)).toContain("Pacific Standard Time");
+    expect(String(time.properties?.setScript)).toContain("tzautoupdate");
+    expect(pers).toMatchObject({
+      resourceType: "Microsoft.DSC.Transitional/PowerShellScript",
+      name: "Windows personalization",
+    });
+    expect(pers.elevated).toBeUndefined();
+    const persScript = String(pers.properties?.setScript);
+    for (const expected of [
+      "AutoColorization",
+      "EnableTransparency",
+      "ColorPrevalence",
+      "TaskbarAl",
+      "TaskbarBadges",
+      "TaskbarGlomLevel",
+      "MMTaskbarEnabled",
+      "MMTaskbarMode",
+      "ShowRecentList",
+      "Start_TrackDocs",
+      "VisiblePlaces",
+      "{2D34D5CE-FA5A-4543-82F2-22E6EAF7773C}",
+      "{52730886-51AA-4243-9F7B-2776584659D4}",
+      "NotifyOnUsbErrors",
+      "NotifyOnWeakCharger",
+    ]) {
+      expect(persScript).toContain(expected);
+    }
   });
 
   it("windows.settings() rejects unknown sections and unknown keys", () => {
@@ -861,7 +876,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(out.resources.desktop.find((resource) => resource.shell)?.dependsOn).toEqual(["Set EDITOR"]);
   });
 
-  it("emits WindowsSettings with an auto ensure-module dependency, applied elevated", () => {
+  it("emits native Developer Mode as an elevated PowerShell script without requiring a module lock pin", () => {
     const ws = workspace({
       inputs,
       hosts: [
@@ -870,22 +885,19 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         ]),
       ],
     });
-    expect(() => generateWindows(evaluate(ws))).toThrow("no matching pin");
-    const out = generateWindows(evaluate(ws), windowsLock({}));
-    const ensure = named(out, "Ensure Microsoft Windows Settings module");
-    expect(ensure).toMatchObject({ type: "Microsoft.DSC.Transitional/PowerShellScript", elevated: false });
-    expect(ensure.setScript).toContain("$name = 'Microsoft.Windows.Settings'");
-    expect(ensure.setScript).toContain("$version = '0.1.0-alpha.6'");
-    expect(ensure.setScript).toContain("Install-PSResource -Name $name -Version $version");
-    // Developer Mode writes machine policy, so settings apply in the elevated step.
-    expect(named(out, "Windows Settings")).toMatchObject({
-      type: "Microsoft.Windows.Settings/WindowsSettings", elevated: true,
-      properties: { DeveloperMode: true }, dependsOn: ["Ensure Microsoft Windows Settings module"],
+    const out = generateWindows(evaluate(ws));
+    const dev = named(out, "Windows developer developer mode on");
+    expect(dev).toMatchObject({
+      type: "Microsoft.DSC.Transitional/PowerShellScript",
+      elevated: true,
+      dependsOn: [],
     });
-    expect(out.hosts.desktop).toMatchSnapshot();
+    expect(dev.testScript).toContain("AllowDevelopmentWithoutDevLicense");
+    expect(dev.setScript).toContain("AllowDevelopmentWithoutDevLicense");
+    expect(out.resources.desktop.some((r) => r.name === "Ensure Microsoft Windows Settings module")).toBe(false);
   });
 
-  it("emits every supported Microsoft.Windows.Settings property", () => {
+  it("emits every supported Windows settings section natively with exact registry paths and time APIs", () => {
     const ws = workspace({
       inputs,
       hosts: [host("desktop", platforms.windows(), [windows.settings({
@@ -912,43 +924,30 @@ describe("generateWindows() emitter: dsc / env / path", () => {
         notifications: { usbErrors: true, weakCharger: false },
       })])],
     });
-    const out = generateWindows(evaluate(ws), windowsLock({}));
-    expect(named(out, "Windows Settings").properties).toEqual({
-      AutoColorization: true,
-      DeveloperMode: true,
-      EnableTransparency: false,
-      NotifyOnUsbErrors: true,
-      NotifyOnWeakCharger: false,
-      SetTimeZoneAutomatically: false,
-      ShowAccentColorOnStartAndTaskbar: true,
-      ShowAccentColorOnTitleBarsAndWindowBorders: true,
-      ShowRecentList: false,
-      ShowRecommendedList: true,
-      StartFolders: ["Documents", "Downloads", "Settings"],
-      TaskbarAlignment: "Center",
-      TaskbarBadges: false,
-      TaskbarGroupingMode: "WhenFull",
-      TaskbarMultiMon: true,
-      TaskbarMultiMonMode: "Duplicate",
-      TimeZone: "Pacific Standard Time",
-    });
-  });
-
-  it("emits the WindowsSettings ensure-module step only once", () => {
-    const ws = workspace({
-      inputs,
-      hosts: [
-        host("desktop", platforms.windows(), [
-          windows.settings.developer({ mode: true }),
-          windows.settings.taskbar({ alignment: "left" }),
-        ]),
-      ],
-    });
-    const out = generateWindows(evaluate(ws), windowsLock({}));
-    expect(out.resources.desktop.filter((resource) => resource.name === "Ensure Microsoft Windows Settings module")).toHaveLength(1);
-    const settings = out.resources.desktop.filter((resource) => resource.type === "Microsoft.Windows.Settings/WindowsSettings");
-    expect(settings).toHaveLength(2);
-    for (const setting of settings) expect(setting.dependsOn).toEqual(["Ensure Microsoft Windows Settings module"]);
+    const out = generateWindows(evaluate(ws));
+    const dev = named(out, "Windows developer developer mode on");
+    expect(dev.elevated).toBe(true);
+    expect(dev.testScript).toContain('"AllowDevelopmentWithoutDevLicense"');
+    const time = named(out, "Windows time zone Pacific Standard Time automatic zone off");
+    expect(time.elevated).toBe(true);
+    expect(time.testScript).toContain("Get-TimeZone");
+    expect(time.testScript).toContain("Pacific Standard Time");
+    expect(time.testScript).toContain("tzautoupdate");
+    expect(time.setScript).toContain("Set-TimeZone -Id $desiredZone");
+    const pers = named(out, "Windows personalization");
+    expect(pers.elevated).toBe(false);
+    expect(pers.testScript).toContain('"TaskbarAl","value":1');
+    expect(pers.testScript).toContain('"TaskbarBadges","value":0');
+    expect(pers.testScript).toContain('"TaskbarGlomLevel","value":1');
+    expect(pers.testScript).toContain('"MMTaskbarEnabled","value":1');
+    expect(pers.testScript).toContain('"MMTaskbarMode","value":0');
+    expect(pers.testScript).toContain('"EnableTransparency","value":0');
+    expect(pers.testScript).toContain('"AutoColorization","value":1');
+    expect(pers.testScript).toContain('"ShowRecentList","value":0');
+    expect(pers.testScript).toContain('"Start_TrackDocs","value":1');
+    expect(pers.testScript).toContain('"NotifyOnUsbErrors","value":1');
+    expect(pers.testScript).toContain('"NotifyOnWeakCharger","value":0');
+    expect(pers.testScript).toContain("VisiblePlaces");
   });
 
   it("packages and raw commands can depend on a setting handle", () => {
@@ -965,8 +964,8 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     const out = generateWindows(evaluate(ws), windowsLock({
       "Git.Git": { source: "winget", version: "2.44.0" },
     }));
-    expect(named(out, "Git Git").dependsOn).toEqual(["Windows Settings"]);
-    expect(named(out, "after settings").dependsOn).toEqual(["Windows Settings"]);
+    expect(named(out, "Git Git").dependsOn).toEqual(["Windows developer developer mode on"]);
+    expect(named(out, "after settings").dependsOn).toEqual(["Windows developer developer mode on"]);
   });
 
   it.each([false, true])("orders symlinks after declared Developer Mode without duplicating explicit dependencies (%s)", (explicit) => {
@@ -985,7 +984,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     }));
     const out = generateWindows(evaluated, windowsLock({}));
     expect(named(out, "Link file USERPROFILE link").dependsOn)
-      .toEqual(["Write file USERPROFILE source", "Windows Settings", "Winix PowerShell helpers"]);
+      .toEqual(["Write file USERPROFILE source", "Windows developer developer mode on", "Winix PowerShell helpers"]);
     for (const name of ["Write file USERPROFILE source", "Copy file USERPROFILE copy"]) {
       expect(named(out, name).dependsOn).toEqual(["Winix PowerShell helpers"]);
     }
@@ -1011,7 +1010,7 @@ describe("generateWindows() emitter: dsc / env / path", () => {
     expect(link.dependsOn).toEqual(["Winix PowerShell helpers"]);
     expect(link.setScript).toContain("Assert-WinixCanCreateSymlink");
     expect(scriptsOf(out)).toContain("requires elevation or Developer Mode");
-    expect(out.resources.desktop.some((resource) => resource.properties?.DeveloperMode === true)).toBe(false);
+    expect(out.resources.desktop.some((resource) => resource.name === "Windows developer developer mode on")).toBe(false);
   });
 
   it("keeps inferred Developer Mode dependencies within each host", () => {
@@ -1026,8 +1025,8 @@ describe("generateWindows() emitter: dsc / env / path", () => {
       ],
     }));
     const output = generateWindows(evaluated, windowsLock({}));
-    expect(named(output, "Link file USERPROFILE link", "enabled").dependsOn).toEqual(["Windows Settings", "Winix PowerShell helpers"]);
-    expect(output.resources.external.some((resource) => resource.type === "Microsoft.Windows.Settings/WindowsSettings")).toBe(false);
+    expect(named(output, "Link file USERPROFILE link", "enabled").dependsOn).toEqual(["Windows developer developer mode on", "Winix PowerShell helpers"]);
+    expect(output.resources.external.some((resource) => resource.name === "Windows developer developer mode on")).toBe(false);
     expect(named(output, "Link file USERPROFILE link", "external").dependsOn).toEqual(["Winix PowerShell helpers"]);
   });
 

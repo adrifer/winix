@@ -54,7 +54,7 @@ import {
   registryResourceProperties,
   validateRegistryKeyPath,
 } from "./windows-settings.ts";
-import { dwordRegistryProperties, inputProperties } from "../backends/windows/system.ts";
+import { dwordRegistryProperties, inputProperties, timeProperties } from "../backends/windows/system.ts";
 import { npmRegistryEntries } from "./windows-npm.ts";
 import type { WinNpmRegistryPolicy } from "../types/windows.ts";
 
@@ -554,7 +554,6 @@ function withDscMetadata(
 const REGISTRY_RESOURCE = "Microsoft.Windows/Registry";
 const POWERSHELL_SCRIPT_RESOURCE =
   "Microsoft.DSC.Transitional/PowerShellScript";
-const WINDOWS_SETTINGS_RESOURCE = "Microsoft.Windows.Settings/WindowsSettings";
 const USER_ENV_KEY_PATH = "HKCU\\Environment";
 const MACHINE_ENV_KEY_PATH =
   "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
@@ -642,15 +641,6 @@ function buildSettingsResources(
   const deps = resolveDependsOn(opts?.dependsOn);
   const resources: WinDscResource[] = [];
 
-  if (Object.keys(normalized.msSettings).length > 0) {
-    resources.push(withDscMetadata(withDscToken({
-      resourceType: WINDOWS_SETTINGS_RESOURCE,
-      name: "Windows Settings",
-      properties: normalized.msSettings,
-      ...(deps ? { dependsOn: deps } : {}),
-    }), { kind: "setting" }));
-  }
-
   if (normalized.hklmDwords.length > 0) {
     const label = `Windows developer: ${normalized.hklmParts.join(", ")}`;
     resources.push(withDscMetadata(withDscToken({
@@ -659,13 +649,29 @@ function buildSettingsResources(
       elevated: true,
       properties: dwordRegistryProperties("LocalMachine", normalized.hklmDwords, "Windows developer settings verification failed"),
       ...(deps ? { dependsOn: deps } : {}),
-    }), { kind: "system", label }));
+    }), {
+      kind: "system",
+      label,
+      ...(normalized.enablesDeveloperMode ? { enablesDeveloperMode: true } : {}),
+    }));
+  }
+
+  if (normalized.time) {
+    const label = `Windows time: ${normalized.timeParts.join(", ")}`;
+    resources.push(withDscMetadata(withDscToken({
+      resourceType: POWERSHELL_SCRIPT_RESOURCE,
+      name: label,
+      elevated: true,
+      properties: timeProperties(normalized.time),
+      ...(deps ? { dependsOn: deps } : {}),
+    }), { kind: "time", label }));
   }
 
   if (
     normalized.personalizationDwords.length > 0 ||
     normalized.autoHide !== undefined ||
-    normalized.classicContextMenu !== undefined
+    normalized.classicContextMenu !== undefined ||
+    normalized.startFolders !== undefined
   ) {
     resources.push(withDscToken({
       resourceType: POWERSHELL_SCRIPT_RESOURCE,
@@ -673,6 +679,7 @@ function buildSettingsResources(
       properties: personalizationProperties(normalized.personalizationDwords, {
         autoHide: normalized.autoHide,
         classicContextMenu: normalized.classicContextMenu,
+        startFolders: normalized.startFolders,
       }),
       ...(deps ? { dependsOn: deps } : {}),
     }));

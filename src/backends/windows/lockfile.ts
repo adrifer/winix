@@ -10,7 +10,7 @@ import {
   type WindowsLockWslRepository, type WindowsWslRepositoryResolver,
 } from "./wsl-setup.ts";
 import {
-  resolvePowerShellModule, powerShellRepositoryUri, powerShellModuleVersion, windowsSettingsModule,
+  resolvePowerShellModule, powerShellRepositoryUri, powerShellModuleVersion,
   type ResolvedPowerShellModule,
 } from "../../helpers/windows-repositories.ts";
 
@@ -206,8 +206,7 @@ export interface WindowsLockGap {
 
 /**
  * Every pin `apply` would have to resolve online: floating packages, PowerShell
- * modules (including the implicit Microsoft.Windows.Settings used by
- * `windows.settings`), NixOS-WSL images, WSL setup commits and remote fonts.
+ * modules, NixOS-WSL images, WSL setup commits and remote fonts.
  */
 export function windowsLockPinGaps(lock: WindowsLock | null, evaluatedWindowsHosts: EvaluatedHost[]): WindowsLockGap[] {
   const pins = lock ?? emptyWindowsLock();
@@ -218,12 +217,9 @@ export function windowsLockPinGaps(lock: WindowsLock | null, evaluatedWindowsHos
     const win = host.windows as WindowsOptions;
     for (const module of collectWindowsModules([host]).values()) {
       if (windowsModulePin(pins, module)) continue;
-      const implicit = module.name.toLowerCase() === "microsoft.windows.settings" &&
-        !(win.dsc ?? []).some((resource) => resource.winix?.kind === "powershell-module" &&
-          resource.winix.module.name.toLowerCase() === "microsoft.windows.settings");
       gaps.push({
         host: host.name, kind: "module", selector: module.name,
-        label: `PowerShell module ${module.name}${implicit ? " (implicit, used by windows.settings)" : ""}`,
+        label: `PowerShell module ${module.name}`,
       });
     }
     if (hasWindowsWslDistros([host])) {
@@ -381,7 +377,6 @@ export function collectWindowsModules(hosts: EvaluatedHost[]): Map<string, Resol
     const hostModules = new Map<string, string>();
     const declared = (win.dsc ?? []).flatMap((resource) =>
       resource.winix?.kind === "powershell-module" ? [resolvePowerShellModule(win, resource.winix.module)] : []);
-    if (win.dsc?.some((resource) => resource.winix?.kind === "setting")) declared.push(windowsSettingsModule(win));
     for (const module of declared) {
       const key = windowsModuleKey(module);
       const existing = hostModules.get(module.name.toLowerCase());
