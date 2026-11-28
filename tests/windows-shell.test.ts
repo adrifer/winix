@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, mkdir, readFile, rm, writeFile, readlink, readdir } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile, readlink, readdir, symlink, lstat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -18,7 +18,7 @@ import {
   type WindowsLock,
 } from "../src/backends/windows/lockfile.ts";
 import { powerShellModuleProperties, powerShellRepositoryScripts, resolvePowerShellModuleVersion } from "../src/backends/windows/powershell.ts";
-import { resolveWindowsFileProperties, winixFileModuleProperties } from "../src/helpers/windows.ts";
+import { WINIX_FILE_MODULE, resolveWindowsFileProperties, winixFileModuleProperties } from "../src/helpers/windows.ts";
 import { windowsSourcePath } from "../src/backends/windows/paths.ts";
 import { powerShellLiteral } from "../src/helpers/utils.ts";
 import type { WinDscProperties } from "../src/types/windows.ts";
@@ -205,6 +205,46 @@ describe("Windows shell primitives", () => {
     expect(resource.elevated).toBeUndefined();
     expect(() => windows.settings.explorer({})).toThrow(/at least one/);
     expect(() => windows.settings.explorer({ startupDelay: 0 as never })).toThrow(/boolean/);
+  });
+});
+
+describe("replacing an existing file target", () => {
+  /** Runs Move-WinixExistingTarget from the file module in PowerShell 7, in `dir`. */
+  async function move(dir: string, target: string) {
+    const module = join(dir, "WinixFiles.psm1");
+    await writeFile(module, WINIX_FILE_MODULE);
+    return execFileSync("pwsh", ["-NoProfile", "-NonInteractive", "-Command",
+      `Import-Module ${powerShellLiteral(module)}; Move-WinixExistingTarget ${powerShellLiteral(target)} $false $true`,
+    ], { encoding: "utf8" });
+  }
+
+  it.skipIf(!hasPowerShell7 || process.platform === "win32")("replaces links, even dangling ones, without backing them up", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-replace-"));
+    try {
+      const target = join(dir, "config.yml");
+      await writeFile(`${target}.bak`, "original from before Winix");
+      await symlink(join(dir, "moved-checkout", "config.yml"), target);
+      expect(await move(dir, target)).toContain(`Replaced the existing link ${target}`);
+      expect(await lstat(target).catch(() => undefined)).toBeUndefined();
+      expect(await readFile(`${target}.bak`, "utf8")).toBe("original from before Winix");
+    } finally { await rm(dir, { recursive: true, force: true }); }
+  });
+
+  it.skipIf(!hasPowerShell7)("keeps an earlier backup and backs up next to it", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "winix-replace-"));
+    try {
+      const target = join(dir, "aliases.ps1");
+      await writeFile(`${target}.bak`, "original");
+      await writeFile(target, "written by an older switch");
+      await move(dir, target);
+      expect(existsSync(target)).toBe(false);
+      expect(await readFile(`${target}.bak`, "utf8")).toBe("original");
+      const rotated = (await readdir(dir)).filter((name) => /^aliases\.ps1\.\d{8}-\d{6}-\d{3}\.bak$/.test(name));
+      expect(rotated).toHaveLength(1);
+      expect(await readFile(join(dir, rotated[0]), "utf8")).toBe("written by an older switch");
+      // Nothing there: nothing to do.
+      await move(dir, target);
+    } finally { await rm(dir, { recursive: true, force: true }); }
   });
 });
 
@@ -802,7 +842,7 @@ $link.Save()
     expect(() => runDsc("test", invalid)).toThrow();
   }, 120000);
 
-  it("creates live config-relative symlinks, preserves backups, and rejects backup collisions", async () => {
+  it("creates live config-relative symlinks and keeps every backup", async () => {
     const dir = await mkdtemp(join(tmpdir(), "winix shell's "));
     try {
       await mkdir(join(dir, "config"));
@@ -822,9 +862,19 @@ $link.Save()
       runDsc("set", properties);
       await rm(target);
       await writeFile(target, "different");
-      expect(() => runDsc("set", properties)).toThrow();
-      expect(await readFile(target, "utf8")).toBe("different");
+      // An earlier backup exists: the new one goes next to it, never over it.
+      runDsc("set", properties);
+      expect(await readlink(target)).toBe(join(dir, "source.ps1"));
       expect(await readFile(`${target}.bak`, "utf8")).toBe("original");
+      const rotated = (await readdir(dir)).filter((name) => /^profile\.ps1\.\d{8}-\d{6}-\d{3}\.bak$/.test(name));
+      expect(rotated).toHaveLength(1);
+      expect(await readFile(join(dir, rotated[0]), "utf8")).toBe("different");
+      // A link (here, one to a moved file) is replaced without a backup.
+      await rm(target);
+      await symlink(join(dir, "gone.ps1"), target);
+      runDsc("set", properties);
+      expect(await readlink(target)).toBe(join(dir, "source.ps1"));
+      expect((await readdir(dir)).filter((name) => name.endsWith(".bak"))).toHaveLength(2);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

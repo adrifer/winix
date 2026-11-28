@@ -3,6 +3,14 @@
 Notable changes per release. Every release, with its downloadable assets, is on
 [GitHub Releases](https://github.com/adrifer/winix/releases).
 
+## Unreleased
+
+- **Replacing existing file targets no longer blocks a switch:** an existing
+  link (including one whose target is gone, as after moving the checkout) is
+  replaced instead of being moved to `.bak`, and when `<file>.bak` already
+  exists the new backup goes next to it as `<file>.<timestamp>.bak` instead of
+  failing with "Backup target already exists".
+
 ## 0.4.2
 
 - **Moving a checkout no longer needs manual repair:**

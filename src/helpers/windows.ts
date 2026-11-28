@@ -1244,11 +1244,22 @@ export function filePathPrelude(): string[] {
 function fileMoveTargetPrelude(): string[] {
   return [
     "function Move-WinixExistingTarget([string]$Path, [bool]$Force, [bool]$Backup) {",
-    "  if (-not (Test-Path -LiteralPath $Path)) { return }",
+    // Get-Item also finds a link whose target is gone (Test-Path does not, in every PowerShell).
+    "  $existing = Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue",
+    "  if ($null -eq $existing) { return }",
     "  if ($Backup) {",
+    // A link holds no data: replace it (its target stays where it is) rather than backing up a pointer.
+    "    if ($existing.LinkType) {",
+    "      if ($existing.PSIsContainer) { [IO.Directory]::Delete($Path) } else { [IO.File]::Delete($Path) }",
+    "      Write-Host \"Replaced the existing link $Path (it pointed to $(@($existing.Target) -join ', '))\"",
+    "      return",
+    "    }",
+    // Never overwrite an earlier backup (often the original from before Winix): keep both.
     "    $backupPath = \"$Path.bak\"",
+    "    if (Test-Path -LiteralPath $backupPath) { $backupPath = \"$Path.$(Get-Date -Format 'yyyyMMdd-HHmmss-fff').bak\" }",
     "    if (Test-Path -LiteralPath $backupPath) { throw \"Backup target already exists: $backupPath\" }",
     "    Move-Item -LiteralPath $Path -Destination $backupPath",
+    "    Write-Host \"Moved the existing $Path to $backupPath\"",
     "    return",
     "  }",
     "  if (-not $Force) { throw \"Target already exists and differs: $Path (declared with backup: false). Move it manually, drop backup: false, or pass force: true.\" }",
