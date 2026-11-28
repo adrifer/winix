@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, rename } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -9,10 +9,10 @@ import {
   routeRun, type BootstrapDeps, type RouteDeps,
 } from "../src/cli/commands/bootstrap.ts";
 import {
-  installWinixCommand, linuxCommandShim, rememberCheckout, rememberedCheckout, userPathScript, windowsCommandShim,
+  followMovedCheckout, installWinixCommand, linuxCommandShim, rememberCheckout, rememberedCheckout, userPathScript, windowsCommandShim,
   type HomeEnvironment, type InstallCommandDeps,
 } from "../src/cli/winix-home.ts";
-import { readRememberedHost } from "../src/cli/host-memory.ts";
+import { readRememberedHost, rememberHost } from "../src/cli/host-memory.ts";
 import { selectHost } from "../src/cli/commands/switch.ts";
 import { resolveWinixVersionRange } from "../src/cli/commands/init.ts";
 import { execFileSync } from "node:child_process";
@@ -287,6 +287,24 @@ describe("Linux standalone runtime and command", () => {
     expect(exec).toHaveBeenCalledTimes(1);
   });
 
+  it("rewrites a runtime wrapper written for another folder (a moved checkout) without downloading again", async () => {
+    const old = await fixture("0.3.0");
+    const exec = vi.fn((command: string, args: string[]) => args[0] === "--version" ? "0.3.2" : "");
+    const request = verified("linux winix");
+    await ensureLinuxRuntime(old, "0.3.2", request, "x64", "/elsewhere/winix", false, exec);
+    const moved = await fixture("0.3.0");
+    await rename(join(old, ".winix"), join(moved, ".winix"));
+    const wrapper = await ensureLinuxRuntime(moved, "0.3.2", request, "x64", "/elsewhere/winix", false, exec);
+    const folder = join(moved, ".winix", "runtime", "0.3.2");
+    expect(wrapper).toBe(join(folder, "winix"));
+    expect(readFileSync(wrapper, "utf8")).toContain(`exec '${join(folder, "winix.bin")}' "$@"`);
+    expect(readFileSync(wrapper, "utf8")).not.toContain(old);
+    expect(vi.mocked(request)).toHaveBeenCalledTimes(2); // only the first download
+    expect(exec.mock.calls.at(-1)).toEqual([wrapper, ["--version"]]);
+    await expect(ensureLinuxRuntime(moved, "0.3.2", request, "x64", "/elsewhere/winix", false, () => "0.3.1"))
+      .resolves.toBe(wrapper); // now current: reused as is
+  });
+
   it("starts the binary through the pinned Nix loader on NixOS and refuses a wrong version", async () => {
     const directory = await fixture("0.3.0");
     const folder = join(directory, ".winix", "runtime", "0.3.2");
@@ -396,6 +414,57 @@ describe("winix install command", () => {
     expect(rememberedCheckout(environment)).toBeUndefined();
     await writeFile(join(checkout, "winix.config.ts"), "");
     expect(rememberedCheckout(environment)).toBe(checkout);
+  });
+});
+
+describe("a config that moved inside its repository", () => {
+  async function repository() {
+    const root = await mkdtemp(join(tmpdir(), "winix-moved-"));
+    temporary.push(root);
+    const environment: HomeEnvironment = { platform: "linux", env: { XDG_DATA_HOME: join(root, "data") }, home: root };
+    const repo = join(root, "dotfiles");
+    await mkdir(join(repo, "winix"), { recursive: true });
+    await writeFile(join(repo, "winix", "winix.config.ts"), "");
+    await rememberCheckout(join(repo, "winix"), environment);
+    await rememberHost(join(repo, "winix"), "desktop");
+    return { root, repo, environment };
+  }
+
+  it("follows it to the repository root and carries over the remembered host", async () => {
+    const { repo, environment } = await repository();
+    // Still in place: nothing to follow.
+    expect(await followMovedCheckout(repo, environment)).toBeUndefined();
+    await rm(join(repo, "winix", "winix.config.ts"));
+    await writeFile(join(repo, "winix.config.ts"), "");
+    expect(await followMovedCheckout(repo, environment)).toBe(join(repo, "winix"));
+    expect(rememberedCheckout(environment)).toBe(repo);
+    expect(readRememberedHost(repo)).toBe("desktop");
+    expect(await followMovedCheckout(repo, environment)).toBeUndefined();
+  });
+
+  it("leaves other projects and live checkouts alone", async () => {
+    const { root, repo, environment } = await repository();
+    const other = join(root, "other");
+    await mkdir(other);
+    await writeFile(join(other, "winix.config.ts"), "");
+    // The remembered checkout still holds its config.
+    await writeFile(join(repo, "winix.config.ts"), "");
+    expect(await followMovedCheckout(repo, environment)).toBeUndefined();
+    // Gone, but the other project is not its parent or child.
+    await rm(join(repo, "winix", "winix.config.ts"));
+    expect(await followMovedCheckout(other, environment)).toBeUndefined();
+    expect(rememberedCheckout(environment)).toBeUndefined();
+    expect(readRememberedHost(other)).toBeUndefined();
+  });
+
+  it("winix run follows it from inside the project", async () => {
+    const project = await fixture("0.3.0");
+    await writeFile(join(project, "winix.config.ts"), "");
+    const follow = vi.fn(async () => "/old/dotfiles/winix");
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    await routeRun(project, ["switch"], { runCheckout: async () => {}, run: async () => {}, remembered: () => undefined, follow });
+    expect(follow).toHaveBeenCalledWith(project);
+    expect(error).toHaveBeenCalledWith(`Winix now uses ${project} on this machine (the config moved from /old/dotfiles/winix).`);
   });
 });
 

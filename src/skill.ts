@@ -547,10 +547,14 @@ reconciliation; externally modified removals remain protected.
 without deleting the resource; --dry previews. Do not copy applied state to a
 new machine or infer ownership from version locks. Direct DSC/script activation
 bypasses this tracking. Files, modules, env and PATH cleanup are not tracked.
-\`state forget\` retains owner requirements; it cannot repair checkout moves or
-host renames. Run \`winix state owners\`, then from the new config checkout use
-\`winix state migrate-owner <old-owner-id> --host NEW --dry\` and explicitly
-confirm with \`--yes\` instead of \`--dry\`. This transfers recorded requirements,
+Owners are the config folder plus host. When a checkout (or its config inside
+the repository) moves, switch finds the old owner (same host, folder without a
+config, one candidate), shows it in plan and asks once to take it over (--yes
+accepts; without a terminal it is kept apart). \`state forget\` cannot repair a
+move or a host rename. Otherwise run, from the new config checkout,
+\`winix state migrate-owner [<id>|<old config folder>] [--host NEW] --dry\` (no
+argument: the moved owner; --host defaults to the remembered host, else the PC
+name), then \`--yes\` instead of \`--dry\`. This transfers recorded requirements,
 not resources, and preserves snapshots, external status, other owners, drift
 checks and later removal confirmation. It does not evaluate config or activate.
 

@@ -2,11 +2,12 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { hostname, tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import type { EvaluatedHost } from "../evaluator/index.ts";
 import type { WindowsOptions } from "../types/index.ts";
 import { powerShellLiteral } from "../helpers/utils.ts";
+import { holdsWinixConfig } from "./loader.ts";
 import { captureCommand, runCommand } from "./run.ts";
 import { promptTime } from "./progress.ts";
 import {
@@ -91,6 +92,8 @@ export interface ReconcileOptions {
    * report them line by line.
    */
   preview?(plan: { removals: PlannedRemoval[]; untouched: ManagedResource[] }): void;
+  /** Whether a recorded config folder still holds a config (moved-checkout detection; tests). */
+  holdsConfig?(directory: string): boolean;
 }
 
 /** A resource Winix created that is no longer declared. */
@@ -124,6 +127,56 @@ export function windowsOwnerId(owner: string): string {
   return createHash("sha256").update(owner).digest("hex");
 }
 
+/** The config folder and host an owner records (owners from windowsStateOwner). */
+export function parseWindowsOwner(owner: string): { configDir: string; host: string } | undefined {
+  try {
+    const value: unknown = JSON.parse(owner);
+    if (Array.isArray(value) && value.length === 2 && typeof value[0] === "string" && typeof value[1] === "string") {
+      return { configDir: value[0], host: value[1] };
+    }
+  } catch { /* an owner in another form */ }
+  return undefined;
+}
+
+/**
+ * The owner a moved checkout left behind: recorded for the same host, from a
+ * folder that no longer holds a Winix config. Only an unambiguous match counts;
+ * several candidates, or an old folder that still holds a config, need an
+ * explicit `winix state migrate-owner`.
+ */
+export function findMovedWindowsOwner(
+  owners: Iterable<string>, target: string, holdsConfig: (directory: string) => boolean = holdsWinixConfig,
+): string | undefined {
+  const current = parseWindowsOwner(target);
+  if (!current) return undefined;
+  const candidates = [...new Set(owners)].filter((owner) => {
+    const recorded = owner === target ? undefined : parseWindowsOwner(owner);
+    return recorded !== undefined && recorded.host.toLowerCase() === current.host.toLowerCase() &&
+      recorded.configDir !== current.configDir && !holdsConfig(recorded.configDir);
+  });
+  return candidates.length === 1 ? candidates[0] : undefined;
+}
+
+function recordedOwners(state: AppliedState): Set<string> {
+  return new Set(Object.values(state.entries).flatMap((entry) => entry.owners));
+}
+
+/** Moves every requirement of `previous` to `target`; returns the keys it touched. */
+function transferOwner(state: AppliedState, previous: string, target: string): string[] {
+  const keys: string[] = [];
+  for (const [key, entry] of Object.entries(state.entries)) {
+    if (!entry.owners.includes(previous)) continue;
+    keys.push(key);
+    entry.owners = [...new Set(entry.owners.map((owner) => owner === previous ? target : owner))];
+  }
+  return keys;
+}
+
+function describeOwner(owner: string): string {
+  const parsed = parseWindowsOwner(owner);
+  return parsed ? `${parsed.configDir} (host ${parsed.host})` : owner;
+}
+
 export async function listWindowsOwners(path: string): Promise<{ id: string; owner: string; resources: number }[]> {
   const state = await loadState(path);
   const counts = new Map<string, number>();
@@ -134,27 +187,43 @@ export async function listWindowsOwners(path: string): Promise<{ id: string; own
     .map(([owner, resources]) => ({ id: windowsOwnerId(owner), owner, resources }));
 }
 
+/**
+ * `winix state migrate-owner [<id>|<old config folder>]`: moves a recorded
+ * owner's requirements to this checkout and host. Without `from`, it takes the
+ * owner a moved checkout left behind (see findMovedWindowsOwner).
+ */
 export async function migrateWindowsOwner(
-  path: string, oldId: string, target: string, opts: { dry: boolean; yes?: boolean },
+  path: string, from: string | undefined, target: string, opts: { dry: boolean; yes?: boolean },
   report: (message: string) => void = console.log,
 ): Promise<void> {
-  if (!/^[a-f0-9]{64}$/i.test(oldId) || !target) throw new Error("Use an owner ID from winix state owners and a target owner");
+  if (!target) throw new Error("A target owner is required");
   if (!opts.dry && !opts.yes) {
     throw new Error("Owner migration changes applied-state requirements. Preview with --dry, then confirm with --yes. No resources will be deleted.");
   }
   await withWindowsStateLock(path, opts.dry, async () => {
     const state = await loadState(path);
-    const owners = new Set(Object.values(state.entries).flatMap((entry) => entry.owners));
-    const matches = [...owners].filter((owner) => windowsOwnerId(owner) === oldId.toLowerCase());
+    const owners = recordedOwners(state);
+    let matches: string[];
+    if (from === undefined) {
+      const moved = findMovedWindowsOwner(owners, target);
+      if (!moved) {
+        throw new Error("No moved checkout found for this host. Run winix state owners and pass the old owner's id or config folder.");
+      }
+      matches = [moved];
+    } else if (/^[a-f0-9]{64}$/i.test(from)) {
+      matches = [...owners].filter((owner) => windowsOwnerId(owner) === from.toLowerCase());
+    } else {
+      const folder = resolve(from).toLowerCase();
+      const host = parseWindowsOwner(target)?.host.toLowerCase();
+      const inFolder = [...owners].filter((owner) => parseWindowsOwner(owner)?.configDir === folder);
+      // A folder recorded for several hosts: the one matching this host.
+      matches = inFolder.length > 1 ? inFolder.filter((owner) => parseWindowsOwner(owner)?.host.toLowerCase() === host) : inFolder;
+    }
     if (matches.length !== 1) throw new Error("Recorded owner not found or ambiguous; run winix state owners");
     const previous = matches[0];
     if (previous === target) throw new Error("The recorded owner already matches this checkout and host");
-    report(`${opts.dry ? "Would migrate" : "Migrating"} owner ${previous} -> ${target}`);
-    for (const [key, entry] of Object.entries(state.entries)) {
-      if (!entry.owners.includes(previous)) continue;
-      report(`  ${key}`);
-      entry.owners = [...new Set(entry.owners.map((owner) => owner === previous ? target : owner))];
-    }
+    report(`${opts.dry ? "Would migrate" : "Migrating"} owner ${describeOwner(previous)} -> ${describeOwner(target)}`);
+    for (const key of transferOwner(state, previous, target)) report(`  ${key}`);
     if (!opts.dry) await saveState(path, state);
     report("No installed resources changed. Ownership, snapshots and shared requirements are preserved; the next switch still checks drift and confirms removals.");
   });
@@ -379,6 +448,59 @@ export async function confirmWindowsRemovals(yes = false, count = 1): Promise<vo
 }
 
 /**
+ * Asks whether this checkout takes over the resources a moved checkout
+ * recorded. Yes by default; without a terminal (and no --yes) it declines, so
+ * an unattended switch never changes ownership on its own.
+ */
+export async function confirmOwnerTakeover(yes = false, count = 1): Promise<boolean> {
+  if (yes) return true;
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return false;
+  const prompt = createInterface({ input: process.stdin, output: process.stdout });
+  const controller = new AbortController();
+  prompt.once("close", () => controller.abort());
+  prompt.once("SIGINT", () => controller.abort());
+  try {
+    const started = Date.now();
+    const answer = await prompt.question(
+      `Take over ${count === 1 ? "its resource" : `its ${count} resources`} for this checkout? [Y/n] `, { signal: controller.signal },
+    ).finally(() => { promptTime.waited += Date.now() - started; });
+    return !/^(n|no)$/i.test(answer.trim());
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error("Switch cancelled. No activation or removal was performed.", { cause: error });
+    }
+    throw error;
+  } finally {
+    prompt.close();
+  }
+}
+
+/**
+ * A checkout that moved (or whose config moved inside the repository) records
+ * a new owner. When the old owner is unambiguous, this switch takes over its
+ * requirements, so drift checks and removals keep working. Dry runs only show it.
+ */
+async function takeOverMovedOwner(
+  state: AppliedState, opts: ReconcileOptions, report: (message: string) => void,
+): Promise<void> {
+  const moved = findMovedWindowsOwner(recordedOwners(state), opts.owner, opts.holdsConfig);
+  if (!moved) return;
+  const count = Object.values(state.entries).filter((entry) => entry.owners.includes(moved)).length;
+  const from = parseWindowsOwner(moved)!.configDir;
+  const to = parseWindowsOwner(opts.owner)!.configDir;
+  report(`This config moved: ${from} -> ${to} (${count} recorded resource${count === 1 ? "" : "s"}).`);
+  if (opts.dry) {
+    report("  switch takes them over for this checkout (asks first; --yes accepts).");
+  } else if (!(await confirmOwnerTakeover(opts.yes, count))) {
+    report("  Not taken over" + (process.stdin.isTTY ? "" : " without a terminal") +
+      "; rerun with --yes or run winix state migrate-owner --yes.");
+    return;
+  }
+  transferOwner(state, moved, opts.owner);
+  if (!opts.dry) await saveState(opts.statePath, state);
+}
+
+/**
  * One user/machine inventory, serialized across workspaces. Ownership is granted
  * only after successful activation and never inferred from version locks.
  */
@@ -388,6 +510,7 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<Readonly
   if (desired.size !== opts.desired.length) throw new Error("Duplicate managed Windows resources");
   const reconcile = async (): Promise<ReadonlyMap<string, ResourceSnapshot> | undefined> => {
     const state = await loadState(opts.statePath);
+    await takeOverMovedOwner(state, opts, report);
     const known = opts.knownSnapshots ?? new Map<string, ResourceSnapshot>();
     const inventory = new Map([...known, ...await inspectResources(
       opts.adapter, [...desired.values()].filter((resource) => !known.has(resourceKey(resource))),
@@ -411,7 +534,7 @@ export async function reconcileWindows(opts: ReconcileOptions): Promise<Readonly
       if (typeof opts.definitions[key] !== "string") throw new Error(`Missing resource definition: ${key}`);
       if (entry?.owners.some((owner) => owner !== opts.owner) && entry.definition !== opts.definitions[key]) {
         throw new Error(`Conflicting declaration for resource required by another workspace/host: ${key}. ` +
-          "Run winix state owners; after a checkout move or host rename, explicitly preview state migrate-owner <id> --host <name> --dry.");
+          "Run winix state owners; after a checkout move or host rename, preview winix state migrate-owner [<id>|<old config folder>] --host <name> --dry.");
       }
       if (requirement && entry?.owners.some((owner) => owner !== opts.owner)) {
         if (entry.packageExact !== undefined && entry.packageExact !== requirement.exact) {

@@ -6,7 +6,7 @@ set -euo pipefail
 if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
   printf '%s\n' \
     'Usage: bash install.sh [--version X.Y.Z]' \
-    '       bash install.sh --repository HTTPS_URL [--ref BRANCH] [--host HOST] [--destination PATH] [--config-directory winix] [--prepare-only]' \
+    '       bash install.sh --repository HTTPS_URL [--ref BRANCH] [--host HOST] [--destination PATH] [--config-directory DIR] [--prepare-only]' \
     '       [--dry-run] [--yes]' \
     '' \
     'Without --repository: installs the latest Winix (or --version) in ~/.local/share/winix and the winix command in' \
@@ -225,9 +225,17 @@ def checkout(args, destination):
     wanted = run(["git", "rev-parse", "--verify", args.ref + "^{commit}"], destination, True).strip()
     if head != wanted:
         raise RuntimeError("The existing checkout isn't at " + args.ref + "; switch it yourself. This script never pulls or resets")
-    config = destination / args.config_directory
+    config = destination / (args.config_directory if args.config_directory is not None else config_directory(destination))
     safe_directory(config)
     return config
+
+
+def config_directory(destination):
+    """The folder of winix.config.ts when --config-directory is not given: the root, else winix/."""
+    for candidate in (".", "winix"):
+        if (destination / candidate / "winix.config.ts").is_file():
+            return candidate
+    return "."
 
 
 def pinned_version(config):
@@ -251,7 +259,7 @@ def main():
     parser.add_argument("--ref", default="main")
     parser.add_argument("--host")
     parser.add_argument("--destination", default=str(Path.home() / "dotfiles"))
-    parser.add_argument("--config-directory", default="winix")
+    parser.add_argument("--config-directory")
     parser.add_argument("--version")
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--yes", action="store_true")
@@ -266,7 +274,7 @@ def main():
             raise RuntimeError("Repository must be HTTPS without credentials, query, or fragment")
         if not args.ref or args.ref.startswith("-") or any(c in args.ref + (args.host or "") for c in "\x00\r\n"):
             raise RuntimeError("Invalid --host or --ref")
-        subdir = Path(args.config_directory)
+        subdir = Path(args.config_directory or ".")
         if subdir.is_absolute() or ".." in subdir.parts:
             raise RuntimeError("--config-directory must be inside the repository")
         destination = Path(os.path.abspath(os.path.expanduser(args.destination)))
@@ -274,7 +282,10 @@ def main():
         target = "host " + args.host if args.host else "the host you choose"
         steps += [
             "  - clone " + args.repository + " (" + args.ref + ") to " + str(destination) + " (or reuse that checkout)",
-            "  - download the Winix version pinned in " + args.config_directory + "/package.json (the latest if it has no config yet; checksum-verified)",
+            "  - download the Winix version pinned in " +
+            (args.config_directory + "/package.json" if args.config_directory is not None
+             else "the repository's package.json (next to winix.config.ts at its root or in winix/)") +
+            " (the latest if it has no config yet; checksum-verified)",
             "  - run its configuration code (TypeScript from this repository; it can run commands)",
             "  - " + ("show the plan for " + target + " without applying it" if args.prepare_only
                       else "apply " + target + " (sudo may ask for your password)"),

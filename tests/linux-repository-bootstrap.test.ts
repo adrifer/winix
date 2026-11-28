@@ -48,6 +48,28 @@ print("WINIX_INTERACTIVE_TRUST_SUCCESS")
     expect(output).toContain("WINIX_INTERACTIVE_TRUST_SUCCESS");
   });
 
+  it("finds the config at the repository root or in winix/ when --config-directory is not given", () => {
+    const test = `
+import pathlib, tempfile
+namespace = {"__name__": "install_test"}
+exec(${JSON.stringify(source)}, namespace)
+find = namespace["config_directory"]
+with tempfile.TemporaryDirectory(prefix="winix-config-dir-") as root:
+    root = pathlib.Path(root)
+    assert find(root) == ".", "empty repository: the root"
+    (root / "winix").mkdir()
+    (root / "winix" / "winix.config.ts").write_text("export default {}")
+    assert find(root) == "winix", "config in winix/"
+    (root / "winix.config.ts").write_text("export default {}")
+    assert find(root) == ".", "the root wins"
+    assert root / find(root) == root
+print("WINIX_CONFIG_DIRECTORY_SUCCESS")
+`;
+    const output = execFileSync(windows ? "wsl.exe" : "python3", windows
+      ? ["--", "python3", "-"] : ["-"], { input: test, encoding: "utf8", timeout: 15000 });
+    expect(output).toContain("WINIX_CONFIG_DIRECTORY_SUCCESS");
+  });
+
   it("installs, sets up repositories, verifies downloads and refuses unsafe checkouts", () => {
     const test = `
 import hashlib, json, os, pathlib, tempfile, sys
@@ -105,7 +127,7 @@ with tempfile.TemporaryDirectory(prefix="winix-install-") as root:
         else:
             sys.argv = ["install", "--repository", "https://example.com/dotfiles.git",
                         *([] if scenario == "nohost" else ["--host", "linux"]),
-                        "--destination", str(destination), "--yes"]
+                        "--destination", str(destination), "--config-directory", "winix", "--yes"]
             if scenario not in ("activate", "empty"):
                 sys.argv.append("--prepare-only")
         try:

@@ -61,10 +61,11 @@ it stopped.
 
 ### Moved the repo folder or switched hosts, and ownership looks wrong
 
-Ownership records are keyed by checkout path and host name. Run
+Ownership records are keyed by config folder and host name. After a move,
+`winix switch` offers to take the old folder's records over. Otherwise run
 `winix state owners` to inspect existing owners and
-`winix state migrate-owner <id> --host <name>` to transfer records to the new
-checkout ([CLI: Windows ownership records](cli.md#windows-ownership-records)).
+`winix state migrate-owner [<id>|<old folder>] [--host <name>]` to transfer
+records to the new checkout ([CLI: Windows ownership records](cli.md#windows-ownership-records)).
 
 ## NixOS and WSL
 

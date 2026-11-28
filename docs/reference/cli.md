@@ -69,7 +69,7 @@ Winix records which Windows resources it created, and only removes those (see
 | `winix state forget startup <name>` | Stop owning a startup entry, without removing it. |
 | `winix state forget startup-app <name>` | Stop owning a startup app, without removing it. |
 | `winix state forget package <winget\|msstore> <id>` | Stop owning a package, without uninstalling it. |
-| `winix state migrate-owner <id> --host <name>` | Move an old owner's resources to this checkout and host (`--dry` to preview, `--yes` to confirm). |
+| `winix state migrate-owner [<id>\|<old folder>] [--host <name>]` | Move an old owner's resources to this checkout and host (`--dry` to preview, `--yes` to confirm). Without an argument, the checkout that moved here; `--host` defaults to the remembered host, else the PC's name. `winix switch` offers this itself when the move is unambiguous. |
 
 ## Also accepted
 

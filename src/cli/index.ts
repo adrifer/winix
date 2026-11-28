@@ -3,6 +3,8 @@
 
 import { parseArgs } from "node:util";
 import { dirname } from "node:path";
+import { hostname } from "node:os";
+import { readRememberedHost } from "./host-memory.ts";
 import { apply } from "./commands/apply.ts";
 import { check } from "./commands/check.ts";
 import { init, resolveWinixVersionRange } from "./commands/init.ts";
@@ -300,12 +302,13 @@ switch (command) {
         if (!owners.length) console.log("No recorded Windows owners.");
         break;
       }
-      if (positionals[1] === "migrate-owner" && positionals.length === 3) {
-        if (!values.host) throw new Error("Owner migration requires --host <new-declared-host>");
+      if (positionals[1] === "migrate-owner" && (positionals.length === 2 || positionals.length === 3)) {
         const config = findConfig(cwd);
         if (!config) throw new Error("Run owner migration from the new Winix config checkout.");
+        // The host this checkout applies: --host, else the one bootstrap remembered, else this PC's name.
+        const host = values.host ?? readRememberedHost(dirname(config)) ?? hostname();
         await migrateWindowsOwner(
-          windowsStatePath(), positionals[2], await windowsStateOwner(dirname(config), values.host),
+          windowsStatePath(), positionals[2], await windowsStateOwner(dirname(config), host),
           { dry: values.dry, yes: values.yes },
         );
         break;
@@ -319,7 +322,7 @@ switch (command) {
                  positionals.length === 5 && ["winget", "msstore"].includes(positionals[3])) {
         resource = { kind: "package", source: positionals[3], id: positionals[4] };
       } else {
-        throw new Error("Usage: winix state owners | state migrate-owner <id> --host <name> [--dry|--yes] | state forget startup <name> [--dry] | state forget startup-app <name> [--dry] | state forget package <winget|msstore> <id> [--dry]");
+        throw new Error("Usage: winix state owners | state migrate-owner [<id>|<old config folder>] [--host <name>] [--dry|--yes] | state forget startup <name> [--dry] | state forget startup-app <name> [--dry] | state forget package <winget|msstore> <id> [--dry]");
       }
       await forgetWindowsResource(windowsStatePath(), resource, values.dry);
     } catch (err) {

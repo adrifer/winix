@@ -148,7 +148,21 @@ describe.skipIf(process.platform !== "win32").each(shells)("install.ps1 using %s
       expect(result.ok, result.error ?? "").toBe(true);
       expect(result.calls.find((call) => call.file === "runtime")?.args).toEqual(["0.9.0"]);
       expect(result.calls.find((call) => call.file === "winix")?.args).toEqual(["install", "command"]);
-      expect(existsSync(join(root, "winix"))).toBe(true);
+      // Without -ConfigDirectory a new config starts at the repository root.
+      expect(existsSync(join(root, "winix"))).toBe(false);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it("finds a config at the repository root without -ConfigDirectory", () => {
+    const root = mkdtempSync(join(tmpdir(), "winix-root-repository-"));
+    try {
+      mkdirSync(join(root, ".git"));
+      writeFileSync(join(root, "winix.config.ts"), "export default {}");
+      writeFileSync(join(root, "package.json"), '{"dependencies":{"@adrifer/winix":"0.3.0-preview.1"}}');
+      const result = run(shell, "", `-Repository 'https://example.com/dotfiles.git' -Destination '${root.replaceAll("'", "''")}' -HostName desktop -PrepareOnly -Yes`);
+      expect(result.ok, result.error ?? "").toBe(true);
+      expect(result.calls.find((call) => call.file === "runtime")?.args).toEqual(["0.3.0-preview.1"]);
+      expect(result.calls.find((call) => call.file === "winix")?.args).toEqual(["bootstrap", "--confirmed", "--host", "desktop", "--prepare-only", "--yes"]);
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 

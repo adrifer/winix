@@ -23,7 +23,7 @@ window):
 irm https://github.com/adrifer/winix/releases/latest/download/install.ps1 -OutFile $env:TEMP\install.ps1
 powershell -ExecutionPolicy Bypass -File $env:TEMP\install.ps1 `
   -Repository https://github.com/you/dotfiles.git -Ref main `
-  -Destination "$HOME\dotfiles" -ConfigDirectory winix
+  -Destination "$HOME\dotfiles"
 ```
 
 The script can come from the latest release: it reads your repository's pin and
@@ -36,8 +36,11 @@ On NixOS, NixOS-WSL or another Linux with Nix, or with Git and Python 3:
 ```bash
 curl -fsSLO https://github.com/adrifer/winix/releases/latest/download/install.sh
 bash install.sh --repository https://github.com/you/dotfiles.git \
-  --ref main --destination "$HOME/dotfiles" --config-directory winix
+  --ref main --destination "$HOME/dotfiles"
 ```
+
+Both find `winix.config.ts` at the repository root, else in `winix/`. Pass
+`-ConfigDirectory` / `--config-directory` for another folder.
 
 With Nix available, it borrows Git and Python from a pinned nixpkgs for the
 duration of the run. It doesn't install Nix, and it doesn't turn another

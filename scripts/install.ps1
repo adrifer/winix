@@ -19,7 +19,7 @@ Branch, tag or commit to check out (default: main).
 .PARAMETER Destination
 Where to clone the repository (default: ~\dotfiles).
 .PARAMETER ConfigDirectory
-The folder of winix.config.ts inside the repository (default: winix).
+The folder of winix.config.ts inside the repository (default: the root if it holds winix.config.ts, else winix).
 .PARAMETER HostName
 The declared host this PC is (repository only). Without it, Winix asks and remembers.
 .PARAMETER Version
@@ -36,7 +36,7 @@ param(
     [string]$Repository,
     [string]$Ref = 'main',
     [string]$Destination = (Join-Path $HOME 'dotfiles'),
-    [string]$ConfigDirectory = 'winix',
+    [string]$ConfigDirectory,
     [string]$HostName,
     [string]$Version,
     [switch]$PrepareOnly,
@@ -312,6 +312,11 @@ function Initialize-WinixCheckout {
     $head = ((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'rev-parse', 'HEAD')) -join '').Trim()
     $wanted = ((Invoke-WinixBootstrapNative $git @('-C', $Destination, 'rev-parse', '--verify', "$Ref^{commit}")) -join '').Trim()
     if ($head -ne $wanted) { throw "The existing checkout isn't at $Ref; switch it yourself. This script never pulls or resets." }
+    if (-not $ConfigDirectory) {
+        # The root when it holds the config, else winix\ (or the root for a repository without one yet).
+        $ConfigDirectory = if (-not (Test-Path -LiteralPath (Join-Path $Destination 'winix.config.ts') -PathType Leaf) -and
+            (Test-Path -LiteralPath (Join-Path (Join-Path $Destination 'winix') 'winix.config.ts') -PathType Leaf)) { 'winix' } else { '.' }
+    }
     $config = [IO.Path]::GetFullPath((Join-Path $Destination $ConfigDirectory))
     Assert-WinixBootstrapDirectory $config
     return $config
@@ -319,7 +324,7 @@ function Initialize-WinixCheckout {
 
 function Install-Winix {
     param(
-        [string]$Repository, [string]$Ref = 'main', [string]$Destination = (Join-Path $HOME 'dotfiles'), [string]$ConfigDirectory = 'winix',
+        [string]$Repository, [string]$Ref = 'main', [string]$Destination = (Join-Path $HOME 'dotfiles'), [string]$ConfigDirectory,
         [string]$HostName, [string]$Version, [switch]$PrepareOnly, [switch]$DryRun, [switch]$Yes
     )
     $ErrorActionPreference = 'Stop'
@@ -335,7 +340,7 @@ function Install-Winix {
         }
         if ($HostName -and ($HostName.StartsWith('-') -or $HostName -match '[\x00\r\n]')) { throw '-HostName takes a declared host name.' }
         if (-not $Ref -or $Ref.StartsWith('-') -or $Ref -match '[\x00\r\n]') { throw 'Invalid -Ref.' }
-        if ([IO.Path]::IsPathRooted($ConfigDirectory) -or $ConfigDirectory -match '(^|[\\/])\.\.([\\/]|$)' -or $ConfigDirectory -match '[:\x00\r\n]') {
+        if ($ConfigDirectory -and ([IO.Path]::IsPathRooted($ConfigDirectory) -or $ConfigDirectory -match '(^|[\\/])\.\.([\\/]|$)' -or $ConfigDirectory -match '[:\x00\r\n]')) {
             throw '-ConfigDirectory must be inside the repository.'
         }
         $Destination = [IO.Path]::GetFullPath($Destination)
@@ -348,7 +353,8 @@ function Install-Winix {
     $steps = @('install Git, PowerShell 7 and DSC if missing (installers may ask for administrator approval)')
     if ($Repository) {
         $steps += "clone $Repository ($Ref) to $Destination (or reuse that checkout)"
-        $steps += "download the Winix version pinned in $ConfigDirectory\package.json ($winix if it has no config yet; checksum-verified)"
+        $pinnedIn = if ($ConfigDirectory) { "$ConfigDirectory\package.json" } else { "the repository's package.json (next to winix.config.ts at its root or in winix\)" }
+        $steps += "download the Winix version pinned in $pinnedIn ($winix if it has no config yet; checksum-verified)"
         $steps += 'run its configuration (TypeScript from this repository; it can run commands)'
         $steps += if ($PrepareOnly) { "show the plan for $target without applying it" } else { "apply it to this PC as $target" }
     } else {

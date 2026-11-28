@@ -185,10 +185,11 @@ const COMMANDS: Record<string, CommandHelp> = {
       ["forget startup <name>", "Stop owning a startup entry, without removing it"],
       ["forget startup-app <name>", "Stop owning a startup app, without removing it"],
       ["forget package <winget|msstore> <id>", "Stop owning a package, without uninstalling it"],
-      ["migrate-owner <id> --host <name>", "Move an old owner's resources to this checkout and host"],
+      ["migrate-owner [<id>|<old folder>]", "Move an old owner's resources to this checkout and host (no argument: the checkout that moved here)"],
     ],
     options: [
       ["--dry", "Only show what would change"],
+      ["--host <name>", "migrate-owner: the host (default: the remembered host, else this PC's name)"],
       ["-y, --yes", "Confirm migrate-owner"],
     ],
   },

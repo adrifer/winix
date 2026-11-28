@@ -13,8 +13,8 @@ import { runCommand } from "../run.ts";
 import { nodeTypeArguments } from "../node.ts";
 import { findConfig, loadWorkspace } from "../loader.ts";
 import {
-  GENERATED, assertPlainDirectories, defaultExec, installWinixCommand, plainFile, rememberCheckout, rememberedCheckout,
-  writeLinuxWrapper,
+  GENERATED, assertPlainDirectories, defaultExec, followMovedCheckout, installWinixCommand, plainFile, rememberCheckout,
+  rememberedCheckout, shellQuote, writeLinuxWrapper,
 } from "../winix-home.ts";
 import { evaluate } from "../../evaluator/index.ts";
 import { platformForEvaluatedHost } from "../activation.ts";
@@ -149,9 +149,19 @@ export async function ensureLinuxRuntime(
   const binary = join(folder, "winix.bin");
   const wrapper = join(folder, "winix");
   await assertPlainDirectories([winix, runtime, folder]);
-  const ready = async () => await plainFile(wrapper) && await plainFile(binary) &&
+  const generated = async () => await plainFile(wrapper) &&
     (await readFile(wrapper, "utf8")).startsWith(`#!/usr/bin/env bash\n${GENERATED}\n`);
-  if (await ready()) return wrapper;
+  // A wrapper written for another folder (the checkout moved) runs files that are gone.
+  const here = async () => (await readFile(wrapper, "utf8"))
+    .includes(`\nexport WINIX_STANDALONE_EXECUTABLE=${shellQuote(wrapper)}\n`);
+  if (await generated() && await plainFile(binary)) {
+    if (await here()) return wrapper;
+    // The binary is already verified: rewrite the wrapper (and NixOS loader links) in place.
+    await writeLinuxWrapper(folder, arch, nixos, exec);
+    const reported = exec(wrapper, ["--version"]).trim();
+    if (reported !== version) throw new Error(`Winix in ${folder} reports ${reported || "nothing"}, expected ${version}`);
+    return wrapper;
+  }
   return progress.step(`Downloading Winix ${version}`, async () => {
     if (!(await plainFile(binary))) await downloadVerified(version, `winix-linux-${arch}`, binary, request, 0o755);
     await writeLinuxWrapper(folder, arch, nixos, exec);
@@ -258,12 +268,15 @@ export interface RouteDeps {
   runCheckout(directory: string, args: string[]): Promise<void>;
   run: typeof runCommand;
   remembered(): string | undefined;
+  /** Follows a remembered checkout whose config moved inside its repository; returns the old folder. */
+  follow?(directory: string): Promise<string | undefined>;
 }
 
 const defaultRouteDeps: RouteDeps = {
   runCheckout: (directory, args) => runCheckout(directory, args),
   run: runCommand,
   remembered: () => rememberedCheckout(),
+  follow: (directory) => followMovedCheckout(directory),
 };
 
 /**
@@ -289,6 +302,10 @@ export async function routeRun(cwd: string, args: string[], deps: RouteDeps = de
   if (args[0] === "upgrade") return self(config ? cwd : deps.remembered() ?? cwd);
   if (config) {
     const directory = dirname(config);
+    try {
+      const moved = await deps.follow?.(directory);
+      if (moved) console.error(`Winix now uses ${directory} on this machine (the config moved from ${moved}).`);
+    } catch { /* best effort: the command below still runs here */ }
     let pinned = true;
     try { await checkoutWinixVersion(directory); } catch { pinned = false; }
     return pinned ? deps.runCheckout(directory, args) : self(directory);

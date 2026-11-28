@@ -5,6 +5,23 @@ Notable changes per release. Every release, with its downloadable assets, is on
 
 ## Unreleased
 
+- **Moving a checkout no longer needs manual repair:**
+  - `winix switch` takes over the Windows ownership records a moved checkout
+    left behind (same host, old folder without a config, one candidate). `winix
+    plan` shows it, `switch` asks once (`--yes` accepts; without a terminal it
+    leaves them apart).
+  - `winix state migrate-owner` works without an id (the checkout that moved
+    here) or with the old config folder, and `--host` defaults to the
+    remembered host, else the PC's name.
+  - The pinned Linux runtime in `.winix/runtime` is rewired in place when the
+    checkout moved, instead of failing on the old paths (NixOS loader links are
+    rebuilt, so they stay protected from garbage collection).
+  - When a config moves inside its repository (`dotfiles/winix` to `dotfiles`),
+    the `winix` command follows it from any folder and keeps the remembered host.
+- **Installers find the config folder:** without `-ConfigDirectory` /
+  `--config-directory`, `install.ps1` and `install.sh` use the repository root
+  when it holds `winix.config.ts`, else `winix/`. A repository without a config
+  now starts one at its root.
 - **Native Windows settings backend:** All `windows.settings()` sections
   (`theme`, `explorer`, `taskbar`, `start`, `developer`, `clipboard`, `time`,
   `keyboard`, `mouse`, and `notifications`) now check and apply natively through

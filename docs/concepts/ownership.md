@@ -73,19 +73,28 @@ winix state forget startup-app komorebi
 
 It stays installed, and deleting its declaration then leaves it alone.
 
-**After moving the checkout or renaming a host**, the old owner's records stay
-under the old name. Move them to the current checkout and host:
+**After moving the checkout**, or moving the config inside the repository
+(`dotfiles\winix` to `dotfiles`), the old owner's records stay under the old
+folder. The next `winix switch` notices: when exactly one owner has the same
+host and a folder that no longer holds a config, `winix plan` shows the move
+and `winix switch` asks once to take its resources over (`--yes` accepts it;
+without a terminal it leaves them apart). Nothing else to run.
+
+When that can't tell (two old folders, the old folder still holds a config, or
+a **renamed host**), move the records yourself, from the new checkout:
 
 ```powershell
-winix state owners                                          # list owners and their ids
-winix state migrate-owner <old-owner-id> --host DESKTOP --dry
+winix state owners                                   # list owners and their ids
+winix state migrate-owner --dry                      # the checkout that moved here
+winix state migrate-owner C:\Users\me\old-dotfiles --dry   # or its old folder
 winix state migrate-owner <old-owner-id> --host DESKTOP --yes
 winix plan
 ```
 
-Run it from the new checkout. It changes only the record, never the machine.
-Until you migrate, the old owner still counts as declaring its resources, so a
-host rename never turns into a mass uninstall.
+`--host` defaults to the host bootstrap remembered, else the PC's name. It
+changes only the record, never the machine. Until you migrate, the old owner
+still counts as declaring its resources, so a host rename never turns into a
+mass uninstall.
 
 ## Things to know
 

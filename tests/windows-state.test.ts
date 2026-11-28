@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   parseAppliedState, reconcileWindows, resourceKey, forgetWindowsResource, confirmWindowsRemovals, nativeWindowsStateAdapter,
   listWindowsOwners, migrateWindowsOwner, windowsOwnerId, withWindowsStateLock, processAlive,
+  findMovedWindowsOwner, parseWindowsOwner, confirmOwnerTakeover,
   type ManagedResource, type ResourceSnapshot,
 } from "../src/cli/windows-state.ts";
 import type { WindowsPackageRequirement } from "../src/cli/windows-package-versions.ts";
@@ -218,6 +219,97 @@ describe("Windows applied-state reconciliation", () => {
     await expect(migrateWindowsOwner(f.statePath, "f".repeat(64), "new", { dry: false, yes: true }, () => {}))
       .rejects.toThrow("not found");
   }));
+
+  describe("moved checkouts", () => {
+    const owner = (configDir: string, host: string) => JSON.stringify([configDir, host]);
+    const before = owner("c:\\users\\me\\dotfiles\\winix", "DESKTOP");
+    const after = owner("c:\\users\\me\\dotfiles", "DESKTOP");
+
+    it("finds only an unambiguous owner left by a moved config folder", () => {
+      const gone = () => false;
+      expect(parseWindowsOwner(after)).toEqual({ configDir: "c:\\users\\me\\dotfiles", host: "DESKTOP" });
+      expect(parseWindowsOwner("workspace-A/desktop")).toBeUndefined();
+      expect(findMovedWindowsOwner([before, after], after, gone)).toBe(before);
+      // Host names compare case-insensitively, like Windows computer names.
+      expect(findMovedWindowsOwner([owner("c:\\old", "desktop")], after, gone)).toBe(owner("c:\\old", "desktop"));
+      // The old folder still holds a config: another live checkout, not a move.
+      expect(findMovedWindowsOwner([before], after, () => true)).toBeUndefined();
+      expect(findMovedWindowsOwner([owner("c:\\old", "LAPTOP")], after, gone)).toBeUndefined();
+      expect(findMovedWindowsOwner([before, owner("d:\\other", "DESKTOP")], after, gone)).toBeUndefined();
+      expect(findMovedWindowsOwner(["workspace-A/desktop"], after, gone)).toBeUndefined();
+      expect(findMovedWindowsOwner([before], "workspace-A/desktop", gone)).toBeUndefined();
+    });
+
+    it("switch takes over the moved owner, so changed definitions and removals keep working", async () => fixture(async (f) => {
+      await f.apply([pkg, startup], { owner: before });
+      // Before this change, a new definition from the moved checkout was a conflict with the stale owner.
+      await f.apply([pkg], { owner: after, definition: "v2", activate: async () => {
+        f.actual.set(resourceKey(pkg), { version: "2.0" });
+      } });
+      const state = parseAppliedState(await readFile(f.statePath, "utf8"));
+      expect(state.entries[resourceKey(pkg)].owners).toEqual([after]);
+      // The startup shortcut the old folder declared is no longer declared: removed.
+      expect(f.remove).toHaveBeenCalledTimes(1);
+      expect(state.entries[resourceKey(startup)]).toBeUndefined();
+      expect((await listWindowsOwners(f.statePath)).map((entry) => entry.owner)).toEqual([after]);
+    }));
+
+    it("a dry run shows the takeover and plans with it, without saving", async () => fixture(async (f) => {
+      await f.apply([pkg], { owner: before });
+      const saved = await readFile(f.statePath, "utf8");
+      await f.apply([pkg], { owner: after, definition: "v2", dry: true, activate: async () => {} });
+      expect(await readFile(f.statePath, "utf8")).toBe(saved);
+    }));
+
+    it("without a terminal or --yes, keeps the owners apart", async () => fixture(async (f) => {
+      await f.apply([pkg], { owner: before });
+      vi.stubGlobal("process", { ...process, stdin: { isTTY: false }, stdout: { isTTY: false } });
+      try {
+        expect(await confirmOwnerTakeover(false, 1)).toBe(false);
+        await f.apply([pkg], { owner: after, yes: false });
+      } finally { vi.unstubAllGlobals(); }
+      const state = parseAppliedState(await readFile(f.statePath, "utf8"));
+      expect(state.entries[resourceKey(pkg)].owners).toEqual([before, after]);
+    }));
+
+    it("asks once, yes by default, and respects no", async () => {
+      const readline = await vi.importActual<typeof import("node:readline/promises")>("node:readline/promises");
+      for (const [answer, expected] of [["", true], ["y", true], ["n", false], ["No", false]] as const) {
+        const prompt = readline.createInterface({ input: new PassThrough(), output: new PassThrough() });
+        vi.mocked(createInterface).mockReturnValue(prompt);
+        const question = vi.spyOn(prompt, "question").mockResolvedValue(answer);
+        vi.stubGlobal("process", { ...process, stdin: { isTTY: true }, stdout: { isTTY: true } });
+        try {
+          expect(await confirmOwnerTakeover(false, 3)).toBe(expected);
+          expect(question).toHaveBeenCalledWith("Take over its 3 resources for this checkout? [Y/n] ", expect.anything());
+        } finally {
+          prompt.close();
+          vi.mocked(createInterface).mockReset();
+          vi.unstubAllGlobals();
+        }
+      }
+    });
+
+    it("migrate-owner finds the moved owner itself, or takes its old folder", async () => fixture(async (f) => {
+      await f.apply([pkg], { owner: before });
+      const report = vi.fn();
+      await migrateWindowsOwner(f.statePath, undefined, after, { dry: true }, report);
+      expect(report).toHaveBeenCalledWith(expect.stringContaining("Would migrate owner c:\\users\\me\\dotfiles\\winix (host DESKTOP)"));
+      await migrateWindowsOwner(f.statePath, undefined, after, { dry: false, yes: true }, () => {});
+      expect(parseAppliedState(await readFile(f.statePath, "utf8")).entries[resourceKey(pkg)].owners).toEqual([after]);
+      await expect(migrateWindowsOwner(f.statePath, undefined, after, { dry: true }, () => {})).rejects.toThrow("No moved checkout");
+    }));
+
+    it("migrate-owner takes the old config folder in place of an id", async () => fixture(async (f) => {
+      const old = owner("/srv/old-dotfiles", "DESKTOP");
+      await f.apply([pkg, startup], { owner: old });
+      await migrateWindowsOwner(f.statePath, "/srv/old-dotfiles/", after, { dry: false, yes: true }, () => {});
+      const state = parseAppliedState(await readFile(f.statePath, "utf8"));
+      expect(state.entries[resourceKey(pkg)].owners).toEqual([after]);
+      expect(state.entries[resourceKey(startup)].owners).toEqual([after]);
+      await expect(migrateWindowsOwner(f.statePath, "/srv/elsewhere", after, { dry: true }, () => {})).rejects.toThrow("not found");
+    }));
+  });
 
   it.each(["close", "SIGINT"])("cancels confirmation when the prompt receives %s", async (event) => {
     const readline = await vi.importActual<typeof import("node:readline/promises")>("node:readline/promises");

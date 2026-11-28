@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import type { WorkspaceDef } from "../core/types.ts";
 
-const CONFIG_NAMES = ["winix.config.ts", "winix.config.js", "winix.config.mjs"];
+export const CONFIG_NAMES = ["winix.config.ts", "winix.config.js", "winix.config.mjs"];
 
 export interface LoadResult {
   workspace: WorkspaceDef;
@@ -40,6 +40,11 @@ export async function loadWorkspace(cwd: string): Promise<LoadResult> {
   }
 
   return { workspace, configDir, configPath };
+}
+
+/** Whether a folder itself (not a parent) holds a Winix config. */
+export function holdsWinixConfig(directory: string): boolean {
+  return CONFIG_NAMES.some((name) => existsSync(resolve(directory, name)));
 }
 
 export function findConfig(dir: string): string | null {
