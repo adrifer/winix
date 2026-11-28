@@ -3,7 +3,7 @@
 Notable changes per release. Every release, with its downloadable assets, is on
 [GitHub Releases](https://github.com/adrifer/winix/releases).
 
-## Unreleased
+## 0.4.2
 
 - **Moving a checkout no longer needs manual repair:**
   - `winix switch` takes over the Windows ownership records a moved checkout
@@ -22,6 +22,8 @@ Notable changes per release. Every release, with its downloadable assets, is on
   `--config-directory`, `install.ps1` and `install.sh` use the repository root
   when it holds `winix.config.ts`, else `winix/`. A repository without a config
   now starts one at its root.
+## 0.4.1
+
 - **Native Windows settings backend:** All `windows.settings()` sections
   (`theme`, `explorer`, `taskbar`, `start`, `developer`, `clipboard`, `time`,
   `keyboard`, `mouse`, and `notifications`) now check and apply natively through
