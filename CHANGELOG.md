@@ -3,7 +3,7 @@
 Notable changes per release. Every release, with its downloadable assets, is on
 [GitHub Releases](https://github.com/adrifer/winix/releases).
 
-## Unreleased
+## 0.4.3
 
 - **Replacing existing file targets no longer blocks a switch:** an existing
   link (including one whose target is gone, as after moving the checkout) is
